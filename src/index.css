@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* ── Design system CSS variables ─────────────────────────── */
+:root {
+  /* surfaces */
+  --bg: #FAF6EF;
+  --surface: #FFFFFF;
+  --surface-sunken: #F2ECE2;
+  --surface-raised: #FFFFFF;
+  /* text */
+  --ink: #262019;
+  --ink-muted: #7A6E60;
+  --ink-faint: #9C8F7E;
+  --border: #E6DFD3;
+  --border-strong: #CFC6B8;
+  /* brand */
+  --brand: #F1C446;
+  --brand-hover: #E7B62C;
+  --brand-soft: #FCEFC4;
+  --on-brand: #1A1613;
+  --ring: #E7B62C;
+  /* status */
+  --success-soft: #C2E6C9; --success: #1E7A3E;
+  --warning-soft: #FAE1A1; --warning: #8A6D12;
+  --danger-soft:  #F6D5D2; --danger:  #B42318;
+  --info-soft:    #CEDDE8; --info:    #2D5E83;
+  /* roles */
+  --role-admin-soft: #FCEFC4;     --role-admin: #8A6D12;
+  --role-volunteer-soft: #CEDDE8; --role-volunteer: #2D5E83;
+  --role-parent-soft: #DBBFDD;    --role-parent: #6B4B72;
+  /* shape / shadow / motion */
+  --radius: 0.625rem;
+  --shadow-sm: 0 1px 2px rgba(38,32,25,.06), 0 1px 3px rgba(38,32,25,.05);
+  --shadow-md: 0 2px 6px rgba(38,32,25,.07), 0 6px 16px rgba(38,32,25,.06);
+  --shadow-lg: 0 8px 28px rgba(38,32,25,.12);
+  --ease: cubic-bezier(.2,.7,.3,1);
+}
+
+:root.dark, [data-theme="dark"] {
+  --bg: #171310;
+  --surface: #221C16;
+  --surface-sunken: #100D0A;
+  --surface-raised: #2C251D;
+  --ink: #F5EFE4;
+  --ink-muted: #B9AD9C;
+  --ink-faint: #8A7E6E;
+  --border: rgba(57,48,38,.6);
+  --border-strong: #4A3F33;
+  --brand: #F1C446;
+  --brand-hover: #F6CF5E;
+  --brand-soft: #3A2F12;
+  --on-brand: #1A1613;
+  --ring: #F1C446;
+  --success-soft: #16341F; --success: #86E0A0;
+  --warning-soft: #3A2F12; --warning: #F1C446;
+  --danger-soft:  #3A1A1A; --danger:  #F0A19C;
+  --info-soft:    #16293A; --info:    #9CCBEC;
+  --role-admin-soft: #3A2F12;     --role-admin: #F1C446;
+  --role-volunteer-soft: #16293A; --role-volunteer: #9CCBEC;
+  --role-parent-soft: #2E2233;    --role-parent: #D6B6DC;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.45);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.55);
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: "Josefin Sans", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.5625;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100svh;
+}
