@@ -4,8 +4,11 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminClasses from './pages/AdminClasses'
+import AdminVolunteers from './pages/AdminVolunteers'
 import VolunteerDashboard from './pages/VolunteerDashboard'
 import ParentDashboard from './pages/ParentDashboard'
+import ClassBrowser from './pages/ClassBrowser'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 
 function RoleRedirect() {
@@ -32,6 +35,8 @@ function App() {
           {/* Role-gated */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/classes" element={<AdminClasses />} />
+            <Route path="/admin/volunteers" element={<AdminVolunteers />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['volunteer']} />}>
@@ -40,6 +45,7 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={['parent']} />}>
             <Route path="/parent" element={<ParentDashboard />} />
+            <Route path="/parent/classes" element={<ClassBrowser />} />
           </Route>
 
           {/* Root → redirect based on role */}
