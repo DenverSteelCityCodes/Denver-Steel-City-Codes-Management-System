@@ -83,18 +83,29 @@ ALTER TABLE registrations   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE attendance_logs ENABLE ROW LEVEL SECURITY;
 
 -- ── Helper: role check ───────────────────────────────────────
--- Inline subquery used throughout policies to avoid function overhead.
--- Pattern: EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = '<role>')
+-- auth_user_role() is used throughout policies (defined above).
+-- It is SECURITY DEFINER so it bypasses RLS and avoids recursive policy evaluation.
 
 -- ============================================================
 -- profiles policies
 -- ============================================================
 
+-- Helper function: non-recursive role check via security definer
+-- Reads the role from profiles without triggering RLS on the profiles table itself.
+CREATE OR REPLACE FUNCTION auth_user_role()
+RETURNS user_role
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT role FROM profiles WHERE id = auth.uid();
+$$;
+
 -- Admin: full access
 CREATE POLICY "admin_all_profiles" ON profiles
     FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'))
-    WITH CHECK (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'));
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
 
 -- Volunteer / Parent: read & update own row only
 CREATE POLICY "self_select_profile" ON profiles
@@ -118,8 +129,8 @@ CREATE POLICY "self_insert_profile" ON profiles
 -- Admin: full access
 CREATE POLICY "admin_all_students" ON students
     FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
-    WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
 
 -- Parent: full access to their own students
 CREATE POLICY "parent_own_students" ON students
@@ -147,8 +158,8 @@ CREATE POLICY "volunteer_read_students" ON students
 -- Admin: full access
 CREATE POLICY "admin_all_volunteers" ON volunteers
     FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
-    WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
 
 -- Volunteer: read & update own record
 CREATE POLICY "volunteer_select_self" ON volunteers
@@ -171,8 +182,8 @@ CREATE POLICY "volunteer_insert_self" ON volunteers
 -- Admin: full access
 CREATE POLICY "admin_all_classes" ON classes
     FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
-    WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
 
 -- Volunteer: read classes they are assigned to
 CREATE POLICY "volunteer_read_assigned_classes" ON classes
@@ -182,7 +193,7 @@ CREATE POLICY "volunteer_read_assigned_classes" ON classes
 -- Parent: read all classes (needed to browse & register)
 CREATE POLICY "parent_read_classes" ON classes
     FOR SELECT
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'parent'));
+    USING (auth_user_role() = 'parent');
 
 -- ============================================================
 -- registrations policies
@@ -191,8 +202,8 @@ CREATE POLICY "parent_read_classes" ON classes
 -- Admin: full access
 CREATE POLICY "admin_all_registrations" ON registrations
     FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
-    WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
 
 -- Parent: manage registrations for their own students
 CREATE POLICY "parent_own_registrations" ON registrations
@@ -222,8 +233,8 @@ CREATE POLICY "volunteer_read_registrations" ON registrations
 -- Admin: full access
 CREATE POLICY "admin_all_attendance" ON attendance_logs
     FOR ALL
-    USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'))
-    WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
 
 -- Volunteer: insert & read logs for students in their assigned classes
 CREATE POLICY "volunteer_insert_attendance" ON attendance_logs
