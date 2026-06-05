@@ -6,6 +6,7 @@ import SignupPage from './pages/SignupPage'
 import AdminDashboard from './pages/AdminDashboard'
 import VolunteerDashboard from './pages/VolunteerDashboard'
 import ParentDashboard from './pages/ParentDashboard'
+import ClassBrowser from './pages/ClassBrowser'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 
 function RoleRedirect() {
@@ -40,6 +41,7 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={['parent']} />}>
             <Route path="/parent" element={<ParentDashboard />} />
+            <Route path="/parent/classes" element={<ClassBrowser />} />
           </Route>
 
           {/* Root → redirect based on role */}
