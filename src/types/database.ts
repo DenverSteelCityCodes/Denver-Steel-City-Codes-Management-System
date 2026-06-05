@@ -53,3 +53,40 @@ export interface AttendanceLog {
   action: AttendanceAction
   timestamp: string
 }
+
+export type ApplicationStatus = 'pending' | 'accepted' | 'rejected'
+
+export interface VolunteerApplication {
+  id: string
+  user_id: string | null
+  first_name: string
+  last_name: string
+  email: string
+  phone: string
+  age: number
+  grade: string
+  school: string
+  shirt_size: string
+  availability_week_1: boolean
+  availability_week_2: boolean
+  why_volunteer: string
+  previous_scc_volunteer: boolean
+  cs_languages: string[]
+  cs_classes: string | null
+  experience_children: string | null
+  skill_python: number | null
+  skill_java: number | null
+  skill_html: number | null
+  skill_css: number | null
+  skill_javascript: number | null
+  skill_microcontrollers: number | null
+  course_first_choice: string
+  course_second_choice: string
+  other_curricula: string | null
+  volunteer_signature: string
+  guardian_signature: string | null
+  interview_confirmed: boolean
+  status: ApplicationStatus
+  admin_notes: string | null
+  created_at: string
+}
