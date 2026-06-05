@@ -50,11 +50,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function loadProfile(session: Session) {
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
-      .single()
+      .maybeSingle()
+
+    // Profile missing — create it now (handles the case where the signup
+    // insert was blocked by RLS before email confirmation)
+    if (!profile) {
+      const displayName =
+        session.user.user_metadata?.display_name ??
+        session.user.email?.split('@')[0] ??
+        'User'
+
+      const { data: created } = await supabase
+        .from('profiles')
+        .insert({ id: session.user.id, display_name: displayName, role: 'parent' })
+        .select()
+        .maybeSingle()
+
+      profile = created
+    }
 
     setState({
       session,
