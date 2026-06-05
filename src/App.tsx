@@ -4,6 +4,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminClasses from './pages/AdminClasses'
+import AdminVolunteers from './pages/AdminVolunteers'
 import VolunteerDashboard from './pages/VolunteerDashboard'
 import ParentDashboard from './pages/ParentDashboard'
 import UnauthorizedPage from './pages/UnauthorizedPage'
@@ -32,6 +34,8 @@ function App() {
           {/* Role-gated */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/classes" element={<AdminClasses />} />
+            <Route path="/admin/volunteers" element={<AdminVolunteers />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['volunteer']} />}>

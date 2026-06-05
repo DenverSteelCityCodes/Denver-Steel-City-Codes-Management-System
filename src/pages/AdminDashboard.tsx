@@ -1,8 +1,22 @@
-import { ShieldCheck } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ShieldCheck, GraduationCap, Users, ClipboardList, List } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useAdminStats } from '../hooks/useAdminStats'
+import StatCard from '../components/StatCard'
 
 export default function AdminDashboard() {
   const { profile, signOut } = useAuth()
+  const { stats, loading } = useAdminStats()
+
+  const dash = loading || !stats
+    ? { students: '—', classes: '—', volunteers: '—', confirmed: '—', waitlisted: '—' }
+    : {
+        students: stats.totalStudents,
+        classes: stats.totalClasses,
+        volunteers: stats.totalVolunteers,
+        confirmed: stats.confirmedRegistrations,
+        waitlisted: stats.waitlistedRegistrations,
+      }
 
   return (
     <div className="min-h-screen bg-bg">
@@ -18,36 +32,54 @@ export default function AdminDashboard() {
             <ShieldCheck size={12} /> Admin
           </span>
           <span className="font-sans text-sm text-white/70">{profile?.display_name}</span>
-          <button
-            onClick={signOut}
-            className="font-sans text-sm text-white/60 hover:text-white transition"
-          >
+          <button onClick={signOut} className="font-sans text-sm text-white/60 hover:text-white transition">
             Sign out
           </button>
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto px-6 py-10">
-        <h1 className="font-sans font-bold text-3xl text-ink mb-2">Admin Dashboard</h1>
-        <p className="font-slab text-ink-muted text-lg mb-8">Manage classes, volunteers, and registrations.</p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { label: 'Total Students', value: '—' },
-            { label: 'Active Classes', value: '—' },
-            { label: 'Volunteers', value: '—' },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-surface border border-border rounded-xl shadow-sm p-6">
-              <p className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted mb-2">{label}</p>
-              <p className="font-sans font-bold text-4xl text-ink tabular-nums">{value}</p>
-            </div>
-          ))}
+      <main className="max-w-[1200px] mx-auto px-6 py-10 space-y-10">
+        <div>
+          <h1 className="font-sans font-bold text-3xl text-ink mb-1">Admin Dashboard</h1>
+          <p className="font-slab text-ink-muted text-lg">Manage classes, volunteers, and registrations.</p>
         </div>
 
-        <div className="mt-10 bg-surface border border-border rounded-xl shadow-sm p-8 text-center">
-          <p className="font-sans text-ink-muted text-sm">
-            Full admin tools coming in <strong className="text-ink">PR 4</strong>.
-          </p>
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard label="Students" value={dash.students} icon={GraduationCap} />
+          <StatCard label="Classes" value={dash.classes} icon={ClipboardList} iconColor="text-info" iconBg="bg-info-soft" />
+          <StatCard label="Volunteers" value={dash.volunteers} icon={Users} iconColor="text-role-volunteer" iconBg="bg-role-volunteer-soft" />
+          <StatCard label="Confirmed" value={dash.confirmed} icon={ClipboardList} iconColor="text-success" iconBg="bg-success-soft" />
+          <StatCard label="Waitlisted" value={dash.waitlisted} icon={List} iconColor="text-ink-muted" iconBg="bg-surface-sunken" />
+        </div>
+
+        {/* Quick links */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link
+            to="/admin/classes"
+            className="group bg-surface border border-border rounded-xl shadow-sm p-6 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition"
+          >
+            <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
+              <ClipboardList size={22} className="text-warning" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-base text-ink group-hover:text-ink mb-0.5">Manage classes</h2>
+              <p className="font-sans text-sm text-ink-muted">Create, edit, and delete classes. Set capacity.</p>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/volunteers"
+            className="group bg-surface border border-border rounded-xl shadow-sm p-6 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition"
+          >
+            <div className="w-12 h-12 rounded-full bg-role-volunteer-soft flex items-center justify-center shrink-0">
+              <Users size={22} className="text-role-volunteer" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-base text-ink group-hover:text-ink mb-0.5">Volunteers</h2>
+              <p className="font-sans text-sm text-ink-muted">View roster and auto-assign to classes by week.</p>
+            </div>
+          </Link>
         </div>
       </main>
     </div>
