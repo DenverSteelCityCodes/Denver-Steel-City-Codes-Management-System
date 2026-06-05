@@ -10,6 +10,7 @@ import VolunteerDashboard from './pages/VolunteerDashboard'
 import ParentDashboard from './pages/ParentDashboard'
 import ClassBrowser from './pages/ClassBrowser'
 import UnauthorizedPage from './pages/UnauthorizedPage'
+import VolunteerApplyPage from './pages/VolunteerApplyPage'
 
 function RoleRedirect() {
   const { role, loading } = useAuth()
@@ -30,6 +31,7 @@ function App() {
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/apply" element={<VolunteerApplyPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           {/* Role-gated */}

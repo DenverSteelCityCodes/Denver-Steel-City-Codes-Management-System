@@ -63,6 +63,54 @@ CREATE TABLE attendance_logs (
     timestamp  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE app_settings (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE volunteer_applications (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id                 UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+    first_name              TEXT NOT NULL,
+    last_name               TEXT NOT NULL,
+    email                   TEXT NOT NULL,
+    phone                   TEXT NOT NULL,
+    age                     SMALLINT NOT NULL,
+    grade                   TEXT NOT NULL,
+    school                  TEXT NOT NULL,
+    shirt_size              TEXT NOT NULL,
+
+    availability_week_1     BOOLEAN NOT NULL DEFAULT FALSE,
+    availability_week_2     BOOLEAN NOT NULL DEFAULT FALSE,
+
+    why_volunteer           TEXT NOT NULL,
+    previous_scc_volunteer  BOOLEAN NOT NULL DEFAULT FALSE,
+    cs_languages            TEXT[] NOT NULL DEFAULT '{}',
+    cs_classes              TEXT,
+    experience_children     TEXT,
+
+    skill_python            SMALLINT CHECK (skill_python BETWEEN 1 AND 5),
+    skill_java              SMALLINT CHECK (skill_java BETWEEN 1 AND 5),
+    skill_html              SMALLINT CHECK (skill_html BETWEEN 1 AND 5),
+    skill_css               SMALLINT CHECK (skill_css BETWEEN 1 AND 5),
+    skill_javascript        SMALLINT CHECK (skill_javascript BETWEEN 1 AND 5),
+    skill_microcontrollers  SMALLINT CHECK (skill_microcontrollers BETWEEN 1 AND 5),
+
+    course_first_choice     TEXT NOT NULL,
+    course_second_choice    TEXT NOT NULL,
+    other_curricula         TEXT,
+
+    volunteer_signature     TEXT NOT NULL,
+    guardian_signature      TEXT,
+    interview_confirmed     BOOLEAN NOT NULL DEFAULT FALSE,
+
+    status                  TEXT NOT NULL DEFAULT 'pending',
+    admin_notes             TEXT,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ── Indexes ──────────────────────────────────────────────────
 
 CREATE INDEX ON students (parent_id);
@@ -72,26 +120,28 @@ CREATE INDEX ON registrations (status);
 CREATE INDEX ON attendance_logs (student_id);
 CREATE INDEX ON attendance_logs (class_id);
 CREATE INDEX ON attendance_logs (timestamp);
+CREATE INDEX ON volunteer_applications (status);
+CREATE INDEX ON volunteer_applications (user_id);
+
+-- ── Seed app_settings defaults ───────────────────────────────
+
+INSERT INTO app_settings (key, value) VALUES ('volunteer_applications_open', 'false');
 
 -- ── Enable RLS ───────────────────────────────────────────────
 
-ALTER TABLE profiles        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE students        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE volunteers      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE classes         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE registrations   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE attendance_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE students              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE volunteers            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE classes               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE registrations         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance_logs       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_settings          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE volunteer_applications ENABLE ROW LEVEL SECURITY;
 
--- ── Helper: role check ───────────────────────────────────────
--- auth_user_role() is used throughout policies (defined above).
--- It is SECURITY DEFINER so it bypasses RLS and avoids recursive policy evaluation.
+-- ── Helper: non-recursive role check ─────────────────────────
+-- SECURITY DEFINER bypasses RLS so this function can read profiles
+-- without triggering the policies on that table — avoids infinite recursion.
 
--- ============================================================
--- profiles policies
--- ============================================================
-
--- Helper function: non-recursive role check via security definer
--- Reads the role from profiles without triggering RLS on the profiles table itself.
 CREATE OR REPLACE FUNCTION auth_user_role()
 RETURNS user_role
 LANGUAGE sql
@@ -101,13 +151,14 @@ AS $$
   SELECT role FROM profiles WHERE id = auth.uid();
 $$;
 
--- Admin: full access
+-- ============================================================
+-- profiles policies
+-- ============================================================
 CREATE POLICY "admin_all_profiles" ON profiles
     FOR ALL
     USING (auth_user_role() = 'admin')
     WITH CHECK (auth_user_role() = 'admin');
 
--- Volunteer / Parent: read & update own row only
 CREATE POLICY "self_select_profile" ON profiles
     FOR SELECT
     USING (id = auth.uid());
@@ -117,7 +168,6 @@ CREATE POLICY "self_update_profile" ON profiles
     USING (id = auth.uid())
     WITH CHECK (id = auth.uid());
 
--- Allow new users to insert their own profile on sign-up
 CREATE POLICY "self_insert_profile" ON profiles
     FOR INSERT
     WITH CHECK (id = auth.uid());
@@ -126,19 +176,16 @@ CREATE POLICY "self_insert_profile" ON profiles
 -- students policies
 -- ============================================================
 
--- Admin: full access
 CREATE POLICY "admin_all_students" ON students
     FOR ALL
     USING (auth_user_role() = 'admin')
     WITH CHECK (auth_user_role() = 'admin');
 
--- Parent: full access to their own students
 CREATE POLICY "parent_own_students" ON students
     FOR ALL
     USING (parent_id = auth.uid())
     WITH CHECK (parent_id = auth.uid());
 
--- Volunteer: read students enrolled in their assigned class
 CREATE POLICY "volunteer_read_students" ON students
     FOR SELECT
     USING (
@@ -155,13 +202,11 @@ CREATE POLICY "volunteer_read_students" ON students
 -- volunteers policies
 -- ============================================================
 
--- Admin: full access
 CREATE POLICY "admin_all_volunteers" ON volunteers
     FOR ALL
     USING (auth_user_role() = 'admin')
     WITH CHECK (auth_user_role() = 'admin');
 
--- Volunteer: read & update own record
 CREATE POLICY "volunteer_select_self" ON volunteers
     FOR SELECT
     USING (id = auth.uid());
@@ -179,18 +224,15 @@ CREATE POLICY "volunteer_insert_self" ON volunteers
 -- classes policies
 -- ============================================================
 
--- Admin: full access
 CREATE POLICY "admin_all_classes" ON classes
     FOR ALL
     USING (auth_user_role() = 'admin')
     WITH CHECK (auth_user_role() = 'admin');
 
--- Volunteer: read classes they are assigned to
 CREATE POLICY "volunteer_read_assigned_classes" ON classes
     FOR SELECT
     USING (lead_id = auth.uid() OR support_id = auth.uid());
 
--- Parent: read all classes (needed to browse & register)
 CREATE POLICY "parent_read_classes" ON classes
     FOR SELECT
     USING (auth_user_role() = 'parent');
@@ -199,13 +241,11 @@ CREATE POLICY "parent_read_classes" ON classes
 -- registrations policies
 -- ============================================================
 
--- Admin: full access
 CREATE POLICY "admin_all_registrations" ON registrations
     FOR ALL
     USING (auth_user_role() = 'admin')
     WITH CHECK (auth_user_role() = 'admin');
 
--- Parent: manage registrations for their own students
 CREATE POLICY "parent_own_registrations" ON registrations
     FOR ALL
     USING (
@@ -215,7 +255,6 @@ CREATE POLICY "parent_own_registrations" ON registrations
         EXISTS (SELECT 1 FROM students s WHERE s.id = student_id AND s.parent_id = auth.uid())
     );
 
--- Volunteer: read registrations for their assigned classes
 CREATE POLICY "volunteer_read_registrations" ON registrations
     FOR SELECT
     USING (
@@ -230,13 +269,11 @@ CREATE POLICY "volunteer_read_registrations" ON registrations
 -- attendance_logs policies
 -- ============================================================
 
--- Admin: full access
 CREATE POLICY "admin_all_attendance" ON attendance_logs
     FOR ALL
     USING (auth_user_role() = 'admin')
     WITH CHECK (auth_user_role() = 'admin');
 
--- Volunteer: insert & read logs for students in their assigned classes
 CREATE POLICY "volunteer_insert_attendance" ON attendance_logs
     FOR INSERT
     WITH CHECK (
@@ -257,7 +294,6 @@ CREATE POLICY "volunteer_read_attendance" ON attendance_logs
         )
     );
 
--- Parent: read attendance logs for their own students
 CREATE POLICY "parent_read_attendance" ON attendance_logs
     FOR SELECT
     USING (
@@ -266,3 +302,34 @@ CREATE POLICY "parent_read_attendance" ON attendance_logs
             WHERE s.id = student_id AND s.parent_id = auth.uid()
         )
     );
+
+-- ============================================================
+-- app_settings policies
+-- ============================================================
+
+-- Anyone (including unauthenticated) can read settings (e.g. is form open?)
+CREATE POLICY "public_read_settings" ON app_settings
+    FOR SELECT USING (true);
+
+CREATE POLICY "admin_write_settings" ON app_settings
+    FOR ALL
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
+
+-- ============================================================
+-- volunteer_applications policies
+-- ============================================================
+
+-- Anyone can submit an application (public form, no login required)
+CREATE POLICY "public_insert_application" ON volunteer_applications
+    FOR INSERT WITH CHECK (true);
+
+-- Applicant can read their own application once logged in
+CREATE POLICY "self_read_application" ON volunteer_applications
+    FOR SELECT
+    USING (user_id = auth.uid());
+
+CREATE POLICY "admin_all_applications" ON volunteer_applications
+    FOR ALL
+    USING (auth_user_role() = 'admin')
+    WITH CHECK (auth_user_role() = 'admin');
