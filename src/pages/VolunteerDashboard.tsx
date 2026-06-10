@@ -1,11 +1,105 @@
 import { useState } from 'react'
-import { Users, CheckCheck, Clock } from 'lucide-react'
+import { Users, CheckCheck, Clock, CalendarDays } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAssignedClass } from '../hooks/useAssignedClass'
 import { useAttendance } from '../hooks/useAttendance'
+import { useDutySlots } from '../hooks/useDutyRoles'
 import AttendanceRow from '../components/AttendanceRow'
 import type { AssignedSection } from '../hooks/useAssignedClass'
 import type { AttendanceAction } from '../types/database'
+
+function DutyPanel({ userId }: { userId: string }) {
+  const { slots, loading, claimSlot, unclaimSlot } = useDutySlots()
+  const [busySlotId, setBusySlotId] = useState<string | null>(null)
+
+  const today = new Date().toISOString().split('T')[0]
+  const upcoming = slots.filter(s => s.slot_date >= today)
+
+  const grouped = upcoming.reduce<Record<string, typeof slots>>((acc, s) => {
+    acc[s.slot_date] = acc[s.slot_date] ?? []
+    acc[s.slot_date].push(s)
+    return acc
+  }, {})
+
+  async function handleClaim(slotId: string) {
+    setBusySlotId(slotId)
+    try { await claimSlot(slotId, userId) } finally { setBusySlotId(null) }
+  }
+
+  async function handleUnclaim(slotId: string) {
+    setBusySlotId(slotId)
+    try { await unclaimSlot(slotId, userId) } finally { setBusySlotId(null) }
+  }
+
+  if (loading) return (
+    <div className="space-y-2">
+      {[1, 2].map(i => <div key={i} className="h-12 bg-surface border border-border rounded-[14px] animate-pulse" />)}
+    </div>
+  )
+
+  if (upcoming.length === 0) return (
+    <div className="bg-surface border border-border rounded-xl p-6 text-center">
+      <CalendarDays size={20} className="text-ink-muted mx-auto mb-2" />
+      <p className="font-sans text-sm text-ink-muted">No upcoming duty slots.</p>
+    </div>
+  )
+
+  return (
+    <div className="space-y-4">
+      {Object.entries(grouped)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, daySlots]) => (
+          <div key={date}>
+            <p className="font-sans font-semibold text-sm text-ink-muted mb-1.5">
+              {new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </p>
+            <div className="bg-surface border border-border rounded-xl overflow-hidden">
+              {daySlots.map((slot, idx) => {
+                const myClaim = slot.assignments?.find((a: any) => a.volunteer_id === userId)
+                const isFull = slot.assigned_count >= slot.capacity && !myClaim
+                return (
+                  <div
+                    key={slot.id}
+                    className={`flex items-center justify-between px-4 py-3 ${idx < daySlots.length - 1 ? 'border-b border-border' : ''}`}
+                  >
+                    <div>
+                      <p className="font-sans font-semibold text-sm text-ink">{slot.duty_type?.name ?? '—'}</p>
+                      <p className="font-sans text-xs text-ink-muted">{slot.assigned_count}/{slot.capacity} filled</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {myClaim && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-success-soft text-success">Signed up</span>
+                      )}
+                      {!myClaim && isFull && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface-sunken text-ink-muted">Full</span>
+                      )}
+                      {myClaim ? (
+                        <button
+                          onClick={() => handleUnclaim(slot.id)}
+                          disabled={busySlotId === slot.id}
+                          className="h-8 px-3 text-xs font-semibold font-sans text-ink-muted bg-surface border border-border-strong rounded-[8px] hover:bg-danger-soft hover:text-danger transition disabled:opacity-50"
+                        >
+                          {busySlotId === slot.id ? '…' : 'Cancel'}
+                        </button>
+                      ) : !isFull ? (
+                        <button
+                          onClick={() => handleClaim(slot.id)}
+                          disabled={busySlotId === slot.id}
+                          className="h-8 px-3 text-xs font-semibold font-sans bg-brand text-brand-on rounded-[8px] hover:bg-brand-hover transition disabled:opacity-50"
+                        >
+                          {busySlotId === slot.id ? '…' : 'Sign up'}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+    </div>
+  )
+}
 
 function SectionPanel({ section }: { section: AssignedSection }) {
   const { getStatus, logAction, loading: attendanceLoading } = useAttendance(section.id)
@@ -100,7 +194,7 @@ function SectionPanel({ section }: { section: AssignedSection }) {
 }
 
 export default function VolunteerDashboard() {
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, user } = useAuth()
   const { assignedSections, isAccepted, loading } = useAssignedClass()
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
@@ -155,13 +249,19 @@ export default function VolunteerDashboard() {
           </div>
         ) : assignedSections.length === 0 ? (
           /* Accepted but not yet assigned to any section */
-          <div className="bg-surface border border-border rounded-xl shadow-sm p-10 text-center">
-            <div className="w-14 h-14 rounded-full bg-role-volunteer-soft flex items-center justify-center mx-auto mb-4">
-              <Users size={24} className="text-role-volunteer" />
+          <>
+            <div className="bg-surface border border-border rounded-xl shadow-sm p-10 text-center">
+              <div className="w-14 h-14 rounded-full bg-role-volunteer-soft flex items-center justify-center mx-auto mb-4">
+                <Users size={24} className="text-role-volunteer" />
+              </div>
+              <h2 className="font-sans font-semibold text-xl text-ink mb-2">No section assigned yet</h2>
+              <p className="font-sans text-ink-muted text-base">An admin will assign you to a section before camp starts.</p>
             </div>
-            <h2 className="font-sans font-semibold text-xl text-ink mb-2">No section assigned yet</h2>
-            <p className="font-sans text-ink-muted text-base">An admin will assign you to a section before camp starts.</p>
-          </div>
+            <div className="space-y-3">
+              <h2 className="font-sans font-bold text-xl text-ink">Duty schedule</h2>
+              <DutyPanel userId={user!.id} />
+            </div>
+          </>
         ) : (
           <>
             <div className="flex items-center justify-between">
@@ -172,6 +272,10 @@ export default function VolunteerDashboard() {
               {assignedSections.map(sec => (
                 <SectionPanel key={sec.id} section={sec} />
               ))}
+            </div>
+            <div className="space-y-3">
+              <h2 className="font-sans font-bold text-xl text-ink">Duty schedule</h2>
+              <DutyPanel userId={user!.id} />
             </div>
           </>
         )}

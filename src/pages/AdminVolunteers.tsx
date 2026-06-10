@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Wand2, Check, X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight } from 'lucide-react'
+import { ArrowLeft, Wand2, Check, X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Download } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useVolunteers } from '../hooks/useVolunteers'
 import { useAdminClasses } from '../hooks/useAdminClasses'
@@ -9,6 +9,91 @@ import { matchVolunteers, type AssignmentPair } from '../lib/volunteerMatcher'
 import DataTable from '../components/DataTable'
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
 import type { VolunteerApplication, ExperienceLevel } from '../types/database'
+
+function exportVolunteerCSV(
+  volunteers: import('../hooks/useVolunteers').VolunteerWithProfile[],
+  classes: import('../hooks/useAdminClasses').ClassWithSections[]
+) {
+  const headers = ['Name', 'Experience Level', 'Week 1', 'Week 2', 'Assigned Class', 'Section', 'Role', 'Interview Notes']
+  const rows: string[][] = []
+
+  const allSections = classes.flatMap(c => c.sections.map(s => ({ ...s, className: c.name })))
+
+  for (const v of volunteers) {
+    const leadSections = allSections.filter(s => s.lead_id === v.id)
+    const supportSections = allSections.filter(s => s.support_id === v.id)
+
+    const assignments = [
+      ...leadSections.map(s => ({ className: s.className, label: s.label, role: 'lead' })),
+      ...supportSections.map(s => ({ className: s.className, label: s.label, role: 'support' })),
+    ]
+
+    if (assignments.length === 0) {
+      rows.push([
+        v.profiles.display_name,
+        v.experience_level,
+        v.availability_week_1 ? 'Yes' : 'No',
+        v.availability_week_2 ? 'Yes' : 'No',
+        '', '', '', v.interview_notes ?? '',
+      ])
+    } else {
+      for (const a of assignments) {
+        rows.push([
+          v.profiles.display_name,
+          v.experience_level,
+          v.availability_week_1 ? 'Yes' : 'No',
+          v.availability_week_2 ? 'Yes' : 'No',
+          a.className,
+          a.label,
+          a.role,
+          v.interview_notes ?? '',
+        ])
+      }
+    }
+  }
+
+  const csv = [headers, ...rows]
+    .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `volunteers-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportApplicationsCSV(apps: import('../types/database').VolunteerApplication[]) {
+  const headers = [
+    'Name', 'Email', 'Phone', 'Age', 'Grade', 'School', 'Shirt Size',
+    'Week 1', 'Week 2', 'Status', '1st Choice', '2nd Choice', 'CS Languages', 'Interview Notes'
+  ]
+  const rows = apps.map(a => [
+    `${a.first_name} ${a.last_name}`,
+    a.email, a.phone, String(a.age), a.grade, a.school, a.shirt_size,
+    a.availability_week_1 ? 'Yes' : 'No',
+    a.availability_week_2 ? 'Yes' : 'No',
+    a.status,
+    a.course_first_choice,
+    a.course_second_choice,
+    a.cs_languages.join('; '),
+    a.admin_notes ?? '',
+  ])
+
+  const csv = [headers, ...rows]
+    .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `volunteer-applications-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 type Tab = 'roster' | 'applications'
 type AppFilter = 'all' | 'pending' | 'accepted' | 'rejected'
@@ -407,7 +492,15 @@ export default function AdminVolunteers() {
         {tab === 'roster' && (
           <div className="space-y-10">
             <section className="space-y-4">
-              <h1 className="font-sans font-bold text-2xl text-ink">Volunteer roster</h1>
+              <div className="flex items-center justify-between">
+                <h1 className="font-sans font-bold text-2xl text-ink">Volunteer roster</h1>
+                <button
+                  onClick={() => exportVolunteerCSV(volunteers, classes)}
+                  className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
+                >
+                  <Download size={15} /> Export CSV
+                </button>
+              </div>
               <DataTable
                 columns={volunteerColumns}
                 rows={volunteers}
@@ -504,23 +597,30 @@ export default function AdminVolunteers() {
         {/* ── Applications tab ── */}
         {tab === 'applications' && (
           <div className="space-y-5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <h1 className="font-sans font-bold text-2xl text-ink">Volunteer applications</h1>
 
-              {/* Open / Close toggle */}
-              <button
-                onClick={() => updateSetting('volunteer_applications_open', applicationsOpen ? 'false' : 'true')}
-                disabled={settingsLoading}
-                className={`flex items-center gap-2 h-10 px-4 rounded-[10px] font-sans font-semibold text-sm border transition disabled:opacity-50 ${
-                  applicationsOpen
-                    ? 'bg-success-soft text-success border-success/30 hover:bg-success/10'
-                    : 'bg-surface border-border-strong text-ink-muted hover:bg-surface-sunken'
-                }`}
-              >
-                {applicationsOpen
-                  ? <><ToggleRight size={18} /> Applications open</>
-                  : <><ToggleLeft size={18} /> Applications closed</>}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => exportApplicationsCSV(applications)}
+                  className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
+                >
+                  <Download size={15} /> Export CSV
+                </button>
+                <button
+                  onClick={() => updateSetting('volunteer_applications_open', applicationsOpen ? 'false' : 'true')}
+                  disabled={settingsLoading}
+                  className={`flex items-center gap-2 h-10 px-4 rounded-[10px] font-sans font-semibold text-sm border transition disabled:opacity-50 ${
+                    applicationsOpen
+                      ? 'bg-success-soft text-success border-success/30 hover:bg-success/10'
+                      : 'bg-surface border-border-strong text-ink-muted hover:bg-surface-sunken'
+                  }`}
+                >
+                  {applicationsOpen
+                    ? <><ToggleRight size={18} /> Applications open</>
+                    : <><ToggleLeft size={18} /> Applications closed</>}
+                </button>
+              </div>
             </div>
 
             {applicationsOpen && (

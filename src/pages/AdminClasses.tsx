@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminClasses, type ClassWithSections, type SectionWithCrew } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
+import { supabase } from '../lib/supabase'
 import type { Section } from '../types/database'
 
 // ── Class editor modal ────────────────────────────────────────
@@ -299,6 +300,122 @@ function SectionModal({ classId, className, initial, title, leadOptions, onSave,
   )
 }
 
+// ── Section roster modal ─────────────────────────────────────
+
+interface RosterEntry {
+  studentName: string
+  studentAge: number
+  medicalInfo: string | null
+  parentName: string
+  status: string
+}
+
+function SectionRosterModal({
+  sectionId,
+  sectionLabel,
+  className,
+  onClose,
+}: {
+  sectionId: string
+  sectionLabel: string
+  className: string
+  onClose: () => void
+}) {
+  const [roster, setRoster] = useState<RosterEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase
+      .from('registrations')
+      .select(`
+        status,
+        students (
+          full_name, age, medical_info,
+          profiles:parent_id ( display_name )
+        )
+      `)
+      .eq('section_id', sectionId)
+      .then(({ data }) => {
+        setRoster(
+          (data ?? []).map((r: any) => ({
+            studentName: r.students?.full_name ?? '—',
+            studentAge: r.students?.age ?? 0,
+            medicalInfo: r.students?.medical_info ?? null,
+            parentName: r.students?.profiles?.display_name ?? '—',
+            status: r.status,
+          }))
+        )
+        setLoading(false)
+      })
+  }, [sectionId])
+
+  const STATUS_BADGE: Record<string, string> = {
+    confirmed:  'bg-success-soft text-success',
+    pending:    'bg-warning-soft text-warning',
+    waitlisted: 'bg-surface-sunken text-ink-muted border border-border-strong',
+    cancelled:  'bg-danger-soft text-danger',
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-surface border border-border rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <div>
+            <h2 className="font-sans font-bold text-lg text-ink">{sectionLabel} — Roster</h2>
+            <p className="font-sans text-xs text-ink-muted">{className}</p>
+          </div>
+          <button onClick={onClose} className="text-ink-muted hover:text-ink transition"><X size={20} /></button>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {loading ? (
+            <div className="p-6 space-y-2">
+              {[1, 2, 3].map(i => <div key={i} className="h-10 bg-surface-sunken rounded-[8px] animate-pulse" />)}
+            </div>
+          ) : roster.length === 0 ? (
+            <div className="p-10 text-center">
+              <p className="font-sans text-ink-muted text-sm">No students enrolled in this section.</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-surface-sunken/40">
+                  <th className="px-5 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Student</th>
+                  <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Age</th>
+                  <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Parent</th>
+                  <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roster.map((r, i) => (
+                  <tr key={i} className={i < roster.length - 1 ? 'border-b border-border' : ''}>
+                    <td className="px-5 py-3 font-sans text-sm font-semibold text-ink">
+                      {r.studentName}
+                      {r.medicalInfo && (
+                        <span className="ml-1.5 text-xs font-normal text-danger" title={r.medicalInfo}>⚕</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-sans text-sm text-ink">{r.studentAge}</td>
+                    <td className="px-4 py-3 font-sans text-sm text-ink-muted">{r.parentName}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_BADGE[r.status] ?? ''}`}>
+                        {r.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <div className="px-5 py-2.5 border-t border-border bg-surface-sunken/20 shrink-0">
+          <p className="font-sans text-xs text-ink-muted">{roster.length} student{roster.length !== 1 ? 's' : ''} enrolled</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────
 
 export default function AdminClasses() {
@@ -312,15 +429,17 @@ export default function AdminClasses() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null)
 
-  // Class modal state
   const [classModal, setClassModal] = useState<null | { mode: 'create' | 'edit'; cls?: ClassWithSections }>(null)
-
-  // Section modal state
   const [sectionModal, setSectionModal] = useState<null | {
     mode: 'create' | 'edit'
     classId: string
     className: string
     section?: SectionWithCrew
+  }>(null)
+  const [rosterModal, setRosterModal] = useState<null | {
+    sectionId: string
+    sectionLabel: string
+    className: string
   }>(null)
 
   async function handleDeleteClass(id: string) {
@@ -432,6 +551,7 @@ export default function AdminClasses() {
                                 section={sec}
                                 onEdit={() => setSectionModal({ mode: 'edit', classId: cls.id, className: cls.name, section: sec })}
                                 onDelete={() => handleDeleteSection(sec.id)}
+                                onRoster={() => setRosterModal({ sectionId: sec.id, sectionLabel: sec.label, className: cls.name })}
                                 deleting={deletingSectionId === sec.id}
                               />
                             ))}
@@ -477,6 +597,16 @@ export default function AdminClasses() {
         />
       )}
 
+      {/* Roster modal */}
+      {rosterModal && (
+        <SectionRosterModal
+          sectionId={rosterModal.sectionId}
+          sectionLabel={rosterModal.sectionLabel}
+          className={rosterModal.className}
+          onClose={() => setRosterModal(null)}
+        />
+      )}
+
       {/* Section editor modal */}
       {sectionModal && (
         <SectionModal
@@ -514,11 +644,13 @@ function SectionRow({
   section,
   onEdit,
   onDelete,
+  onRoster,
   deleting,
 }: {
   section: SectionWithCrew
   onEdit: () => void
   onDelete: () => void
+  onRoster: () => void
   deleting: boolean
 }) {
   return (
@@ -566,6 +698,9 @@ function SectionRow({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        <button onClick={onRoster} title="View roster" className="p-1.5 text-ink-muted hover:text-brand hover:bg-brand-soft rounded-[6px] transition">
+          <Users size={14} />
+        </button>
         <button onClick={onEdit} className="p-1.5 text-ink-muted hover:text-ink hover:bg-surface rounded-[6px] transition">
           <Pencil size={14} />
         </button>

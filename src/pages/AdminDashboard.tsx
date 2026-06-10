@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ShieldCheck, GraduationCap, Users, ClipboardList, List } from 'lucide-react'
+import { ShieldCheck, GraduationCap, Users, ClipboardList, List, CalendarDays, Shield, Settings2, Mic } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAdminStats } from '../hooks/useAdminStats'
 import StatCard from '../components/StatCard'
@@ -54,30 +54,84 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick links */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            to="/admin/classes"
-            className="group bg-surface border border-border rounded-xl shadow-sm p-6 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition"
-          >
-            <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
-              <ClipboardList size={22} className="text-warning" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link to="/admin/classes" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
+              <ClipboardList size={20} className="text-warning" />
             </div>
             <div>
-              <h2 className="font-sans font-semibold text-base text-ink group-hover:text-ink mb-0.5">Manage classes</h2>
-              <p className="font-sans text-sm text-ink-muted">Create, edit, and delete classes. Set capacity.</p>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Classes</h2>
+              <p className="font-sans text-xs text-ink-muted">Create, edit, set capacity.</p>
             </div>
           </Link>
 
-          <Link
-            to="/admin/volunteers"
-            className="group bg-surface border border-border rounded-xl shadow-sm p-6 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition"
-          >
-            <div className="w-12 h-12 rounded-full bg-role-volunteer-soft flex items-center justify-center shrink-0">
-              <Users size={22} className="text-role-volunteer" />
+          <Link to="/admin/volunteers" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-role-volunteer-soft flex items-center justify-center shrink-0">
+              <Users size={20} className="text-role-volunteer" />
             </div>
             <div>
-              <h2 className="font-sans font-semibold text-base text-ink group-hover:text-ink mb-0.5">Volunteers</h2>
-              <p className="font-sans text-sm text-ink-muted">View roster and auto-assign to classes by week.</p>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Volunteers</h2>
+              <p className="font-sans text-xs text-ink-muted">Roster, assignments, applications.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/students" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-success-soft flex items-center justify-center shrink-0">
+              <GraduationCap size={20} className="text-success" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Students</h2>
+              <p className="font-sans text-xs text-ink-muted">Manage registrations and rosters.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/users" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-role-admin-soft flex items-center justify-center shrink-0">
+              <Shield size={20} className="text-role-admin" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Users &amp; roles</h2>
+              <p className="font-sans text-xs text-ink-muted">Promote, demote, manage accounts.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/sessions" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-info-soft flex items-center justify-center shrink-0">
+              <CalendarDays size={20} className="text-info" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Sessions</h2>
+              <p className="font-sans text-xs text-ink-muted">Manage camp sessions and dates.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/duties" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-warning-soft flex items-center justify-center shrink-0">
+              <List size={20} className="text-warning" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Duty schedule</h2>
+              <p className="font-sans text-xs text-ink-muted">Daily volunteer duty slots.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/interviews" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-role-volunteer-soft flex items-center justify-center shrink-0">
+              <Mic size={20} className="text-role-volunteer" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Interviews</h2>
+              <p className="font-sans text-xs text-ink-muted">Schedule and record notes.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/forms" className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition">
+            <div className="w-11 h-11 rounded-full bg-surface-sunken flex items-center justify-center shrink-0">
+              <Settings2 size={20} className="text-ink-muted" />
+            </div>
+            <div>
+              <h2 className="font-sans font-semibold text-sm text-ink mb-0.5">Form editor</h2>
+              <p className="font-sans text-xs text-ink-muted">Configure fields and labels.</p>
             </div>
           </Link>
         </div>

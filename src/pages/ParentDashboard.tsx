@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, Plus, GraduationCap } from 'lucide-react'
+import { Heart, Plus, GraduationCap, ClipboardList } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
@@ -54,6 +54,13 @@ export default function ParentDashboard() {
             >
               <GraduationCap size={16} />
               Browse classes
+            </Link>
+            <Link
+              to="/parent/register"
+              className="h-11 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition shadow-sm"
+            >
+              <ClipboardList size={16} />
+              Register camper
             </Link>
             <button
               onClick={() => setShowAddForm(true)}

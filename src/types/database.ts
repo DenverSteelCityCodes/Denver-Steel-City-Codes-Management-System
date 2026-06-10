@@ -64,6 +64,65 @@ export interface AttendanceLog {
   timestamp: string
 }
 
+export interface Session {
+  id: string
+  name: string
+  year: number
+  start_date: string
+  end_date: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface DutyType {
+  id: string
+  name: string
+  description: string | null
+  created_at: string
+}
+
+export interface DutySlot {
+  id: string
+  duty_type_id: string
+  session_id: string | null
+  slot_date: string
+  capacity: number
+  created_at: string
+}
+
+export interface DutyAssignment {
+  id: string
+  duty_slot_id: string
+  volunteer_id: string
+  created_at: string
+}
+
+export interface InterviewSlot {
+  id: string
+  slot_datetime: string
+  duration_minutes: number
+  notes: string | null
+  created_at: string
+}
+
+export interface InterviewBooking {
+  id: string
+  slot_id: string
+  application_id: string
+  admin_notes: string | null
+  created_at: string
+}
+
+export interface FormConfig {
+  id: string
+  form_key: string
+  config: {
+    enabled: boolean
+    fields: Record<string, { visible?: boolean; required?: boolean; label?: string }>
+  }
+  updated_at: string
+}
+
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected'
 
 export interface VolunteerApplication {
