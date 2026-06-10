@@ -28,6 +28,9 @@
   --role-admin-soft: #FCEFC4;     --role-admin: #8A6D12;
   --role-volunteer-soft: #CEDDE8; --role-volunteer: #2D5E83;
   --role-parent-soft: #DBBFDD;    --role-parent: #6B4B72;
+  /* ink ramp */
+  --ink-950: #1A1613; --ink-900: #262019; --ink-700: #4A4138; --ink-500: #7A6E60;
+  --ink-400: #9C8F7E; --ink-300: #CFC6B8; --ink-200: #E6DFD3; --ink-100: #F2ECE2; --ink-50: #FAF6EF;
   /* shape / shadow / motion */
   --radius: 0.625rem;
   --shadow-sm: 0 1px 2px rgba(38,32,25,.06), 0 1px 3px rgba(38,32,25,.05);
@@ -58,9 +61,55 @@
   --role-admin-soft: #3A2F12;     --role-admin: #F1C446;
   --role-volunteer-soft: #16293A; --role-volunteer: #9CCBEC;
   --role-parent-soft: #2E2233;    --role-parent: #D6B6DC;
+  --ink-950: #1A1613; --ink-900: #1E1A16; --ink-700: #3D3529; --ink-500: #6B6055;
+  --ink-400: #8A7E6E; --ink-300: #B9AD9C; --ink-200: #CFC6B8; --ink-100: #E6DFD3; --ink-50: #F2ECE2;
   --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,.45);
   --shadow-lg: 0 12px 32px rgba(0,0,0,.55);
+}
+
+/* ── Tailwind v4: map CSS variables → utility classes ────── */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-raised: var(--surface-raised);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-950: var(--ink-950);
+  --color-ink-900: var(--ink-900);
+  --color-ink-700: var(--ink-700);
+  --color-ink-500: var(--ink-500);
+  --color-ink-400: var(--ink-400);
+  --color-ink-300: var(--ink-300);
+  --color-ink-200: var(--ink-200);
+  --color-ink-100: var(--ink-100);
+  --color-ink-50:  var(--ink-50);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-on: var(--on-brand);
+
+  --color-success: var(--success);        --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);        --color-warning-soft: var(--warning-soft);
+  --color-danger:  var(--danger);         --color-danger-soft:  var(--danger-soft);
+  --color-info:    var(--info);           --color-info-soft:    var(--info-soft);
+
+  --color-role-admin:          var(--role-admin);          --color-role-admin-soft:     var(--role-admin-soft);
+  --color-role-volunteer:      var(--role-volunteer);      --color-role-volunteer-soft: var(--role-volunteer-soft);
+  --color-role-parent:         var(--role-parent);         --color-role-parent-soft:    var(--role-parent-soft);
+
+  --radius: 0.625rem;
+  --font-sans: "Josefin Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-slab: "Josefin Slab", Georgia, serif;
+
+  --ease-brand: var(--ease);
 }
 
 /* ── Base ────────────────────────────────────────────────── */
