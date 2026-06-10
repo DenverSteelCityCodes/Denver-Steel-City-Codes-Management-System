@@ -195,14 +195,24 @@ export default function VolunteerApplyPage() {
     setError(null)
     setSubmitting(true)
 
+    // Profile is created server-side by handle_new_user trigger with role: 'volunteer'
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: { data: { display_name: `${form.firstName} ${form.lastName}` } },
+      options: { data: { display_name: `${form.firstName} ${form.lastName}`, role: 'volunteer' } },
     })
 
     if (signUpError) {
       setError(signUpError.message)
+      setSubmitting(false)
+      return
+    }
+
+    // When email confirmations are enabled, Supabase silently "succeeds" for
+    // already-registered emails but returns identities: []. Catch this before
+    // attempting the insert to avoid a raw 409 conflict.
+    if (authData.user?.identities?.length === 0) {
+      setError('An application has already been submitted with this email address. Check your inbox for a confirmation link.')
       setSubmitting(false)
       return
     }
@@ -241,7 +251,12 @@ export default function VolunteerApplyPage() {
     })
 
     if (insertError) {
-      setError('Something went wrong saving your application. Please try again.')
+      const isDuplicate = insertError.code === '23505' || insertError.message?.includes('duplicate')
+      setError(
+        isDuplicate
+          ? 'An application with this email has already been submitted.'
+          : 'Something went wrong saving your application. Please try again.'
+      )
       setSubmitting(false)
       return
     }
