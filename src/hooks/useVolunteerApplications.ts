@@ -18,14 +18,28 @@ export function useVolunteerApplications() {
   useEffect(() => { fetchApplications() }, [])
 
   async function acceptApplication(app: VolunteerApplication, expLevel: ExperienceLevel) {
-    if (!app.user_id) throw new Error('No linked account — applicant must confirm their email first')
-
-    await supabase
+    // Always mark the application accepted first
+    const { error: statusError } = await supabase
       .from('volunteer_applications')
       .update({ status: 'accepted' })
       .eq('id', app.id)
+    if (statusError) throw new Error(statusError.message)
 
-    // Upsert profile: creates it if not yet confirmed email, upgrades role if it exists
+    setApplications(prev =>
+      prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a)
+    )
+
+    if (!app.user_id) {
+      // Applicant's email may already have an account or they haven't confirmed yet.
+      // Application is marked accepted; their profile will carry role: 'volunteer' from
+      // signup metadata. The volunteers row will be created when they sign in.
+      throw new Error(
+        'Application accepted, but no linked account found. ' +
+        'Ask the applicant to confirm their email and sign in — then re-accept to create the volunteers row.'
+      )
+    }
+
+    // Upgrade role to volunteer (handles pre-migration accounts that were auto-created as parent)
     await supabase.from('profiles').upsert({
       id: app.user_id,
       display_name: `${app.first_name} ${app.last_name}`,
@@ -38,10 +52,6 @@ export function useVolunteerApplications() {
       availability_week_1: app.availability_week_1,
       availability_week_2: app.availability_week_2,
     })
-
-    setApplications(prev =>
-      prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a)
-    )
   }
 
   async function rejectApplication(appId: string, notes?: string) {

@@ -16,26 +16,17 @@ export default function SignupPage() {
     setError(null)
     setLoading(true)
 
-    // Sign up — Supabase sends a confirmation email
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    // Sign up — profile is created server-side by handle_new_user trigger
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName } },
+      options: { data: { display_name: displayName, role: 'parent' } },
     })
 
     if (signUpError) {
       setError(signUpError.message)
       setLoading(false)
       return
-    }
-
-    // Insert the profile row (role defaults to 'parent' per schema)
-    if (data.user) {
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        display_name: displayName,
-        role: 'parent',
-      })
     }
 
     setSuccess(true)
