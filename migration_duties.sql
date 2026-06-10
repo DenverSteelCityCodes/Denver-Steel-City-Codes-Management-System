@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS duty_slots (
 );
 
 CREATE INDEX IF NOT EXISTS duty_slots_session_id_idx ON duty_slots (session_id);
-CREATE INDEX IF NOT EXISTS duty_slots_slot_date_idx ON duty_slots (slot_date);
+CREATE INDEX IF NOT EXISTS duty_slots_slot_date_idx  ON duty_slots (slot_date);
 
 -- ── 3. Duty assignments ───────────────────────────────────────
 
@@ -45,19 +45,27 @@ CREATE INDEX IF NOT EXISTS duty_assignments_volunteer_id_idx ON duty_assignments
 
 -- ── 4. RLS ────────────────────────────────────────────────────
 
-ALTER TABLE duty_types ENABLE ROW LEVEL SECURITY;
-ALTER TABLE duty_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE duty_types       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE duty_slots       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE duty_assignments ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "admin_all_duty_types"       ON duty_types        FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
-CREATE POLICY IF NOT EXISTS "read_duty_types"             ON duty_types        FOR SELECT USING (true);
+DROP POLICY IF EXISTS "admin_all_duty_types"       ON duty_types;
+DROP POLICY IF EXISTS "read_duty_types"             ON duty_types;
+DROP POLICY IF EXISTS "admin_all_duty_slots"        ON duty_slots;
+DROP POLICY IF EXISTS "read_duty_slots"             ON duty_slots;
+DROP POLICY IF EXISTS "admin_all_duty_assignments"  ON duty_assignments;
+DROP POLICY IF EXISTS "read_duty_assignments"       ON duty_assignments;
+DROP POLICY IF EXISTS "volunteer_manage_own_duties" ON duty_assignments;
 
-CREATE POLICY IF NOT EXISTS "admin_all_duty_slots"        ON duty_slots        FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
-CREATE POLICY IF NOT EXISTS "read_duty_slots"             ON duty_slots        FOR SELECT USING (true);
+CREATE POLICY "admin_all_duty_types"      ON duty_types FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
+CREATE POLICY "read_duty_types"            ON duty_types FOR SELECT USING (true);
 
-CREATE POLICY IF NOT EXISTS "admin_all_duty_assignments"  ON duty_assignments  FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
-CREATE POLICY IF NOT EXISTS "read_duty_assignments"       ON duty_assignments  FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "volunteer_manage_own_duties" ON duty_assignments
+CREATE POLICY "admin_all_duty_slots"       ON duty_slots FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
+CREATE POLICY "read_duty_slots"            ON duty_slots FOR SELECT USING (true);
+
+CREATE POLICY "admin_all_duty_assignments" ON duty_assignments FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
+CREATE POLICY "read_duty_assignments"      ON duty_assignments FOR SELECT USING (true);
+CREATE POLICY "volunteer_manage_own_duties" ON duty_assignments
     FOR ALL
     USING (
         EXISTS (SELECT 1 FROM volunteers v WHERE v.id = duty_assignments.volunteer_id AND v.id = auth.uid())

@@ -37,9 +37,12 @@ WHERE week = 2 AND session_id IS NULL;
 
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "admin_all_sessions" ON sessions FOR ALL
+DROP POLICY IF EXISTS "admin_all_sessions"      ON sessions;
+DROP POLICY IF EXISTS "all_read_active_sessions" ON sessions;
+
+CREATE POLICY "admin_all_sessions" ON sessions FOR ALL
     USING (auth_user_role() = 'admin')
     WITH CHECK (auth_user_role() = 'admin');
 
-CREATE POLICY IF NOT EXISTS "all_read_active_sessions" ON sessions FOR SELECT
+CREATE POLICY "all_read_active_sessions" ON sessions FOR SELECT
     USING (true);

@@ -20,7 +20,10 @@ ON CONFLICT (form_key) DO NOTHING;
 
 ALTER TABLE form_configs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "admin_all_form_configs" ON form_configs
+DROP POLICY IF EXISTS "admin_all_form_configs" ON form_configs;
+DROP POLICY IF EXISTS "read_form_configs"      ON form_configs;
+
+CREATE POLICY "admin_all_form_configs" ON form_configs
     FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
-CREATE POLICY IF NOT EXISTS "read_form_configs"      ON form_configs
+CREATE POLICY "read_form_configs" ON form_configs
     FOR SELECT USING (true);

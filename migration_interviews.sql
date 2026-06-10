@@ -32,14 +32,19 @@ CREATE INDEX IF NOT EXISTS interview_bookings_application_id_idx ON interview_bo
 ALTER TABLE interview_slots    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE interview_bookings ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "admin_all_interview_slots"    ON interview_slots
+DROP POLICY IF EXISTS "admin_all_interview_slots"    ON interview_slots;
+DROP POLICY IF EXISTS "read_interview_slots"          ON interview_slots;
+DROP POLICY IF EXISTS "admin_all_interview_bookings" ON interview_bookings;
+DROP POLICY IF EXISTS "volunteer_read_own_booking"   ON interview_bookings;
+
+CREATE POLICY "admin_all_interview_slots" ON interview_slots
     FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
-CREATE POLICY IF NOT EXISTS "read_interview_slots"          ON interview_slots
+CREATE POLICY "read_interview_slots" ON interview_slots
     FOR SELECT USING (true);
 
-CREATE POLICY IF NOT EXISTS "admin_all_interview_bookings" ON interview_bookings
+CREATE POLICY "admin_all_interview_bookings" ON interview_bookings
     FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
-CREATE POLICY IF NOT EXISTS "volunteer_read_own_booking"   ON interview_bookings
+CREATE POLICY "volunteer_read_own_booking" ON interview_bookings
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM volunteer_applications va
