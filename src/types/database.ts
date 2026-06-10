@@ -31,8 +31,18 @@ export interface Volunteer {
 export interface Class {
   id: string
   name: string
-  age_group: string
+  description: string | null
+  created_at: string
+}
+
+export interface Section {
+  id: string
+  class_id: string
+  label: string
+  age_min: number
+  age_max: number
   capacity: number
+  week: 1 | 2 | null
   lead_id: string | null
   support_id: string | null
   created_at: string
@@ -41,7 +51,7 @@ export interface Class {
 export interface Registration {
   id: string
   student_id: string
-  class_id: string
+  section_id: string
   status: RegistrationStatus
   created_at: string
 }
@@ -49,7 +59,7 @@ export interface Registration {
 export interface AttendanceLog {
   id: string
   student_id: string
-  class_id: string
+  section_id: string
   action: AttendanceAction
   timestamp: string
 }

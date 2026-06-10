@@ -1,42 +1,49 @@
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
-import type { Class } from '../types/database'
+import type { Section } from '../types/database'
 
 export interface AssignmentPair {
+  sectionId: string
+  sectionLabel: string
   classId: string
-  className: string
-  week: 1 | 2
+  week: 1 | 2 | null
   lead: VolunteerWithProfile | null   // senior
   support: VolunteerWithProfile | null // junior
 }
 
 /**
- * Pairs one senior + one junior volunteer per class per week based on availability.
+ * Pairs one senior + one junior volunteer per section per week based on availability.
  *
- * Rules (per PLAN.md):
- * - Each class gets a lead (senior) and support (junior).
+ * Rules:
+ * - Each section gets a lead (senior) and support (junior).
  * - Matching is done per week — a volunteer can only be assigned once per week.
- * - Unmatched classes get null for missing roles.
- * - Volunteers already assigned to a class (lead_id/support_id set) are excluded
- *   from the pool so the algorithm only fills vacant slots.
+ * - Sections with week=null are skipped when filtering by week; pass week=null to match all.
+ * - Unmatched sections get null for missing roles.
+ * - Volunteers already assigned to a section (lead_id/support_id set) are excluded.
  */
 export function matchVolunteers(
   volunteers: VolunteerWithProfile[],
-  classes: Pick<Class, 'id' | 'name' | 'lead_id' | 'support_id'>[],
-  week: 1 | 2
+  sections: Pick<Section, 'id' | 'class_id' | 'label' | 'week' | 'lead_id' | 'support_id'>[],
+  week: 1 | 2 | null
 ): AssignmentPair[] {
-  const availKey = week === 1 ? 'availability_week_1' : 'availability_week_2'
+  const availKey = week === 1 ? 'availability_week_1' : week === 2 ? 'availability_week_2' : null
 
-  const available = volunteers.filter(v => v[availKey])
+  const available = availKey
+    ? volunteers.filter(v => v[availKey as 'availability_week_1' | 'availability_week_2'])
+    : volunteers
+
   const seniors = available.filter(v => v.experience_level === 'senior')
   const juniors = available.filter(v => v.experience_level === 'junior')
 
   const usedSenior = new Set<string>()
   const usedJunior = new Set<string>()
 
-  return classes.map(cls => {
-    // Only fill vacant slots
-    const needsLead = !cls.lead_id
-    const needsSupport = !cls.support_id
+  const targetSections = week !== null
+    ? sections.filter(s => s.week === week || s.week === null)
+    : sections
+
+  return targetSections.map(sec => {
+    const needsLead = !sec.lead_id
+    const needsSupport = !sec.support_id
 
     const lead = needsLead
       ? seniors.find(s => !usedSenior.has(s.id)) ?? null
@@ -50,6 +57,6 @@ export function matchVolunteers(
 
     if (support) usedJunior.add(support.id)
 
-    return { classId: cls.id, className: cls.name, week, lead, support }
+    return { sectionId: sec.id, sectionLabel: sec.label, classId: sec.class_id, week: sec.week, lead, support }
   })
 }

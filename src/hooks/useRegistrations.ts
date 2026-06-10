@@ -3,13 +3,19 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Registration, RegistrationStatus } from '../types/database'
 
-export interface RegistrationWithClass extends Registration {
-  classes: { name: string; age_group: string; capacity: number }
+export interface RegistrationWithSection extends Registration {
+  sections: {
+    label: string
+    age_min: number
+    age_max: number
+    capacity: number
+    classes: { name: string }
+  }
 }
 
 export function useRegistrations() {
   const { user } = useAuth()
-  const [registrations, setRegistrations] = useState<RegistrationWithClass[]>([])
+  const [registrations, setRegistrations] = useState<RegistrationWithSection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,35 +31,41 @@ export function useRegistrations() {
       .select(`
         *,
         students!inner(parent_id),
-        classes(name, age_group, capacity)
+        sections ( label, age_min, age_max, capacity, classes ( name ) )
       `)
       .eq('students.parent_id', user!.id)
       .order('created_at', { ascending: false })
 
     if (error) setError(error.message)
-    else setRegistrations((data ?? []) as RegistrationWithClass[])
+    else setRegistrations((data ?? []) as RegistrationWithSection[])
     setLoading(false)
   }
 
-  async function registerStudent(studentId: string, classId: string, currentCount: number, capacity: number) {
+  async function registerStudent(studentId: string, sectionId: string, currentCount: number, capacity: number) {
     const status: RegistrationStatus = currentCount >= capacity ? 'waitlisted' : 'pending'
 
     const { data, error } = await supabase
       .from('registrations')
-      .insert({ student_id: studentId, class_id: classId, status })
-      .select(`*, classes(name, age_group, capacity)`)
+      .insert({ student_id: studentId, section_id: sectionId, status })
+      .select(`*, sections ( label, age_min, age_max, capacity, classes ( name ) )`)
       .single()
 
     if (error) throw new Error(error.message)
-    setRegistrations(prev => [data as RegistrationWithClass, ...prev])
-    return data as RegistrationWithClass
+    setRegistrations(prev => [data as RegistrationWithSection, ...prev])
+    return data as RegistrationWithSection
   }
 
-  function isRegistered(studentId: string, classId: string) {
+  function isRegistered(studentId: string, sectionId: string) {
     return registrations.some(
-      r => r.student_id === studentId && r.class_id === classId
+      r => r.student_id === studentId && r.section_id === sectionId
     )
   }
 
-  return { registrations, loading, error, registerStudent, isRegistered, refetch: fetchRegistrations }
+  function getRegistration(studentId: string, sectionId: string) {
+    return registrations.find(
+      r => r.student_id === studentId && r.section_id === sectionId
+    ) ?? null
+  }
+
+  return { registrations, loading, error, registerStudent, isRegistered, getRegistration, refetch: fetchRegistrations }
 }
