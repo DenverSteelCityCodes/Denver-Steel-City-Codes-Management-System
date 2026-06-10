@@ -1,27 +1,108 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Search } from 'lucide-react'
-import { useClasses } from '../hooks/useClasses'
+import { ArrowLeft, Search, Lock, CheckCircle, Clock, List } from 'lucide-react'
+import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
-import ClassCard from '../components/ClassCard'
+import CapacityMeter from '../components/CapacityMeter'
+import type { RegistrationStatus } from '../types/database'
+
+// ── Section card ──────────────────────────────────────────────
+
+interface SectionCardProps {
+  section: SectionWithCount
+  studentName?: string
+  studentAge?: number
+  registrationStatus?: RegistrationStatus
+  onRegister?: () => void
+  registering?: boolean
+}
+
+function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering }: SectionCardProps) {
+  const isEligible = studentAge !== undefined
+    ? studentAge >= section.age_min && studentAge <= section.age_max
+    : true
+
+  const isFull = section.registered_count >= section.capacity
+
+  if (!isEligible) {
+    return (
+      <div className="opacity-70 bg-surface-sunken border border-border rounded-xl p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-sans font-semibold text-sm text-ink truncate">{section.label}</span>
+          {section.week && (
+            <span className="shrink-0 px-2 py-0.5 rounded-full bg-surface text-ink-muted text-xs font-semibold border border-border-strong">W{section.week}</span>
+          )}
+        </div>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface text-ink-muted text-xs font-semibold border border-border-strong w-fit">
+          <Lock size={11} /> Ages {section.age_min}–{section.age_max}
+        </span>
+        {studentName && (
+          <p className="font-sans text-xs text-ink-faint">Not eligible for {studentName} (age {studentAge})</p>
+        )}
+        <CapacityMeter registered={section.registered_count} capacity={section.capacity} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-sans font-semibold text-sm text-ink truncate">{section.label}</span>
+        {section.week && (
+          <span className="shrink-0 px-2 py-0.5 rounded-full bg-brand-soft text-warning text-xs font-semibold border border-brand/20">W{section.week}</span>
+        )}
+      </div>
+
+      {studentName && studentAge !== undefined && (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-soft text-success text-xs font-semibold w-fit">
+          <CheckCircle size={11} /> Ages {section.age_min}–{section.age_max} · {studentName} fits
+        </span>
+      )}
+
+      <CapacityMeter registered={section.registered_count} capacity={section.capacity} />
+
+      {registrationStatus ? (
+        <div className="flex items-center gap-2 text-sm font-sans font-semibold">
+          {registrationStatus === 'confirmed' && <><CheckCircle size={16} className="text-success" /><span className="text-success">Confirmed</span></>}
+          {registrationStatus === 'pending' && <><Clock size={16} className="text-warning" /><span className="text-warning">Pending</span></>}
+          {registrationStatus === 'waitlisted' && <><List size={16} className="text-info" /><span className="text-info">Waitlisted</span></>}
+          {registrationStatus === 'cancelled' && <span className="text-ink-muted">Cancelled</span>}
+          {studentName && <span className="text-ink-muted font-normal">· {studentName}</span>}
+        </div>
+      ) : onRegister ? (
+        <button
+          onClick={onRegister}
+          disabled={registering}
+          className="w-full h-10 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {registering
+            ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
+            : isFull ? 'Join waitlist' : `Register ${studentName ?? 'camper'}`}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────────
 
 export default function ClassBrowser() {
   const navigate = useNavigate()
   const { classes, loading: classesLoading } = useClasses()
   const { students } = useStudents()
-  const { registrations, registerStudent, isRegistered } = useRegistrations()
+  const { registrations, registerStudent, isRegistered, getRegistration } = useRegistrations()
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [search, setSearch] = useState('')
-  const [registeringClassId, setRegisteringClassId] = useState<string | null>(null)
+  const [registeringSectionId, setRegisteringSectionId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null)
 
   const selectedStudent = students.find(s => s.id === selectedStudentId)
 
   const filtered = classes.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.age_group.toLowerCase().includes(search.toLowerCase())
+    (c.description ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
   function showToast(message: string, type: 'success' | 'info') {
@@ -29,11 +110,11 @@ export default function ClassBrowser() {
     setTimeout(() => setToast(null), 4000)
   }
 
-  async function handleRegister(classId: string, currentCount: number, capacity: number) {
+  async function handleRegister(section: SectionWithCount) {
     if (!selectedStudentId) return
-    setRegisteringClassId(classId)
+    setRegisteringSectionId(section.id)
     try {
-      const reg = await registerStudent(selectedStudentId, classId, currentCount, capacity)
+      const reg = await registerStudent(selectedStudentId, section.id, section.registered_count, section.capacity)
       const msg = reg.status === 'waitlisted'
         ? `${selectedStudent?.full_name} added to the waitlist.`
         : `${selectedStudent?.full_name} registered! Pending confirmation.`
@@ -41,7 +122,7 @@ export default function ClassBrowser() {
     } catch {
       showToast('Something went wrong. Please try again.', 'info')
     } finally {
-      setRegisteringClassId(null)
+      setRegisteringSectionId(null)
     }
   }
 
@@ -57,7 +138,6 @@ export default function ClassBrowser() {
       <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Student picker */}
           <select
             value={selectedStudentId}
             onChange={e => setSelectedStudentId(e.target.value)}
@@ -65,32 +145,45 @@ export default function ClassBrowser() {
           >
             <option value="">Select a camper to enroll…</option>
             {students.map(s => (
-              <option key={s.id} value={s.id}>{s.full_name}</option>
+              <option key={s.id} value={s.id}>{s.full_name} (age {s.age})</option>
             ))}
           </select>
 
-          {/* Search */}
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search classes…"
+              placeholder="Search courses…"
               className="w-full h-11 pl-9 pr-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition"
             />
           </div>
         </div>
 
+        {/* Eligibility banner */}
+        {selectedStudent && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-brand-soft text-warning border border-brand/20 rounded-[10px] font-sans text-sm font-semibold">
+            Showing eligibility for {selectedStudent.full_name} (age {selectedStudent.age}) — eligible sections are highlighted in green.
+          </div>
+        )}
+
         {!selectedStudentId && (
-          <p className="text-sm font-sans text-ink-muted bg-warning-soft text-warning px-4 py-3 rounded-[10px]">
-            Select a camper above to register them for a class.
+          <p className="text-sm font-sans font-semibold bg-warning-soft text-warning px-4 py-3 rounded-[10px]">
+            Select a camper above to see eligibility and register.
           </p>
         )}
 
         {classesLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="bg-surface border border-border rounded-xl shadow-sm p-5 animate-pulse h-40" />
+          <div className="space-y-8">
+            {[1, 2].map(i => (
+              <div key={i} className="space-y-3">
+                <div className="h-7 bg-surface border border-border rounded-lg animate-pulse w-48" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map(j => (
+                    <div key={j} className="bg-surface border border-border rounded-xl h-36 animate-pulse" />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -98,27 +191,49 @@ export default function ClassBrowser() {
             <p className="font-sans text-ink-muted">No classes found.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(c => {
-              const existingReg = selectedStudentId
-                ? registrations.find(r => r.student_id === selectedStudentId && r.class_id === c.id)
-                : undefined
+          <div className="space-y-10">
+            {filtered.map(cls => (
+              <div key={cls.id} className="space-y-4">
+                {/* Course header */}
+                <div>
+                  <h2 className="font-slab font-bold text-xl text-ink">{cls.name}</h2>
+                  {cls.description && (
+                    <p className="font-sans text-ink-muted text-sm mt-1">{cls.description}</p>
+                  )}
+                </div>
 
-              return (
-                <ClassCard
-                  key={c.id}
-                  classData={c}
-                  registrationStatus={existingReg?.status}
-                  studentName={selectedStudent?.full_name}
-                  onRegister={
-                    selectedStudentId && !isRegistered(selectedStudentId, c.id)
-                      ? () => handleRegister(c.id, c.registered_count, c.capacity)
-                      : undefined
-                  }
-                  registering={registeringClassId === c.id}
-                />
-              )
-            })}
+                {cls.sections.length === 0 ? (
+                  <p className="font-sans text-sm text-ink-faint">No sections available yet.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {cls.sections.map(sec => {
+                      const existingReg = selectedStudentId
+                        ? getRegistration(selectedStudentId, sec.id)
+                        : null
+                      const alreadyRegistered = selectedStudentId
+                        ? isRegistered(selectedStudentId, sec.id)
+                        : false
+
+                      return (
+                        <SectionCard
+                          key={sec.id}
+                          section={sec}
+                          studentName={selectedStudent?.full_name}
+                          studentAge={selectedStudent?.age}
+                          registrationStatus={existingReg?.status}
+                          onRegister={
+                            selectedStudentId && !alreadyRegistered
+                              ? () => handleRegister(sec)
+                              : undefined
+                          }
+                          registering={registeringSectionId === sec.id}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </main>

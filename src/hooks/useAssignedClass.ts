@@ -9,58 +9,80 @@ export interface AssignedStudent {
   medical_info: string | null
 }
 
-export interface AssignedClass {
+export interface AssignedSection {
   id: string
-  name: string
-  age_group: string
+  label: string
+  age_min: number
+  age_max: number
   capacity: number
+  week: 1 | 2 | null
+  class_id: string
+  class_name: string
   students: AssignedStudent[]
 }
 
 export function useAssignedClass() {
   const { user } = useAuth()
-  const [assignedClass, setAssignedClass] = useState<AssignedClass | null>(null)
+  const [assignedSections, setAssignedSections] = useState<AssignedSection[]>([])
+  const [isAccepted, setIsAccepted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
-    fetchAssignedClass()
+    fetchAssignedSections()
   }, [user])
 
-  async function fetchAssignedClass() {
+  async function fetchAssignedSections() {
     setLoading(true)
 
-    // Find class where this volunteer is lead or support
-    const { data: cls, error: clsError } = await supabase
-      .from('classes')
-      .select('id, name, age_group, capacity')
-      .or(`lead_id.eq.${user!.id},support_id.eq.${user!.id}`)
-      .single()
+    const [sectionsRes, volunteerRes] = await Promise.all([
+      supabase
+        .from('sections')
+        .select(`id, label, age_min, age_max, capacity, week, class_id, classes ( name )`)
+        .or(`lead_id.eq.${user!.id},support_id.eq.${user!.id}`),
+      supabase.from('volunteers').select('id').eq('id', user!.id).maybeSingle(),
+    ])
 
-    if (clsError || !cls) {
-      setAssignedClass(null)
+    setIsAccepted(!!volunteerRes.data)
+
+    if (sectionsRes.error || !sectionsRes.data?.length) {
+      setAssignedSections([])
       setLoading(false)
+      if (sectionsRes.error) setError(sectionsRes.error.message)
       return
     }
 
-    // Fetch enrolled students via registrations
-    const { data: registrations, error: regError } = await supabase
-      .from('registrations')
-      .select('students(id, full_name, age, medical_info)')
-      .eq('class_id', cls.id)
-      .in('status', ['confirmed', 'pending'])
+    const result: AssignedSection[] = await Promise.all(
+      sectionsRes.data.map(async (sec: any) => {
+        const { data: regs } = await supabase
+          .from('registrations')
+          .select('students(id, full_name, age, medical_info)')
+          .eq('section_id', sec.id)
+          .in('status', ['confirmed', 'pending'])
 
-    if (regError) { setError(regError.message); setLoading(false); return }
+        const students: AssignedStudent[] = (regs ?? [])
+          .flatMap((r: { students: AssignedStudent | AssignedStudent[] | null }) =>
+            Array.isArray(r.students) ? r.students : r.students ? [r.students] : []
+          )
 
-    const students: AssignedStudent[] = (registrations ?? [])
-      .flatMap((r: { students: AssignedStudent | AssignedStudent[] | null }) =>
-        Array.isArray(r.students) ? r.students : r.students ? [r.students] : []
-      )
+        return {
+          id: sec.id,
+          label: sec.label,
+          age_min: sec.age_min,
+          age_max: sec.age_max,
+          capacity: sec.capacity,
+          week: sec.week,
+          class_id: sec.class_id,
+          class_name: (sec.classes as { name: string })?.name ?? '',
+          students,
+        }
+      })
+    )
 
-    setAssignedClass({ ...cls, students })
+    setAssignedSections(result)
     setLoading(false)
   }
 
-  return { assignedClass, loading, error, refetch: fetchAssignedClass }
+  return { assignedSections, isAccepted, loading, error, refetch: fetchAssignedSections }
 }

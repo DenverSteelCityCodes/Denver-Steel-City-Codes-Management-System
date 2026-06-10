@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Class } from '../types/database'
+import type { Class, Section } from '../types/database'
 
-export interface ClassWithCount extends Class {
+export interface SectionWithCount extends Section {
   registered_count: number
 }
 
+export interface ClassWithSections extends Class {
+  sections: SectionWithCount[]
+}
+
 export function useClasses() {
-  const [classes, setClasses] = useState<ClassWithCount[]>([])
+  const [classes, setClasses] = useState<ClassWithSections[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -18,14 +22,9 @@ export function useClasses() {
   async function fetchClasses() {
     setLoading(true)
 
-    // Fetch classes and confirmed/pending registration counts in one query
     const { data, error } = await supabase
       .from('classes')
-      .select(`
-        *,
-        registrations(count)
-      `)
-      .in('registrations.status', ['confirmed', 'pending'])
+      .select(`*, sections(*, registrations(count))`)
       .order('name', { ascending: true })
 
     if (error) {
@@ -34,12 +33,15 @@ export function useClasses() {
       return
     }
 
-    const withCounts: ClassWithCount[] = (data ?? []).map((c: Class & { registrations: { count: number }[] }) => ({
+    const shaped: ClassWithSections[] = (data ?? []).map((c: any) => ({
       ...c,
-      registered_count: c.registrations?.[0]?.count ?? 0,
+      sections: (c.sections ?? []).map((s: any) => ({
+        ...s,
+        registered_count: s.registrations?.[0]?.count ?? 0,
+      })),
     }))
 
-    setClasses(withCounts)
+    setClasses(shaped)
     setLoading(false)
   }
 

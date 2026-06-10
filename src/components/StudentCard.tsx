@@ -1,6 +1,6 @@
 import { HeartPulse } from 'lucide-react'
 import type { Student } from '../types/database'
-import type { RegistrationWithClass } from '../hooks/useRegistrations'
+import type { RegistrationWithSection } from '../hooks/useRegistrations'
 
 const STATUS_STYLES = {
   confirmed: 'bg-success-soft text-success',
@@ -11,7 +11,7 @@ const STATUS_STYLES = {
 
 interface Props {
   student: Student
-  registrations: RegistrationWithClass[]
+  registrations: RegistrationWithSection[]
 }
 
 export default function StudentCard({ student, registrations }: Props) {
@@ -49,7 +49,9 @@ export default function StudentCard({ student, registrations }: Props) {
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[reg.status]}`}>
                     {reg.status}
                   </span>
-                  <span className="text-sm font-sans text-ink-muted truncate">{reg.classes.name}</span>
+                  <span className="text-sm font-sans text-ink-muted truncate">
+                    {reg.sections?.classes?.name ?? '—'}{reg.sections?.label ? ` · ${reg.sections.label}` : ''}
+                  </span>
                 </li>
               ))}
             </ul>

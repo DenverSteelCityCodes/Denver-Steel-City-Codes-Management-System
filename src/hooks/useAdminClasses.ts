@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Class } from '../types/database'
+import type { Class, Section } from '../types/database'
 
-export interface ClassWithVolunteers extends Class {
+export interface SectionWithCrew extends Section {
   lead: { display_name: string } | null
   support: { display_name: string } | null
   registered_count: number
 }
 
+export interface ClassWithSections extends Class {
+  sections: SectionWithCrew[]
+  enrolled: number
+  total_capacity: number
+}
+
 export function useAdminClasses() {
-  const [classes, setClasses] = useState<ClassWithVolunteers[]>([])
+  const [classes, setClasses] = useState<ClassWithSections[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,24 +27,37 @@ export function useAdminClasses() {
       .from('classes')
       .select(`
         *,
-        lead:profiles!classes_lead_id_fkey(display_name),
-        support:profiles!classes_support_id_fkey(display_name),
-        registrations(count)
+        sections (
+          *,
+          lead:volunteers!sections_lead_id_fkey ( profile:profiles ( display_name ) ),
+          support:volunteers!sections_support_id_fkey ( profile:profiles ( display_name ) ),
+          registrations(count)
+        )
       `)
       .order('name', { ascending: true })
 
     if (error) { setError(error.message); setLoading(false); return }
 
-    const withCounts = (data ?? []).map((c: ClassWithVolunteers & { registrations: { count: number }[] }) => ({
-      ...c,
-      registered_count: c.registrations?.[0]?.count ?? 0,
-    }))
+    const shaped: ClassWithSections[] = (data ?? []).map((c: any) => {
+      const sections: SectionWithCrew[] = (c.sections ?? []).map((s: any) => ({
+        ...s,
+        lead: s.lead?.profile ?? null,
+        support: s.support?.profile ?? null,
+        registered_count: s.registrations?.[0]?.count ?? 0,
+      }))
+      return {
+        ...c,
+        sections,
+        enrolled: sections.reduce((sum, s) => sum + s.registered_count, 0),
+        total_capacity: sections.reduce((sum, s) => sum + s.capacity, 0),
+      }
+    })
 
-    setClasses(withCounts)
+    setClasses(shaped)
     setLoading(false)
   }
 
-  async function createClass(payload: Pick<Class, 'name' | 'age_group' | 'capacity'>) {
+  async function createClass(payload: Pick<Class, 'name'> & { description?: string }) {
     const { data, error } = await supabase
       .from('classes')
       .insert(payload)
@@ -49,7 +68,7 @@ export function useAdminClasses() {
     return data
   }
 
-  async function updateClass(id: string, payload: Partial<Pick<Class, 'name' | 'age_group' | 'capacity' | 'lead_id' | 'support_id'>>) {
+  async function updateClass(id: string, payload: Partial<Pick<Class, 'name' | 'description'>>) {
     const { error } = await supabase.from('classes').update(payload).eq('id', id)
     if (error) throw new Error(error.message)
     await fetchClasses()
@@ -61,5 +80,28 @@ export function useAdminClasses() {
     setClasses(prev => prev.filter(c => c.id !== id))
   }
 
-  return { classes, loading, error, createClass, updateClass, deleteClass, refetch: fetchClasses }
+  async function createSection(payload: Omit<Section, 'id' | 'created_at'>) {
+    const { error } = await supabase.from('sections').insert(payload)
+    if (error) throw new Error(error.message)
+    await fetchClasses()
+  }
+
+  async function updateSection(id: string, payload: Partial<Omit<Section, 'id' | 'class_id' | 'created_at'>>) {
+    const { error } = await supabase.from('sections').update(payload).eq('id', id)
+    if (error) throw new Error(error.message)
+    await fetchClasses()
+  }
+
+  async function deleteSection(id: string) {
+    const { error } = await supabase.from('sections').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    await fetchClasses()
+  }
+
+  return {
+    classes, loading, error,
+    createClass, updateClass, deleteClass,
+    createSection, updateSection, deleteSection,
+    refetch: fetchClasses,
+  }
 }

@@ -293,7 +293,7 @@ function ApplicationReviewModal({
 export default function AdminVolunteers() {
   const navigate = useNavigate()
   const { volunteers, loading: vLoading } = useVolunteers()
-  const { classes, updateClass, refetch: refetchClasses } = useAdminClasses()
+  const { classes, updateSection, refetch: refetchClasses } = useAdminClasses()
   const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
   const { applications, loading: appsLoading, acceptApplication, rejectApplication } = useVolunteerApplications()
 
@@ -312,7 +312,8 @@ export default function AdminVolunteers() {
 
   function runMatcher() {
     setApplied(false)
-    setPreview(matchVolunteers(volunteers, classes, week))
+    const allSections = classes.flatMap(c => c.sections)
+    setPreview(matchVolunteers(volunteers, allSections, week))
   }
 
   async function applyAssignments() {
@@ -323,7 +324,7 @@ export default function AdminVolunteers() {
         preview
           .filter(p => p.lead || p.support)
           .map(p =>
-            updateClass(p.classId, {
+            updateSection(p.sectionId, {
               ...(p.lead ? { lead_id: p.lead.id } : {}),
               ...(p.support ? { support_id: p.support.id } : {}),
             })
@@ -420,7 +421,7 @@ export default function AdminVolunteers() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="font-sans font-bold text-xl text-ink">Auto-assign volunteers</h2>
-                  <p className="font-sans text-sm text-ink-muted mt-0.5">Pairs one senior + one junior per class based on week availability.</p>
+                  <p className="font-sans text-sm text-ink-muted mt-0.5">Pairs one senior + one junior per section based on week availability.</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex rounded-[10px] border border-border-strong overflow-hidden">
@@ -475,17 +476,23 @@ export default function AdminVolunteers() {
                       </tr>
                     </thead>
                     <tbody>
-                      {preview.map(p => (
-                        <tr key={p.classId} className="border-b border-border last:border-0 hover:bg-surface-sunken/60 transition">
-                          <td className="px-4 py-3.5 font-sans font-semibold text-ink">{p.className}</td>
-                          <td className="px-4 py-3.5 font-sans text-ink">
-                            {p.lead ? p.lead.profiles.display_name : <span className="text-ink-faint">No senior available</span>}
-                          </td>
-                          <td className="px-4 py-3.5 font-sans text-ink">
-                            {p.support ? p.support.profiles.display_name : <span className="text-ink-faint">No junior available</span>}
-                          </td>
-                        </tr>
-                      ))}
+                      {preview.map(p => {
+                        const cls = classes.find(c => c.id === p.classId)
+                        return (
+                          <tr key={p.sectionId} className="border-b border-border last:border-0 hover:bg-surface-sunken/60 transition">
+                            <td className="px-4 py-3.5 font-sans text-ink">
+                              <span className="font-semibold">{cls?.name ?? '—'}</span>
+                              <span className="text-ink-muted ml-1.5 text-xs">· {p.sectionLabel}{p.week ? ` W${p.week}` : ''}</span>
+                            </td>
+                            <td className="px-4 py-3.5 font-sans text-ink">
+                              {p.lead ? p.lead.profiles.display_name : <span className="text-ink-faint">No senior available</span>}
+                            </td>
+                            <td className="px-4 py-3.5 font-sans text-ink">
+                              {p.support ? p.support.profiles.display_name : <span className="text-ink-faint">No junior available</span>}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
