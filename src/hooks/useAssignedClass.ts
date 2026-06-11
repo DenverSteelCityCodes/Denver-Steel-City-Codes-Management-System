@@ -36,25 +36,51 @@ export function useAssignedClass() {
   async function fetchAssignedSections() {
     setLoading(true)
 
-    const [sectionsRes, volunteerRes] = await Promise.all([
+    const [leadRes, supportRes, volunteerRes] = await Promise.all([
+      // Sections where volunteer is the lead
       supabase
         .from('sections')
         .select(`id, label, age_min, age_max, capacity, week, class_id, classes ( name )`)
-        .or(`lead_id.eq.${user!.id},support_id.eq.${user!.id}`),
+        .eq('lead_id', user!.id),
+      // Section IDs where volunteer is a support
+      supabase
+        .from('section_supports')
+        .select('section_id')
+        .eq('volunteer_id', user!.id),
       supabase.from('volunteers').select('id').eq('id', user!.id).maybeSingle(),
     ])
 
     setIsAccepted(!!volunteerRes.data)
 
-    if (sectionsRes.error || !sectionsRes.data?.length) {
+    if (leadRes.error) { setError(leadRes.error.message); setLoading(false); return }
+    if (supportRes.error) { setError(supportRes.error.message); setLoading(false); return }
+
+    // Fetch full section data for support assignments, avoiding duplicates with lead sections
+    const leadIds = new Set((leadRes.data ?? []).map((s: any) => s.id))
+    const supportSectionIds = (supportRes.data ?? [])
+      .map((r: any) => r.section_id as string)
+      .filter(id => !leadIds.has(id))
+
+    let supportSections: any[] = []
+    if (supportSectionIds.length > 0) {
+      const { data, error } = await supabase
+        .from('sections')
+        .select(`id, label, age_min, age_max, capacity, week, class_id, classes ( name )`)
+        .in('id', supportSectionIds)
+      if (error) { setError(error.message); setLoading(false); return }
+      supportSections = data ?? []
+    }
+
+    const allSections = [...(leadRes.data ?? []), ...supportSections]
+
+    if (allSections.length === 0) {
       setAssignedSections([])
       setLoading(false)
-      if (sectionsRes.error) setError(sectionsRes.error.message)
       return
     }
 
     const result: AssignedSection[] = await Promise.all(
-      sectionsRes.data.map(async (sec: any) => {
+      allSections.map(async (sec: any) => {
         const { data: regs } = await supabase
           .from('registrations')
           .select('students(id, full_name, age, medical_info)')

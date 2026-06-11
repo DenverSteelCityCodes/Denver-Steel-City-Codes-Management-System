@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Class, Section } from '../types/database'
 
+export interface SupportEntry {
+  id: string
+  display_name: string
+}
+
 export interface SectionWithCrew extends Section {
   lead: { display_name: string } | null
-  support: { display_name: string } | null
+  supports: SupportEntry[]
   registered_count: number
 }
 
@@ -30,7 +35,10 @@ export function useAdminClasses() {
         sections (
           *,
           lead:volunteers!sections_lead_id_fkey ( profile:profiles ( display_name ) ),
-          support:volunteers!sections_support_id_fkey ( profile:profiles ( display_name ) ),
+          section_supports (
+            volunteer_id,
+            volunteer:volunteers ( profile:profiles ( display_name ) )
+          ),
           registrations(count)
         )
       `)
@@ -42,7 +50,10 @@ export function useAdminClasses() {
       const sections: SectionWithCrew[] = (c.sections ?? []).map((s: any) => ({
         ...s,
         lead: s.lead?.profile ?? null,
-        support: s.support?.profile ?? null,
+        supports: (s.section_supports ?? []).map((ss: any) => ({
+          id: ss.volunteer_id,
+          display_name: ss.volunteer?.profile?.display_name ?? '',
+        })),
         registered_count: s.registrations?.[0]?.count ?? 0,
       }))
       return {
@@ -80,15 +91,45 @@ export function useAdminClasses() {
     setClasses(prev => prev.filter(c => c.id !== id))
   }
 
-  async function createSection(payload: Omit<Section, 'id' | 'created_at'>) {
-    const { error } = await supabase.from('sections').insert(payload)
+  async function createSection(
+    payload: Omit<Section, 'id' | 'created_at'>,
+    supportIds: string[] = [],
+  ) {
+    const { data: section, error } = await supabase
+      .from('sections')
+      .insert(payload)
+      .select()
+      .single()
     if (error) throw new Error(error.message)
+
+    if (supportIds.length > 0) {
+      const { error: ssErr } = await supabase.from('section_supports').insert(
+        supportIds.map(vid => ({ section_id: section.id, volunteer_id: vid }))
+      )
+      if (ssErr) throw new Error(ssErr.message)
+    }
+
     await fetchClasses()
   }
 
-  async function updateSection(id: string, payload: Partial<Omit<Section, 'id' | 'class_id' | 'created_at'>>) {
+  async function updateSection(
+    id: string,
+    payload: Partial<Omit<Section, 'id' | 'class_id' | 'created_at'>>,
+    supportIds?: string[],
+  ) {
     const { error } = await supabase.from('sections').update(payload).eq('id', id)
     if (error) throw new Error(error.message)
+
+    if (supportIds !== undefined) {
+      await supabase.from('section_supports').delete().eq('section_id', id)
+      if (supportIds.length > 0) {
+        const { error: ssErr } = await supabase.from('section_supports').insert(
+          supportIds.map(vid => ({ section_id: id, volunteer_id: vid }))
+        )
+        if (ssErr) throw new Error(ssErr.message)
+      }
+    }
+
     await fetchClasses()
   }
 

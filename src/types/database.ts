@@ -44,8 +44,12 @@ export interface Section {
   capacity: number
   week: 1 | 2 | null
   lead_id: string | null
-  support_id: string | null
   created_at: string
+}
+
+export interface SectionSupport {
+  section_id: string
+  volunteer_id: string
 }
 
 export interface Registration {

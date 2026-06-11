@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useAdminClasses, type ClassWithSections, type SectionWithCrew } from '../hooks/useAdminClasses'
+import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SupportEntry } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
 import { supabase } from '../lib/supabase'
@@ -95,7 +95,7 @@ interface SectionFormState {
   capacity: string
   week: '' | '1' | '2'
   lead_id: string
-  support_id: string
+  support_ids: string[]
 }
 
 interface SectionModalProps {
@@ -103,12 +103,12 @@ interface SectionModalProps {
   className: string
   initial?: Partial<SectionFormState>
   title: string
-  leadOptions: { id: string; display_name: string }[]
-  onSave: (payload: Omit<Section, 'id' | 'created_at'>) => Promise<void>
+  volunteerOptions: { id: string; display_name: string }[]
+  onSave: (payload: Omit<Section, 'id' | 'created_at'>, supportIds: string[]) => Promise<void>
   onClose: () => void
 }
 
-function SectionModal({ classId, className, initial, title, leadOptions, onSave, onClose }: SectionModalProps) {
+function SectionModal({ classId, className, initial, title, volunteerOptions, onSave, onClose }: SectionModalProps) {
   const [form, setForm] = useState<SectionFormState>({
     label: initial?.label ?? '',
     age_min: initial?.age_min ?? '',
@@ -116,7 +116,7 @@ function SectionModal({ classId, className, initial, title, leadOptions, onSave,
     capacity: initial?.capacity ?? '',
     week: initial?.week ?? '',
     lead_id: initial?.lead_id ?? '',
-    support_id: initial?.support_id ?? '',
+    support_ids: initial?.support_ids ?? [],
   })
   const [errors, setErrors] = useState<Partial<Record<keyof SectionFormState, string>>>({})
   const [saving, setSaving] = useState(false)
@@ -142,22 +142,33 @@ function SectionModal({ classId, className, initial, title, leadOptions, onSave,
     setSaving(true)
     setSaveError(null)
     try {
-      await onSave({
-        class_id: classId,
-        label: form.label.trim(),
-        age_min: Number(form.age_min),
-        age_max: Number(form.age_max),
-        capacity: Number(form.capacity),
-        week: form.week ? (Number(form.week) as 1 | 2) : null,
-        lead_id: form.lead_id || null,
-        support_id: form.support_id || null,
-      })
+      await onSave(
+        {
+          class_id: classId,
+          label: form.label.trim(),
+          age_min: Number(form.age_min),
+          age_max: Number(form.age_max),
+          capacity: Number(form.capacity),
+          week: form.week ? (Number(form.week) as 1 | 2) : null,
+          lead_id: form.lead_id || null,
+        },
+        form.support_ids,
+      )
       onClose()
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setSaving(false)
     }
+  }
+
+  function addSupport(id: string) {
+    if (!id || form.support_ids.includes(id)) return
+    setForm(f => ({ ...f, support_ids: [...f.support_ids, id] }))
+  }
+
+  function removeSupport(id: string) {
+    setForm(f => ({ ...f, support_ids: f.support_ids.filter(s => s !== id) }))
   }
 
   const ageMin = Number(form.age_min)
@@ -168,6 +179,11 @@ function SectionModal({ classId, className, initial, title, leadOptions, onSave,
 
   const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
   const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
+
+  const assignedSupportSet = new Set(form.support_ids)
+  const availableSupports = volunteerOptions.filter(
+    v => !assignedSupportSet.has(v.id) && v.id !== form.lead_id
+  )
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -255,35 +271,63 @@ function SectionModal({ classId, className, initial, title, leadOptions, onSave,
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls} htmlFor="sec-lead">Lead <span className="font-normal text-ink-muted">(optional)</span></label>
+          {/* Lead — single select */}
+          <div>
+            <label className={labelCls} htmlFor="sec-lead">Lead <span className="font-normal text-ink-muted">(optional)</span></label>
+            <select
+              id="sec-lead"
+              value={form.lead_id}
+              onChange={e => setForm(f => ({ ...f, lead_id: e.target.value }))}
+              className={inputCls}
+            >
+              <option value="">Unassigned</option>
+              {volunteerOptions.map(v => (
+                <option key={v.id} value={v.id}>{v.display_name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Supports — multi-select with chips */}
+          <div>
+            <label className={labelCls}>Supports <span className="font-normal text-ink-muted">(optional — multiple allowed)</span></label>
+
+            {form.support_ids.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.support_ids.map(id => {
+                  const v = volunteerOptions.find(o => o.id === id)
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border-strong text-ink text-xs font-semibold"
+                    >
+                      {v?.display_name ?? id}
+                      <button
+                        type="button"
+                        onClick={() => removeSupport(id)}
+                        className="text-ink-muted hover:text-danger transition"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+
+            {availableSupports.length > 0 ? (
               <select
-                id="sec-lead"
-                value={form.lead_id}
-                onChange={e => setForm(f => ({ ...f, lead_id: e.target.value }))}
                 className={inputCls}
+                value=""
+                onChange={e => { addSupport(e.target.value); e.target.value = '' }}
               >
-                <option value="">Unassigned</option>
-                {leadOptions.map(v => (
+                <option value="">Add a support…</option>
+                {availableSupports.map(v => (
                   <option key={v.id} value={v.id}>{v.display_name}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className={labelCls} htmlFor="sec-support">Support <span className="font-normal text-ink-muted">(optional)</span></label>
-              <select
-                id="sec-support"
-                value={form.support_id}
-                onChange={e => setForm(f => ({ ...f, support_id: e.target.value }))}
-                className={inputCls}
-              >
-                <option value="">Unassigned</option>
-                {leadOptions.map(v => (
-                  <option key={v.id} value={v.id}>{v.display_name}</option>
-                ))}
-              </select>
-            </div>
+            ) : (
+              <p className="text-xs font-sans text-ink-faint mt-1">All available volunteers are assigned.</p>
+            )}
           </div>
 
           {saveError && <p className="text-danger text-sm font-sans">⚠ {saveError}</p>}
@@ -620,15 +664,15 @@ export default function AdminClasses() {
             capacity: String(sectionModal.section.capacity),
             week: sectionModal.section.week ? String(sectionModal.section.week) as '1' | '2' : '',
             lead_id: sectionModal.section.lead_id ?? '',
-            support_id: sectionModal.section.support_id ?? '',
+            support_ids: sectionModal.section.supports.map((s: SupportEntry) => s.id),
           } : undefined}
-          leadOptions={volunteerOptions}
-          onSave={async payload => {
+          volunteerOptions={volunteerOptions}
+          onSave={async (payload, supportIds) => {
             if (sectionModal.mode === 'edit' && sectionModal.section) {
               const { class_id, ...rest } = payload
-              await updateSection(sectionModal.section.id, rest)
+              await updateSection(sectionModal.section.id, rest, supportIds)
             } else {
-              await createSection(payload)
+              await createSection(payload, supportIds)
             }
           }}
           onClose={() => setSectionModal(null)}
@@ -653,6 +697,11 @@ function SectionRow({
   onRoster: () => void
   deleting: boolean
 }) {
+  const allCrew: { person: { display_name: string }; isSenior: boolean }[] = [
+    { person: section.lead ?? null, isSenior: true },
+    ...section.supports.map(s => ({ person: s, isSenior: false })),
+  ].filter(c => c.person !== null) as { person: { display_name: string }; isSenior: boolean }[]
+
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center px-5 py-3.5">
       {/* Label + week badge */}
@@ -676,23 +725,27 @@ function SectionRow({
       </div>
 
       {/* Crew */}
-      <div className="flex items-center gap-2 min-w-[120px]">
-        {[
-          { person: section.lead, isSenior: true },
-          { person: section.support, isSenior: false },
-        ].map(({ person, isSenior }, i) =>
-          person ? (
-            <div key={i} className="flex items-center gap-1.5">
-              <div className={`w-7 h-7 rounded-full bg-role-volunteer-soft flex items-center justify-center text-xs font-bold text-role-volunteer shrink-0 ${
-                isSenior ? 'ring-2 ring-brand' : ''
-              } ${i > 0 ? '-ml-2 ring-2 ring-surface' : ''}`}>
-                {person.display_name.charAt(0).toUpperCase()}
-              </div>
-              {i === 0 && <span className="font-sans text-xs text-ink-muted truncate max-w-[80px]">{person.display_name}</span>}
+      <div className="flex items-center gap-1 min-w-[120px]">
+        {allCrew.length === 0 ? (
+          <span className="font-sans text-xs text-ink-faint">No crew</span>
+        ) : (
+          allCrew.map(({ person, isSenior }, i) => (
+            <div
+              key={i}
+              title={person.display_name}
+              className={`w-7 h-7 rounded-full bg-role-volunteer-soft flex items-center justify-center text-xs font-bold text-role-volunteer shrink-0 ${
+                isSenior ? 'ring-2 ring-brand' : 'ring-2 ring-surface'
+              } ${i > 0 ? '-ml-2' : ''}`}
+            >
+              {person.display_name.charAt(0).toUpperCase()}
             </div>
-          ) : (
-            <span key={i} className="font-sans text-xs text-ink-faint">{i === 0 ? 'No lead' : '—'}</span>
-          )
+          ))
+        )}
+        {allCrew.length > 0 && (
+          <span className="font-sans text-xs text-ink-muted truncate max-w-[80px] ml-1.5">
+            {allCrew[0].person.display_name}
+            {allCrew.length > 1 && ` +${allCrew.length - 1}`}
+          </span>
         )}
       </div>
 
