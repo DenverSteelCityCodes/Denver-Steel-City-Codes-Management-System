@@ -163,3 +163,13 @@ export interface VolunteerApplication {
   admin_notes: string | null
   created_at: string
 }
+
+
+export interface ParentProfile {
+  id: string
+  phone: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  emergency_contact_relation: string | null
+  updated_at: string
+}
