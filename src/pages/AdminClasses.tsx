@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
 import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SupportEntry } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
@@ -463,7 +462,6 @@ function SectionRosterModal({
 // ── Main page ─────────────────────────────────────────────────
 
 export default function AdminClasses() {
-  const navigate = useNavigate()
   const { classes, loading, error, createClass, updateClass, deleteClass, createSection, updateSection, deleteSection } = useAdminClasses()
   const { volunteers } = useVolunteers()
 
@@ -499,15 +497,7 @@ export default function AdminClasses() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
-        </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Manage classes</span>
-      </header>
-
-      <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-[1200px] space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-sans font-bold text-2xl text-ink">Classes</h1>
           <button
@@ -620,7 +610,6 @@ export default function AdminClasses() {
             })}
           </div>
         )}
-      </main>
 
       {/* Class editor modal */}
       {classModal && (
