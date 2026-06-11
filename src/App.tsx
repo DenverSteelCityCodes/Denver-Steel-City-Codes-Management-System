@@ -6,8 +6,15 @@ import SignupPage from './pages/SignupPage'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminClasses from './pages/AdminClasses'
 import AdminVolunteers from './pages/AdminVolunteers'
+import AdminStudents from './pages/AdminStudents'
+import AdminUsers from './pages/AdminUsers'
+import AdminSessions from './pages/AdminSessions'
+import AdminDuties from './pages/AdminDuties'
+import AdminInterviews from './pages/AdminInterviews'
+import AdminFormEditor from './pages/AdminFormEditor'
 import VolunteerDashboard from './pages/VolunteerDashboard'
 import ParentDashboard from './pages/ParentDashboard'
+import ParentRegistrationPage from './pages/ParentRegistrationPage'
 import ClassBrowser from './pages/ClassBrowser'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import VolunteerApplyPage from './pages/VolunteerApplyPage'
@@ -39,6 +46,12 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/classes" element={<AdminClasses />} />
             <Route path="/admin/volunteers" element={<AdminVolunteers />} />
+            <Route path="/admin/students" element={<AdminStudents />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/sessions" element={<AdminSessions />} />
+            <Route path="/admin/duties" element={<AdminDuties />} />
+            <Route path="/admin/interviews" element={<AdminInterviews />} />
+            <Route path="/admin/forms" element={<AdminFormEditor />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['volunteer']} />}>
@@ -48,6 +61,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['parent']} />}>
             <Route path="/parent" element={<ParentDashboard />} />
             <Route path="/parent/classes" element={<ClassBrowser />} />
+            <Route path="/parent/register" element={<ParentRegistrationPage />} />
           </Route>
 
           {/* Root → redirect based on role */}

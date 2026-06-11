@@ -14,7 +14,7 @@ const SCHOOLS = [
 ]
 const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const CS_LANGUAGES = ['Python', 'Java', 'HTML', 'CSS', 'JavaScript', 'CircuitPython', 'Other']
-const COURSES = [
+const FALLBACK_COURSES = [
   'Intro to Python',
   'Intermediate Python',
   'Intro to Java',
@@ -112,6 +112,7 @@ function StepDots({ current, total }: { current: number; total: number }) {
 export default function VolunteerApplyPage() {
   const [applicationsOpen, setApplicationsOpen] = useState<boolean | null>(null)
   const [settingsLoading, setSettingsLoading] = useState(true)
+  const [courses, setCourses] = useState<string[]>(FALLBACK_COURSES)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
   const [error, setError] = useState<string | null>(null)
@@ -127,6 +128,14 @@ export default function VolunteerApplyPage() {
       .then(({ data }) => {
         setApplicationsOpen(data?.value === 'true')
         setSettingsLoading(false)
+      })
+
+    supabase
+      .from('classes')
+      .select('name')
+      .order('name', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) setCourses(data.map(c => c.name))
       })
   }, [])
 
@@ -514,7 +523,7 @@ export default function VolunteerApplyPage() {
               <div>
                 <label className={labelCls}>First choice course *</label>
                 <div className="space-y-2">
-                  {COURSES.map(c => (
+                  {courses.map(c => (
                     <label key={c} className={`flex items-center gap-3 p-3 rounded-[10px] border cursor-pointer transition ${
                       form.courseFirst === c ? 'border-brand bg-brand-soft' : 'border-border-strong bg-surface hover:bg-surface-sunken'
                     }`}>
@@ -529,7 +538,7 @@ export default function VolunteerApplyPage() {
               <div>
                 <label className={labelCls}>Second choice course *</label>
                 <div className="space-y-2">
-                  {COURSES.map(c => (
+                  {courses.map(c => (
                     <label key={c} className={`flex items-center gap-3 p-3 rounded-[10px] border cursor-pointer transition ${
                       form.courseSecond === c ? 'border-brand bg-brand-soft' : 'border-border-strong bg-surface hover:bg-surface-sunken'
                     }`}>
