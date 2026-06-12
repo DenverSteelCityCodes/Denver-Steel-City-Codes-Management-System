@@ -1,4 +1,5 @@
-import { HeartPulse } from 'lucide-react'
+import { HeartPulse, RefreshCw } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { Student } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 
@@ -30,14 +31,23 @@ export default function StudentCard({ student, registrations }: Props) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2 min-w-0">
             <h3 className="font-sans font-semibold text-base text-ink truncate">{student.full_name}</h3>
             <span className="text-xs font-sans text-ink-muted shrink-0">Age {student.age}</span>
-            {student.medical_info && (
-              <span title="Medical / allergy info on file" className="shrink-0">
-                <HeartPulse size={14} className="text-danger" />
-              </span>
-            )}
+              {student.medical_info && (
+                <span title="Medical / allergy info on file" className="shrink-0">
+                  <HeartPulse size={14} className="text-danger" />
+                </span>
+              )}
+            </div>
+            <Link
+              to={`/parent/register?studentId=${student.id}`}
+              className="shrink-0 h-7 px-2.5 text-xs font-sans font-semibold text-ink-muted border border-border-strong rounded-[6px] hover:bg-surface-sunken flex items-center gap-1 transition"
+              title="Re-register for a new year"
+            >
+              <RefreshCw size={11} /> Re-register
+            </Link>
           </div>
 
           {registrations.length === 0 ? (
