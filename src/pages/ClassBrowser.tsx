@@ -91,7 +91,7 @@ export default function ClassBrowser() {
   const navigate = useNavigate()
   const { classes, loading: classesLoading } = useClasses()
   const { students } = useStudents()
-  const { registrations, registerStudent, isRegistered, getRegistration } = useRegistrations()
+  const { registerStudent, isRegistered, getRegistration } = useRegistrations()
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [search, setSearch] = useState('')

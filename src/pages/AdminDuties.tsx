@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Plus, Trash2, X, Check, CalendarDays } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Check, CalendarDays } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDutyTypes, useDutySlots } from '../hooks/useDutyRoles'
 import { useSessions } from '../hooks/useSessions'
