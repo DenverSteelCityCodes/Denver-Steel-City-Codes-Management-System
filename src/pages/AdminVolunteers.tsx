@@ -21,7 +21,7 @@ function exportVolunteerCSV(
 
   for (const v of volunteers) {
     const leadSections = allSections.filter(s => s.lead_id === v.id)
-    const supportSections = allSections.filter(s => s.support_id === v.id)
+    const supportSections = allSections.filter(s => s.supports.some(sup => sup.id === v.id))
 
     const assignments = [
       ...leadSections.map(s => ({ className: s.className, label: s.label, role: 'lead' })),
@@ -409,10 +409,11 @@ export default function AdminVolunteers() {
         preview
           .filter(p => p.lead || p.support)
           .map(p =>
-            updateSection(p.sectionId, {
-              ...(p.lead ? { lead_id: p.lead.id } : {}),
-              ...(p.support ? { support_id: p.support.id } : {}),
-            })
+            updateSection(
+              p.sectionId,
+              p.lead ? { lead_id: p.lead.id } : {},
+              p.support ? [p.support.id] : undefined,
+            )
           )
       )
       await refetchClasses()

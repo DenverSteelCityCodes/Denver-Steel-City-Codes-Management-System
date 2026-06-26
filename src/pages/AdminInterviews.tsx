@@ -14,11 +14,9 @@ interface Application {
 }
 
 function BookModal({
-  slotId,
   onBook,
   onClose,
 }: {
-  slotId: string
   onBook: (applicationId: string, notes: string) => Promise<void>
   onClose: () => void
 }) {
@@ -365,7 +363,6 @@ export default function AdminInterviews() {
 
       {bookingSlotId && (
         <BookModal
-          slotId={bookingSlotId}
           onBook={(appId, notes) => bookSlot(bookingSlotId, appId, notes)}
           onClose={() => setBookingSlotId(null)}
         />
