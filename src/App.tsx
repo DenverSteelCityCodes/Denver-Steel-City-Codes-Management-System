@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminLayout from './components/AdminLayout'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import AdminDashboard from './pages/AdminDashboard'
@@ -43,15 +44,17 @@ function App() {
 
           {/* Role-gated */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/classes" element={<AdminClasses />} />
-            <Route path="/admin/volunteers" element={<AdminVolunteers />} />
-            <Route path="/admin/students" element={<AdminStudents />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/sessions" element={<AdminSessions />} />
-            <Route path="/admin/duties" element={<AdminDuties />} />
-            <Route path="/admin/interviews" element={<AdminInterviews />} />
-            <Route path="/admin/forms" element={<AdminFormEditor />} />
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/classes" element={<AdminClasses />} />
+              <Route path="/admin/volunteers" element={<AdminVolunteers />} />
+              <Route path="/admin/students" element={<AdminStudents />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/sessions" element={<AdminSessions />} />
+              <Route path="/admin/duties" element={<AdminDuties />} />
+              <Route path="/admin/interviews" element={<AdminInterviews />} />
+              <Route path="/admin/forms" element={<AdminFormEditor />} />
+            </Route>
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['volunteer']} />}>

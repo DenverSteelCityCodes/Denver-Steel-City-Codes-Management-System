@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, ShieldCheck, Users, GraduationCap, AlertTriangle } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { ShieldCheck, Users, GraduationCap, AlertTriangle } from 'lucide-react'
 import { useAdminUsers } from '../hooks/useAdminUsers'
 import { useAuth } from '../context/AuthContext'
 import type { UserRole } from '../types/database'
@@ -12,7 +11,6 @@ const ROLE_LABELS: Record<UserRole, { label: string; badge: string }> = {
 }
 
 export default function AdminUsers() {
-  const navigate = useNavigate()
   const { profile: currentUser } = useAuth()
   const { users, loading, updateRole } = useAdminUsers()
 
@@ -43,13 +41,6 @@ export default function AdminUsers() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
-        </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">User management</span>
-      </header>
-
       <main className="max-w-[900px] mx-auto px-6 py-8 space-y-8">
         <div>
           <h1 className="font-sans font-bold text-2xl text-ink mb-1">Users &amp; roles</h1>

@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
-import { ArrowLeft, Search, Download, X, AlertCircle, UserCheck } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Search, Download, X, AlertCircle, UserCheck } from 'lucide-react'
 import { useAdminStudents, type AdminStudent } from '../hooks/useAdminStudents'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import type { RegistrationStatus } from '../types/database'
@@ -183,7 +182,6 @@ function exportStudentCSV(students: AdminStudent[]) {
 type StatusFilter = 'all' | RegistrationStatus | 'unregistered'
 
 export default function AdminStudents() {
-  const navigate = useNavigate()
   const { students, loading, error, updateRegistrationStatus, moveStudentToSection, removeRegistration } = useAdminStudents()
   const { classes } = useAdminClasses()
 
@@ -229,22 +227,16 @@ export default function AdminStudents() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center justify-between px-6 shadow-sm">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-            <ArrowLeft size={20} />
-          </button>
-          <span className="font-sans font-bold text-white text-base tracking-tight">Students</span>
-        </div>
-        <button
-          onClick={() => exportStudentCSV(filtered)}
-          className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
-        >
-          <Download size={15} /> Export CSV
-        </button>
-      </header>
-
       <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-5">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-sans font-bold text-2xl text-ink">Students</h1>
+          <button
+            onClick={() => exportStudentCSV(filtered)}
+            className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
+          >
+            <Download size={15} /> Export CSV
+          </button>
+        </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />

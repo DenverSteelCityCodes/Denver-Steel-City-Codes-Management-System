@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Wand2, Check, X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Download } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Wand2, Check, X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Download } from 'lucide-react'
 import { useVolunteers } from '../hooks/useVolunteers'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import { useAppSettings } from '../hooks/useAppSettings'
@@ -376,7 +375,6 @@ function ApplicationReviewModal({
 }
 
 export default function AdminVolunteers() {
-  const navigate = useNavigate()
   const { volunteers, loading: vLoading } = useVolunteers()
   const { classes, updateSection, refetch: refetchClasses } = useAdminClasses()
   const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
@@ -462,13 +460,6 @@ export default function AdminVolunteers() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
-        </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Volunteers</span>
-      </header>
-
       <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
 
         {/* Tab bar */}

@@ -497,7 +497,7 @@ export default function AdminClasses() {
   }
 
   return (
-    <div className="max-w-[1200px] space-y-6">
+    <div className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-sans font-bold text-2xl text-ink">Classes</h1>
           <button

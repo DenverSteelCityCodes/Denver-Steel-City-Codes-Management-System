@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom'
-import { ShieldCheck, GraduationCap, Users, ClipboardList, List, CalendarDays, Shield, Settings2, Mic } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { GraduationCap, Users, ClipboardList, List, CalendarDays, Shield, Settings2, Mic } from 'lucide-react'
 import { useAdminStats } from '../hooks/useAdminStats'
 import StatCard from '../components/StatCard'
 
 export default function AdminDashboard() {
-  const { profile, signOut } = useAuth()
   const { stats, loading } = useAdminStats()
 
   const dash = loading || !stats
@@ -20,24 +18,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center justify-between px-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center">
-            <span className="font-sans font-bold text-brand-on text-sm">S</span>
-          </div>
-          <span className="font-sans font-bold text-white text-base tracking-tight">Steel City Codes</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-role-admin-soft text-role-admin">
-            <ShieldCheck size={12} /> Admin
-          </span>
-          <span className="font-sans text-sm text-white/70">{profile?.display_name}</span>
-          <button onClick={signOut} className="font-sans text-sm text-white/60 hover:text-white transition">
-            Sign out
-          </button>
-        </div>
-      </header>
-
       <main className="max-w-[1200px] mx-auto px-6 py-10 space-y-10">
         <div>
           <h1 className="font-sans font-bold text-3xl text-ink mb-1">Admin Dashboard</h1>
