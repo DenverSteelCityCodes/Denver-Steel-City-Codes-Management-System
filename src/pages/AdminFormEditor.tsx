@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Settings2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Settings2 } from 'lucide-react'
 import { useFormConfigs } from '../hooks/useFormConfigs'
 import type { FieldConfig } from '../hooks/useFormConfigs'
 
@@ -113,7 +112,6 @@ function FieldRow({
 }
 
 export default function AdminFormEditor() {
-  const navigate = useNavigate()
   const { configs, loading, setFormEnabled, updateField } = useFormConfigs()
   const [activeForm, setActiveForm] = useState<string>('volunteer_application')
   const [saving, setSaving] = useState<string | null>(null)
@@ -136,13 +134,6 @@ export default function AdminFormEditor() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
-        </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Form editor</span>
-      </header>
-
       <main className="max-w-[900px] mx-auto px-6 py-8 space-y-6">
 
         {/* Form selector */}

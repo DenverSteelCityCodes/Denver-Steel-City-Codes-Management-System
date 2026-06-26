@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, Calendar } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Plus, Pencil, Trash2, X, Check, Calendar } from 'lucide-react'
 import { useSessions, type Session } from '../hooks/useSessions'
 
 interface SessionFormState {
@@ -102,7 +101,6 @@ function SessionModal({
 }
 
 export default function AdminSessions() {
-  const navigate = useNavigate()
   const { sessions, loading, error, createSession, updateSession, deleteSession } = useSessions()
   const [modal, setModal] = useState<null | { mode: 'create' | 'edit'; session?: Session }>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -117,13 +115,6 @@ export default function AdminSessions() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
-        </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Camp sessions</span>
-      </header>
-
       <main className="max-w-[800px] mx-auto px-6 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>

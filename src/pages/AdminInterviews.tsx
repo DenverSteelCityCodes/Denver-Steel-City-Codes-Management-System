@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Trash2, Calendar, User, FileText, X, Check } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Calendar, User, FileText, X, Check } from 'lucide-react'
 import { useInterviews } from '../hooks/useInterviews'
 import { supabase } from '../lib/supabase'
 
@@ -158,7 +157,6 @@ function NotesModal({
 }
 
 export default function AdminInterviews() {
-  const navigate = useNavigate()
   const { slots, loading, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes } = useInterviews()
 
   const [slotForm, setSlotForm] = useState({ date: '', time: '', duration: '15' })
@@ -213,13 +211,6 @@ export default function AdminInterviews() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
-        </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Interviews</span>
-      </header>
-
       <main className="max-w-[1000px] mx-auto px-6 py-8 space-y-8">
 
         {/* Stats row */}

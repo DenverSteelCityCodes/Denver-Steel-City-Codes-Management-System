@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { ArrowLeft, Plus, Trash2, Check, CalendarDays } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Check, CalendarDays } from 'lucide-react'
 import { useDutyTypes, useDutySlots } from '../hooks/useDutyRoles'
 import { useSessions } from '../hooks/useSessions'
 
 export default function AdminDuties() {
-  const navigate = useNavigate()
   const { sessions } = useSessions()
   const { types, createType, deleteType } = useDutyTypes()
   const [selectedSession, setSelectedSession] = useState<string>('')
@@ -65,13 +63,6 @@ export default function AdminDuties() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/admin')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
-        </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Duty schedule</span>
-      </header>
-
       <main className="max-w-[1000px] mx-auto px-6 py-8 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
