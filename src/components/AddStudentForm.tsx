@@ -3,14 +3,17 @@ import { UserPlus, X } from 'lucide-react'
 import type { Student } from '../types/database'
 
 interface Props {
-  onAdd: (payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) => Promise<void>
+  onSubmit: (payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) => Promise<void>
   onClose: () => void
+  // When provided, the form opens in edit mode prefilled with the camper's details.
+  student?: Student | null
 }
 
-export default function AddStudentForm({ onAdd, onClose }: Props) {
-  const [fullName, setFullName] = useState('')
-  const [age, setAge] = useState('')
-  const [medicalInfo, setMedicalInfo] = useState('')
+export default function AddStudentForm({ onSubmit, onClose, student }: Props) {
+  const isEditing = !!student
+  const [fullName, setFullName] = useState(student?.full_name ?? '')
+  const [age, setAge] = useState(student ? String(student.age) : '')
+  const [medicalInfo, setMedicalInfo] = useState(student?.medical_info ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -20,7 +23,7 @@ export default function AddStudentForm({ onAdd, onClose }: Props) {
     setLoading(true)
 
     try {
-      await onAdd({
+      await onSubmit({
         full_name: fullName.trim(),
         age: Number(age),
         medical_info: medicalInfo.trim() || null,
@@ -38,7 +41,7 @@ export default function AddStudentForm({ onAdd, onClose }: Props) {
 
       <div className="relative w-full max-w-md bg-surface-raised rounded-2xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-sans font-semibold text-xl text-ink">Add a camper</h2>
+          <h2 className="font-sans font-semibold text-xl text-ink">{isEditing ? 'Edit camper' : 'Add a camper'}</h2>
           <button onClick={onClose} className="text-ink-faint hover:text-ink transition p-1 rounded-[10px]">
             <X size={20} />
           </button>
@@ -119,7 +122,7 @@ export default function AddStudentForm({ onAdd, onClose }: Props) {
               ) : (
                 <UserPlus size={16} />
               )}
-              {loading ? 'Adding…' : 'Add camper'}
+              {loading ? 'Saving…' : isEditing ? 'Save changes' : 'Add camper'}
             </button>
           </div>
         </form>
