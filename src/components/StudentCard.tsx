@@ -1,13 +1,20 @@
-import { HeartPulse, RefreshCw } from 'lucide-react'
+import { CircleCheck, Clock, List, CircleX, RefreshCw } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { Student } from '../types/database'
+import type { Student, RegistrationStatus } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
+import MedicalFlag from './MedicalFlag'
 
-const STATUS_STYLES = {
-  confirmed: 'bg-success-soft text-success',
-  pending: 'bg-warning-soft text-warning',
-  waitlisted: 'bg-info-soft text-info',
-  cancelled: 'bg-danger-soft text-danger',
+// Human-friendly status copy (DS §7.5 Deep-on-Soft chips, §10 warm voice).
+// note: an optional reassuring sub-line shown beneath the chip.
+const STATUS_CONFIG: Record<
+  RegistrationStatus,
+  { label: string; className: string; Icon: LucideIcon; note: string | null }
+> = {
+  confirmed: { label: 'Confirmed', className: 'bg-success-soft text-success', Icon: CircleCheck, note: null },
+  pending: { label: 'Spot held', className: 'bg-warning-soft text-warning', Icon: Clock, note: "We'll confirm soon" },
+  waitlisted: { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List, note: null },
+  cancelled: { label: 'Cancelled', className: 'bg-danger-soft text-danger', Icon: CircleX, note: null },
 }
 
 interface Props {
@@ -32,14 +39,10 @@ export default function StudentCard({ student, registrations }: Props) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 justify-between">
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <h3 className="font-sans font-semibold text-base text-ink truncate">{student.full_name}</h3>
             <span className="text-xs font-sans text-ink-muted shrink-0">Age {student.age}</span>
-              {student.medical_info && (
-                <span title="Medical / allergy info on file" className="shrink-0">
-                  <HeartPulse size={14} className="text-danger" />
-                </span>
-              )}
+              {student.medical_info && <MedicalFlag info={student.medical_info} />}
             </div>
             <Link
               to={`/parent/register?studentId=${student.id}`}
@@ -53,17 +56,29 @@ export default function StudentCard({ student, registrations }: Props) {
           {registrations.length === 0 ? (
             <p className="text-sm font-sans text-ink-muted mt-1">Not enrolled in any class yet</p>
           ) : (
-            <ul className="mt-2 space-y-1.5">
-              {registrations.map(reg => (
-                <li key={reg.id} className="flex items-center gap-2">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[reg.status]}`}>
-                    {reg.status}
-                  </span>
-                  <span className="text-sm font-sans text-ink-muted truncate">
-                    {reg.sections?.classes?.name ?? '—'}{reg.sections?.label ? ` · ${reg.sections.label}` : ''}
-                  </span>
-                </li>
-              ))}
+            <ul className="mt-2 space-y-2">
+              {registrations.map(reg => {
+                const cfg = STATUS_CONFIG[reg.status]
+                const Icon = cfg.Icon
+                return (
+                  <li key={reg.id}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.className}`}
+                      >
+                        <Icon size={13} />
+                        {cfg.label}
+                      </span>
+                      <span className="text-sm font-sans text-ink-muted truncate">
+                        {reg.sections?.classes?.name ?? '—'}{reg.sections?.label ? ` · ${reg.sections.label}` : ''}
+                      </span>
+                    </div>
+                    {cfg.note && (
+                      <p className="mt-0.5 ml-1 text-xs font-sans text-ink-faint">{cfg.note}</p>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
