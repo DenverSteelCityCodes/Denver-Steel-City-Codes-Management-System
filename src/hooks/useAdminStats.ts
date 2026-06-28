@@ -7,6 +7,7 @@ interface AdminStats {
   totalVolunteers: number
   confirmedRegistrations: number
   waitlistedRegistrations: number
+  totalRegistrations: number
 }
 
 export function useAdminStats() {
@@ -18,12 +19,13 @@ export function useAdminStats() {
   async function fetchStats() {
     setLoading(true)
 
-    const [students, classes, volunteers, confirmed, waitlisted] = await Promise.all([
+    const [students, classes, volunteers, confirmed, waitlisted, registrations] = await Promise.all([
       supabase.from('students').select('id', { count: 'exact', head: true }),
       supabase.from('classes').select('id', { count: 'exact', head: true }),
       supabase.from('volunteers').select('id', { count: 'exact', head: true }),
       supabase.from('registrations').select('id', { count: 'exact', head: true }).eq('status', 'confirmed'),
       supabase.from('registrations').select('id', { count: 'exact', head: true }).eq('status', 'waitlisted'),
+      supabase.from('registrations').select('id', { count: 'exact', head: true }),
     ])
 
     setStats({
@@ -32,6 +34,7 @@ export function useAdminStats() {
       totalVolunteers: volunteers.count ?? 0,
       confirmedRegistrations: confirmed.count ?? 0,
       waitlistedRegistrations: waitlisted.count ?? 0,
+      totalRegistrations: registrations.count ?? 0,
     })
     setLoading(false)
   }
