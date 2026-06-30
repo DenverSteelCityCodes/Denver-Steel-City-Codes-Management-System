@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, Plus, GraduationCap } from 'lucide-react'
+import { Plus, GraduationCap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations, type RegistrationWithSection } from '../hooks/useRegistrations'
 import StudentCard from '../components/StudentCard'
 import AddStudentForm from '../components/AddStudentForm'
+import SessionStrip from '../components/SessionStrip'
 import type { Student } from '../types/database'
 
 // Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
@@ -29,7 +30,7 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
 }
 
 export default function ParentDashboard() {
-  const { profile, signOut } = useAuth()
+  const { profile } = useAuth()
   const { students, loading, addStudent, updateStudent } = useStudents()
   const { registrations } = useRegistrations()
   const [showAddForm, setShowAddForm] = useState(false)
@@ -43,26 +44,7 @@ export default function ParentDashboard() {
   const subhead = buildSubhead(students, registrations)
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center justify-between px-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center">
-            <span className="font-sans font-bold text-brand-on text-sm">S</span>
-          </div>
-          <span className="font-sans font-bold text-white text-base tracking-tight">Steel City Codes</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-role-parent-soft text-role-parent">
-            <Heart size={12} /> Parent
-          </span>
-          <span className="font-sans text-sm text-white/70">{profile?.display_name}</span>
-          <button onClick={signOut} className="font-sans text-sm text-white/60 hover:text-white transition">
-            Sign out
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-[1200px] mx-auto px-6 py-10">
+    <div className="max-w-[1200px] mx-auto px-6 py-10">
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="font-sans text-[40px] leading-[46px] font-bold tracking-[-0.01em] text-ink mb-1">
@@ -90,6 +72,8 @@ export default function ParentDashboard() {
             </button>
           </div>
         </div>
+
+        <SessionStrip />
 
         {loading ? (
           <div className="space-y-3">
@@ -123,7 +107,6 @@ export default function ParentDashboard() {
             ))}
           </div>
         )}
-      </main>
 
       {(showAddForm || editingStudent) && (
         <AddStudentForm
