@@ -39,5 +39,18 @@ export function useStudents() {
     return data
   }
 
-  return { students, loading, error, addStudent, refetch: fetchStudents }
+  async function updateStudent(id: string, payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) {
+    const { data, error } = await supabase
+      .from('students')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    setStudents(prev => prev.map(s => (s.id === id ? data : s)))
+    return data
+  }
+
+  return { students, loading, error, addStudent, updateStudent, refetch: fetchStudents }
 }

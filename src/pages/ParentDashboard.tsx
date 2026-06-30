@@ -1,22 +1,46 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, Plus, GraduationCap, ClipboardList } from 'lucide-react'
+import { Heart, Plus, GraduationCap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
-import { useRegistrations } from '../hooks/useRegistrations'
+import { useRegistrations, type RegistrationWithSection } from '../hooks/useRegistrations'
 import StudentCard from '../components/StudentCard'
 import AddStudentForm from '../components/AddStudentForm'
 import type { Student } from '../types/database'
 
+// Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
+function buildSubhead(students: Student[], registrations: RegistrationWithSection[]): string {
+  if (students.length === 0) return 'Add your first camper to get started.'
+
+  const active = registrations.filter(r => r.status !== 'cancelled')
+  const pending = active.filter(r => r.status === 'pending' || r.status === 'waitlisted').length
+  const subject = students.length === 1 ? 'Your camper is' : 'Your campers are'
+
+  if (active.length === 0) {
+    return students.length === 1
+      ? "Your camper isn't signed up yet — browse classes to find a fit."
+      : 'No sign-ups yet — browse classes to find a fit for your campers.'
+  }
+  if (pending > 0) {
+    const spots = pending === 1 ? 'one spot still to confirm' : `${pending} spots still to confirm`
+    return `${subject} signed up — ${spots}.`
+  }
+  return `${subject} all set for camp.`
+}
+
 export default function ParentDashboard() {
   const { profile, signOut } = useAuth()
-  const { students, loading, addStudent } = useStudents()
+  const { students, loading, addStudent, updateStudent } = useStudents()
   const { registrations } = useRegistrations()
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
 
-  async function handleAddStudent(payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) {
-    await addStudent(payload)
+  async function handleSubmitStudent(payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) {
+    if (editingStudent) await updateStudent(editingStudent.id, payload)
+    else await addStudent(payload)
   }
+
+  const subhead = buildSubhead(students, registrations)
 
   return (
     <div className="min-h-screen bg-bg">
@@ -41,12 +65,14 @@ export default function ParentDashboard() {
       <main className="max-w-[1200px] mx-auto px-6 py-10">
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="font-sans font-bold text-3xl text-ink mb-1">
+            <h1 className="font-sans text-[40px] leading-[46px] font-bold tracking-[-0.01em] text-ink mb-1">
               Welcome, {profile?.display_name?.split(' ')[0]}
             </h1>
-            <p className="font-slab text-ink-muted text-lg">Manage your camper's enrollment.</p>
+            <p className="font-slab text-ink-muted text-lg">{subhead}</p>
           </div>
 
+          {/* Action hierarchy (§3): one secondary (Browse classes) + one gold primary (Add camper).
+              The per-camper Register action now lives on each StudentCard footer. */}
           <div className="flex gap-3">
             <Link
               to="/parent/classes"
@@ -54,13 +80,6 @@ export default function ParentDashboard() {
             >
               <GraduationCap size={16} />
               Browse classes
-            </Link>
-            <Link
-              to="/parent/register"
-              className="h-11 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition shadow-sm"
-            >
-              <ClipboardList size={16} />
-              Register camper
             </Link>
             <button
               onClick={() => setShowAddForm(true)}
@@ -99,16 +118,21 @@ export default function ParentDashboard() {
                 key={student.id}
                 student={student}
                 registrations={registrations.filter(r => r.student_id === student.id)}
+                onEdit={setEditingStudent}
               />
             ))}
           </div>
         )}
       </main>
 
-      {showAddForm && (
+      {(showAddForm || editingStudent) && (
         <AddStudentForm
-          onAdd={handleAddStudent}
-          onClose={() => setShowAddForm(false)}
+          student={editingStudent}
+          onSubmit={handleSubmitStudent}
+          onClose={() => {
+            setShowAddForm(false)
+            setEditingStudent(null)
+          }}
         />
       )}
     </div>

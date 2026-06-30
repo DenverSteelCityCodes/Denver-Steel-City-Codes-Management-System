@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Search, Lock, CheckCircle, Clock, List } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
@@ -89,11 +89,13 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
 
 export default function ClassBrowser() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { classes, loading: classesLoading } = useClasses()
   const { students } = useStudents()
   const { registerStudent, isRegistered, getRegistration } = useRegistrations()
 
-  const [selectedStudentId, setSelectedStudentId] = useState<string>('')
+  // Pre-select the camper when deep-linked from a StudentCard ("Register for another class").
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(searchParams.get('camper') ?? '')
   const [search, setSearch] = useState('')
   const [registeringSectionId, setRegisteringSectionId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null)
