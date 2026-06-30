@@ -1,0 +1,478 @@
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+2026 Denver Steel City Codes Summer
+Camp Volunteer Application
+Steel City Codes is a free summer camp for students in grades 4-8 for the 2025-2026 school
+year. Since we are entirely high school student-led, we rely on dedicated volunteers serving
+as teachers and mentors for our students. At the end of the session, we provide official Steel
+City Codes volunteer certifications to be used for purposes within high schools.
+APPLICATION IS OPEN FROM MARCH 14TH - APRIL 26TH
+Steel City Codes DENVER will be holding the following two sessions for this summer.
+- Session 1: June 1st - June 5th
+- Session 2: June 8th - June 12th
+Volunteers will need to stay from roughly 8:30AM to 4:30PM each day, and both of the 2
+sessions will be held at Cherry Creek High School.
+----------VISIT OUR WEBSITE FOR MORE INFORMATION: https://www.steelcitycodes.org/camps
+Email denver@steelcitycodes.org with any questions/concerns.
+----------Course Descriptions (visit our website for more detailed course descriptions):
+INTRO TO PYTHON: This introductory course will cover all of the fundamentals of coding
+including input/output, loops, logical operations, and more using the very user-friendly
+Python language!
+Recommended Math Grade Level: 4+
+INTRO TO JAVA: This introductory level course will cover all of fundamentals of coding while
+diving a little bit more deep into the logic of programming than Intro to Python might.
+Recommended Math Grade Level: 5+
+INTERMEDIATE PYTHON: This course will cover more material and move at a faster pace
+than the Intro to Python course.
+Recommended Math Grade Level: 5+ OR Have Taken Intro to Python
+INTERMEDIATE JAVA: This course will cover more material and move at a faster pace than
+the Intro to Java course.
+Recommended Math Grade Level: 6+ OR Have Taken Intro to Java
+WEBSITE DEVELOPMENT: This course will cover the basics of website development and
+teach HTML, CSS, and JavaScript. This course is for middle schoolers ONLY. This course is
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+1/12
+
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+only offered the 2nd week.
+Recommended Math Grade Level: 5+
+INTRO TO MICROCONTROLLERS: This course will teach students how to use Raspberry Pi
+Pico's boards and will incorporate CircuitPython. This course is for middle schoolers ONLY.
+This class has LIMITED slots and is first come first serve.
+Recommended Math Grade Level: 6+ OR Have Taken An Intermediate Class
+* Indicates required question
+
+1.
+
+Email *
+
+General Applicant Information
+
+2.
+
+First name *
+
+3.
+
+Last Name *
+
+4.
+
+Phone #: *
+ex: 123-456-7890
+
+5.
+
+Age *
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+2/12
+
+6/4/26, 2:48 PM
+
+6.
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+Shirt Size *
+Mark only one oval.
+XS
+S
+M
+L
+XL
+XXL
+
+7.
+
+Current Grade *
+
+Dropdown
+
+Mark only one oval.
+9th
+10th
+11th
+12th
+College
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+3/12
+
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+8.
+
+School *
+Mark only one oval.
+Grandview High School
+Cherry Creek High School
+Smoky Hill High School
+Eaglecrest High School
+Rock Canyon High School
+Other:
+
+Availability
+
+9.
+
+Check the dates you can teach: *
+Check all that apply.
+
+June 1st - June 5th
+June 8th - June 12th
+
+Qualifications
+
+10.
+
+Why would you like to volunteer with Steel City Codes? (2-3 Sentences) *
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+4/12
+
+6/4/26, 2:48 PM
+
+11.
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+Have you volunteered at a previous Steel City Codes activity? *
+Mark only one oval.
+Yes
+No
+
+12.
+
+What CS languages do you know? *
+Check all that apply
+Check all that apply.
+
+Java
+Python
+HTML
+CSS
+Javascript
+CircuitPython
+Other:
+
+13.
+
+Have you taken any computer science classes? If so, please list them.
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+5/12
+
+6/4/26, 2:48 PM
+
+14.
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+Please include any experiences you've had working with children or volunteering in
+a few bullet points.
+
+15.
+
+Please rank your skill level in Python:
+used to distinguish Intro & Intermediate teachers, leave blank if N/A
+Mark only one oval.
+1
+
+2
+
+3
+
+4
+
+5
+
+Least
+
+16.
+
+Greatest
+
+Please rank your skill level in Java:
+used to distinguish Intro & Intermediate teachers, leave blank if N/A
+Mark only one oval.
+1
+
+2
+
+3
+
+4
+
+5
+
+Least
+
+17.
+
+Greatest
+
+Please rank your skill level in HTML:
+used to distinguish Intro & Intermediate teachers, leave blank if N/A
+Mark only one oval.
+1
+
+Least
+
+2
+
+3
+
+4
+
+5
+
+Greatest
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+6/12
+
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+18.
+
+Please rank your skill level in CSS:
+used to distinguish Intro & Intermediate teachers, leave blank if N/A
+Mark only one oval.
+1
+
+2
+
+3
+
+4
+
+5
+
+Least
+
+19.
+
+Greatest
+
+Please rank your skill level in JavaScript:
+used to distinguish Intro & Intermediate teachers, leave blank if N/A
+Mark only one oval.
+1
+
+2
+
+3
+
+4
+
+5
+
+Least
+
+20.
+
+Greatest
+
+Please rank your skill level in Microcontrollers/CircuitPython:
+used to distinguish Intro & Intermediate teachers, leave blank if N/A
+Mark only one oval.
+1
+
+2
+
+3
+
+4
+
+Least
+
+5
+
+Greatest
+
+Desired Classes to Teach
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+7/12
+
+6/4/26, 2:48 PM
+
+21.
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+What is your FIRST choice course to teach? *
+Mark only one oval.
+Intro Python
+Intermediate Python
+Intro to Java
+Intermediate Java
+Web Development
+Microcontroller
+
+22.
+
+What is your SECOND choice course to teach? *
+Mark only one oval.
+Intro Python
+Intermediate Python
+Intro to Java
+Intermediate Java
+Web Development
+Microcontroller
+
+23.
+
+What other curriculums would you be able to teach? You can respond with anything
+you are comfortable with (i.e. Game Development, Processing Graphics, Green
+Foot).
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+8/12
+
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+Waiver & Release Form
+This Release and Waiver of Liability (the “release”) releases Steel City Codes (“Nonprofit”), a
+nonprofit corporation organized and existing under the laws of the State of Colorado, and
+each of its directors, officers, employees, and agents. The Volunteer desires to provide
+volunteer services for Steel City Codes and engage in activities related to serving as a
+volunteer. Volunteer understands that the scope of Volunteer’s relationship with Steel City
+Codes is limited to a volunteer position and that no compensation is expected in return for
+services provided by Volunteer; that Steel City Codes will not provide any benefits traditionally
+associated with employment to Volunteer; and that Volunteer is responsible for his/her own
+insurance coverage in the event of personal injury or illness as a result of Volunteer’s services
+to Steel City Codes.
+1) WAIVER & RELEASE: I, the Volunteer, release and forever discharge and hold harmless
+Steel City Codes and its successors and assigns from any and all liability, claims, and
+demands of whatever kind of nature, either in law or in equity, which arise or may hereafter
+arise from the services I provide to Steel City Codes. I understand and acknowledge that this
+Release discharges Steel City Codes from any liability or claim that I may have against Steel
+City Codes with respect to bodily injury, personal injury, illness, death, or property damage
+that may result from the services I provide to Steel City Codes or occurring while I am
+providing volunteer services.
+2) INSURANCE: Further I understand that Steel City Codes does not assume any
+responsibility for or obligation to provide me with financial or other assistance, including but
+not limited to medical, health, or disability benefits or insurance. I expressly waive any such
+claim for compensation or liability on the part of Steel City Codes beyond what may be
+offered freely by Steel City Codes in the event of injury or medical expenses incurred by me.
+3) MEDICAL TREATMENT: I hereby Release and forever discharge Steel City Codes from any
+claim whatsoever which arises or may hereafter arise on account of any first-aid treatment or
+other medical services rendered in connection with an emergency during my tenure as a
+volunteer with Steel City Codes.
+4) ASSUMPTION OF RISK: I understand that the services I provide to Steel City Codes may
+include activities that may be hazardous to me, including inherently dangerous activities. As a
+volunteer, I hereby expressly assume risk of injury or harm from these activities and Release
+Steel City Codes from all liability.
+5) PHOTOGRAPHIC RELEASE: I grant and convey to Steel City Codes all right, title, and
+interests in any and all photographs, images, video, or audio recordings of me or my likeness
+or voice made by Steel City Codes in connection with my providing volunteer services to Steel
+City Codes.
+6) OTHER: As a volunteer, I expressly agree that this Release is intended to be as broad and
+inclusive as permitted by the laws of the State of Colorado and that this Release shall be
+governed by and interpreted in accordance with the laws of the State of Colorado. I agree that
+in the event that any clause or provision of this Release is deemed invalid, the enforceability
+of the remaining provisions of this Release shall not be affected.
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+9/12
+
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+By signing below, I express my understanding and intent to enter into this Release and Waiver
+of Liability willingly and voluntarily.
+
+24.
+
+Volunteer Confirmation *
+BY ACKNOWLEDGING AND SIGNING BELOW, I AM DELIVERING AN ELECTRONIC
+SIGNATURE THAT WILL HAVE THE SAME EFFECT AS AN ORIGINAL MANUAL PAPER
+SIGNATURE. THE ELECTRONIC SIGNATURE WILL BE EQUALLY AS BINDING AS AN
+ORIGINAL MANUAL PAPER SIGNATURE.
+
+25.
+
+Parent/Guardian Confirmation (if under 18) *
+BY ACKNOWLEDGING AND SIGNING BELOW, I AM DELIVERING AN ELECTRONIC
+SIGNATURE THAT WILL HAVE THE SAME EFFECT AS AN ORIGINAL MANUAL PAPER
+SIGNATURE. THE ELECTRONIC SIGNATURE WILL BE EQUALLY AS BINDING AS AN
+ORIGINAL MANUAL PAPER SIGNATURE.
+
+Optional Donations: Give What You Can Initiative
+As a registered 501(c)(3), Steel City Codes relies on donations from generous individuals and
+sponsors, and we recently started a fundraising campaign for our 2024 summer camps. To
+date, we have taught over 260 students in the Denver region (all for free!), and we hope to
+reach even greater numbers by expanding our camps this summer.
+
+Consider helping us reach our goal by donating today at the link below so that our
+summer camps can remain cost-free!
+Donate (with the key term 'Denver' as the comment!):
+https://www.paypal.com/paypalme/steelcitycodes
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+10/12
+
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+Intro To SCC Ad
+
+http://youtube.com/watch?v=nCJaeuIu05A
+Skip to question 26
+
+Application Submission
+BEFORE submitting this application, you MUST sign up for a follow-up interview. Interviews
+are held the April 27th - May 1st.This will be a quick 15 minute ONLINE interview, and is the
+required second portion of our application process.
+https://www.signupgenius.com/go/10C0B4EADAE2BA2FAC34-61881283-sccvolunteer
+Thank you again for applying!
+
+26.
+
+Interview Registration Link:
+I have signed up for an interview date.
+Mark only one oval.
+Yes, I confirm that I have signed up for a SignUpGenius interview slot.
+No, but I will email a regional director for help!
+
+This content is neither created nor endorsed by Google.
+
+Forms
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+11/12
+
+6/4/26, 2:48 PM
+
+2026 Denver Steel City Codes Summer Camp Volunteer Application
+
+https://docs.google.com/forms/d/1ZKb6rg0iaojDCakIa8bpPDvPY7Rp-W_kQcBoHNwtQ9U/edit
+
+12/12
+
+
