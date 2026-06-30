@@ -129,15 +129,15 @@ export default function ClassBrowser() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/parent')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
+    <div className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
+        {/* Contextual back — the shell's top nav owns primary navigation now. */}
+        <button
+          onClick={() => navigate('/parent')}
+          className="inline-flex items-center gap-1.5 font-sans text-sm font-semibold text-ink-muted hover:text-ink transition"
+        >
+          <ArrowLeft size={16} /> Back to dashboard
         </button>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Browse classes</span>
-      </header>
 
-      <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3">
           <select
@@ -238,7 +238,6 @@ export default function ClassBrowser() {
             ))}
           </div>
         )}
-      </main>
 
       {/* Toast */}
       {toast && (

@@ -283,18 +283,14 @@ export default function ParentRegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg pb-16">
-      <header className="h-16 bg-ink-900 flex items-center px-6 gap-4 shadow-sm">
-        <button onClick={() => navigate('/parent')} className="text-white/60 hover:text-white transition">
-          <ArrowLeft size={20} />
+    <div className="max-w-lg mx-auto px-4 pt-8 pb-16">
+        {/* Contextual back — the shell's top nav owns primary navigation now. */}
+        <button
+          onClick={() => navigate('/parent')}
+          className="inline-flex items-center gap-1.5 font-sans text-sm font-semibold text-ink-muted hover:text-ink transition mb-6"
+        >
+          <ArrowLeft size={16} /> Back to dashboard
         </button>
-        <div>
-          <span className="font-sans font-bold text-white text-base tracking-tight">Register a camper</span>
-          <span className="font-sans text-white/50 text-sm ml-3">2026 Denver Camp</span>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 pt-8">
         <StepDots current={step} total={5} />
 
         <form onSubmit={handleSubmit}>
@@ -555,7 +551,6 @@ export default function ParentRegistrationPage() {
             )}
           </div>
         </form>
-      </main>
     </div>
   )
 }

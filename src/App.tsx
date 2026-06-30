@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminLayout from './components/AdminLayout'
+import ParentLayout from './components/ParentLayout'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import AdminDashboard from './pages/AdminDashboard'
@@ -62,9 +63,11 @@ function App() {
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['parent']} />}>
-            <Route path="/parent" element={<ParentDashboard />} />
-            <Route path="/parent/classes" element={<ClassBrowser />} />
-            <Route path="/parent/register" element={<ParentRegistrationPage />} />
+            <Route element={<ParentLayout />}>
+              <Route path="/parent" element={<ParentDashboard />} />
+              <Route path="/parent/classes" element={<ClassBrowser />} />
+              <Route path="/parent/register" element={<ParentRegistrationPage />} />
+            </Route>
           </Route>
 
           {/* Root → redirect based on role */}
