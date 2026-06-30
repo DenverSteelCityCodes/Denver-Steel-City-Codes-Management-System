@@ -8,6 +8,7 @@ import { useAdminStats } from '../hooks/useAdminStats'
 import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
 import { useAuth } from '../context/AuthContext'
 import StatCard from '../components/StatCard'
+import AdminNeedsAttention from '../components/AdminNeedsAttention'
 
 function greeting(hour: number) {
   if (hour < 12) return 'Good morning'
@@ -113,6 +114,9 @@ export default function AdminDashboard() {
           delta={ready ? { text: 'Awaiting open seats', tone: 'info' } : undefined}
         />
       </div>
+
+      {/* Needs attention — the real work queue, above secondary navigation */}
+      <AdminNeedsAttention />
 
       {/* Jump to — calm, neutral secondary nav (single gold hover accent) */}
       <div>
