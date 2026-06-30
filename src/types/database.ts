@@ -17,7 +17,45 @@ export interface Student {
   age: number
   medical_info: string | null
   created_at: string
+  // Extended onboarding fields (migration_student_registration.sql). Present at runtime via
+  // select('*'); all nullable since quick-added campers have only name/age/medical so far.
+  email?: string | null
+  school_district?: string | null
+  school_name?: string | null
+  grade?: string | null
+  shirt_size?: string | null
+  laptop_available?: boolean | null
+  ethnic_background?: string[] | null
+  gender?: string | null
+  parent_name?: string | null
+  parent_phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relation?: string | null
+  allergies?: string | null
+  medical_conditions?: string | null
+  free_reduced_lunch?: boolean | null
+  lunch_provision?: boolean | null
+  how_heard?: string | null
+  previous_program?: boolean | null
+  candy_consent?: boolean | null
+  waiver_signature?: string | null
+  guardian_signature?: string | null
+  waiver_signed_at?: string | null
+  registration_year?: number | null
 }
+
+// The subset of onboarding fields a parent reviews/edits when re-confirming a camper for a new
+// camp year (per-summer attestation). Excludes immutable identity (parent_id, created_at).
+export type OnboardingConfirmation = Pick<
+  Student,
+  | 'full_name' | 'grade' | 'shirt_size' | 'laptop_available'
+  | 'parent_name' | 'parent_phone' | 'emergency_contact_name'
+  | 'emergency_contact_phone' | 'emergency_contact_relation'
+  | 'allergies' | 'medical_conditions' | 'free_reduced_lunch'
+  | 'guardian_signature'
+>
+
 
 export interface Volunteer {
   id: string

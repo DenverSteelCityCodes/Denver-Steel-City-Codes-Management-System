@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Search, Lock, CheckCircle, Clock, List } from 'lucide-react'
+import { ArrowLeft, Search, Lock, CheckCircle, Clock, List, ShieldCheck } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
+import { useSessions } from '../hooks/useSessions'
 import CapacityMeter from '../components/CapacityMeter'
-import type { RegistrationStatus } from '../types/database'
+import ConfirmOnboardingModal from '../components/ConfirmOnboardingModal'
+import type { RegistrationStatus, OnboardingConfirmation } from '../types/database'
 
 // ── Section card ──────────────────────────────────────────────
 
@@ -91,16 +93,28 @@ export default function ClassBrowser() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { classes, loading: classesLoading } = useClasses()
-  const { students } = useStudents()
+  const { students, confirmOnboarding } = useStudents()
   const { registerStudent, isRegistered, getRegistration } = useRegistrations()
+  const { sessions } = useSessions()
 
   // Pre-select the camper when deep-linked from a StudentCard ("Register for another class").
   const [selectedStudentId, setSelectedStudentId] = useState<string>(searchParams.get('camper') ?? '')
   const [search, setSearch] = useState('')
   const [registeringSectionId, setRegisteringSectionId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null)
+  // A section awaiting onboarding confirmation before its registration can proceed (#42).
+  const [pendingSection, setPendingSection] = useState<SectionWithCount | null>(null)
+  const [confirming, setConfirming] = useState(false)
 
   const selectedStudent = students.find(s => s.id === selectedStudentId)
+
+  // Active camp year: the year of the open session(s). Campers must have confirmed their
+  // onboarding for THIS year before they can register — they re-confirm every summer (#42).
+  const campYear =
+    sessions.filter(s => s.is_active).reduce((max, s) => Math.max(max, s.year), 0) ||
+    new Date().getFullYear()
+  const needsConfirmation = (student?: typeof selectedStudent) =>
+    !!student && student.registration_year !== campYear
 
   const filtered = classes.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -112,7 +126,18 @@ export default function ClassBrowser() {
     setTimeout(() => setToast(null), 4000)
   }
 
-  async function handleRegister(section: SectionWithCount) {
+  // Gate: a camper whose onboarding isn't confirmed for the active year must review & confirm
+  // it first. Otherwise register immediately.
+  function handleRegister(section: SectionWithCount) {
+    if (!selectedStudentId) return
+    if (needsConfirmation(selectedStudent)) {
+      setPendingSection(section)
+      return
+    }
+    void doRegister(section)
+  }
+
+  async function doRegister(section: SectionWithCount) {
     if (!selectedStudentId) return
     setRegisteringSectionId(section.id)
     try {
@@ -125,6 +150,23 @@ export default function ClassBrowser() {
       showToast('Something went wrong. Please try again.', 'info')
     } finally {
       setRegisteringSectionId(null)
+    }
+  }
+
+  // After the parent reviews/edits and attests, persist + stamp the year, then continue the
+  // registration that triggered the prompt.
+  async function handleConfirmOnboarding(fields: OnboardingConfirmation) {
+    if (!selectedStudentId) return
+    setConfirming(true)
+    try {
+      await confirmOnboarding(selectedStudentId, fields, campYear)
+      const section = pendingSection
+      setPendingSection(null)
+      if (section) await doRegister(section)
+    } catch {
+      showToast('Could not save your confirmation. Please try again.', 'info')
+    } finally {
+      setConfirming(false)
     }
   }
 
@@ -166,6 +208,17 @@ export default function ClassBrowser() {
         {selectedStudent && (
           <div className="flex items-center gap-2 px-4 py-3 bg-brand-soft text-warning border border-brand/20 rounded-[10px] font-sans text-sm font-semibold">
             Showing eligibility for {selectedStudent.full_name} (age {selectedStudent.age}) — eligible sections are highlighted in green.
+          </div>
+        )}
+
+        {/* Per-summer confirmation notice (#42): registering prompts a quick review first. */}
+        {selectedStudent && needsConfirmation(selectedStudent) && (
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-info-soft text-info border border-info/20 rounded-[10px] font-sans text-sm">
+            <ShieldCheck size={16} className="shrink-0 mt-0.5" />
+            <span>
+              <span className="font-semibold">Quick check before you register.</span> Confirm {selectedStudent.full_name}'s
+              details are up to date for the {campYear} camp — we'll ask you to review them when you register.
+            </span>
           </div>
         )}
 
@@ -238,6 +291,17 @@ export default function ClassBrowser() {
             ))}
           </div>
         )}
+
+      {/* Per-summer onboarding confirmation gate */}
+      {pendingSection && selectedStudent && (
+        <ConfirmOnboardingModal
+          student={selectedStudent}
+          campYear={campYear}
+          submitting={confirming}
+          onConfirm={handleConfirmOnboarding}
+          onClose={() => setPendingSection(null)}
+        />
+      )}
 
       {/* Toast */}
       {toast && (

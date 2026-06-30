@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import type { Student } from '../types/database'
+import type { Student, OnboardingConfirmation } from '../types/database'
 
 export function useStudents() {
   const { user } = useAuth()
@@ -52,5 +52,26 @@ export function useStudents() {
     return data
   }
 
-  return { students, loading, error, addStudent, updateStudent, refetch: fetchStudents }
+  // Per-summer re-confirmation (#42): persist the reviewed/edited onboarding fields, re-sign the
+  // waiver, and stamp registration_year to the active camp year — which is what unlocks session
+  // registration for that year. Also mirrors medical_conditions into the legacy medical_info column.
+  async function confirmOnboarding(id: string, fields: OnboardingConfirmation, campYear: number) {
+    const { data, error } = await supabase
+      .from('students')
+      .update({
+        ...fields,
+        medical_info: fields.medical_conditions ?? null,
+        registration_year: campYear,
+        waiver_signed_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    setStudents(prev => prev.map(s => (s.id === id ? data : s)))
+    return data as Student
+  }
+
+  return { students, loading, error, addStudent, updateStudent, confirmOnboarding, refetch: fetchStudents }
 }
