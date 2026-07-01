@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useClasses } from '../hooks/useClasses'
+import { useSessions } from '../hooks/useSessions'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -95,6 +96,14 @@ export default function ParentRegistrationPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const { classes } = useClasses()
+  const { sessions } = useSessions()
+
+  // Stamp the record with the active camp year (not the calendar year) so a camper who just
+  // completed the full form is considered confirmed for this summer and isn't immediately
+  // re-prompted by the per-summer onboarding gate (#42).
+  const campYear =
+    sessions.filter(s => s.is_active).reduce((max, s) => Math.max(max, s.year), 0) ||
+    new Date().getFullYear()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>({ ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: '' })
   const [error, setError] = useState<string | null>(null)
@@ -125,6 +134,7 @@ export default function ParentRegistrationPage() {
   function validate(): string | null {
     if (step === 1) {
       if (!form.full_name.trim()) return 'Student full name is required'
+      if (!form.email.trim()) return "Student's preferred email is required"
       if (!form.school_district) return 'School district is required'
       if (!form.school_name.trim()) return 'School name is required'
       if (!form.grade) return 'Grade is required'
@@ -140,6 +150,8 @@ export default function ParentRegistrationPage() {
       if (!form.emergency_relation.trim()) return 'Emergency contact relationship is required'
     }
     if (step === 3) {
+      if (!form.allergies.trim()) return 'Please note allergies/dietary restrictions (enter "None" if not applicable)'
+      if (!form.medical_conditions.trim()) return 'Please note medical conditions (enter "None" if not applicable)'
       if (form.free_reduced_lunch === null) return 'Please answer the lunch eligibility question'
       if (!form.how_heard) return 'Please tell us how you heard about Steel City Codes'
       if (form.previous_program === null) return 'Please answer whether your student participated last year'
@@ -210,7 +222,7 @@ export default function ParentRegistrationPage() {
         waiver_signature: form.waiver_signature.trim(),
         guardian_signature: form.guardian_signature.trim(),
         waiver_signed_at: new Date().toISOString(),
-        registration_year: new Date().getFullYear(),
+        registration_year: campYear,
       })
       .select()
       .single()
@@ -306,7 +318,7 @@ export default function ParentRegistrationPage() {
                   value={form.full_name} onChange={e => set('full_name', e.target.value)} />
               </div>
               <div>
-                <label className={labelCls}>Student email <span className="font-normal text-ink-muted">(optional)</span></label>
+                <label className={labelCls}>Student's preferred email *</label>
                 <input type="email" className={inputCls} placeholder="student@example.com"
                   value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
@@ -408,11 +420,11 @@ export default function ParentRegistrationPage() {
             <div className="space-y-5">
               <h2 className="font-sans font-bold text-lg text-ink">Medical &amp; miscellaneous</h2>
               <div>
-                <label className={labelCls}>Allergies / dietary restrictions <span className="font-normal text-ink-muted">(optional)</span></label>
+                <label className={labelCls}>Allergies / dietary restrictions * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
                 <textarea className={textareaCls} rows={2} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
               </div>
               <div>
-                <label className={labelCls}>Medical conditions, learning disabilities, etc. <span className="font-normal text-ink-muted">(optional)</span></label>
+                <label className={labelCls}>Medical conditions, learning disabilities, etc. * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
                 <textarea className={textareaCls} rows={3} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
               </div>
               <div>
