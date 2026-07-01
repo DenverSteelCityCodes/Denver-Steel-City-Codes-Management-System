@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Search, Lock, CheckCircle, Clock, List, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Search, Lock, CheckCircle, Clock, List, ShieldCheck, Info } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions } from '../hooks/useSessions'
 import CapacityMeter from '../components/CapacityMeter'
 import ConfirmOnboardingModal from '../components/ConfirmOnboardingModal'
+import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import type { RegistrationStatus, OnboardingConfirmation } from '../types/database'
 
 // ── Section card ──────────────────────────────────────────────
@@ -18,16 +19,22 @@ interface SectionCardProps {
   registrationStatus?: RegistrationStatus
   onRegister?: () => void
   registering?: boolean
+  // Course-level grade restriction (#44), e.g. Microcontrollers is rising 7–9 only.
+  gradeBlock?: string | null
 }
 
-function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering }: SectionCardProps) {
-  const isEligible = studentAge !== undefined
+function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, gradeBlock }: SectionCardProps) {
+  const ageEligible = studentAge !== undefined
     ? studentAge >= section.age_min && studentAge <= section.age_max
     : true
+  // Age range fails first; otherwise a course grade rule may still disqualify the camper.
+  const ineligibleReason = !ageEligible
+    ? `Ages ${section.age_min}–${section.age_max}`
+    : (gradeBlock ?? null)
 
   const isFull = section.registered_count >= section.capacity
 
-  if (!isEligible) {
+  if (ineligibleReason) {
     return (
       <div className="opacity-70 bg-surface-sunken border border-border rounded-xl p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
@@ -37,10 +44,10 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
           )}
         </div>
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface text-ink-muted text-xs font-semibold border border-border-strong w-fit">
-          <Lock size={11} /> Ages {section.age_min}–{section.age_max}
+          <Lock size={11} /> {ineligibleReason}
         </span>
         {studentName && (
-          <p className="font-sans text-xs text-ink-faint">Not eligible for {studentName} (age {studentAge})</p>
+          <p className="font-sans text-xs text-ink-faint">Not eligible for {studentName}</p>
         )}
         <CapacityMeter registered={section.registered_count} capacity={section.capacity} />
       </div>
@@ -247,13 +254,21 @@ export default function ClassBrowser() {
           </div>
         ) : (
           <div className="space-y-10">
-            {filtered.map(cls => (
+            {filtered.map(cls => {
+              const constraint = courseConstraint(cls.name)
+              const gradeBlock = gradeBlockReason(constraint, selectedStudent?.grade)
+              return (
               <div key={cls.id} className="space-y-4">
                 {/* Course header */}
                 <div>
                   <h2 className="font-slab font-bold text-xl text-ink">{cls.name}</h2>
                   {cls.description && (
                     <p className="font-sans text-ink-muted text-sm mt-1">{cls.description}</p>
+                  )}
+                  {constraint?.requirementNote && (
+                    <p className="mt-2 inline-flex items-start gap-1.5 font-sans text-xs font-semibold bg-info-soft text-info px-2.5 py-1.5 rounded-[8px]">
+                      <Info size={13} className="shrink-0 mt-0.5" /> {constraint.requirementNote}
+                    </p>
                   )}
                 </div>
 
@@ -282,13 +297,15 @@ export default function ClassBrowser() {
                               : undefined
                           }
                           registering={registeringSectionId === sec.id}
+                          gradeBlock={gradeBlock}
                         />
                       )
                     })}
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
