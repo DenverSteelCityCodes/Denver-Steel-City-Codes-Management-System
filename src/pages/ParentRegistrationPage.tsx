@@ -31,7 +31,10 @@ const HOW_HEARD = [
 ]
 
 interface FormData {
-  // Student info
+  // Student info — the official form asks first/last separately; full_name is kept as the
+  // canonical display value (composed from the two on submit).
+  first_name: string
+  last_name: string
   full_name: string
   email: string
   school_district: string
@@ -54,9 +57,11 @@ interface FormData {
   medical_conditions: string
   free_reduced_lunch: boolean | null
   lunch_provision: boolean
+  other_info: string
   // Misc
   how_heard: string
   previous_program: boolean | null
+  program_last_year: string
   candy_consent: boolean
   // Session preferences
   session1: boolean
@@ -68,14 +73,17 @@ interface FormData {
   guardian_signature: string
 }
 
+const PREVIOUS_PROGRAMS = ['Intro to Python', 'Intermediate Python', 'Intro to Java', 'Intermediate Java']
+
 const INITIAL: FormData = {
-  full_name: '', email: '', school_district: '', school_name: '', grade: '',
+  first_name: '', last_name: '', full_name: '', email: '', school_district: '', school_name: '', grade: '',
   shirt_size: '', laptop_available: null,
   ethnic_background: [], gender: '',
   parent_name: '', parent_email: '', parent_phone: '',
   emergency_name: '', emergency_phone: '', emergency_relation: '',
   allergies: '', medical_conditions: '', free_reduced_lunch: null, lunch_provision: false,
-  how_heard: '', previous_program: null, candy_consent: false,
+  other_info: '',
+  how_heard: '', previous_program: null, program_last_year: '', candy_consent: false,
   session1: false, session2: false, class_week1: '', class_week2: '',
   waiver_signature: '', guardian_signature: '',
 }
@@ -110,6 +118,9 @@ export default function ParentRegistrationPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
+  // Display name derived from the split first/last fields (full_name is composed on submit).
+  const studentFullName = `${form.first_name} ${form.last_name}`.trim()
+
   const classNames = classes.map(c => c.name)
 
   useEffect(() => {
@@ -133,7 +144,8 @@ export default function ParentRegistrationPage() {
 
   function validate(): string | null {
     if (step === 1) {
-      if (!form.full_name.trim()) return 'Student full name is required'
+      if (!form.first_name.trim()) return "Participant's first name is required"
+      if (!form.last_name.trim()) return "Participant's last name is required"
       if (!form.email.trim()) return "Student's preferred email is required"
       if (!form.school_district) return 'School district is required'
       if (!form.school_name.trim()) return 'School name is required'
@@ -196,7 +208,9 @@ export default function ParentRegistrationPage() {
       .from('students')
       .insert({
         parent_id: user.id,
-        full_name: form.full_name.trim(),
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
         age: gradeToAge(form.grade),
         medical_info: form.medical_conditions || null,
         email: form.email || null,
@@ -214,10 +228,12 @@ export default function ParentRegistrationPage() {
         emergency_contact_relation: form.emergency_relation.trim(),
         allergies: form.allergies || null,
         medical_conditions: form.medical_conditions || null,
+        other_info: form.other_info || null,
         free_reduced_lunch: form.free_reduced_lunch,
         lunch_provision: form.lunch_provision,
         how_heard: form.how_heard,
         previous_program: form.previous_program,
+        program_last_year: form.previous_program ? form.program_last_year || null : null,
         candy_consent: form.candy_consent,
         waiver_signature: form.waiver_signature.trim(),
         guardian_signature: form.guardian_signature.trim(),
@@ -281,7 +297,7 @@ export default function ParentRegistrationPage() {
           </div>
           <h1 className="font-sans font-bold text-2xl text-ink mb-2">Registration submitted!</h1>
           <p className="font-sans text-ink-muted text-sm mb-6">
-            <strong className="text-ink">{form.full_name}</strong> has been registered. Your registration is pending confirmation from our team.
+            <strong className="text-ink">{studentFullName}</strong> has been registered. Your registration is pending confirmation from our team.
           </p>
           <button
             onClick={() => navigate('/parent')}
@@ -312,10 +328,17 @@ export default function ParentRegistrationPage() {
             <div className="space-y-5">
               <h2 className="font-sans font-bold text-lg text-ink">Student information</h2>
 
-              <div>
-                <label className={labelCls}>Full name *</label>
-                <input type="text" className={inputCls} placeholder="Jane Smith"
-                  value={form.full_name} onChange={e => set('full_name', e.target.value)} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>First name *</label>
+                  <input type="text" className={inputCls} placeholder="Jane"
+                    value={form.first_name} onChange={e => set('first_name', e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Last name *</label>
+                  <input type="text" className={inputCls} placeholder="Smith"
+                    value={form.last_name} onChange={e => set('last_name', e.target.value)} />
+                </div>
               </div>
               <div>
                 <label className={labelCls}>Student's preferred email *</label>
@@ -428,6 +451,10 @@ export default function ParentRegistrationPage() {
                 <textarea className={textareaCls} rows={3} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
               </div>
               <div>
+                <label className={labelCls}>Other information about participant <span className="font-normal text-ink-muted">(optional)</span></label>
+                <textarea className={textareaCls} rows={2} value={form.other_info} onChange={e => set('other_info', e.target.value)} />
+              </div>
+              <div>
                 <label className={labelCls}>Is your student eligible for free / reduced lunch? *</label>
                 <div className="flex gap-3">
                   <button type="button" onClick={() => set('free_reduced_lunch', true)} className={yesNoCls(form.free_reduced_lunch, true)}>Yes</button>
@@ -455,6 +482,15 @@ export default function ParentRegistrationPage() {
                   <button type="button" onClick={() => set('previous_program', false)} className={yesNoCls(form.previous_program, false)}>No</button>
                 </div>
               </div>
+              {form.previous_program === true && (
+                <div>
+                  <label className={labelCls}>Which program did they take?</label>
+                  <select className={inputCls} value={form.program_last_year} onChange={e => set('program_last_year', e.target.value)}>
+                    <option value="">Select…</option>
+                    {PREVIOUS_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              )}
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" className="w-4 h-4 accent-brand" checked={form.candy_consent}
                   onChange={e => set('candy_consent', e.target.checked)} />
@@ -523,7 +559,7 @@ export default function ParentRegistrationPage() {
               <div>
                 <label className={labelCls}>Student / registrant signature *</label>
                 <p className="font-sans text-xs text-ink-muted mb-2">Type the student's full legal name as an electronic signature.</p>
-                <input type="text" className={inputCls} placeholder={form.full_name || 'Student full name'}
+                <input type="text" className={inputCls} placeholder={studentFullName || 'Student full name'}
                   value={form.waiver_signature} onChange={e => set('waiver_signature', e.target.value)} />
               </div>
 

@@ -19,6 +19,8 @@ export interface Student {
   created_at: string
   // Extended onboarding fields (migration_student_registration.sql). Present at runtime via
   // select('*'); all nullable since quick-added campers have only name/age/medical so far.
+  first_name?: string | null
+  last_name?: string | null
   email?: string | null
   school_district?: string | null
   school_name?: string | null
@@ -34,10 +36,12 @@ export interface Student {
   emergency_contact_relation?: string | null
   allergies?: string | null
   medical_conditions?: string | null
+  other_info?: string | null
   free_reduced_lunch?: boolean | null
   lunch_provision?: boolean | null
   how_heard?: string | null
   previous_program?: boolean | null
+  program_last_year?: string | null
   candy_consent?: boolean | null
   waiver_signature?: string | null
   guardian_signature?: string | null
