@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -102,6 +102,8 @@ function StepDots({ current, total }: { current: number; total: number }) {
 
 export default function ParentRegistrationPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const studentId = searchParams.get('studentId')
   const { profile } = useAuth()
   const { classes } = useClasses()
   const { sessions } = useSessions()
@@ -114,6 +116,9 @@ export default function ParentRegistrationPage() {
     new Date().getFullYear()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>({ ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: '' })
+  // When re-registering an existing camper (?studentId=…), we update that student row for the
+  // new camp year instead of inserting a duplicate. null = brand-new camper.
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -128,6 +133,48 @@ export default function ParentRegistrationPage() {
       setForm(f => ({ ...f, parent_name: profile.display_name }))
     }
   }, [profile])
+
+  // Re-registration: prefill the form from the existing camper so the parent reviews and
+  // updates rather than re-entering everything. Waiver signatures and session/class choices
+  // are intentionally left blank — they must be provided fresh for the new camp year.
+  useEffect(() => {
+    if (!studentId) return
+    let cancelled = false
+    ;(async () => {
+      const { data, error: fetchErr } = await supabase
+        .from('students').select('*').eq('id', studentId).maybeSingle()
+      if (cancelled || fetchErr || !data) return
+      setEditingId(data.id)
+      setForm(f => ({
+        ...f,
+        first_name: data.first_name ?? '',
+        last_name: data.last_name ?? '',
+        email: data.email ?? '',
+        school_district: data.school_district ?? '',
+        school_name: data.school_name ?? '',
+        grade: data.grade ?? '',
+        shirt_size: data.shirt_size ?? '',
+        laptop_available: data.laptop_available ?? null,
+        ethnic_background: data.ethnic_background ?? [],
+        gender: data.gender ?? '',
+        parent_name: data.parent_name ?? f.parent_name,
+        parent_phone: data.parent_phone ?? '',
+        emergency_name: data.emergency_contact_name ?? '',
+        emergency_phone: data.emergency_contact_phone ?? '',
+        emergency_relation: data.emergency_contact_relation ?? '',
+        allergies: data.allergies ?? '',
+        medical_conditions: data.medical_conditions ?? '',
+        other_info: data.other_info ?? '',
+        free_reduced_lunch: data.free_reduced_lunch ?? null,
+        lunch_provision: data.lunch_provision ?? false,
+        how_heard: data.how_heard ?? '',
+        previous_program: data.previous_program ?? null,
+        program_last_year: data.program_last_year ?? '',
+        candy_consent: data.candy_consent ?? false,
+      }))
+    })()
+    return () => { cancelled = true }
+  }, [studentId])
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm(f => ({ ...f, [key]: value }))
@@ -204,44 +251,44 @@ export default function ParentRegistrationPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setError('Not authenticated'); setSubmitting(false); return }
 
-    const { data: student, error: studentErr } = await supabase
-      .from('students')
-      .insert({
-        parent_id: user.id,
-        first_name: form.first_name.trim(),
-        last_name: form.last_name.trim(),
-        full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
-        age: gradeToAge(form.grade),
-        medical_info: form.medical_conditions || null,
-        email: form.email || null,
-        school_district: form.school_district,
-        school_name: form.school_name.trim(),
-        grade: form.grade,
-        shirt_size: form.shirt_size,
-        laptop_available: form.laptop_available,
-        ethnic_background: form.ethnic_background.length > 0 ? form.ethnic_background : null,
-        gender: form.gender || null,
-        parent_name: form.parent_name.trim(),
-        parent_phone: form.parent_phone.trim(),
-        emergency_contact_name: form.emergency_name.trim(),
-        emergency_contact_phone: form.emergency_phone.trim(),
-        emergency_contact_relation: form.emergency_relation.trim(),
-        allergies: form.allergies || null,
-        medical_conditions: form.medical_conditions || null,
-        other_info: form.other_info || null,
-        free_reduced_lunch: form.free_reduced_lunch,
-        lunch_provision: form.lunch_provision,
-        how_heard: form.how_heard,
-        previous_program: form.previous_program,
-        program_last_year: form.previous_program ? form.program_last_year || null : null,
-        candy_consent: form.candy_consent,
-        waiver_signature: form.waiver_signature.trim(),
-        guardian_signature: form.guardian_signature.trim(),
-        waiver_signed_at: new Date().toISOString(),
-        registration_year: campYear,
-      })
-      .select()
-      .single()
+    const studentPayload = {
+      first_name: form.first_name.trim(),
+      last_name: form.last_name.trim(),
+      full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
+      age: gradeToAge(form.grade),
+      medical_info: form.medical_conditions || null,
+      email: form.email || null,
+      school_district: form.school_district,
+      school_name: form.school_name.trim(),
+      grade: form.grade,
+      shirt_size: form.shirt_size,
+      laptop_available: form.laptop_available,
+      ethnic_background: form.ethnic_background.length > 0 ? form.ethnic_background : null,
+      gender: form.gender || null,
+      parent_name: form.parent_name.trim(),
+      parent_phone: form.parent_phone.trim(),
+      emergency_contact_name: form.emergency_name.trim(),
+      emergency_contact_phone: form.emergency_phone.trim(),
+      emergency_contact_relation: form.emergency_relation.trim(),
+      allergies: form.allergies || null,
+      medical_conditions: form.medical_conditions || null,
+      other_info: form.other_info || null,
+      free_reduced_lunch: form.free_reduced_lunch,
+      lunch_provision: form.lunch_provision,
+      how_heard: form.how_heard,
+      previous_program: form.previous_program,
+      program_last_year: form.previous_program ? form.program_last_year || null : null,
+      candy_consent: form.candy_consent,
+      waiver_signature: form.waiver_signature.trim(),
+      guardian_signature: form.guardian_signature.trim(),
+      waiver_signed_at: new Date().toISOString(),
+      registration_year: campYear,
+    }
+
+    // Re-registration updates the existing camper for the new year; a brand-new camper inserts.
+    const { data: student, error: studentErr } = editingId
+      ? await supabase.from('students').update(studentPayload).eq('id', editingId).select().single()
+      : await supabase.from('students').insert({ parent_id: user.id, ...studentPayload }).select().single()
 
     if (studentErr) {
       setError('Failed to save registration. Please try again.')
