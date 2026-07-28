@@ -249,20 +249,30 @@ export default function ParentRegistrationPage() {
       return
     }
 
-    // Create registrations for selected sessions
-    const regsToCreate: { student_id: string; section_id: string; status: string }[] = []
-
+    // Create registrations for selected sessions. Dedupe by section_id: a section with
+    // week === null serves both sessions, so picking it for Session 1 and Session 2 would
+    // otherwise insert the same (student_id, section_id) twice and violate the UNIQUE
+    // constraint — failing the whole insert and silently losing the registration.
+    const sectionIds = new Set<string>()
     if (form.session1 && form.class_week1) {
       const section = findSectionForClass(form.class_week1, 1)
-      if (section) regsToCreate.push({ student_id: student.id, section_id: section, status: 'pending' })
+      if (section) sectionIds.add(section)
     }
     if (form.session2 && form.class_week2) {
       const section = findSectionForClass(form.class_week2, 2)
-      if (section) regsToCreate.push({ student_id: student.id, section_id: section, status: 'pending' })
+      if (section) sectionIds.add(section)
     }
+    const regsToCreate = [...sectionIds].map(section_id => ({
+      student_id: student.id, section_id, status: 'pending',
+    }))
 
     if (regsToCreate.length > 0) {
-      await supabase.from('registrations').insert(regsToCreate)
+      const { error: regErr } = await supabase.from('registrations').insert(regsToCreate)
+      if (regErr) {
+        setError('Your camper was saved, but we could not record the class selection. Please add the class from your dashboard.')
+        setSubmitting(false)
+        return
+      }
     }
 
     setSubmitted(true)
