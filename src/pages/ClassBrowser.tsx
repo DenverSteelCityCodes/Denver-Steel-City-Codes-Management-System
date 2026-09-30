@@ -6,7 +6,7 @@ import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear } from '../hooks/useSessions'
 import CapacityMeter from '../components/CapacityMeter'
-import ConfirmOnboardingModal from '../components/ConfirmOnboardingModal'
+import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import type { RegistrationStatus, OnboardingConfirmation } from '../types/database'
 
@@ -192,7 +192,9 @@ export default function ClassBrowser() {
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3">
+          <label htmlFor="browse-camper" className="sr-only">Camper</label>
           <select
+            id="browse-camper"
             value={selectedStudentId}
             onChange={e => setSelectedStudentId(e.target.value)}
             className="h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition sm:w-64"
@@ -205,7 +207,10 @@ export default function ClassBrowser() {
 
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
+            <label htmlFor="browse-search" className="sr-only">Search courses</label>
             <input
+              id="browse-search"
+              type="search"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search courses…"
@@ -230,6 +235,18 @@ export default function ClassBrowser() {
               details are up to date for the {campYear} camp — we'll ask you to review them when you register.
             </span>
           </div>
+        )}
+
+        {/* Per-summer onboarding confirmation gate — opens in place, above the classes */}
+        {pendingSection && selectedStudent && (
+          <ConfirmOnboardingPanel
+            key={`${selectedStudent.id}-${pendingSection.id}`}
+            student={selectedStudent}
+            campYear={campYear}
+            submitting={confirming}
+            onConfirm={handleConfirmOnboarding}
+            onClose={() => setPendingSection(null)}
+          />
         )}
 
         {!selectedStudentId && (
@@ -312,20 +329,9 @@ export default function ClassBrowser() {
           </div>
         )}
 
-      {/* Per-summer onboarding confirmation gate */}
-      {pendingSection && selectedStudent && (
-        <ConfirmOnboardingModal
-          student={selectedStudent}
-          campYear={campYear}
-          submitting={confirming}
-          onConfirm={handleConfirmOnboarding}
-          onClose={() => setPendingSection(null)}
-        />
-      )}
-
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 max-w-sm px-4 py-3 rounded-xl shadow-lg font-sans text-sm font-semibold border-l-4 ${
+        <div role="status" aria-live="polite" className={`fixed bottom-6 right-6 left-6 sm:left-auto max-w-sm px-4 py-3 rounded-xl shadow-lg font-sans text-sm font-semibold border-l-4 ${
           toast.type === 'success'
             ? 'bg-surface-raised border-success text-ink'
             : 'bg-surface-raised border-info text-ink'

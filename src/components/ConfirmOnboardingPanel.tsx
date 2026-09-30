@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { X, ShieldCheck } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ShieldCheck } from 'lucide-react'
+import { GRADES } from '../lib/campers'
 import type { Student, OnboardingConfirmation } from '../types/database'
 
 interface Props {
@@ -11,10 +12,10 @@ interface Props {
 }
 
 // Per-summer onboarding confirmation (#42). A camper can only be registered for a session once
-// their onboarding has been reviewed and confirmed for the active camp year. This modal shows the
+// their onboarding has been reviewed and confirmed for the active camp year. This inline panel shows the
 // camper's existing info (prefilled), lets the parent correct anything stale, re-sign the waiver,
 // and explicitly attest it is current — the official form requires fresh info every summer.
-export default function ConfirmOnboardingModal({ student, campYear, submitting, onConfirm, onClose }: Props) {
+export default function ConfirmOnboardingPanel({ student, campYear, submitting, onConfirm, onClose }: Props) {
   const [form, setForm] = useState<OnboardingConfirmation>({
     full_name: student.full_name,
     grade: student.grade ?? null,
@@ -32,6 +33,13 @@ export default function ConfirmOnboardingModal({ student, campYear, submitting, 
   })
   const [attested, setAttested] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const panelRef = useRef<HTMLElement>(null)
+
+  // It opens in place above the class list, so bring it into view and put focus on it.
+  useEffect(() => {
+    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    panelRef.current?.focus({ preventScroll: true })
+  }, [])
 
   function set<K extends keyof OnboardingConfirmation>(key: K, value: OnboardingConfirmation[K]) {
     setForm(f => ({ ...f, [key]: value }))
@@ -83,41 +91,39 @@ export default function ConfirmOnboardingModal({ student, campYear, submitting, 
     }`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-ink-950/50" onClick={onClose} />
-
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-surface-raised rounded-2xl shadow-lg">
-        <div className="sticky top-0 bg-surface-raised border-b border-border px-6 py-4 flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-sans font-semibold text-xl text-ink flex items-center gap-2">
-              <ShieldCheck size={18} className="text-warning" /> Confirm details for {campYear}
-            </h2>
-            <p className="font-sans text-sm text-ink-muted mt-0.5">
-              Review {student.full_name}'s info and update anything that's changed before registering.
-            </p>
-          </div>
-          <button onClick={onClose} className="text-ink-faint hover:text-ink transition p-1 rounded-[10px] shrink-0">
-            <X size={20} />
-          </button>
+    <section
+      ref={panelRef}
+      tabIndex={-1}
+      aria-labelledby="onboarding-title"
+      onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+      className="bg-surface border border-brand rounded-xl shadow-sm scroll-mt-24 focus:outline-none"
+    >
+        <div className="border-b border-border px-5 sm:px-6 py-4">
+          <h2 id="onboarding-title" className="font-sans font-semibold text-xl text-ink flex items-center gap-2">
+            <ShieldCheck size={18} className="text-warning" /> Confirm {student.full_name}'s details for {campYear}
+          </h2>
+          <p className="font-sans text-sm text-ink-muted mt-0.5">
+            Camp needs up-to-date info every summer. Review it, change anything that's different, and re-sign to register.
+          </p>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-5 sm:p-6 space-y-4">
           <div>
-            <label className={labelCls}>Camper's full name *</label>
-            <input className={inputCls} value={form.full_name ?? ''} onChange={e => set('full_name', e.target.value)} />
+            <label htmlFor="ob-1" className={labelCls}>Camper's full name *</label>
+            <input id="ob-1" className={inputCls} value={form.full_name ?? ''} onChange={e => set('full_name', e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Grade ({campYear - 1}-{campYear} school year) *</label>
-              <select className={inputCls} value={form.grade ?? ''} onChange={e => set('grade', e.target.value)}>
+              <label htmlFor="ob-2" className={labelCls}>Grade ({campYear - 1}-{campYear} school year) *</label>
+              <select id="ob-2" className={inputCls} value={form.grade ?? ''} onChange={e => set('grade', e.target.value)}>
                 <option value="">Select…</option>
-                {['4th', '5th', '6th', '7th', '8th'].map(g => <option key={g} value={g}>{g}</option>)}
+                {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelCls}>Shirt size *</label>
-              <select className={inputCls} value={form.shirt_size ?? ''} onChange={e => set('shirt_size', e.target.value)}>
+              <label htmlFor="ob-3" className={labelCls}>Shirt size *</label>
+              <select id="ob-3" className={inputCls} value={form.shirt_size ?? ''} onChange={e => set('shirt_size', e.target.value)}>
                 <option value="">Select…</option>
                 {['XS', 'S', 'M', 'L', 'XL'].map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -125,52 +131,52 @@ export default function ConfirmOnboardingModal({ student, campYear, submitting, 
           </div>
 
           <div>
-            <label className={labelCls}>Can your camper bring a laptop each day? *</label>
+            <p id="ob-4" className={labelCls}>Can your camper bring a laptop each day? *</p>
             <div className="flex gap-2">
               <button type="button" className={yesNo(form.laptop_available, true)} onClick={() => set('laptop_available', true)}>Yes</button>
               <button type="button" className={yesNo(form.laptop_available, false)} onClick={() => set('laptop_available', false)}>No</button>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Parent/guardian name *</label>
-              <input className={inputCls} value={form.parent_name ?? ''} onChange={e => set('parent_name', e.target.value)} />
+              <label htmlFor="ob-5" className={labelCls}>Parent/guardian name *</label>
+              <input id="ob-5" className={inputCls} value={form.parent_name ?? ''} onChange={e => set('parent_name', e.target.value)} />
             </div>
             <div>
-              <label className={labelCls}>Parent/guardian phone *</label>
-              <input type="tel" className={inputCls} value={form.parent_phone ?? ''} onChange={e => set('parent_phone', e.target.value)} />
+              <label htmlFor="ob-6" className={labelCls}>Parent/guardian phone *</label>
+              <input id="ob-6" type="tel" className={inputCls} value={form.parent_phone ?? ''} onChange={e => set('parent_phone', e.target.value)} />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Emergency contact name *</label>
-              <input className={inputCls} value={form.emergency_contact_name ?? ''} onChange={e => set('emergency_contact_name', e.target.value)} />
+              <label htmlFor="ob-7" className={labelCls}>Emergency contact name *</label>
+              <input id="ob-7" className={inputCls} value={form.emergency_contact_name ?? ''} onChange={e => set('emergency_contact_name', e.target.value)} />
             </div>
             <div>
-              <label className={labelCls}>Emergency contact phone *</label>
-              <input type="tel" className={inputCls} value={form.emergency_contact_phone ?? ''} onChange={e => set('emergency_contact_phone', e.target.value)} />
+              <label htmlFor="ob-8" className={labelCls}>Emergency contact phone *</label>
+              <input id="ob-8" type="tel" className={inputCls} value={form.emergency_contact_phone ?? ''} onChange={e => set('emergency_contact_phone', e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className={labelCls}>Emergency contact relationship *</label>
-            <input className={inputCls} placeholder="e.g. Aunt, Grandparent" value={form.emergency_contact_relation ?? ''} onChange={e => set('emergency_contact_relation', e.target.value)} />
+            <label htmlFor="ob-9" className={labelCls}>Emergency contact relationship *</label>
+            <input id="ob-9" className={inputCls} placeholder="e.g. Aunt, Grandparent" value={form.emergency_contact_relation ?? ''} onChange={e => set('emergency_contact_relation', e.target.value)} />
           </div>
 
           <div>
-            <label className={labelCls}>Allergies / dietary restrictions * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
-            <input className={inputCls} value={form.allergies ?? ''} onChange={e => set('allergies', e.target.value)} />
+            <label htmlFor="ob-10" className={labelCls}>Allergies / dietary restrictions * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
+            <input id="ob-10" className={inputCls} value={form.allergies ?? ''} onChange={e => set('allergies', e.target.value)} />
           </div>
 
           <div>
-            <label className={labelCls}>Medical conditions, learning needs, etc. * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
-            <input className={inputCls} value={form.medical_conditions ?? ''} onChange={e => set('medical_conditions', e.target.value)} />
+            <label htmlFor="ob-11" className={labelCls}>Medical conditions, learning needs, etc. * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
+            <input id="ob-11" className={inputCls} value={form.medical_conditions ?? ''} onChange={e => set('medical_conditions', e.target.value)} />
           </div>
 
           <div>
-            <label className={labelCls}>Does your camper qualify for free/reduced lunch and need lunch provided? *</label>
+            <p id="ob-12" className={labelCls}>Does your camper qualify for free/reduced lunch and need lunch provided? *</p>
             <div className="flex gap-2">
               <button type="button" className={yesNo(form.free_reduced_lunch, true)} onClick={() => set('free_reduced_lunch', true)}>Yes</button>
               <button type="button" className={yesNo(form.free_reduced_lunch, false)} onClick={() => set('free_reduced_lunch', false)}>No</button>
@@ -178,8 +184,8 @@ export default function ConfirmOnboardingModal({ student, campYear, submitting, 
           </div>
 
           <div>
-            <label className={labelCls}>Re-sign as guardian *</label>
-            <input className={inputCls} placeholder="Type your full legal name" value={form.guardian_signature ?? ''} onChange={e => set('guardian_signature', e.target.value)} />
+            <label htmlFor="ob-13" className={labelCls}>Re-sign as guardian *</label>
+            <input id="ob-13" className={inputCls} placeholder="Type your full legal name" value={form.guardian_signature ?? ''} onChange={e => set('guardian_signature', e.target.value)} />
           </div>
 
           <label className="flex items-start gap-2.5 p-3 rounded-[10px] bg-surface-sunken border border-border cursor-pointer">
@@ -194,7 +200,7 @@ export default function ConfirmOnboardingModal({ student, campYear, submitting, 
           )}
         </div>
 
-        <div className="sticky bottom-0 bg-surface-raised border-t border-border px-6 py-4 flex justify-end gap-2">
+        <div className="border-t border-border px-5 sm:px-6 py-4 flex justify-end gap-2">
           <button onClick={onClose} className="h-11 px-4 font-sans font-semibold text-sm text-ink-muted rounded-[10px] hover:bg-surface-sunken transition">
             Cancel
           </button>
@@ -206,10 +212,9 @@ export default function ConfirmOnboardingModal({ student, campYear, submitting, 
             {submitting
               ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
               : <ShieldCheck size={16} />}
-            {submitting ? 'Confirming…' : 'Confirm & continue'}
+            {submitting ? 'Confirming…' : 'Confirm & register'}
           </button>
         </div>
-      </div>
-    </div>
+    </section>
   )
 }

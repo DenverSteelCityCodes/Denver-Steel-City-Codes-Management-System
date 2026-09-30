@@ -1,22 +1,19 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { BrandBar } from '../components/Wordmark'
 
 export default function LoginPage() {
-  const navigate = useNavigate()
   const { role } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Already logged in — redirect
-  if (role === 'admin') { navigate('/admin', { replace: true }); return null }
-  if (role === 'volunteer') { navigate('/volunteer', { replace: true }); return null }
-  if (role === 'parent') { navigate('/parent', { replace: true }); return null }
+  // Already signed in (or just signed in — AuthContext resolves the role) → go to that area.
+  if (role) return <Navigate to={`/${role}`} replace />
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -99,6 +96,12 @@ export default function LoginPage() {
           Don't have an account?{' '}
           <Link to="/signup" className="text-ink font-semibold hover:underline">
             Sign up
+          </Link>
+        </p>
+        <p className="mt-2 text-center text-sm font-sans text-ink-muted">
+          Want to volunteer?{' '}
+          <Link to="/apply" className="text-ink font-semibold hover:underline">
+            Apply here
           </Link>
         </p>
       </div>

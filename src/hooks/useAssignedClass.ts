@@ -7,6 +7,11 @@ export interface AssignedStudent {
   full_name: string
   age: number
   medical_info: string | null
+  allergies: string | null
+  medical_conditions: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  parent_phone: string | null
 }
 
 export interface AssignedSection {
@@ -101,7 +106,7 @@ export function useAssignedClass() {
       allSections.map(async sec => {
         const { data: regs } = await supabase
           .from('registrations')
-          .select('students(id, full_name, age, medical_info)')
+          .select('students(id, full_name, age, medical_info, allergies, medical_conditions, emergency_contact_name, emergency_contact_phone, parent_phone)')
           .eq('section_id', sec.id)
           .in('status', ['confirmed', 'pending'])
 

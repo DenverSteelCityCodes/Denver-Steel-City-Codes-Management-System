@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, Download, AlertCircle, UserCheck, ChevronDown } from 'lucide-react'
 import InlineConfirm from '../components/InlineConfirm'
+import { realNote } from '../lib/campers'
 import { useAdminStudents, type AdminStudent } from '../hooks/useAdminStudents'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import type { RegistrationStatus } from '../types/database'
@@ -11,12 +12,6 @@ const STATUS_BADGE: Record<RegistrationStatus, string> = {
   pending:    'bg-warning-soft text-warning',
   waitlisted: 'bg-info-soft text-info',
   cancelled:  'bg-danger-soft text-danger',
-}
-
-// "None" / "N/A" answers from the registration form aren't medical flags.
-function realNote(text: string | null | undefined): string | null {
-  const t = (text ?? '').trim()
-  return t && !/^(none|n\/?a|no|nope|-)\.?$/i.test(t) ? t : null
 }
 
 type RegAction = { kind: 'remove'; regId: string } | null

@@ -1,41 +1,30 @@
-import { useState } from 'react'
-import { HeartPulse, X } from 'lucide-react'
+import { useId, useState } from 'react'
+import { HeartPulse } from 'lucide-react'
 
-interface Props {
-  info: string
-}
-
-export default function MedicalFlag({ info }: Props) {
+// Medical / allergy chip that expands the details in place (no modal). Render the chip where it
+// belongs in the header and let the note flow below it via `children`-less layout: the note is
+// rendered right after the chip, full width, when open.
+export default function MedicalFlag({ info }: { info: string }) {
   const [open, setOpen] = useState(false)
+  const id = useId()
 
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls={id}
         className="flex items-center gap-1 px-2 py-1 rounded-full bg-danger-soft text-danger text-xs font-sans font-semibold hover:brightness-95 transition"
-        title="Medical / allergy info"
       >
         <HeartPulse size={12} />
         Medical
       </button>
-
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-ink-950/50" onClick={() => setOpen(false)} />
-          <div className="relative w-full max-w-sm bg-danger-soft border border-danger/30 rounded-xl shadow-lg p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-danger font-sans font-semibold text-sm">
-                <HeartPulse size={16} />
-                Medical / allergy info
-              </div>
-              <button onClick={() => setOpen(false)} className="text-danger/60 hover:text-danger transition">
-                <X size={18} />
-              </button>
-            </div>
-            <p className="font-sans text-sm text-ink leading-relaxed">{info}</p>
-            <p className="mt-3 text-xs font-sans text-ink-muted">Visible to assigned volunteers and admins only.</p>
-          </div>
-        </div>
+        <p id={id} className="basis-full mt-1 px-3 py-2 rounded-[8px] bg-danger-soft border border-danger/20 font-sans text-sm text-ink">
+          {info}
+          <span className="block mt-1 text-xs text-ink-muted">Shared with your camper's volunteers and camp admins only.</span>
+        </p>
       )}
     </>
   )

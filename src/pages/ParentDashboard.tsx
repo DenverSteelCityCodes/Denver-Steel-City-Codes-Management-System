@@ -1,11 +1,9 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, GraduationCap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations, type RegistrationWithSection } from '../hooks/useRegistrations'
 import StudentCard from '../components/StudentCard'
-import AddStudentForm from '../components/AddStudentForm'
 import SessionStrip from '../components/SessionStrip'
 import type { Student } from '../types/database'
 
@@ -31,23 +29,16 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
 
 export default function ParentDashboard() {
   const { profile } = useAuth()
-  const { students, loading, addStudent, updateStudent } = useStudents()
+  const { students, loading, updateStudent } = useStudents()
   const { registrations } = useRegistrations()
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
-
-  async function handleSubmitStudent(payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) {
-    if (editingStudent) await updateStudent(editingStudent.id, payload)
-    else await addStudent(payload)
-  }
 
   const subhead = buildSubhead(students, registrations)
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10">
-        <div className="flex items-start justify-between mb-8">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-10">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-sans text-[40px] leading-[46px] font-bold tracking-[-0.01em] text-ink mb-1">
+            <h1 className="font-sans text-[32px] leading-[38px] sm:text-[40px] sm:leading-[46px] font-bold tracking-[-0.01em] text-ink mb-1">
               Welcome, {profile?.display_name?.split(' ')[0]}
             </h1>
             <p className="font-slab text-ink-muted text-lg">{subhead}</p>
@@ -55,7 +46,7 @@ export default function ParentDashboard() {
 
           {/* Action hierarchy (§3): one secondary (Browse classes) + one gold primary (Add camper).
               The per-camper Register action now lives on each StudentCard footer. */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Link
               to="/parent/classes"
               className="h-11 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition shadow-sm"
@@ -63,13 +54,14 @@ export default function ParentDashboard() {
               <GraduationCap size={16} />
               Browse classes
             </Link>
-            <button
-              onClick={() => setShowAddForm(true)}
+            {/* New campers go through the full registration (waiver + emergency contact), not a quick add. */}
+            <Link
+              to="/parent/register"
               className="h-11 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 transition shadow-sm"
             >
               <Plus size={16} />
               Add camper
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -88,12 +80,12 @@ export default function ParentDashboard() {
             </div>
             <h2 className="font-sans font-semibold text-xl text-ink mb-2">No campers yet</h2>
             <p className="font-slab text-ink-muted mb-6">Add your first camper to get started.</p>
-            <button
-              onClick={() => setShowAddForm(true)}
+            <Link
+              to="/parent/register"
               className="h-11 px-5 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] inline-flex items-center gap-2 transition shadow-sm"
             >
-              <Plus size={16} /> Add camper
-            </button>
+              <Plus size={16} /> Register a camper
+            </Link>
           </div>
         ) : (
           <div className="space-y-3">
@@ -102,22 +94,11 @@ export default function ParentDashboard() {
                 key={student.id}
                 student={student}
                 registrations={registrations.filter(r => r.student_id === student.id)}
-                onEdit={setEditingStudent}
+                onSave={async (id, patch) => { await updateStudent(id, patch) }}
               />
             ))}
           </div>
         )}
-
-      {(showAddForm || editingStudent) && (
-        <AddStudentForm
-          student={editingStudent}
-          onSubmit={handleSubmitStudent}
-          onClose={() => {
-            setShowAddForm(false)
-            setEditingStudent(null)
-          }}
-        />
-      )}
     </div>
   )
 }

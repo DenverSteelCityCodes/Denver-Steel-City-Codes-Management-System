@@ -8,6 +8,7 @@ import { useSessions, activeCampYear, campSessions as activeSessions, formatSess
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useFormConfig } from '../hooks/useFormConfig'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
+import { GRADES, gradeToAge } from '../lib/campers'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -16,7 +17,6 @@ const SCHOOL_DISTRICTS = [
   'Adams 12 Five Star Schools',
   'Other',
 ]
-const GRADES = ['4th', '5th', '6th', '7th', '8th']
 const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL']
 const ETHNIC_OPTIONS = [
   'American Indian or Alaska Native',
@@ -77,14 +77,6 @@ interface FormData {
 }
 
 const PREVIOUS_PROGRAMS = ['Intro to Python', 'Intermediate Python', 'Intro to Java', 'Intermediate Java']
-
-// Grade → age used for section eligibility (sections are age-banded). Rising-grade campers are
-// typically this age during camp.
-const GRADE_AGE: Record<string, number> = { '4th': 9, '5th': 10, '6th': 11, '7th': 12, '8th': 13 }
-function gradeToAge(grade: string): number {
-  return GRADE_AGE[grade] ?? 10
-}
-
 
 // One selectable class for a given week: the section the camper would join, or why they can't.
 interface ClassOption {
@@ -169,7 +161,7 @@ export default function ParentRegistrationPage() {
   // Classes the camper can pick for a week. A class with no section that week isn't offered at
   // all; one whose sections don't fit the camper's age (or the course grade rule) is shown locked.
   function classOptions(week: 1 | 2): ClassOption[] {
-    const camperAge = form.grade ? gradeToAge(form.grade) : null
+    const camperAge = gradeToAge(form.grade)
     return classes.flatMap((c): ClassOption[] => {
       const weekSections = c.sections.filter(s => s.week === week || s.week === null)
       if (weekSections.length === 0) return []
@@ -315,7 +307,7 @@ export default function ParentRegistrationPage() {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       full_name: `${form.first_name.trim()} ${form.last_name.trim()}`.trim(),
-      age: gradeToAge(form.grade),
+      age: gradeToAge(form.grade) ?? 10,
       medical_info: form.medical_conditions || null,
       email: form.email || null,
       school_district: form.school_district || null,
