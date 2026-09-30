@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, ChevronRight, ChevronLeft, CheckCircle2, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { useClasses } from '../hooks/useClasses'
-import { useSessions } from '../hooks/useSessions'
+import { useClasses, type SectionWithCount } from '../hooks/useClasses'
+import { useSessions, type Session } from '../hooks/useSessions'
+import { useParentProfile } from '../hooks/useParentProfile'
+import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -75,6 +77,30 @@ interface FormData {
 
 const PREVIOUS_PROGRAMS = ['Intro to Python', 'Intermediate Python', 'Intro to Java', 'Intermediate Java']
 
+// Grade → age used for section eligibility (sections are age-banded). Rising-grade campers are
+// typically this age during camp.
+const GRADE_AGE: Record<string, number> = { '4th': 9, '5th': 10, '6th': 11, '7th': 12, '8th': 13 }
+function gradeToAge(grade: string): number {
+  return GRADE_AGE[grade] ?? 10
+}
+
+function formatSessionDates(session: Session): string {
+  const fmt = (d: string, withYear: boolean) =>
+    new Date(d + 'T12:00:00').toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}),
+    })
+  return `${fmt(session.start_date, false)} – ${fmt(session.end_date, true)}`
+}
+
+// One selectable class for a given week: the section the camper would join, or why they can't.
+interface ClassOption {
+  classId: string
+  name: string
+  section: SectionWithCount | null
+  reason: string | null
+  full: boolean
+}
+
 const INITIAL: FormData = {
   first_name: '', last_name: '', full_name: '', email: '', school_district: '', school_name: '', grade: '',
   shirt_size: '', laptop_available: null,
@@ -104,9 +130,10 @@ export default function ParentRegistrationPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const studentId = searchParams.get('studentId')
-  const { profile } = useAuth()
-  const { classes } = useClasses()
-  const { sessions } = useSessions()
+  const { profile, user } = useAuth()
+  const { classes, loading: classesLoading } = useClasses()
+  const { sessions, loading: sessionsLoading } = useSessions()
+  const { profile: parentProfile, saveProfile } = useParentProfile()
 
   // Stamp the record with the active camp year (not the calendar year) so a camper who just
   // completed the full form is considered confirmed for this summer and isn't immediately
@@ -114,6 +141,11 @@ export default function ParentRegistrationPage() {
   const campYear =
     sessions.filter(s => s.is_active).reduce((max, s) => Math.max(max, s.year), 0) ||
     new Date().getFullYear()
+  // The active sessions for this camp year, in date order. Session N maps to sections.week = N.
+  const campSessions = sessions
+    .filter(s => s.is_active && s.year === campYear)
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+    .slice(0, 2)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>({ ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: '' })
   // When re-registering an existing camper (?studentId=…), we update that student row for the
@@ -122,17 +154,51 @@ export default function ParentRegistrationPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [waitlistedCount, setWaitlistedCount] = useState(0)
 
   // Display name derived from the split first/last fields (full_name is composed on submit).
   const studentFullName = `${form.first_name} ${form.last_name}`.trim()
 
-  const classNames = classes.map(c => c.name)
-
   useEffect(() => {
     if (profile?.display_name) {
-      setForm(f => ({ ...f, parent_name: profile.display_name }))
+      setForm(f => ({ ...f, parent_name: f.parent_name || profile.display_name }))
     }
   }, [profile])
+
+  // Parent contact details persist across campers and years (#54): prefill anything not typed yet.
+  useEffect(() => {
+    setForm(f => ({
+      ...f,
+      parent_email: f.parent_email || parentProfile?.email || user?.email || '',
+      parent_phone: f.parent_phone || parentProfile?.phone || '',
+      emergency_name: f.emergency_name || parentProfile?.emergency_contact_name || '',
+      emergency_phone: f.emergency_phone || parentProfile?.emergency_contact_phone || '',
+      emergency_relation: f.emergency_relation || parentProfile?.emergency_contact_relation || '',
+    }))
+  }, [parentProfile, user])
+
+  // Classes the camper can pick for a week. A class with no section that week isn't offered at
+  // all; one whose sections don't fit the camper's age (or the course grade rule) is shown locked.
+  function classOptions(week: 1 | 2): ClassOption[] {
+    const camperAge = form.grade ? gradeToAge(form.grade) : null
+    return classes.flatMap((c): ClassOption[] => {
+      const weekSections = c.sections.filter(s => s.week === week || s.week === null)
+      if (weekSections.length === 0) return []
+      const gradeReason = gradeBlockReason(courseConstraint(c.name), form.grade)
+      const fits = weekSections.filter(s => camperAge !== null && camperAge >= s.age_min && camperAge <= s.age_max)
+      if (gradeReason || fits.length === 0) {
+        const ages = [...new Set(weekSections.map(s => `${s.age_min}–${s.age_max}`))].join(', ')
+        return [{ classId: c.id, name: c.name, section: null, full: false, reason: gradeReason ?? `Ages ${ages}` }]
+      }
+      // Prefer the emptiest fitting section so siblings/friends spread before anyone is waitlisted.
+      const best = [...fits].sort((a, b) => a.registered_count / a.capacity - b.registered_count / b.capacity)[0]
+      return [{ classId: c.id, name: c.name, section: best, reason: null, full: best.registered_count >= best.capacity }]
+    })
+  }
+
+  function isSelectable(week: 1 | 2, sectionId: string) {
+    return classOptions(week).some(o => o.section?.id === sectionId)
+  }
 
   // Re-registration: prefill the form from the existing camper so the parent reviews and
   // updates rather than re-entering everything. Waiver signatures and session/class choices
@@ -216,9 +282,10 @@ export default function ParentRegistrationPage() {
       if (form.previous_program === null) return 'Please answer whether your student participated last year'
     }
     if (step === 4) {
+      if (campSessions.length === 0) return "Registration isn't open yet — no camp sessions are scheduled"
       if (!form.session1 && !form.session2) return 'Please select at least one session'
-      if (form.session1 && !form.class_week1) return 'Please select a class for Session 1'
-      if (form.session2 && !form.class_week2) return 'Please select a class for Session 2'
+      if (form.session1 && !isSelectable(1, form.class_week1)) return `Please select a class for ${campSessions[0]?.name ?? 'Session 1'}`
+      if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
     }
     if (step === 5) {
       if (!form.waiver_signature.trim()) return 'Waiver signature is required'
@@ -295,46 +362,41 @@ export default function ParentRegistrationPage() {
       setSubmitting(false)
       return
     }
+    // From here on a retry must update this camper, not insert a second copy.
+    setEditingId(student.id)
 
-    // Create registrations for selected sessions. Dedupe by section_id: a section with
-    // week === null serves both sessions, so picking it for Session 1 and Session 2 would
-    // otherwise insert the same (student_id, section_id) twice and violate the UNIQUE
-    // constraint — failing the whole insert and silently losing the registration.
+    // Remember the parent's contact details for next time (#52, #54). Not fatal if it fails —
+    // the same details are already on the camper record.
+    await saveProfile({
+      email: form.parent_email.trim(),
+      phone: form.parent_phone.trim(),
+      emergency_contact_name: form.emergency_name.trim(),
+      emergency_contact_phone: form.emergency_phone.trim(),
+      emergency_contact_relation: form.emergency_relation.trim(),
+    }).catch(() => {})
+
+    // One registration per chosen section. Dedupe: a section with week === null serves both
+    // sessions, and (student_id, section_id) is UNIQUE. Status is decided server-side
+    // (pending, or waitlisted when the section is full).
     const sectionIds = new Set<string>()
-    if (form.session1 && form.class_week1) {
-      const section = findSectionForClass(form.class_week1, 1)
-      if (section) sectionIds.add(section)
-    }
-    if (form.session2 && form.class_week2) {
-      const section = findSectionForClass(form.class_week2, 2)
-      if (section) sectionIds.add(section)
-    }
-    const regsToCreate = [...sectionIds].map(section_id => ({
-      student_id: student.id, section_id, status: 'pending',
-    }))
+    if (form.session1 && form.class_week1) sectionIds.add(form.class_week1)
+    if (form.session2 && form.class_week2) sectionIds.add(form.class_week2)
+    const regsToCreate = [...sectionIds].map(section_id => ({ student_id: student.id, section_id }))
 
     if (regsToCreate.length > 0) {
-      const { error: regErr } = await supabase.from('registrations').insert(regsToCreate)
+      const { data: regs, error: regErr } = await supabase
+        .from('registrations').insert(regsToCreate).select('status')
       if (regErr) {
-        setError('Your camper was saved, but we could not record the class selection. Please add the class from your dashboard.')
+        setError(regErr.code === '23505'
+          ? `${studentFullName} is already registered for that class.`
+          : `Your camper was saved, but we couldn't record the class selection: ${regErr.message}`)
         setSubmitting(false)
         return
       }
+      setWaitlistedCount((regs ?? []).filter(r => r.status === 'waitlisted').length)
     }
 
     setSubmitted(true)
-  }
-
-  function gradeToAge(grade: string): number {
-    const map: Record<string, number> = { '4th': 9, '5th': 10, '6th': 11, '7th': 12, '8th': 13 }
-    return map[grade] ?? 10
-  }
-
-  function findSectionForClass(className: string, week: 1 | 2): string | null {
-    const cls = classes.find(c => c.name === className)
-    if (!cls) return null
-    const section = cls.sections.find(s => s.week === week || s.week === null)
-    return section?.id ?? null
   }
 
   const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition'
@@ -355,6 +417,9 @@ export default function ParentRegistrationPage() {
           <h1 className="font-sans font-bold text-2xl text-ink mb-2">Registration submitted!</h1>
           <p className="font-sans text-ink-muted text-sm mb-6">
             <strong className="text-ink">{studentFullName}</strong> has been registered. Your registration is pending confirmation from our team.
+            {waitlistedCount > 0 && (
+              <> {waitlistedCount === 1 ? 'One class was' : 'Some classes were'} full, so {studentFullName} is on the waitlist there — we'll reach out if a spot opens.</>
+            )}
           </p>
           <button
             onClick={() => navigate('/parent')}
@@ -562,38 +627,60 @@ export default function ParentRegistrationPage() {
               <h2 className="font-sans font-bold text-lg text-ink">Session &amp; class selection</h2>
               <p className="font-sans text-sm text-ink-muted">Camp is held at Cherry Creek High School, 8:00 AM – 4:00 PM each day.</p>
 
-              {[
-                { key: 'session1' as const, classKey: 'class_week1' as const, label: 'Session 1: June 1 – June 5, 2026', week: 1 as const },
-                { key: 'session2' as const, classKey: 'class_week2' as const, label: 'Session 2: June 8 – June 12, 2026', week: 2 as const },
-              ].map(({ key, classKey, label }) => (
-                <div key={key} className={`border rounded-[14px] p-4 transition ${form[key] ? 'border-brand bg-brand-soft' : 'border-border bg-surface'}`}>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" className="w-4 h-4 accent-brand" checked={form[key]}
-                      onChange={e => { set(key, e.target.checked); if (!e.target.checked) set(classKey, '') }} />
-                    <span className="font-sans font-semibold text-sm text-ink">{label}</span>
-                  </label>
-                  {form[key] && (
-                    <div className="mt-3">
-                      <label className={labelCls}>Class preference *</label>
-                      {classNames.length === 0 ? (
-                        <p className="font-sans text-xs text-ink-muted">Loading classes…</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {classNames.map(c => (
-                            <label key={c} className={`flex items-center gap-3 p-2.5 rounded-[10px] border cursor-pointer transition ${
-                              form[classKey] === c ? 'border-brand bg-surface' : 'border-border-strong bg-surface hover:bg-surface-sunken'
-                            }`}>
-                              <input type="radio" name={classKey} className="w-4 h-4 accent-brand"
-                                checked={form[classKey] === c} onChange={() => set(classKey, c)} />
-                              <span className="font-sans text-sm text-ink">{c}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {sessionsLoading || classesLoading ? (
+                <p className="font-sans text-sm text-ink-muted">Loading sessions…</p>
+              ) : campSessions.length === 0 ? (
+                <div className="border border-border rounded-[14px] p-4 bg-surface-sunken font-sans text-sm text-ink-muted">
+                  Registration isn't open yet — no camp sessions are scheduled for {campYear}.
                 </div>
-              ))}
+              ) : campSessions.map((session, i) => {
+                const week = (i + 1) as 1 | 2
+                const key = week === 1 ? 'session1' as const : 'session2' as const
+                const classKey = week === 1 ? 'class_week1' as const : 'class_week2' as const
+                const options = classOptions(week)
+                return (
+                  <div key={session.id} className={`border rounded-[14px] p-4 transition ${form[key] ? 'border-brand bg-brand-soft' : 'border-border bg-surface'}`}>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 accent-brand" checked={form[key]}
+                        onChange={e => { set(key, e.target.checked); if (!e.target.checked) set(classKey, '') }} />
+                      <span className="font-sans font-semibold text-sm text-ink">{session.name}: {formatSessionDates(session)}</span>
+                    </label>
+                    {form[key] && (
+                      <div className="mt-3">
+                        <label className={labelCls}>Class preference *</label>
+                        {options.length === 0 ? (
+                          <p className="font-sans text-xs text-ink-muted">No classes are offered this session yet.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {options.map(o => {
+                              const selected = !!o.section && form[classKey] === o.section.id
+                              const spotsLeft = o.section ? o.section.capacity - o.section.registered_count : 0
+                              return (
+                                <label key={o.classId} className={`flex items-center gap-3 p-2.5 rounded-[10px] border transition ${
+                                  !o.section ? 'border-border bg-surface-sunken opacity-70 cursor-not-allowed'
+                                    : selected ? 'border-brand bg-surface cursor-pointer'
+                                    : 'border-border-strong bg-surface hover:bg-surface-sunken cursor-pointer'
+                                }`}>
+                                  <input type="radio" name={classKey} className="w-4 h-4 accent-brand" disabled={!o.section}
+                                    checked={selected} onChange={() => o.section && set(classKey, o.section.id)} />
+                                  <span className="flex-1 min-w-0">
+                                    <span className="block font-sans text-sm text-ink">{o.name}</span>
+                                    <span className={`block font-sans text-xs ${o.reason ? 'text-ink-muted' : o.full ? 'text-warning' : 'text-ink-muted'}`}>
+                                      {o.reason ? (
+                                        <span className="inline-flex items-center gap-1"><Lock size={11} /> {o.reason}</span>
+                                      ) : o.full ? 'Full — joins the waitlist' : `Ages ${o.section!.age_min}–${o.section!.age_max} · ${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}
+                                    </span>
+                                  </span>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -603,7 +690,7 @@ export default function ParentRegistrationPage() {
               <h2 className="font-sans font-bold text-lg text-ink">Waiver &amp; consent</h2>
 
               <div className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
-                <p className="font-semibold text-ink text-sm">Steel City Codes 2026 Participant Waiver</p>
+                <p className="font-semibold text-ink text-sm">Steel City Codes {campYear} Participant Waiver</p>
                 <p>This Release and Waiver of Liability releases Steel City Codes ("Nonprofit"), its directors, officers, employees, and agents from any liability arising from your student's participation in the Denver Summer Camp program.</p>
                 <p><strong className="text-ink">ASSUMPTION OF RISK:</strong> I acknowledge that participation in the Steel City Codes program involves physical and other risks. I voluntarily assume all risks associated with my student's participation.</p>
                 <p><strong className="text-ink">MEDICAL AUTHORIZATION:</strong> I authorize Steel City Codes staff to seek emergency medical treatment for my student if I cannot be reached. I agree to be responsible for any medical costs incurred.</p>

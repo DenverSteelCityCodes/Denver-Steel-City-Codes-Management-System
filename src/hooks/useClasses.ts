@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Class, Section } from '../types/database'
+import { fetchSectionFill } from '../lib/sectionFill'
 
 export interface SectionWithCount extends Section {
-  registered_count: number
+  registered_count: number   // confirmed + pending
+  waitlist_count: number
 }
 
 export interface ClassWithSections extends Class {
@@ -22,10 +24,10 @@ export function useClasses() {
   async function fetchClasses() {
     setLoading(true)
 
-    const { data, error } = await supabase
-      .from('classes')
-      .select(`*, sections(*, registrations(count))`)
-      .order('name', { ascending: true })
+    const [{ data, error }, fill] = await Promise.all([
+      supabase.from('classes').select(`*, sections(*)`).order('name', { ascending: true }),
+      fetchSectionFill().catch(() => new Map()),
+    ])
 
     if (error) {
       setError(error.message)
@@ -37,7 +39,8 @@ export function useClasses() {
       ...c,
       sections: (c.sections ?? []).map((s: any) => ({
         ...s,
-        registered_count: s.registrations?.[0]?.count ?? 0,
+        registered_count: fill.get(s.id)?.active ?? 0,
+        waitlist_count: fill.get(s.id)?.waitlist ?? 0,
       })),
     }))
 

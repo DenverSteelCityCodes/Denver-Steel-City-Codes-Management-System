@@ -209,6 +209,7 @@ export interface VolunteerApplication {
 
 export interface ParentProfile {
   id: string
+  email: string | null
   phone: string | null
   emergency_contact_name: string | null
   emergency_contact_phone: string | null

@@ -99,7 +99,7 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
 export default function ClassBrowser() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { classes, loading: classesLoading } = useClasses()
+  const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
   const { students, confirmOnboarding } = useStudents()
   const { registerStudent, isRegistered, getRegistration } = useRegistrations()
   const { sessions } = useSessions()
@@ -153,8 +153,13 @@ export default function ClassBrowser() {
         ? `${selectedStudent?.full_name} added to the waitlist.`
         : `${selectedStudent?.full_name} registered! Pending confirmation.`
       showToast(msg, reg.status === 'waitlisted' ? 'info' : 'success')
-    } catch {
-      showToast('Something went wrong. Please try again.', 'info')
+      void refetchClasses()   // fill meters now include this camper
+    } catch (err) {
+      // The server enforces age range and capacity; show its reason rather than a generic error.
+      const reason = err instanceof Error ? err.message : ''
+      showToast(reason.includes('duplicate key')
+        ? `${selectedStudent?.full_name} is already registered for that section.`
+        : reason || 'Something went wrong. Please try again.', 'info')
     } finally {
       setRegisteringSectionId(null)
     }
