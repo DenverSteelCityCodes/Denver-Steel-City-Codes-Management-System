@@ -82,7 +82,7 @@ export function useAdminStudents() {
       .update({ status })
       .eq('id', registrationId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchStudents()
   }
 
@@ -92,7 +92,7 @@ export function useAdminStudents() {
       .update({ section_id: newSectionId, status: 'pending' })
       .eq('id', registrationId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchStudents()
   }
 
@@ -102,7 +102,7 @@ export function useAdminStudents() {
       .delete()
       .eq('id', registrationId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchStudents()
   }
 

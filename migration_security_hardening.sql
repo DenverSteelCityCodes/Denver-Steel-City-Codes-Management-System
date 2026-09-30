@@ -267,3 +267,19 @@ REVOKE EXECUTE ON FUNCTION public.guard_profile_role()             FROM PUBLIC, 
 REVOKE EXECUTE ON FUNCTION public.registrations_before_insert()    FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.duty_assignments_before_insert() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.rls_auto_enable()                FROM PUBLIC, anon, authenticated;
+
+-- ── 10. Admin-only account lookup for linking volunteer applications ─
+-- An application can arrive without user_id (e.g. the email already had an account). Admins
+-- can resolve the account by email when accepting instead of dead-ending.
+
+CREATE OR REPLACE FUNCTION public.admin_user_id_for_email(p_email TEXT)
+RETURNS UUID LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
+BEGIN
+  IF private.auth_user_role() IS DISTINCT FROM 'admin' THEN
+    RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
+  END IF;
+  RETURN (SELECT id FROM auth.users WHERE lower(email) = lower(trim(p_email)) LIMIT 1);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.admin_user_id_for_email(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_user_id_for_email(TEXT) TO authenticated;

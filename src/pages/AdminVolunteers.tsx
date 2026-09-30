@@ -139,6 +139,8 @@ function ApplicationReviewModal({
     try {
       await onReject(app.id, rejectNotes || undefined)
       onClose()
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
       setBusy(false)
     }

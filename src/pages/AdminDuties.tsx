@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Trash2, Check, CalendarDays } from 'lucide-react'
 import { useDutyTypes, useDutySlots } from '../hooks/useDutyRoles'
 import { useSessions } from '../hooks/useSessions'
+import { useConfirm, ActionError } from '../components/ConfirmDialog'
 
 export default function AdminDuties() {
   const { sessions } = useSessions()
@@ -46,10 +47,35 @@ export default function AdminDuties() {
     }
   }
 
-  async function handleDeleteSlot(id: string) {
-    setDeletingId(id)
-    try { await deleteSlot(id) }
+  const [actionError, setActionError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+
+  async function handleDeleteSlot(slot: (typeof slots)[number]) {
+    const ok = await confirm({
+      title: `Delete ${slot.duty_type?.name ?? 'this duty slot'} on ${slot.slot_date}?`,
+      body: slot.assigned_count > 0
+        ? `${slot.assigned_count} volunteer sign-up${slot.assigned_count === 1 ? '' : 's'} will be removed. This cannot be undone.`
+        : 'This cannot be undone.',
+      confirmLabel: 'Delete slot',
+    })
+    if (!ok) return
+    setDeletingId(slot.id)
+    setActionError(null)
+    try { await deleteSlot(slot.id) }
+    catch (e) { setActionError(`Couldn't delete the slot: ${e instanceof Error ? e.message : 'unknown error'}`) }
     finally { setDeletingId(null) }
+  }
+
+  async function handleDeleteType(t: (typeof types)[number]) {
+    const ok = await confirm({
+      title: `Delete the "${t.name}" duty?`,
+      body: 'Every slot of this duty and all volunteer sign-ups for it are deleted too. This cannot be undone.',
+      confirmLabel: 'Delete duty',
+    })
+    if (!ok) return
+    setActionError(null)
+    try { await deleteType(t.id) }
+    catch (e) { setActionError(`Couldn't delete ${t.name}: ${e instanceof Error ? e.message : 'unknown error'}`) }
   }
 
   const grouped = slots.reduce<Record<string, typeof slots>>((acc, s) => {
@@ -64,6 +90,8 @@ export default function AdminDuties() {
   return (
     <div className="min-h-screen bg-bg">
       <main className="max-w-[1000px] mx-auto px-6 py-8 space-y-8">
+        {dialog}
+        <ActionError message={actionError} onDismiss={() => setActionError(null)} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Duty types panel */}
@@ -73,7 +101,7 @@ export default function AdminDuties() {
               {types.map((t, i) => (
                 <div key={t.id} className={`flex items-center justify-between px-4 py-3 ${i < types.length - 1 ? 'border-b border-border' : ''}`}>
                   <span className="font-sans text-sm text-ink">{t.name}</span>
-                  <button onClick={() => deleteType(t.id)} className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition">
+                  <button onClick={() => handleDeleteType(t)} className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition">
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -175,7 +203,7 @@ export default function AdminDuties() {
                                 {slot.assigned_count >= slot.capacity ? 'Full' : 'Open'}
                               </span>
                               <button
-                                onClick={() => handleDeleteSlot(slot.id)}
+                                onClick={() => handleDeleteSlot(slot)}
                                 disabled={deletingId === slot.id}
                                 className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition disabled:opacity-40"
                               >

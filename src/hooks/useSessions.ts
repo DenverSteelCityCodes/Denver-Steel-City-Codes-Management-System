@@ -32,19 +32,19 @@ export function useSessions() {
 
   async function createSession(payload: Omit<Session, 'id' | 'created_at'>) {
     const { error } = await supabase.from('sessions').insert(payload)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSessions()
   }
 
   async function updateSession(id: string, payload: Partial<Omit<Session, 'id' | 'created_at'>>) {
     const { error } = await supabase.from('sessions').update(payload).eq('id', id)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSessions()
   }
 
   async function deleteSession(id: string) {
     const { error } = await supabase.from('sessions').delete().eq('id', id)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     setSessions(s => s.filter(x => x.id !== id))
   }
 

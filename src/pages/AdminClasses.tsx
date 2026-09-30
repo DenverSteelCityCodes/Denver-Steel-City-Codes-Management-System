@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
+import { useConfirm, ActionError } from '../components/ConfirmDialog'
 import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SupportEntry } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
@@ -470,6 +471,8 @@ export default function AdminClasses() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
 
   const [classModal, setClassModal] = useState<null | { mode: 'create' | 'edit'; cls?: ClassWithSections }>(null)
   const [sectionModal, setSectionModal] = useState<null | {
@@ -484,15 +487,37 @@ export default function AdminClasses() {
     className: string
   }>(null)
 
-  async function handleDeleteClass(id: string) {
-    setDeletingId(id)
-    try { await deleteClass(id) }
+  // Deleting cascades: class → sections → registrations + attendance. Always confirm, and say what goes.
+  async function handleDeleteClass(cls: ClassWithSections) {
+    const ok = await confirm({
+      title: `Delete ${cls.name}?`,
+      body: cls.sections.length === 0
+        ? 'This class has no sections. This cannot be undone.'
+        : `This also deletes its ${cls.sections.length} section${cls.sections.length === 1 ? '' : 's'}, ${cls.enrolled} camper registration${cls.enrolled === 1 ? '' : 's'} and their attendance history. This cannot be undone.`,
+      confirmLabel: 'Delete class',
+    })
+    if (!ok) return
+    setDeletingId(cls.id)
+    setActionError(null)
+    try { await deleteClass(cls.id) }
+    catch (e) { setActionError(`Couldn't delete ${cls.name}: ${e instanceof Error ? e.message : 'unknown error'}`) }
     finally { setDeletingId(null) }
   }
 
-  async function handleDeleteSection(id: string) {
-    setDeletingSectionId(id)
-    try { await deleteSection(id) }
+  async function handleDeleteSection(cls: ClassWithSections, sec: SectionWithCrew) {
+    const regs = sec.registered_count + sec.waitlist_count
+    const ok = await confirm({
+      title: `Delete ${cls.name} · ${sec.label}?`,
+      body: regs === 0
+        ? 'No campers are registered in this section. This cannot be undone.'
+        : `${regs} camper registration${regs === 1 ? '' : 's'} (including waitlist) and their attendance history will be deleted. This cannot be undone.`,
+      confirmLabel: 'Delete section',
+    })
+    if (!ok) return
+    setDeletingSectionId(sec.id)
+    setActionError(null)
+    try { await deleteSection(sec.id) }
+    catch (e) { setActionError(`Couldn't delete ${sec.label}: ${e instanceof Error ? e.message : 'unknown error'}`) }
     finally { setDeletingSectionId(null) }
   }
 
@@ -507,6 +532,8 @@ export default function AdminClasses() {
             <Plus size={16} /> New class
           </button>
         </div>
+        <ActionError message={actionError} onDismiss={() => setActionError(null)} />
+        {dialog}
 
         {error && (
           <div className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">⚠ {error}</div>
@@ -559,7 +586,7 @@ export default function AdminClasses() {
                         <Pencil size={15} />
                       </button>
                       <button
-                        onClick={() => handleDeleteClass(cls.id)}
+                        onClick={() => handleDeleteClass(cls)}
                         disabled={deletingId === cls.id}
                         className="p-2 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[8px] transition disabled:opacity-40"
                       >
@@ -584,7 +611,7 @@ export default function AdminClasses() {
                                 key={sec.id}
                                 section={sec}
                                 onEdit={() => setSectionModal({ mode: 'edit', classId: cls.id, className: cls.name, section: sec })}
-                                onDelete={() => handleDeleteSection(sec.id)}
+                                onDelete={() => handleDeleteSection(cls, sec)}
                                 onRoster={() => setRosterModal({ sectionId: sec.id, sectionLabel: sec.label, className: cls.name })}
                                 deleting={deletingSectionId === sec.id}
                               />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, X, Check, Calendar } from 'lucide-react'
 import { useSessions, type Session } from '../hooks/useSessions'
+import { useConfirm, ActionError } from '../components/ConfirmDialog'
 
 interface SessionFormState {
   name: string
@@ -107,15 +108,28 @@ export default function AdminSessions() {
 
   const BLANK: SessionFormState = { name: '', year: String(new Date().getFullYear() + (new Date().getMonth() >= 8 ? 1 : 0)), start_date: '', end_date: '', is_active: true }
 
-  async function handleDelete(id: string) {
-    setDeletingId(id)
-    try { await deleteSession(id) }
+  const [actionError, setActionError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+
+  async function handleDelete(s: Session) {
+    const ok = await confirm({
+      title: `Delete ${s.name} (${s.year})?`,
+      body: "Its duty slots and sign-ups are deleted too, and sections linked to it become unscheduled. This cannot be undone.",
+      confirmLabel: 'Delete session',
+    })
+    if (!ok) return
+    setDeletingId(s.id)
+    setActionError(null)
+    try { await deleteSession(s.id) }
+    catch (e) { setActionError(`Couldn't delete ${s.name}: ${e instanceof Error ? e.message : 'unknown error'}`) }
     finally { setDeletingId(null) }
   }
 
   return (
     <div className="min-h-screen bg-bg">
       <main className="max-w-[800px] mx-auto px-6 py-8 space-y-6">
+        {dialog}
+        <ActionError message={actionError} onDismiss={() => setActionError(null)} />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-sans font-bold text-2xl text-ink mb-1">Sessions</h1>
@@ -172,7 +186,7 @@ export default function AdminSessions() {
                     <Pencil size={15} />
                   </button>
                   <button
-                    onClick={() => handleDelete(s.id)}
+                    onClick={() => handleDelete(s)}
                     disabled={deletingId === s.id}
                     className="p-2 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[8px] transition disabled:opacity-40"
                   >

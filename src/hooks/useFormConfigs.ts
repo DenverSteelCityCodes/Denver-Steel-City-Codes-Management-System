@@ -40,7 +40,7 @@ export function useFormConfigs() {
       .from('form_configs')
       .update({ config: merged, updated_at: new Date().toISOString() })
       .eq('form_key', formKey)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchConfigs()
   }
 
@@ -58,7 +58,7 @@ export function useFormConfigs() {
       .from('form_configs')
       .update({ config: merged, updated_at: new Date().toISOString() })
       .eq('form_key', formKey)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchConfigs()
   }
 

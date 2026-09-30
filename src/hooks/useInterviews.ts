@@ -64,13 +64,13 @@ export function useInterviews() {
       duration_minutes: payload.duration_minutes ?? 15,
       notes: payload.notes ?? null,
     })
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 
   async function deleteSlot(id: string) {
     const { error } = await supabase.from('interview_slots').delete().eq('id', id)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     setSlots(s => s.filter(x => x.id !== id))
   }
 
@@ -80,7 +80,7 @@ export function useInterviews() {
       application_id: applicationId,
       admin_notes: adminNotes ?? null,
     })
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await supabase
       .from('volunteer_applications')
       .update({ interview_confirmed: true })
@@ -90,7 +90,7 @@ export function useInterviews() {
 
   async function unbookSlot(bookingId: string, applicationId: string) {
     const { error } = await supabase.from('interview_bookings').delete().eq('id', bookingId)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await supabase
       .from('volunteer_applications')
       .update({ interview_confirmed: false })
@@ -103,7 +103,7 @@ export function useInterviews() {
       .from('interview_bookings')
       .update({ admin_notes: adminNotes })
       .eq('id', bookingId)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 

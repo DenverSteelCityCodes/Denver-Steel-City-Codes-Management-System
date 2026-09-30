@@ -35,7 +35,7 @@ export function useAdminUsers() {
       .update({ role: newRole })
       .eq('id', userId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchUsers()
   }
 

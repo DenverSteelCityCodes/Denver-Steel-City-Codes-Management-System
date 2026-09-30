@@ -42,13 +42,13 @@ export function useDutyTypes() {
 
   async function createType(name: string, description?: string) {
     const { error } = await supabase.from('duty_types').insert({ name, description: description || null })
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchTypes()
   }
 
   async function deleteType(id: string) {
     const { error } = await supabase.from('duty_types').delete().eq('id', id)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     setTypes(t => t.filter(x => x.id !== id))
   }
 
@@ -94,19 +94,19 @@ export function useDutySlots(sessionId?: string) {
     capacity: number
   }) {
     const { error } = await supabase.from('duty_slots').insert(payload)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 
   async function deleteSlot(id: string) {
     const { error } = await supabase.from('duty_slots').delete().eq('id', id)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     setSlots(s => s.filter(x => x.id !== id))
   }
 
   async function claimSlot(slotId: string, volunteerId: string) {
     const { error } = await supabase.from('duty_assignments').insert({ duty_slot_id: slotId, volunteer_id: volunteerId })
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 
@@ -116,7 +116,7 @@ export function useDutySlots(sessionId?: string) {
       .delete()
       .eq('duty_slot_id', slotId)
       .eq('volunteer_id', volunteerId)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 

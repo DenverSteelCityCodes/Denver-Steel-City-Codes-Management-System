@@ -25,6 +25,8 @@ export function useAssignedClass() {
   const { user } = useAuth()
   const [assignedSections, setAssignedSections] = useState<AssignedSection[]>([])
   const [isAccepted, setIsAccepted] = useState(false)
+  // Latest application status, so a rejected applicant isn't told "under review" forever.
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,7 +38,7 @@ export function useAssignedClass() {
   async function fetchAssignedSections() {
     setLoading(true)
 
-    const [leadRes, supportRes, volunteerRes] = await Promise.all([
+    const [leadRes, supportRes, volunteerRes, appRes] = await Promise.all([
       // Sections where volunteer is the lead
       supabase
         .from('sections')
@@ -48,9 +50,12 @@ export function useAssignedClass() {
         .select('section_id')
         .eq('volunteer_id', user!.id),
       supabase.from('volunteers').select('id').eq('id', user!.id).maybeSingle(),
+      supabase.from('volunteer_applications').select('status')
+        .eq('user_id', user!.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ])
 
     setIsAccepted(!!volunteerRes.data)
+    setApplicationStatus(appRes.data?.status ?? null)
 
     if (leadRes.error) { setError(leadRes.error.message); setLoading(false); return }
     if (supportRes.error) { setError(supportRes.error.message); setLoading(false); return }
@@ -110,5 +115,5 @@ export function useAssignedClass() {
     setLoading(false)
   }
 
-  return { assignedSections, isAccepted, loading, error, refetch: fetchAssignedSections }
+  return { assignedSections, isAccepted, applicationStatus, loading, error, refetch: fetchAssignedSections }
 }

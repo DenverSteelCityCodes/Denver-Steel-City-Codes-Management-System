@@ -28,19 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   useEffect(() => {
-    // Hydrate on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        loadProfile(session)
-      } else {
-        setState(s => ({ ...s, loading: false }))
-      }
-    })
-
-    // Keep in sync with Supabase auth state
+    // onAuthStateChange fires INITIAL_SESSION on subscribe, so it also covers hydration on mount.
+    // Supabase calls made inside this callback can deadlock the auth client, so the profile
+    // query is deferred to the next tick.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        loadProfile(session)
+        setTimeout(() => { void loadProfile(session) }, 0)
       } else {
         setState({ session: null, user: null, profile: null, role: null, loading: false })
       }

@@ -13,7 +13,9 @@ function DutyPanel({ userId }: { userId: string }) {
   const { slots, loading, claimSlot, unclaimSlot } = useDutySlots()
   const [busySlotId, setBusySlotId] = useState<string | null>(null)
 
-  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const [claimError, setClaimError] = useState<string | null>(null)
   const upcoming = slots.filter(s => s.slot_date >= today)
 
   const grouped = upcoming.reduce<Record<string, typeof slots>>((acc, s) => {
@@ -24,12 +26,18 @@ function DutyPanel({ userId }: { userId: string }) {
 
   async function handleClaim(slotId: string) {
     setBusySlotId(slotId)
-    try { await claimSlot(slotId, userId) } finally { setBusySlotId(null) }
+    setClaimError(null)
+    try { await claimSlot(slotId, userId) }
+    catch (e) { setClaimError(e instanceof Error ? e.message : "Couldn't sign up for that slot") }
+    finally { setBusySlotId(null) }
   }
 
   async function handleUnclaim(slotId: string) {
     setBusySlotId(slotId)
-    try { await unclaimSlot(slotId, userId) } finally { setBusySlotId(null) }
+    setClaimError(null)
+    try { await unclaimSlot(slotId, userId) }
+    catch (e) { setClaimError(e instanceof Error ? e.message : "Couldn't cancel that sign-up") }
+    finally { setBusySlotId(null) }
   }
 
   if (loading) return (
@@ -47,6 +55,7 @@ function DutyPanel({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-4">
+      {claimError && <p role="alert" className="font-sans text-sm text-danger">{claimError}</p>}
       {Object.entries(grouped)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, daySlots]) => (
@@ -196,7 +205,7 @@ function SectionPanel({ section }: { section: AssignedSection }) {
 
 export default function VolunteerDashboard() {
   const { profile, signOut, user } = useAuth()
-  const { assignedSections, isAccepted, loading } = useAssignedClass()
+  const { assignedSections, isAccepted, applicationStatus, loading } = useAssignedClass()
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
@@ -230,6 +239,13 @@ export default function VolunteerDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : !isAccepted && applicationStatus === 'rejected' ? (
+          <div className="bg-surface border border-border rounded-xl shadow-sm p-10 text-center">
+            <h2 className="font-sans font-semibold text-xl text-ink mb-2">Application not accepted</h2>
+            <p className="font-sans text-ink-muted text-base">
+              Thank you for applying to volunteer with Steel City Codes. We weren't able to offer you a spot this year — we'd love for you to apply again next summer.
+            </p>
           </div>
         ) : !isAccepted ? (
           /* Application pending — volunteer role set but no volunteers row yet */

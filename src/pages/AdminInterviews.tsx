@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Calendar, User, FileText, X, Check } from 'lucide-react'
 import { useInterviews } from '../hooks/useInterviews'
+import { useConfirm, ActionError } from '../components/ConfirmDialog'
 import { supabase } from '../lib/supabase'
 
 interface Application {
@@ -185,15 +186,30 @@ export default function AdminInterviews() {
     }
   }
 
-  async function handleDelete(id: string) {
-    setDeletingId(id)
-    try { await deleteSlot(id) }
+  const [actionError, setActionError] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
+
+  async function handleDelete(slot: (typeof slots)[number]) {
+    const ok = await confirm({
+      title: 'Delete this interview slot?',
+      body: slot.booking
+        ? 'It is booked — the booking and its interview notes are deleted too. This cannot be undone.'
+        : 'This cannot be undone.',
+      confirmLabel: 'Delete slot',
+    })
+    if (!ok) return
+    setDeletingId(slot.id)
+    setActionError(null)
+    try { await deleteSlot(slot.id) }
+    catch (e) { setActionError(`Couldn't delete the slot: ${e instanceof Error ? e.message : 'unknown error'}`) }
     finally { setDeletingId(null) }
   }
 
   async function handleUnbook(bookingId: string, applicationId: string) {
     setUnbookingId(bookingId)
+    setActionError(null)
     try { await unbookSlot(bookingId, applicationId) }
+    catch (e) { setActionError(`Couldn't cancel the booking: ${e instanceof Error ? e.message : 'unknown error'}`) }
     finally { setUnbookingId(null) }
   }
 
@@ -212,6 +228,8 @@ export default function AdminInterviews() {
   return (
     <div className="min-h-screen bg-bg">
       <main className="max-w-[1000px] mx-auto px-6 py-8 space-y-8">
+        {dialog}
+        <ActionError message={actionError} onDismiss={() => setActionError(null)} />
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-4">
@@ -332,7 +350,7 @@ export default function AdminInterviews() {
                               </button>
                             )}
                             <button
-                              onClick={() => handleDelete(slot.id)}
+                              onClick={() => handleDelete(slot)}
                               disabled={deletingId === slot.id}
                               className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition disabled:opacity-40"
                               title="Delete slot"
