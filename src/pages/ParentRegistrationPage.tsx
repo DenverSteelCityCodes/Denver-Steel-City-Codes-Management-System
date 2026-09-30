@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronRight, ChevronLeft, CheckCircle2, Lock } from 'lucide
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
-import { useSessions, type Session } from '../hooks/useSessions'
+import { useSessions, activeCampYear, campSessions as activeSessions, formatSessionDates } from '../hooks/useSessions'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 
@@ -84,13 +84,6 @@ function gradeToAge(grade: string): number {
   return GRADE_AGE[grade] ?? 10
 }
 
-function formatSessionDates(session: Session): string {
-  const fmt = (d: string, withYear: boolean) =>
-    new Date(d + 'T12:00:00').toLocaleDateString('en-US', {
-      month: 'long', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}),
-    })
-  return `${fmt(session.start_date, false)} – ${fmt(session.end_date, true)}`
-}
 
 // One selectable class for a given week: the section the camper would join, or why they can't.
 interface ClassOption {
@@ -138,14 +131,8 @@ export default function ParentRegistrationPage() {
   // Stamp the record with the active camp year (not the calendar year) so a camper who just
   // completed the full form is considered confirmed for this summer and isn't immediately
   // re-prompted by the per-summer onboarding gate (#42).
-  const campYear =
-    sessions.filter(s => s.is_active).reduce((max, s) => Math.max(max, s.year), 0) ||
-    new Date().getFullYear()
-  // The active sessions for this camp year, in date order. Session N maps to sections.week = N.
-  const campSessions = sessions
-    .filter(s => s.is_active && s.year === campYear)
-    .sort((a, b) => a.start_date.localeCompare(b.start_date))
-    .slice(0, 2)
+  const campYear = activeCampYear(sessions)
+  const campSessions = activeSessions(sessions)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>({ ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: '' })
   // When re-registering an existing camper (?studentId=…), we update that student row for the

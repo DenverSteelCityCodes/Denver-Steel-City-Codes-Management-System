@@ -105,7 +105,7 @@ export default function AdminSessions() {
   const [modal, setModal] = useState<null | { mode: 'create' | 'edit'; session?: Session }>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const BLANK: SessionFormState = { name: '', year: '2026', start_date: '', end_date: '', is_active: true }
+  const BLANK: SessionFormState = { name: '', year: String(new Date().getFullYear() + (new Date().getMonth() >= 8 ? 1 : 0)), start_date: '', end_date: '', is_active: true }
 
   async function handleDelete(id: string) {
     setDeletingId(id)

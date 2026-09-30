@@ -4,7 +4,7 @@ import { ArrowLeft, Search, Lock, CheckCircle, Clock, List, ShieldCheck, Info } 
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
-import { useSessions } from '../hooks/useSessions'
+import { useSessions, activeCampYear } from '../hooks/useSessions'
 import CapacityMeter from '../components/CapacityMeter'
 import ConfirmOnboardingModal from '../components/ConfirmOnboardingModal'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
@@ -117,9 +117,7 @@ export default function ClassBrowser() {
 
   // Active camp year: the year of the open session(s). Campers must have confirmed their
   // onboarding for THIS year before they can register — they re-confirm every summer (#42).
-  const campYear =
-    sessions.filter(s => s.is_active).reduce((max, s) => Math.max(max, s.year), 0) ||
-    new Date().getFullYear()
+  const campYear = activeCampYear(sessions)
   const needsConfirmation = (student?: typeof selectedStudent) =>
     !!student && student.registration_year !== campYear
 

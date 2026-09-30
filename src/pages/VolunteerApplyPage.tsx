@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ClipboardList, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { BrandBar } from '../components/Wordmark'
+import { useSessions, activeCampYear, campSessions, formatSessionDates } from '../hooks/useSessions'
 
 const GRADES = ['9th', '10th', '11th', '12th', 'College']
 const SCHOOLS = [
@@ -116,6 +117,9 @@ export default function VolunteerApplyPage() {
   const [courses, setCourses] = useState<string[]>(FALLBACK_COURSES)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL)
+  const { sessions } = useSessions()
+  const campYear = activeCampYear(sessions)
+  const weeks = campSessions(sessions)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -336,8 +340,10 @@ export default function VolunteerApplyPage() {
 
       <main className="max-w-lg mx-auto px-4 pt-10">
         <div className="text-center mb-8">
-          <h1 className="font-sans font-bold text-2xl text-ink mb-1">2026 Volunteer Application</h1>
-          <p className="font-sans text-ink-muted text-sm">Denver Summer Camp · Sessions June 1–5 &amp; June 8–12</p>
+          <h1 className="font-sans font-bold text-2xl text-ink mb-1">{campYear} Volunteer Application</h1>
+          <p className="font-sans text-ink-muted text-sm">
+            Denver Summer Camp{weeks.length > 0 && <> · {weeks.map(w => formatSessionDates(w, false)).join(' & ')}</>}
+          </p>
         </div>
 
         <StepDots current={step} total={4} />
@@ -431,9 +437,12 @@ export default function VolunteerApplyPage() {
                 <p className="font-sans text-xs text-ink-muted mb-3">Volunteers stay 8:30 AM – 4:30 PM each day at Cherry Creek High School.</p>
                 <div className="space-y-2">
                   {[
-                    { key: 'availabilityWeek1' as const, label: 'Session 1: June 1st – June 5th' },
-                    { key: 'availabilityWeek2' as const, label: 'Session 2: June 8th – June 12th' },
-                  ].map(({ key, label }) => (
+                    { key: 'availabilityWeek1' as const, session: weeks[0], fallback: 'Session 1' },
+                    { key: 'availabilityWeek2' as const, session: weeks[1], fallback: 'Session 2' },
+                  ].map(({ key, session, fallback }) => ({
+                    key,
+                    label: session ? `${session.name}: ${formatSessionDates(session, false)}` : fallback,
+                  })).map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-3 p-3 rounded-[10px] border border-border-strong bg-surface cursor-pointer hover:bg-surface-sunken transition">
                       <input type="checkbox" className="w-4 h-4 accent-brand"
                         checked={form[key]} onChange={e => set(key, e.target.checked)} />
