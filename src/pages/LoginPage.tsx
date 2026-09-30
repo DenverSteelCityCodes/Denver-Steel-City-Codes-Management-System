@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { BrandBar } from '../components/Wordmark'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -33,14 +34,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4">
-      {/* Logo bar */}
-      <div className="mb-8 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center">
-          <span className="font-sans font-bold text-brand-on text-lg">S</span>
-        </div>
-        <span className="font-sans font-bold text-ink text-xl tracking-tight">Steel City Codes</span>
-      </div>
+    <div className="min-h-screen bg-bg flex flex-col">
+      <BrandBar />
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
 
       <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8">
         <h1 className="font-sans font-bold text-2xl text-ink mb-1">Welcome back</h1>
@@ -106,6 +102,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+      </main>
     </div>
   )
 }

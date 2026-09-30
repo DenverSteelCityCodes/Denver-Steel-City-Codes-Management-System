@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ClipboardList, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { BrandBar } from '../components/Wordmark'
 
 const GRADES = ['9th', '10th', '11th', '12th', 'College']
 const SCHOOLS = [
@@ -331,12 +332,7 @@ export default function VolunteerApplyPage() {
   return (
     <div className="min-h-screen bg-bg pb-16">
       {/* Header */}
-      <header className="bg-ink-900 px-6 py-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center">
-          <span className="font-sans font-bold text-brand-on text-sm">S</span>
-        </div>
-        <span className="font-sans font-bold text-white text-base tracking-tight">Steel City Codes</span>
-      </header>
+      <BrandBar />
 
       <main className="max-w-lg mx-auto px-4 pt-10">
         <div className="text-center mb-8">

@@ -5,6 +5,7 @@ import { useAssignedClass } from '../hooks/useAssignedClass'
 import { useAttendance } from '../hooks/useAttendance'
 import { useDutySlots } from '../hooks/useDutyRoles'
 import AttendanceRow from '../components/AttendanceRow'
+import { BrandBar } from '../components/Wordmark'
 import type { AssignedSection } from '../hooks/useAssignedClass'
 import type { AttendanceAction } from '../types/database'
 
@@ -202,14 +203,8 @@ export default function VolunteerDashboard() {
   return (
     <div className="min-h-screen bg-bg">
       {/* Top bar */}
-      <header className="h-16 bg-ink-900 flex items-center justify-between px-6 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center">
-            <span className="font-sans font-bold text-brand-on text-sm">S</span>
-          </div>
-          <span className="font-sans font-bold text-white text-base tracking-tight">Steel City Codes</span>
-        </div>
-        <div className="flex items-center gap-4">
+      <BrandBar>
+        <div className="flex items-center gap-3 sm:gap-4">
           <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-role-volunteer-soft text-role-volunteer">
             <Users size={12} /> Volunteer
           </span>
@@ -218,7 +213,7 @@ export default function VolunteerDashboard() {
             Sign out
           </button>
         </div>
-      </header>
+      </BrandBar>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         {loading ? (
