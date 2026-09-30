@@ -76,7 +76,7 @@ export default function AttendanceRow({ student, status, onAction, busy }: Props
           disabled={busy || isIn}
           className={`h-11 px-4 flex items-center gap-1.5 font-sans font-semibold text-sm transition disabled:cursor-not-allowed ${
             isIn
-              ? 'bg-success text-white'
+              ? 'bg-success text-surface'
               : 'bg-surface text-ink hover:bg-success-soft hover:text-success'
           }`}
         >
@@ -91,7 +91,7 @@ export default function AttendanceRow({ student, status, onAction, busy }: Props
           disabled={busy || isOut || !status}
           className={`h-11 px-4 flex items-center gap-1.5 font-sans font-semibold text-sm transition disabled:cursor-not-allowed ${
             isOut
-              ? 'bg-ink-muted text-white'
+              ? 'bg-ink-muted text-surface'
               : 'bg-surface text-ink hover:bg-surface-sunken disabled:opacity-40'
           }`}
         >

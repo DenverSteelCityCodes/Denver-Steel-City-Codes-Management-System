@@ -46,7 +46,7 @@ export default function InlineConfirm({
           onClick={onConfirm}
           disabled={busy}
           className={`h-9 px-3.5 rounded-[8px] font-sans font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center gap-2 ${
-            tone === 'danger' ? 'bg-danger text-white' : 'bg-brand text-brand-on'
+            tone === 'danger' ? 'bg-danger text-surface' : 'bg-brand text-brand-on'
           }`}
         >
           {busy && <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />}

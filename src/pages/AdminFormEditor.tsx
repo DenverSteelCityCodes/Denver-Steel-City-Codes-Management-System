@@ -188,7 +188,7 @@ export default function AdminFormEditor() {
                 onClick={toggleOpen}
                 disabled={saving === 'enabled'}
                 className={`h-9 px-4 font-sans text-sm font-semibold rounded-[8px] transition disabled:opacity-50 ${
-                  isOpen ? 'bg-danger-soft text-danger hover:bg-danger hover:text-white' : 'bg-success-soft text-success hover:bg-success hover:text-white'
+                  isOpen ? 'bg-danger-soft text-danger hover:bg-danger hover:text-surface' : 'bg-success-soft text-success hover:bg-success hover:text-surface'
                 }`}
               >
                 {isOpen ? 'Close form' : 'Open form'}
