@@ -284,3 +284,19 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.admin_user_id_for_email(TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_user_id_for_email(TEXT) TO authenticated;
+
+-- ── 11. Admin-only account emails for Users & roles ───────────
+-- profiles has no email; admins need it to tell accounts apart before changing a role.
+
+CREATE OR REPLACE FUNCTION public.admin_user_emails()
+RETURNS TABLE (id UUID, email TEXT, last_sign_in_at TIMESTAMPTZ)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
+BEGIN
+  IF private.auth_user_role() IS DISTINCT FROM 'admin' THEN
+    RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
+  END IF;
+  RETURN QUERY SELECT u.id, u.email::text, u.last_sign_in_at FROM auth.users u;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.admin_user_emails() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_user_emails() TO authenticated;
