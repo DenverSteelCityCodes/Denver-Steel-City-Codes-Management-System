@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export interface FieldConfig {
-  visible?: boolean
-  required?: boolean
-  label?: string
-}
+import type { FieldConfig } from '../lib/formFields'
+export type { FieldConfig }
 
 export interface FormConfig {
   enabled: boolean

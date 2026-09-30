@@ -4,6 +4,7 @@ import { ClipboardList, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-r
 import { supabase } from '../lib/supabase'
 import { BrandBar } from '../components/Wordmark'
 import { useSessions, activeCampYear, campSessions, formatSessionDates } from '../hooks/useSessions'
+import { useFormConfig } from '../hooks/useFormConfig'
 
 const GRADES = ['9th', '10th', '11th', '12th', 'College']
 const SCHOOLS = [
@@ -120,6 +121,8 @@ export default function VolunteerApplyPage() {
   const { sessions } = useSessions()
   const campYear = activeCampYear(sessions)
   const weeks = campSessions(sessions)
+  // Labels / visibility / required-ness come from the admin Form editor.
+  const { field: q } = useFormConfig('volunteer_application')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -159,26 +162,29 @@ export default function VolunteerApplyPage() {
 
   function validateStep(): string | null {
     if (step === 1) {
-      if (!form.firstName.trim()) return 'First name is required'
-      if (!form.lastName.trim()) return 'Last name is required'
-      if (!form.email.trim()) return 'Email is required'
+      if (!form.firstName.trim()) return `${q('firstName').label} is required`
+      if (!form.lastName.trim()) return `${q('lastName').label} is required`
+      if (!form.email.trim()) return `${q('email').label} is required`
       if (!form.password || form.password.length < 8) return 'Password must be at least 8 characters'
-      if (!form.phone.trim()) return 'Phone number is required'
-      if (!form.age || isNaN(Number(form.age))) return 'Age is required'
-      if (!form.grade) return 'Grade is required'
-      if (!form.school) return 'School is required'
+      if (!form.phone.trim()) return `${q('phone').label} is required`
+      if (!form.age || isNaN(Number(form.age))) return `${q('age').label} is required`
+      if (!form.grade) return `${q('grade').label} is required`
+      if (!form.school) return `${q('school').label} is required`
       if (form.school === 'Other' && !form.schoolOther.trim()) return 'Please enter your school name'
-      if (!form.shirtSize) return 'Shirt size is required'
+      if (!form.shirtSize) return `${q('shirtSize').label} is required`
     }
     if (step === 2) {
       if (!form.availabilityWeek1 && !form.availabilityWeek2) return 'Please select at least one session'
       if (!form.whyVolunteer.trim()) return 'Please tell us why you want to volunteer'
-      if (form.previousScc === null) return 'Please answer whether you have volunteered with SCC before'
-      if (form.csLanguages.length === 0) return 'Please select at least one CS language'
+      if (q('previousScc').required && form.previousScc === null) return `Please answer: ${q('previousScc').label}`
+      if (q('csLanguages').required && form.csLanguages.length === 0) return `Please answer: ${q('csLanguages').label}`
+      if (q('csClasses').required && !form.csClasses.trim()) return `Please answer: ${q('csClasses').label}`
+      if (q('experienceChildren').required && !form.experienceChildren.trim()) return `Please answer: ${q('experienceChildren').label}`
     }
     if (step === 3) {
       if (!form.courseFirst) return 'Please select your first choice course'
       if (!form.courseSecond) return 'Please select your second choice course'
+      if (q('otherCurricula').required && !form.otherCurricula.trim()) return `Please answer: ${q('otherCurricula').label}`
     }
     if (step === 4) {
       if (!form.volunteerSignature.trim()) return 'Your signature is required'
@@ -246,7 +252,7 @@ export default function VolunteerApplyPage() {
       availability_week_1: form.availabilityWeek1,
       availability_week_2: form.availabilityWeek2,
       why_volunteer: form.whyVolunteer,
-      previous_scc_volunteer: form.previousScc === true,
+      previous_scc_volunteer: q('previousScc').show ? form.previousScc === true : false,
       cs_languages: form.csLanguages,
       cs_classes: form.csClasses || null,
       experience_children: form.experienceChildren || null,
@@ -288,7 +294,9 @@ export default function VolunteerApplyPage() {
 
   if (!applicationsOpen) {
     return (
-      <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 text-center">
+      <div className="min-h-screen bg-bg flex flex-col">
+      <BrandBar />
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10 text-center">
         <div className="w-14 h-14 rounded-full bg-brand-soft flex items-center justify-center mb-4 mx-auto">
           <ClipboardList size={24} className="text-brand" />
         </div>
@@ -300,13 +308,16 @@ export default function VolunteerApplyPage() {
           </a>{' '}
           with questions.
         </p>
+      </main>
       </div>
     )
   }
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-bg flex flex-col">
+      <BrandBar />
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={28} className="text-success" />
@@ -325,6 +336,7 @@ export default function VolunteerApplyPage() {
             Visit our website
           </a>
         </div>
+      </main>
       </div>
     )
   }
@@ -332,6 +344,14 @@ export default function VolunteerApplyPage() {
   const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition'
   const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
   const textareaCls = 'w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition resize-none'
+
+  // Question label from the Form editor, with the required marker / optional hint.
+  const labelText = (key: string, hint?: string) => (
+    <>
+      {q(key).label}{q(key).required ? ' *' : <span className="font-normal text-ink-muted"> (optional)</span>}
+      {hint && <span className="font-normal text-ink-muted"> ({hint})</span>}
+    </>
+  )
 
   return (
     <div className="min-h-screen bg-bg pb-16">
@@ -357,44 +377,44 @@ export default function VolunteerApplyPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>First name *</label>
-                  <input type="text" className={inputCls} placeholder="Jane" value={form.firstName}
+                  <label htmlFor="vol-first" className={labelCls}>{labelText('firstName')}</label>
+                  <input id="vol-first" type="text" autoComplete="given-name" className={inputCls} placeholder="Jane" value={form.firstName}
                     onChange={e => set('firstName', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Last name *</label>
-                  <input type="text" className={inputCls} placeholder="Smith" value={form.lastName}
+                  <label htmlFor="vol-last" className={labelCls}>{labelText('lastName')}</label>
+                  <input id="vol-last" type="text" autoComplete="family-name" className={inputCls} placeholder="Smith" value={form.lastName}
                     onChange={e => set('lastName', e.target.value)} />
                 </div>
               </div>
 
               <div>
-                <label className={labelCls}>Email *</label>
-                <input type="email" autoComplete="email" className={inputCls} placeholder="you@example.com"
+                <label htmlFor="vol-email" className={labelCls}>{labelText('email')}</label>
+                <input id="vol-email" type="email" autoComplete="email" className={inputCls} placeholder="you@example.com"
                   value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
 
               <div>
-                <label className={labelCls}>Password *</label>
-                <input type="password" autoComplete="new-password" className={inputCls} placeholder="8+ characters"
+                <label htmlFor="vol-password" className={labelCls}>Password *</label>
+                <input id="vol-password" type="password" autoComplete="new-password" className={inputCls} placeholder="8+ characters"
                   minLength={8} value={form.password} onChange={e => set('password', e.target.value)} />
               </div>
 
               <div>
-                <label className={labelCls}>Phone number *</label>
-                <input type="tel" className={inputCls} placeholder="123-456-7890"
+                <label htmlFor="vol-phone" className={labelCls}>{labelText('phone')}</label>
+                <input id="vol-phone" type="tel" autoComplete="tel" className={inputCls} placeholder="123-456-7890"
                   value={form.phone} onChange={e => set('phone', e.target.value)} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Age *</label>
-                  <input type="number" className={inputCls} placeholder="17" min={14} max={25}
+                  <label htmlFor="vol-age" className={labelCls}>{labelText('age')}</label>
+                  <input id="vol-age" type="number" className={inputCls} placeholder="17" min={14} max={25}
                     value={form.age} onChange={e => set('age', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Shirt size *</label>
-                  <select className={inputCls} value={form.shirtSize} onChange={e => set('shirtSize', e.target.value)}>
+                  <label htmlFor="vol-shirt" className={labelCls}>{labelText('shirtSize')}</label>
+                  <select id="vol-shirt" className={inputCls} value={form.shirtSize} onChange={e => set('shirtSize', e.target.value)}>
                     <option value="">Select…</option>
                     {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -402,16 +422,16 @@ export default function VolunteerApplyPage() {
               </div>
 
               <div>
-                <label className={labelCls}>Current grade *</label>
-                <select className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
+                <label htmlFor="vol-grade" className={labelCls}>{labelText('grade')}</label>
+                <select id="vol-grade" className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
                   <option value="">Select…</option>
                   {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className={labelCls}>School *</label>
-                <select className={inputCls} value={form.school} onChange={e => set('school', e.target.value)}>
+                <label htmlFor="vol-school" className={labelCls}>{labelText('school')}</label>
+                <select id="vol-school" className={inputCls} value={form.school} onChange={e => set('school', e.target.value)}>
                   <option value="">Select…</option>
                   {SCHOOLS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -419,8 +439,8 @@ export default function VolunteerApplyPage() {
 
               {form.school === 'Other' && (
                 <div>
-                  <label className={labelCls}>School name *</label>
-                  <input type="text" className={inputCls} placeholder="Your school"
+                  <label htmlFor="vol-school-other" className={labelCls}>School name *</label>
+                  <input id="vol-school-other" type="text" className={inputCls} placeholder="Your school"
                     value={form.schoolOther} onChange={e => set('schoolOther', e.target.value)} />
                 </div>
               )}
@@ -433,9 +453,9 @@ export default function VolunteerApplyPage() {
               <h2 className="font-sans font-bold text-lg text-ink">Availability &amp; background</h2>
 
               <div>
-                <label className={labelCls}>Which sessions can you attend? *</label>
+                <p id="vol-availability" className={labelCls}>{labelText('availability')}</p>
                 <p className="font-sans text-xs text-ink-muted mb-3">Volunteers stay 8:30 AM – 4:30 PM each day at Cherry Creek High School.</p>
-                <div className="space-y-2">
+                <div role="group" aria-labelledby="vol-availability" className="space-y-2">
                   {[
                     { key: 'availabilityWeek1' as const, session: weeks[0], fallback: 'Session 1' },
                     { key: 'availabilityWeek2' as const, session: weeks[1], fallback: 'Session 2' },
@@ -453,14 +473,14 @@ export default function VolunteerApplyPage() {
               </div>
 
               <div>
-                <label className={labelCls}>Why do you want to volunteer with Steel City Codes? * <span className="font-normal text-ink-muted">(2–3 sentences)</span></label>
-                <textarea className={textareaCls} rows={4} placeholder="Tell us what motivates you to teach and mentor students…"
+                <label htmlFor="vol-why" className={labelCls}>{labelText('whyVolunteer', '2–3 sentences')}</label>
+                <textarea id="vol-why" className={textareaCls} rows={4} placeholder="Tell us what motivates you to teach and mentor students…"
                   value={form.whyVolunteer} onChange={e => set('whyVolunteer', e.target.value)} />
               </div>
 
-              <div>
-                <label className={labelCls}>Have you volunteered at a previous Steel City Codes activity? *</label>
-                <div className="flex gap-3">
+              {q('previousScc').show && <div>
+                <p id="vol-prev" className={labelCls}>{labelText('previousScc')}</p>
+                <div role="group" aria-labelledby="vol-prev" className="flex gap-3">
                   {[{ v: true, label: 'Yes' }, { v: false, label: 'No' }].map(({ v, label }) => (
                     <button key={label} type="button"
                       onClick={() => set('previousScc', v)}
@@ -474,11 +494,11 @@ export default function VolunteerApplyPage() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </div>}
 
-              <div>
-                <label className={labelCls}>CS languages you know *</label>
-                <div className="flex flex-wrap gap-2 mt-1">
+              {q('csLanguages').show && <div>
+                <p id="vol-langs" className={labelCls}>{labelText('csLanguages')}</p>
+                <div role="group" aria-labelledby="vol-langs" className="flex flex-wrap gap-2 mt-1">
                   {CS_LANGUAGES.map(lang => (
                     <button key={lang} type="button"
                       onClick={() => toggleLanguage(lang)}
@@ -492,19 +512,19 @@ export default function VolunteerApplyPage() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </div>}
 
-              <div>
-                <label className={labelCls}>CS classes you've taken <span className="font-normal text-ink-muted">(optional)</span></label>
-                <textarea className={textareaCls} rows={3} placeholder="e.g. AP Computer Science A, IB CS, etc."
+              {q('csClasses').show && <div>
+                <label htmlFor="vol-cs-classes" className={labelCls}>{labelText('csClasses')}</label>
+                <textarea id="vol-cs-classes" className={textareaCls} rows={3} placeholder="e.g. AP Computer Science A, IB CS, etc."
                   value={form.csClasses} onChange={e => set('csClasses', e.target.value)} />
-              </div>
+              </div>}
 
-              <div>
-                <label className={labelCls}>Experience working with children or volunteering <span className="font-normal text-ink-muted">(optional)</span></label>
-                <textarea className={textareaCls} rows={4} placeholder="List relevant experiences in a few bullet points…"
+              {q('experienceChildren').show && <div>
+                <label htmlFor="vol-experience" className={labelCls}>{labelText('experienceChildren')}</label>
+                <textarea id="vol-experience" className={textareaCls} rows={4} placeholder="List relevant experiences in a few bullet points…"
                   value={form.experienceChildren} onChange={e => set('experienceChildren', e.target.value)} />
-              </div>
+              </div>}
             </div>
           )}
 
@@ -513,8 +533,8 @@ export default function VolunteerApplyPage() {
             <div className="space-y-6">
               <h2 className="font-sans font-bold text-lg text-ink">Skills &amp; course preferences</h2>
 
-              <div>
-                <p className={labelCls}>Skill levels <span className="font-normal text-ink-muted">(leave blank if N/A)</span></p>
+              {q('skills').show && <div>
+                <p className={labelCls}>{q('skills').label} <span className="font-normal text-ink-muted">(leave blank if N/A)</span></p>
                 <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
                   <SkillRating label="Python" value={form.skillPython} onChange={v => set('skillPython', v)} />
                   <SkillRating label="Java" value={form.skillJava} onChange={v => set('skillJava', v)} />
@@ -523,11 +543,11 @@ export default function VolunteerApplyPage() {
                   <SkillRating label="JavaScript" value={form.skillJavascript} onChange={v => set('skillJavascript', v)} />
                   <SkillRating label="Microcontrollers / CircuitPython" value={form.skillMicrocontrollers} onChange={v => set('skillMicrocontrollers', v)} />
                 </div>
-              </div>
+              </div>}
 
               <div>
-                <label className={labelCls}>First choice course *</label>
-                <div className="space-y-2">
+                <p id="vol-course-1" className={labelCls}>{labelText('courseFirst')}</p>
+                <div role="radiogroup" aria-labelledby="vol-course-1" className="space-y-2">
                   {courses.map(c => (
                     <label key={c} className={`flex items-center gap-3 p-3 rounded-[10px] border cursor-pointer transition ${
                       form.courseFirst === c ? 'border-brand bg-brand-soft' : 'border-border-strong bg-surface hover:bg-surface-sunken'
@@ -541,8 +561,8 @@ export default function VolunteerApplyPage() {
               </div>
 
               <div>
-                <label className={labelCls}>Second choice course *</label>
-                <div className="space-y-2">
+                <p id="vol-course-2" className={labelCls}>{labelText('courseSecond')}</p>
+                <div role="radiogroup" aria-labelledby="vol-course-2" className="space-y-2">
                   {courses.map(c => (
                     <label key={c} className={`flex items-center gap-3 p-3 rounded-[10px] border cursor-pointer transition ${
                       form.courseSecond === c ? 'border-brand bg-brand-soft' : 'border-border-strong bg-surface hover:bg-surface-sunken'
@@ -555,11 +575,11 @@ export default function VolunteerApplyPage() {
                 </div>
               </div>
 
-              <div>
-                <label className={labelCls}>Other curricula you could teach <span className="font-normal text-ink-muted">(optional)</span></label>
-                <textarea className={textareaCls} rows={3} placeholder="e.g. Game Development, Processing Graphics, Greenfoot…"
+              {q('otherCurricula').show && <div>
+                <label htmlFor="vol-other" className={labelCls}>{labelText('otherCurricula')}</label>
+                <textarea id="vol-other" className={textareaCls} rows={3} placeholder="e.g. Game Development, Processing Graphics, Greenfoot…"
                   value={form.otherCurricula} onChange={e => set('otherCurricula', e.target.value)} />
-              </div>
+              </div>}
             </div>
           )}
 
@@ -580,17 +600,17 @@ export default function VolunteerApplyPage() {
               </div>
 
               <div>
-                <label className={labelCls}>Volunteer electronic signature *</label>
+                <label htmlFor="vol-signature" className={labelCls}>{labelText('volunteerSignature')}</label>
                 <p className="font-sans text-xs text-ink-muted mb-2">Type your full legal name. This serves as your electronic signature and has the same binding effect as a handwritten signature.</p>
-                <input type="text" className={inputCls} placeholder="Jane Smith"
+                <input id="vol-signature" type="text" className={inputCls} placeholder="Jane Smith"
                   value={form.volunteerSignature} onChange={e => set('volunteerSignature', e.target.value)} />
               </div>
 
               {Number(form.age) < 18 && (
                 <div>
-                  <label className={labelCls}>Parent / guardian electronic signature *</label>
+                  <label htmlFor="vol-guardian" className={labelCls}>{q('guardianSignature').label} *</label>
                   <p className="font-sans text-xs text-ink-muted mb-2">Required for applicants under 18. Parent or guardian must type their full name.</p>
-                  <input type="text" className={inputCls} placeholder="Parent Name"
+                  <input id="vol-guardian" type="text" className={inputCls} placeholder="Parent Name"
                     value={form.guardianSignature} onChange={e => set('guardianSignature', e.target.value)} />
                 </div>
               )}
@@ -620,7 +640,7 @@ export default function VolunteerApplyPage() {
 
           {/* Error */}
           {error && (
-            <p className="mt-4 text-danger text-sm font-sans flex items-center gap-1.5">
+            <p role="alert" className="mt-4 text-danger text-sm font-sans flex items-center gap-1.5">
               <span>⚠</span> {error}
             </p>
           )}

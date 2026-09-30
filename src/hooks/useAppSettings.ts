@@ -20,11 +20,12 @@ export function useAppSettings() {
   }, [])
 
   async function updateSetting(key: string, value: string) {
-    setSettings(s => ({ ...s, [key]: value }))
-    await supabase
+    const { error } = await supabase
       .from('app_settings')
       .update({ value, updated_at: new Date().toISOString() })
       .eq('key', key)
+    if (error) throw new Error(error.message)
+    setSettings(s => ({ ...s, [key]: value }))
   }
 
   return { settings, loading, updateSetting }

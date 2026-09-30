@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useSessions, activeCampYear, campSessions as activeSessions, formatSessionDates } from '../hooks/useSessions'
 import { useParentProfile } from '../hooks/useParentProfile'
+import { useFormConfig } from '../hooks/useFormConfig'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 
 const SCHOOL_DISTRICTS = [
@@ -127,6 +128,8 @@ export default function ParentRegistrationPage() {
   const { classes, loading: classesLoading } = useClasses()
   const { sessions, loading: sessionsLoading } = useSessions()
   const { profile: parentProfile, saveProfile } = useParentProfile()
+  // Labels / visibility / required-ness come from the admin Form editor; `enabled` opens/closes it.
+  const { field: q, enabled: registrationOpen, loading: formConfigLoading } = useFormConfig('student_registration')
 
   // Stamp the record with the active camp year (not the calendar year) so a camper who just
   // completed the full form is considered confirmed for this summer and isn't immediately
@@ -243,29 +246,33 @@ export default function ParentRegistrationPage() {
 
   function validate(): string | null {
     if (step === 1) {
-      if (!form.first_name.trim()) return "Participant's first name is required"
-      if (!form.last_name.trim()) return "Participant's last name is required"
-      if (!form.email.trim()) return "Student's preferred email is required"
-      if (!form.school_district) return 'School district is required'
-      if (!form.school_name.trim()) return 'School name is required'
-      if (!form.grade) return 'Grade is required'
-      if (!form.shirt_size) return 'Shirt size is required'
-      if (form.laptop_available === null) return 'Please answer the laptop availability question'
+      if (!form.first_name.trim()) return `${q('first_name').label} is required`
+      if (!form.last_name.trim()) return `${q('last_name').label} is required`
+      if (q('email').required && !form.email.trim()) return `${q('email').label} is required`
+      if (q('school_district').required && !form.school_district) return `${q('school_district').label} is required`
+      if (q('school_name').required && !form.school_name.trim()) return `${q('school_name').label} is required`
+      if (!form.grade) return `${q('grade').label} is required`
+      if (q('shirt_size').required && !form.shirt_size) return `${q('shirt_size').label} is required`
+      if (q('laptop_available').required && form.laptop_available === null) return `Please answer: ${q('laptop_available').label}`
+      if (q('ethnic_background').required && form.ethnic_background.length === 0) return `Please answer: ${q('ethnic_background').label}`
+      if (q('gender').required && !form.gender.trim()) return `${q('gender').label} is required`
     }
     if (step === 2) {
-      if (!form.parent_name.trim()) return 'Parent/guardian name is required'
-      if (!form.parent_email.trim()) return 'Parent/guardian email is required'
-      if (!form.parent_phone.trim()) return 'Parent/guardian phone is required'
-      if (!form.emergency_name.trim()) return 'Emergency contact name is required'
-      if (!form.emergency_phone.trim()) return 'Emergency contact phone is required'
-      if (!form.emergency_relation.trim()) return 'Emergency contact relationship is required'
+      if (!form.parent_name.trim()) return `${q('parent_name').label} is required`
+      if (!form.parent_email.trim()) return `${q('parent_email').label} is required`
+      if (!form.parent_phone.trim()) return `${q('parent_phone').label} is required`
+      if (!form.emergency_name.trim()) return `${q('emergency_name').label} is required`
+      if (!form.emergency_phone.trim()) return `${q('emergency_phone').label} is required`
+      if (!form.emergency_relation.trim()) return `${q('emergency_relation').label} is required`
     }
     if (step === 3) {
-      if (!form.allergies.trim()) return 'Please note allergies/dietary restrictions (enter "None" if not applicable)'
-      if (!form.medical_conditions.trim()) return 'Please note medical conditions (enter "None" if not applicable)'
-      if (form.free_reduced_lunch === null) return 'Please answer the lunch eligibility question'
-      if (!form.how_heard) return 'Please tell us how you heard about Steel City Codes'
-      if (form.previous_program === null) return 'Please answer whether your student participated last year'
+      if (!form.allergies.trim()) return `${q('allergies').label}: enter "None" if not applicable`
+      if (!form.medical_conditions.trim()) return `${q('medical_conditions').label}: enter "None" if not applicable`
+      if (q('other_info').required && !form.other_info.trim()) return `Please answer: ${q('other_info').label}`
+      if (q('free_reduced_lunch').required && form.free_reduced_lunch === null) return `Please answer: ${q('free_reduced_lunch').label}`
+      if (q('how_heard').required && !form.how_heard) return `Please answer: ${q('how_heard').label}`
+      if (q('previous_program').required && form.previous_program === null) return `Please answer: ${q('previous_program').label}`
+      if (q('candy_consent').required && !form.candy_consent) return `Please confirm: ${q('candy_consent').label}`
     }
     if (step === 4) {
       if (campSessions.length === 0) return "Registration isn't open yet — no camp sessions are scheduled"
@@ -274,8 +281,8 @@ export default function ParentRegistrationPage() {
       if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
     }
     if (step === 5) {
-      if (!form.waiver_signature.trim()) return 'Waiver signature is required'
-      if (!form.guardian_signature.trim()) return 'Guardian electronic signature is required'
+      if (!form.waiver_signature.trim()) return `${q('waiver_signature').label} is required`
+      if (!form.guardian_signature.trim()) return `${q('guardian_signature').label} is required`
     }
     return null
   }
@@ -311,10 +318,10 @@ export default function ParentRegistrationPage() {
       age: gradeToAge(form.grade),
       medical_info: form.medical_conditions || null,
       email: form.email || null,
-      school_district: form.school_district,
-      school_name: form.school_name.trim(),
+      school_district: form.school_district || null,
+      school_name: form.school_name.trim() || null,
       grade: form.grade,
-      shirt_size: form.shirt_size,
+      shirt_size: form.shirt_size || null,
       laptop_available: form.laptop_available,
       ethnic_background: form.ethnic_background.length > 0 ? form.ethnic_background : null,
       gender: form.gender || null,
@@ -328,7 +335,7 @@ export default function ParentRegistrationPage() {
       other_info: form.other_info || null,
       free_reduced_lunch: form.free_reduced_lunch,
       lunch_provision: form.lunch_provision,
-      how_heard: form.how_heard,
+      how_heard: form.how_heard || null,
       previous_program: form.previous_program,
       program_last_year: form.previous_program ? form.program_last_year || null : null,
       candy_consent: form.candy_consent,
@@ -387,6 +394,13 @@ export default function ParentRegistrationPage() {
 
   const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition'
   const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
+  // Question label from the Form editor, with the required marker / optional hint.
+  const labelText = (key: string, hint?: string) => (
+    <>
+      {q(key).label}{q(key).required ? ' *' : <span className="font-normal text-ink-muted"> (optional)</span>}
+      {hint && <span className="font-normal text-ink-muted"> ({hint})</span>}
+    </>
+  )
   const textareaCls = 'w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition resize-none'
   const yesNoCls = (val: boolean | null, target: boolean) =>
     `flex-1 h-11 rounded-[10px] font-sans font-semibold text-sm border transition ${
@@ -418,6 +432,23 @@ export default function ParentRegistrationPage() {
     )
   }
 
+  if (!formConfigLoading && !registrationOpen) {
+    return (
+      <div className="max-w-lg mx-auto px-4 pt-16 pb-16 text-center">
+        <h1 className="font-sans font-bold text-2xl text-ink mb-2">Registration is closed</h1>
+        <p className="font-sans text-sm text-ink-muted mb-6">
+          Camper registration isn't open right now. Your existing campers and registrations are unchanged.
+        </p>
+        <button
+          onClick={() => navigate('/parent')}
+          className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] transition"
+        >
+          Back to dashboard
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-16">
         {/* Contextual back — the shell's top nav owns primary navigation now. */}
@@ -438,59 +469,59 @@ export default function ParentRegistrationPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>First name *</label>
-                  <input type="text" className={inputCls} placeholder="Jane"
+                  <label htmlFor="reg-first" className={labelCls}>{labelText('first_name')}</label>
+                  <input id="reg-first" type="text" className={inputCls} placeholder="Jane"
                     value={form.first_name} onChange={e => set('first_name', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Last name *</label>
-                  <input type="text" className={inputCls} placeholder="Smith"
+                  <label htmlFor="reg-last" className={labelCls}>{labelText('last_name')}</label>
+                  <input id="reg-last" type="text" className={inputCls} placeholder="Smith"
                     value={form.last_name} onChange={e => set('last_name', e.target.value)} />
                 </div>
               </div>
-              <div>
-                <label className={labelCls}>Student's preferred email *</label>
-                <input type="email" className={inputCls} placeholder="student@example.com"
+              {q('email').show && <div>
+                <label htmlFor="reg-email" className={labelCls}>{labelText('email')}</label>
+                <input id="reg-email" type="email" className={inputCls} placeholder="student@example.com"
                   value={form.email} onChange={e => set('email', e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>School district *</label>
-                <select className={inputCls} value={form.school_district} onChange={e => set('school_district', e.target.value)}>
+              </div>}
+              {q('school_district').show && <div>
+                <label htmlFor="reg-district" className={labelCls}>{labelText('school_district')}</label>
+                <select id="reg-district" className={inputCls} value={form.school_district} onChange={e => set('school_district', e.target.value)}>
                   <option value="">Select…</option>
                   {SCHOOL_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className={labelCls}>School name *</label>
-                <input type="text" className={inputCls} placeholder="e.g. Campus Middle School"
+              </div>}
+              {q('school_name').show && <div>
+                <label htmlFor="reg-school" className={labelCls}>{labelText('school_name')}</label>
+                <input id="reg-school" type="text" className={inputCls} placeholder="e.g. Campus Middle School"
                   value={form.school_name} onChange={e => set('school_name', e.target.value)} />
-              </div>
+              </div>}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>Grade (entering fall) *</label>
-                  <select className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
+                  <label htmlFor="reg-grade" className={labelCls}>{labelText('grade')}</label>
+                  <select id="reg-grade" className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
                     <option value="">Select…</option>
                     {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className={labelCls}>Shirt size *</label>
-                  <select className={inputCls} value={form.shirt_size} onChange={e => set('shirt_size', e.target.value)}>
+                {q('shirt_size').show && <div>
+                  <label htmlFor="reg-shirt" className={labelCls}>{labelText('shirt_size')}</label>
+                  <select id="reg-shirt" className={inputCls} value={form.shirt_size} onChange={e => set('shirt_size', e.target.value)}>
                     <option value="">Select…</option>
                     {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                </div>
+                </div>}
               </div>
-              <div>
-                <label className={labelCls}>Does your student have access to a personal laptop? *</label>
-                <div className="flex gap-3">
+              {q('laptop_available').show && <div>
+                <p id="reg-laptop" className={labelCls}>{labelText('laptop_available')}</p>
+                <div role="group" aria-labelledby="reg-laptop" className="flex gap-3">
                   <button type="button" onClick={() => set('laptop_available', true)} className={yesNoCls(form.laptop_available, true)}>Yes</button>
                   <button type="button" onClick={() => set('laptop_available', false)} className={yesNoCls(form.laptop_available, false)}>No</button>
                 </div>
-              </div>
-              <div>
-                <label className={labelCls}>Ethnic background <span className="font-normal text-ink-muted">(optional — for grant reporting only)</span></label>
-                <div className="flex flex-wrap gap-2">
+              </div>}
+              {q('ethnic_background').show && <div>
+                <p id="reg-ethnic" className={labelCls}>{labelText('ethnic_background', 'for grant reporting only')}</p>
+                <div role="group" aria-labelledby="reg-ethnic" className="flex flex-wrap gap-2">
                   {ETHNIC_OPTIONS.map(opt => (
                     <button key={opt} type="button" onClick={() => toggleEthnic(opt)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
@@ -500,12 +531,12 @@ export default function ParentRegistrationPage() {
                     </button>
                   ))}
                 </div>
-              </div>
-              <div>
-                <label className={labelCls}>Gender <span className="font-normal text-ink-muted">(optional)</span></label>
-                <input type="text" className={inputCls} placeholder="e.g. Female, Male, Non-binary, Prefer not to say"
+              </div>}
+              {q('gender').show && <div>
+                <label htmlFor="reg-gender" className={labelCls}>{labelText('gender')}</label>
+                <input id="reg-gender" type="text" className={inputCls} placeholder="e.g. Female, Male, Non-binary, Prefer not to say"
                   value={form.gender} onChange={e => set('gender', e.target.value)} />
-              </div>
+              </div>}
             </div>
           )}
 
@@ -514,33 +545,33 @@ export default function ParentRegistrationPage() {
             <div className="space-y-5">
               <h2 className="font-sans font-bold text-lg text-ink">Parent &amp; emergency contact</h2>
               <div>
-                <label className={labelCls}>Parent / guardian name *</label>
-                <input type="text" className={inputCls} value={form.parent_name} onChange={e => set('parent_name', e.target.value)} />
+                <label htmlFor="reg-parent-name" className={labelCls}>{labelText('parent_name')}</label>
+                <input id="reg-parent-name" type="text" autoComplete="name" className={inputCls} value={form.parent_name} onChange={e => set('parent_name', e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>Parent email *</label>
-                  <input type="email" className={inputCls} value={form.parent_email} onChange={e => set('parent_email', e.target.value)} />
+                  <label htmlFor="reg-parent-email" className={labelCls}>{labelText('parent_email')}</label>
+                  <input id="reg-parent-email" type="email" autoComplete="email" className={inputCls} value={form.parent_email} onChange={e => set('parent_email', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Parent phone *</label>
-                  <input type="tel" className={inputCls} placeholder="303-555-0100" value={form.parent_phone} onChange={e => set('parent_phone', e.target.value)} />
+                  <label htmlFor="reg-parent-phone" className={labelCls}>{labelText('parent_phone')}</label>
+                  <input id="reg-parent-phone" type="tel" autoComplete="tel" className={inputCls} placeholder="303-555-0100" value={form.parent_phone} onChange={e => set('parent_phone', e.target.value)} />
                 </div>
               </div>
               <hr className="border-border" />
               <h3 className="font-sans font-semibold text-base text-ink">Emergency contact</h3>
               <div>
-                <label className={labelCls}>Emergency contact name *</label>
-                <input type="text" className={inputCls} value={form.emergency_name} onChange={e => set('emergency_name', e.target.value)} />
+                <label htmlFor="reg-emergency-name" className={labelCls}>{labelText('emergency_name')}</label>
+                <input id="reg-emergency-name" type="text" className={inputCls} value={form.emergency_name} onChange={e => set('emergency_name', e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>Emergency phone *</label>
-                  <input type="tel" className={inputCls} value={form.emergency_phone} onChange={e => set('emergency_phone', e.target.value)} />
+                  <label htmlFor="reg-emergency-phone" className={labelCls}>{labelText('emergency_phone')}</label>
+                  <input id="reg-emergency-phone" type="tel" className={inputCls} value={form.emergency_phone} onChange={e => set('emergency_phone', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>Relationship *</label>
-                  <input type="text" className={inputCls} placeholder="e.g. Aunt, Grandparent" value={form.emergency_relation} onChange={e => set('emergency_relation', e.target.value)} />
+                  <label htmlFor="reg-emergency-relation" className={labelCls}>{labelText('emergency_relation')}</label>
+                  <input id="reg-emergency-relation" type="text" className={inputCls} placeholder="e.g. Aunt, Grandparent" value={form.emergency_relation} onChange={e => set('emergency_relation', e.target.value)} />
                 </div>
               </div>
             </div>
@@ -551,59 +582,61 @@ export default function ParentRegistrationPage() {
             <div className="space-y-5">
               <h2 className="font-sans font-bold text-lg text-ink">Medical &amp; miscellaneous</h2>
               <div>
-                <label className={labelCls}>Allergies / dietary restrictions * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
-                <textarea className={textareaCls} rows={2} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
+                <label htmlFor="reg-allergies" className={labelCls}>{labelText('allergies', 'enter "None" if not applicable')}</label>
+                <textarea id="reg-allergies" className={textareaCls} rows={2} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
               </div>
               <div>
-                <label className={labelCls}>Medical conditions, learning disabilities, etc. * <span className="font-normal text-ink-muted">(enter "None" if not applicable)</span></label>
-                <textarea className={textareaCls} rows={3} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
+                <label htmlFor="reg-medical" className={labelCls}>{labelText('medical_conditions', 'enter "None" if not applicable')}</label>
+                <textarea id="reg-medical" className={textareaCls} rows={3} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
               </div>
-              <div>
-                <label className={labelCls}>Other information about participant <span className="font-normal text-ink-muted">(optional)</span></label>
-                <textarea className={textareaCls} rows={2} value={form.other_info} onChange={e => set('other_info', e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>Is your student eligible for free / reduced lunch? *</label>
-                <div className="flex gap-3">
+              {q('other_info').show && <div>
+                <label htmlFor="reg-other" className={labelCls}>{labelText('other_info')}</label>
+                <textarea id="reg-other" className={textareaCls} rows={2} value={form.other_info} onChange={e => set('other_info', e.target.value)} />
+              </div>}
+              {q('free_reduced_lunch').show && <div>
+                <p id="reg-lunch" className={labelCls}>{labelText('free_reduced_lunch')}</p>
+                <div role="group" aria-labelledby="reg-lunch" className="flex gap-3">
                   <button type="button" onClick={() => set('free_reduced_lunch', true)} className={yesNoCls(form.free_reduced_lunch, true)}>Yes</button>
                   <button type="button" onClick={() => set('free_reduced_lunch', false)} className={yesNoCls(form.free_reduced_lunch, false)}>No</button>
                 </div>
-              </div>
-              {form.free_reduced_lunch && (
+              </div>}
+              {form.free_reduced_lunch && q('lunch_provision').show && (
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 accent-brand" checked={form.lunch_provision}
                     onChange={e => set('lunch_provision', e.target.checked)} />
-                  <span className="font-sans text-sm text-ink">I would like Steel City Codes to provide lunch for my student.</span>
+                  <span className="font-sans text-sm text-ink">{q('lunch_provision').label}</span>
                 </label>
               )}
-              <div>
-                <label className={labelCls}>How did you hear about Steel City Codes? *</label>
-                <select className={inputCls} value={form.how_heard} onChange={e => set('how_heard', e.target.value)}>
+              {q('how_heard').show && <div>
+                <label htmlFor="reg-how-heard" className={labelCls}>{labelText('how_heard')}</label>
+                <select id="reg-how-heard" className={inputCls} value={form.how_heard} onChange={e => set('how_heard', e.target.value)}>
                   <option value="">Select…</option>
                   {HOW_HEARD.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className={labelCls}>Did your student participate in Steel City Codes last year? *</label>
-                <div className="flex gap-3">
+              </div>}
+              {q('previous_program').show && <div>
+                <p id="reg-previous" className={labelCls}>{labelText('previous_program')}</p>
+                <div role="group" aria-labelledby="reg-previous" className="flex gap-3">
                   <button type="button" onClick={() => set('previous_program', true)} className={yesNoCls(form.previous_program, true)}>Yes</button>
                   <button type="button" onClick={() => set('previous_program', false)} className={yesNoCls(form.previous_program, false)}>No</button>
                 </div>
-              </div>
-              {form.previous_program === true && (
+              </div>}
+              {form.previous_program === true && q('previous_program').show && (
                 <div>
-                  <label className={labelCls}>Which program did they take?</label>
-                  <select className={inputCls} value={form.program_last_year} onChange={e => set('program_last_year', e.target.value)}>
+                  <label htmlFor="reg-previous-program" className={labelCls}>Which program did they take?</label>
+                  <select id="reg-previous-program" className={inputCls} value={form.program_last_year} onChange={e => set('program_last_year', e.target.value)}>
                     <option value="">Select…</option>
                     {PREVIOUS_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
               )}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 accent-brand" checked={form.candy_consent}
-                  onChange={e => set('candy_consent', e.target.checked)} />
-                <span className="font-sans text-sm text-ink">I consent to my student receiving small candy treats during camp activities.</span>
-              </label>
+              {q('candy_consent').show && (
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 accent-brand" checked={form.candy_consent}
+                    onChange={e => set('candy_consent', e.target.checked)} />
+                  <span className="font-sans text-sm text-ink">{q('candy_consent').label}{q('candy_consent').required && ' *'}</span>
+                </label>
+              )}
             </div>
           )}
 
@@ -687,16 +720,16 @@ export default function ParentRegistrationPage() {
               </div>
 
               <div>
-                <label className={labelCls}>Student / registrant signature *</label>
+                <label htmlFor="reg-waiver-sig" className={labelCls}>{labelText('waiver_signature')}</label>
                 <p className="font-sans text-xs text-ink-muted mb-2">Type the student's full legal name as an electronic signature.</p>
-                <input type="text" className={inputCls} placeholder={studentFullName || 'Student full name'}
+                <input id="reg-waiver-sig" type="text" className={inputCls} placeholder={studentFullName || 'Student full name'}
                   value={form.waiver_signature} onChange={e => set('waiver_signature', e.target.value)} />
               </div>
 
               <div>
-                <label className={labelCls}>Parent / guardian signature *</label>
+                <label htmlFor="reg-guardian-sig" className={labelCls}>{labelText('guardian_signature')}</label>
                 <p className="font-sans text-xs text-ink-muted mb-2">Type your full legal name to confirm your consent on behalf of your student.</p>
-                <input type="text" className={inputCls} placeholder={form.parent_name || 'Parent/guardian full name'}
+                <input id="reg-guardian-sig" type="text" className={inputCls} placeholder={form.parent_name || 'Parent/guardian full name'}
                   value={form.guardian_signature} onChange={e => set('guardian_signature', e.target.value)} />
               </div>
             </div>

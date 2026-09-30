@@ -378,6 +378,7 @@ export default function AdminVolunteers() {
   const [applied, setApplied] = useState(false)
   const [appFilter, setAppFilter] = useState<AppFilter>('pending')
   const [assignError, setAssignError] = useState<string | null>(null)
+  const [settingError, setSettingError] = useState<string | null>(null)
   const { sessions } = useSessions()
   const weeks = campSessions(sessions)
   const weekLabels: [string, string] = [0, 1].map(i =>
@@ -615,7 +616,12 @@ export default function AdminVolunteers() {
                   <Download size={15} /> Export CSV
                 </button>
                 <button
-                  onClick={() => updateSetting('volunteer_applications_open', applicationsOpen ? 'false' : 'true')}
+                  onClick={() => {
+                    setSettingError(null)
+                    updateSetting('volunteer_applications_open', applicationsOpen ? 'false' : 'true')
+                      .catch(e => setSettingError(`Couldn't change this: ${e instanceof Error ? e.message : 'unknown error'}`))
+                  }}
+                  aria-pressed={applicationsOpen}
                   disabled={settingsLoading}
                   className={`flex items-center gap-2 h-10 px-4 rounded-[10px] font-sans font-semibold text-sm border transition disabled:opacity-50 ${
                     applicationsOpen
@@ -629,6 +635,8 @@ export default function AdminVolunteers() {
                 </button>
               </div>
             </div>
+
+            {settingError && <p role="alert" className="px-3 py-2 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">{settingError}</p>}
 
             {applicationsOpen && (
               <div className="flex items-center gap-2 text-xs font-sans text-success bg-success-soft border border-success/20 rounded-[10px] px-3 py-2">
