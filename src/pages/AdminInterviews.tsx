@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Calendar, User, FileText, X, Check } from 'lucide-react'
 import { useInterviews } from '../hooks/useInterviews'
-import { useConfirm, ActionError } from '../components/ConfirmDialog'
+import { useConfirm } from '../hooks/useConfirm'
+import { ActionError } from '../components/ActionError'
 import { supabase } from '../lib/supabase'
 
 interface Application {

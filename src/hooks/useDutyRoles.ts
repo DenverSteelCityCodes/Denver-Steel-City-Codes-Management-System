@@ -79,7 +79,7 @@ export function useDutySlots(sessionId?: string) {
 
     const { data } = await q
     setSlots(
-      (data ?? []).map((s: any) => ({
+      ((data ?? []) as Omit<DutySlot, 'assigned_count'>[]).map(s => ({
         ...s,
         assigned_count: s.assignments?.length ?? 0,
       }))

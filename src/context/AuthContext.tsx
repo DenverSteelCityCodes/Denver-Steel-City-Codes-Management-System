@@ -27,21 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading: true,
   })
 
-  useEffect(() => {
-    // onAuthStateChange fires INITIAL_SESSION on subscribe, so it also covers hydration on mount.
-    // Supabase calls made inside this callback can deadlock the auth client, so the profile
-    // query is deferred to the next tick.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setTimeout(() => { void loadProfile(session) }, 0)
-      } else {
-        setState({ session: null, user: null, profile: null, role: null, loading: false })
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
   async function loadProfile(session: Session) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -61,6 +46,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  useEffect(() => {
+    // onAuthStateChange fires INITIAL_SESSION on subscribe, so it also covers hydration on mount.
+    // Supabase calls made inside this callback can deadlock the auth client, so the profile
+    // query is deferred to the next tick.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setTimeout(() => { void loadProfile(session) }, 0)
+      } else {
+        setState({ session: null, user: null, profile: null, role: null, loading: false })
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
   async function signOut() {
     await supabase.auth.signOut()
   }
@@ -72,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- context + hook live together
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider')

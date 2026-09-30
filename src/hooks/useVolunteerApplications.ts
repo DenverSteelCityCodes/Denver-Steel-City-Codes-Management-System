@@ -6,16 +6,19 @@ export function useVolunteerApplications() {
   const [applications, setApplications] = useState<VolunteerApplication[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function fetchApplications() {
-    const { data } = await supabase
+  useEffect(() => {
+    let cancelled = false
+    supabase
       .from('volunteer_applications')
       .select('*')
       .order('created_at', { ascending: false })
-    setApplications((data as VolunteerApplication[]) ?? [])
-    setLoading(false)
-  }
-
-  useEffect(() => { fetchApplications() }, [])
+      .then(({ data }) => {
+        if (cancelled) return
+        setApplications((data as VolunteerApplication[]) ?? [])
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   async function acceptApplication(app: VolunteerApplication, expLevel: ExperienceLevel) {
     // Resolve the applicant's account. Applications normally carry user_id from signup; if not

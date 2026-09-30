@@ -146,23 +146,22 @@ export default function ParentRegistrationPage() {
   // Display name derived from the split first/last fields (full_name is composed on submit).
   const studentFullName = `${form.first_name} ${form.last_name}`.trim()
 
-  useEffect(() => {
-    if (profile?.display_name) {
-      setForm(f => ({ ...f, parent_name: f.parent_name || profile.display_name }))
-    }
-  }, [profile])
-
-  // Parent contact details persist across campers and years (#54): prefill anything not typed yet.
-  useEffect(() => {
+  // Prefill parent details once they load (#54) — adjusted during render rather than in an
+  // effect. Only empty fields are filled, so nothing the parent typed is overwritten.
+  const prefillKey = [profile?.display_name, parentProfile?.updated_at, user?.email].join('|')
+  const [prefilledKey, setPrefilledKey] = useState('')
+  if (prefillKey !== prefilledKey) {
+    setPrefilledKey(prefillKey)
     setForm(f => ({
       ...f,
+      parent_name: f.parent_name || profile?.display_name || '',
       parent_email: f.parent_email || parentProfile?.email || user?.email || '',
       parent_phone: f.parent_phone || parentProfile?.phone || '',
       emergency_name: f.emergency_name || parentProfile?.emergency_contact_name || '',
       emergency_phone: f.emergency_phone || parentProfile?.emergency_contact_phone || '',
       emergency_relation: f.emergency_relation || parentProfile?.emergency_contact_relation || '',
     }))
-  }, [parentProfile, user])
+  }
 
   // Classes the camper can pick for a week. A class with no section that week isn't offered at
   // all; one whose sections don't fit the camper's age (or the course grade rule) is shown locked.

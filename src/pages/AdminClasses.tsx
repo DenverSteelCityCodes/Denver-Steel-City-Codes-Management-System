@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
-import { useConfirm, ActionError } from '../components/ConfirmDialog'
+import { useConfirm } from '../hooks/useConfirm'
+import { ActionError } from '../components/ActionError'
 import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SupportEntry } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
@@ -381,7 +382,10 @@ function SectionRosterModal({
       .eq('section_id', sectionId)
       .then(({ data }) => {
         setRoster(
-          (data ?? []).map((r: any) => ({
+          ((data ?? []) as unknown as {
+            status: RosterEntry['status']
+            students: { full_name: string; age: number; medical_info: string | null; profiles: { display_name: string } | null } | null
+          }[]).map(r => ({
             studentName: r.students?.full_name ?? '—',
             studentAge: r.students?.age ?? 0,
             medicalInfo: r.students?.medical_info ?? null,
@@ -685,7 +689,7 @@ export default function AdminClasses() {
           volunteerOptions={volunteerOptions}
           onSave={async (payload, supportIds) => {
             if (sectionModal.mode === 'edit' && sectionModal.section) {
-              const { class_id, ...rest } = payload
+              const { class_id: _classId, ...rest } = payload  // eslint-disable-line @typescript-eslint/no-unused-vars
               await updateSection(sectionModal.section.id, rest, supportIds)
             } else {
               await createSection(payload, supportIds)

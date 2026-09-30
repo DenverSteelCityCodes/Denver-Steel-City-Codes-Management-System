@@ -21,6 +21,18 @@ export interface AssignedSection {
   students: AssignedStudent[]
 }
 
+// Row shape of the sections select used for both lead and support assignments.
+interface RawSection {
+  id: string
+  label: string
+  age_min: number
+  age_max: number
+  capacity: number
+  week: 1 | 2 | null
+  class_id: string
+  classes: { name: string } | null
+}
+
 export function useAssignedClass() {
   const { user } = useAuth()
   const [assignedSections, setAssignedSections] = useState<AssignedSection[]>([])
@@ -61,22 +73,23 @@ export function useAssignedClass() {
     if (supportRes.error) { setError(supportRes.error.message); setLoading(false); return }
 
     // Fetch full section data for support assignments, avoiding duplicates with lead sections
-    const leadIds = new Set((leadRes.data ?? []).map((s: any) => s.id))
+    const leadSections = (leadRes.data ?? []) as unknown as RawSection[]
+    const leadIds = new Set(leadSections.map(s => s.id))
     const supportSectionIds = (supportRes.data ?? [])
-      .map((r: any) => r.section_id as string)
+      .map(r => r.section_id as string)
       .filter(id => !leadIds.has(id))
 
-    let supportSections: any[] = []
+    let supportSections: RawSection[] = []
     if (supportSectionIds.length > 0) {
       const { data, error } = await supabase
         .from('sections')
         .select(`id, label, age_min, age_max, capacity, week, class_id, classes ( name )`)
         .in('id', supportSectionIds)
       if (error) { setError(error.message); setLoading(false); return }
-      supportSections = data ?? []
+      supportSections = (data ?? []) as unknown as RawSection[]
     }
 
-    const allSections = [...(leadRes.data ?? []), ...supportSections]
+    const allSections = [...leadSections, ...supportSections]
 
     if (allSections.length === 0) {
       setAssignedSections([])
@@ -85,7 +98,7 @@ export function useAssignedClass() {
     }
 
     const result: AssignedSection[] = await Promise.all(
-      allSections.map(async (sec: any) => {
+      allSections.map(async sec => {
         const { data: regs } = await supabase
           .from('registrations')
           .select('students(id, full_name, age, medical_info)')
@@ -105,7 +118,7 @@ export function useAssignedClass() {
           capacity: sec.capacity,
           week: sec.week,
           class_id: sec.class_id,
-          class_name: (sec.classes as { name: string })?.name ?? '',
+          class_name: sec.classes?.name ?? '',
           students,
         }
       })

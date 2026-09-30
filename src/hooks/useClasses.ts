@@ -35,9 +35,10 @@ export function useClasses() {
       return
     }
 
-    const shaped: ClassWithSections[] = (data ?? []).map((c: any) => ({
+    const rows = (data ?? []) as (Class & { sections: Section[] | null })[]
+    const shaped: ClassWithSections[] = rows.map(c => ({
       ...c,
-      sections: (c.sections ?? []).map((s: any) => ({
+      sections: (c.sections ?? []).map(s => ({
         ...s,
         registered_count: fill.get(s.id)?.active ?? 0,
         waitlist_count: fill.get(s.id)?.waitlist ?? 0,

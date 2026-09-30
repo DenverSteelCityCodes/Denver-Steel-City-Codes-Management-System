@@ -31,9 +31,9 @@ export default function AdminLayout() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [dark, setDark] = useState(
-    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'),
-  )
+  const [dark, setDark] = useState(() => {
+    try { return localStorage.getItem('scc-theme') === 'dark' } catch { return false }
+  })
   const menuRef = useRef<HTMLDivElement>(null)
 
   // ── Live badge counts ──────────────────────────────────────
@@ -49,16 +49,12 @@ export default function AdminLayout() {
 
   // ── Theme toggle ───────────────────────────────────────────
   useEffect(() => {
-    if (localStorage.getItem('scc-theme') === 'dark') {
-      document.documentElement.classList.add('dark')
-      setDark(true)
-    }
-  }, [])
+    document.documentElement.classList.toggle('dark', dark)
+  }, [dark])
 
   function toggleTheme() {
     const next = !dark
-    document.documentElement.classList.toggle('dark', next)
-    localStorage.setItem('scc-theme', next ? 'dark' : 'light')
+    try { localStorage.setItem('scc-theme', next ? 'dark' : 'light') } catch { /* private mode */ }
     setDark(next)
   }
 

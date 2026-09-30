@@ -44,7 +44,7 @@ export function useInterviews() {
       .order('slot_datetime', { ascending: true })
 
     setSlots(
-      (data ?? []).map((s: any) => ({
+      ((data ?? []) as unknown as (Omit<InterviewSlot, 'booking'> & { booking: InterviewBooking | InterviewBooking[] | null })[]).map(s => ({
         ...s,
         booking: Array.isArray(s.booking)
           ? (s.booking[0] ?? null)

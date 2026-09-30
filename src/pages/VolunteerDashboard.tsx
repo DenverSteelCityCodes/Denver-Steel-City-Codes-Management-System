@@ -65,7 +65,7 @@ function DutyPanel({ userId }: { userId: string }) {
             </p>
             <div className="bg-surface border border-border rounded-xl overflow-hidden">
               {daySlots.map((slot, idx) => {
-                const myClaim = slot.assignments?.find((a: any) => a.volunteer_id === userId)
+                const myClaim = slot.assignments?.find(a => a.volunteer_id === userId)
                 const isFull = slot.assigned_count >= slot.capacity && !myClaim
                 return (
                   <div

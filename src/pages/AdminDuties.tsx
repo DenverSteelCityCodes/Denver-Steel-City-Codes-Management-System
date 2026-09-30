@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Plus, Trash2, Check, CalendarDays } from 'lucide-react'
 import { useDutyTypes, useDutySlots } from '../hooks/useDutyRoles'
 import { useSessions } from '../hooks/useSessions'
-import { useConfirm, ActionError } from '../components/ConfirmDialog'
+import { useConfirm } from '../hooks/useConfirm'
+import { ActionError } from '../components/ActionError'
 
 export default function AdminDuties() {
   const { sessions } = useSessions()
@@ -191,7 +192,7 @@ export default function AdminDuties() {
                                 {slot.assigned_count}/{slot.capacity} filled
                                 {slot.assignments && slot.assignments.length > 0 && (
                                   <span className="ml-2">
-                                    · {slot.assignments.map((a: any) => a.volunteer?.profiles?.display_name ?? '—').join(', ')}
+                                    · {slot.assignments.map(a => a.volunteer?.profiles?.display_name ?? '—').join(', ')}
                                   </span>
                                 )}
                               </p>

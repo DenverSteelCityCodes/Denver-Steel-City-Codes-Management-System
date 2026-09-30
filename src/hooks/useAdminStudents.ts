@@ -12,6 +12,23 @@ export interface StudentRegistration {
   class_id: string
 }
 
+// Row shape of the students → parent profile / registrations → section → class select.
+interface RawStudent {
+  id: string
+  full_name: string
+  age: number
+  medical_info: string | null
+  created_at: string
+  parent_id: string
+  profiles: { display_name: string } | null
+  registrations: {
+    id: string
+    status: RegistrationStatus
+    section_id: string
+    sections: { id: string; label: string; week: 1 | 2 | null; class_id: string; classes: { id: string; name: string } | null } | null
+  }[] | null
+}
+
 export interface AdminStudent {
   id: string
   full_name: string
@@ -53,7 +70,7 @@ export function useAdminStudents() {
       return
     }
 
-    const shaped: AdminStudent[] = (data ?? []).map((s: any) => ({
+    const shaped: AdminStudent[] = ((data ?? []) as unknown as RawStudent[]).map(s => ({
       id: s.id,
       full_name: s.full_name,
       age: s.age,
@@ -61,7 +78,7 @@ export function useAdminStudents() {
       created_at: s.created_at,
       parent_id: s.parent_id,
       parent_name: s.profiles?.display_name ?? 'Unknown',
-      registrations: (s.registrations ?? []).map((r: any) => ({
+      registrations: (s.registrations ?? []).map(r => ({
         id: r.id,
         status: r.status,
         section_id: r.section_id,

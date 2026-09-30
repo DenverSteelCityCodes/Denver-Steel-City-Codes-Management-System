@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, X, Check, Calendar } from 'lucide-react'
 import { useSessions, type Session } from '../hooks/useSessions'
-import { useConfirm, ActionError } from '../components/ConfirmDialog'
+import { useConfirm } from '../hooks/useConfirm'
+import { ActionError } from '../components/ActionError'
 
 interface SessionFormState {
   name: string
