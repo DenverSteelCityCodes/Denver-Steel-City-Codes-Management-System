@@ -18,6 +18,15 @@ interface RawStudent {
   full_name: string
   age: number
   medical_info: string | null
+  grade: string | null
+  school_name: string | null
+  allergies: string | null
+  medical_conditions: string | null
+  parent_phone: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  emergency_contact_relation: string | null
+  registration_year: number | null
   created_at: string
   parent_id: string
   profiles: { display_name: string } | null
@@ -34,6 +43,15 @@ export interface AdminStudent {
   full_name: string
   age: number
   medical_info: string | null
+  grade: string | null
+  school_name: string | null
+  allergies: string | null
+  medical_conditions: string | null
+  parent_phone: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  emergency_contact_relation: string | null
+  registration_year: number | null
   created_at: string
   parent_id: string
   parent_name: string
@@ -53,6 +71,8 @@ export function useAdminStudents() {
       .from('students')
       .select(`
         id, full_name, age, medical_info, created_at, parent_id,
+        grade, school_name, allergies, medical_conditions, parent_phone,
+        emergency_contact_name, emergency_contact_phone, emergency_contact_relation, registration_year,
         profiles:parent_id ( display_name ),
         registrations (
           id, status, section_id,
@@ -75,6 +95,15 @@ export function useAdminStudents() {
       full_name: s.full_name,
       age: s.age,
       medical_info: s.medical_info,
+      grade: s.grade,
+      school_name: s.school_name,
+      allergies: s.allergies,
+      medical_conditions: s.medical_conditions,
+      parent_phone: s.parent_phone,
+      emergency_contact_name: s.emergency_contact_name,
+      emergency_contact_phone: s.emergency_contact_phone,
+      emergency_contact_relation: s.emergency_contact_relation,
+      registration_year: s.registration_year,
       created_at: s.created_at,
       parent_id: s.parent_id,
       parent_name: s.profiles?.display_name ?? 'Unknown',

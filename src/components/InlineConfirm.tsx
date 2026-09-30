@@ -5,12 +5,14 @@ import { TriangleAlert } from 'lucide-react'
 export default function InlineConfirm({
   message,
   confirmLabel = 'Delete',
+  cancelLabel = 'Cancel',
   busy = false,
   onConfirm,
   onCancel,
 }: {
   message: string
   confirmLabel?: string
+  cancelLabel?: string
   busy?: boolean
   onConfirm: () => void
   onCancel: () => void
@@ -32,7 +34,7 @@ export default function InlineConfirm({
           onClick={onCancel}
           className="h-9 px-3.5 rounded-[8px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition"
         >
-          Cancel
+          {cancelLabel}
         </button>
         <button
           type="button"

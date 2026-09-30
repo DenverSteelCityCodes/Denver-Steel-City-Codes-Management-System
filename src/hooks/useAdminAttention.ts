@@ -109,7 +109,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       title: `${pending.length} volunteer ${plural(pending.length, 'application', 'applications')} pending`,
       detail: `Awaiting review — oldest is ${oldest} ${plural(oldest, 'day', 'days')} old`,
       ctaLabel: 'Review applications',
-      to: '/admin/volunteers',
+      to: '/admin/volunteers?tab=applications',
       wide: false,
     })
   }

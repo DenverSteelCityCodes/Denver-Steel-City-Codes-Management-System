@@ -81,20 +81,12 @@ export function useInterviews() {
       admin_notes: adminNotes ?? null,
     })
     if (error) throw new Error(error.message)
-    await supabase
-      .from('volunteer_applications')
-      .update({ interview_confirmed: true })
-      .eq('id', applicationId)
     await fetchSlots()
   }
 
-  async function unbookSlot(bookingId: string, applicationId: string) {
+  async function unbookSlot(bookingId: string) {
     const { error } = await supabase.from('interview_bookings').delete().eq('id', bookingId)
     if (error) throw new Error(error.message)
-    await supabase
-      .from('volunteer_applications')
-      .update({ interview_confirmed: false })
-      .eq('id', applicationId)
     await fetchSlots()
   }
 

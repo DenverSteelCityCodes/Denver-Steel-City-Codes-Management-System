@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Wand2, Check, X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Download } from 'lucide-react'
 import { useVolunteers } from '../hooks/useVolunteers'
 import { useAdminClasses } from '../hooks/useAdminClasses'
@@ -382,7 +383,15 @@ export default function AdminVolunteers() {
   const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
   const { applications, loading: appsLoading, acceptApplication, rejectApplication } = useVolunteerApplications()
 
-  const [tab, setTab] = useState<Tab>('roster')
+  // ?tab=applications (from the top-bar search / dashboard links) opens that tab.
+  const [params] = useSearchParams()
+  const urlTab: Tab | null = params.get('tab') === 'applications' ? 'applications' : params.get('tab') === 'roster' ? 'roster' : null
+  const [appliedTab, setAppliedTab] = useState(urlTab)
+  const [tab, setTab] = useState<Tab>(urlTab ?? 'roster')
+  if (urlTab !== appliedTab) {
+    setAppliedTab(urlTab)
+    if (urlTab) setTab(urlTab)
+  }
   const [week, setWeek] = useState<1 | 2>(1)
   const [preview, setPreview] = useState<AssignmentPair[] | null>(null)
   const [applying, setApplying] = useState(false)

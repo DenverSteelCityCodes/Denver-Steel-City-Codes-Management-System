@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
@@ -424,7 +425,15 @@ export default function AdminClasses() {
 
   const volunteerOptions = volunteers.map(v => ({ id: v.id, display_name: v.profiles.display_name }))
 
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  // ?open=<classId> (from the top-bar search) expands that class.
+  const [params] = useSearchParams()
+  const urlOpen = params.get('open')
+  const [appliedOpen, setAppliedOpen] = useState(urlOpen)
+  const [expandedId, setExpandedId] = useState<string | null>(urlOpen)
+  if (urlOpen !== appliedOpen) {
+    setAppliedOpen(urlOpen)
+    if (urlOpen) setExpandedId(urlOpen)
+  }
   const [editing, setEditing] = useState<Editing>(null)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null)
   const [deleting, setDeleting] = useState(false)

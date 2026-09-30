@@ -208,9 +208,10 @@ $$;
 DROP POLICY IF EXISTS "public_insert_application" ON volunteer_applications;
 CREATE POLICY "public_insert_application" ON volunteer_applications FOR INSERT TO anon, authenticated
     WITH CHECK (
+        -- interview_confirmed is the applicant's own "I signed up for an interview" attestation
+        -- (required by the apply form), so it is allowed to be true here.
         status = 'pending'
         AND admin_notes IS NULL
-        AND interview_confirmed = false
         AND application_user_ok(user_id, email)
     );
 

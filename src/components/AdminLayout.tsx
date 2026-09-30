@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, GraduationCap, Users, Shield, LayoutGrid,
   CalendarDays, ListChecks, Mic, Settings2,
-  Search, Bell, Sun, Moon, Menu, X, LogOut, ChevronDown,
+  Sun, Moon, Menu, X, LogOut, ChevronDown,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
-import { useInterviews } from '../hooks/useInterviews'
+import { supabase } from '../lib/supabase'
+import AttentionBell from './AttentionBell'
+import AdminSearch from './AdminSearch'
 import wordmark from '../../assets/sccdenver.png'
 
 interface NavItem {
@@ -26,8 +27,7 @@ interface NavGroup {
 
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
-  const { applications } = useVolunteerApplications()
-  const { slots } = useInterviews()
+  const { pathname } = useLocation()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -37,15 +37,31 @@ export default function AdminLayout() {
   const menuRef = useRef<HTMLDivElement>(null)
 
   // ── Live badge counts ──────────────────────────────────────
-  // Volunteers: applications still awaiting a decision.
-  const pendingCount = applications.filter(a => a.status === 'pending').length
-  // Interviews: accepted applicants who don't yet have an interview booked.
-  const bookedAppIds = new Set(
-    slots.filter(s => s.booking).map(s => s.booking!.application_id),
-  )
-  const unscheduledCount = applications.filter(
-    a => a.status === 'accepted' && !bookedAppIds.has(a.id),
-  ).length
+  // Re-queried on every navigation so they reflect what was just done on the previous page.
+  // Volunteers: applications awaiting a decision. Interviews: accepted applicants with no booking.
+  const [pendingCount, setPendingCount] = useState(0)
+  const [unscheduledCount, setUnscheduledCount] = useState(0)
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      supabase.from('volunteer_applications').select('id, status'),
+      supabase.from('interview_bookings').select('application_id'),
+    ]).then(([apps, bookings]) => {
+      if (cancelled) return
+      const booked = new Set((bookings.data ?? []).map(b => b.application_id as string))
+      const list = apps.data ?? []
+      setPendingCount(list.filter(a => a.status === 'pending').length)
+      setUnscheduledCount(list.filter(a => a.status === 'accepted' && !booked.has(a.id)).length)
+    })
+    return () => { cancelled = true }
+  }, [pathname])
+
+  // Close the phone drawer after navigating from it.
+  const [drawerPath, setDrawerPath] = useState(pathname)
+  if (drawerPath !== pathname) {
+    setDrawerPath(pathname)
+    setDrawerOpen(false)
+  }
 
   // ── Theme toggle ───────────────────────────────────────────
   useEffect(() => {
@@ -118,18 +134,7 @@ export default function AdminLayout() {
 
         <img src={wordmark} alt="Steel City Codes // Denver" className="h-8 w-auto" />
 
-        {/* Search (visual-only for now) */}
-        <div className="hidden md:flex items-center gap-2 ml-4 w-full max-w-sm h-9 px-3 rounded-[10px] bg-white/10">
-          <Search size={16} className="text-white/50 shrink-0" />
-          <input
-            disabled
-            placeholder="Search…"
-            className="bg-transparent flex-1 min-w-0 text-sm text-white placeholder:text-white/40 focus:outline-none"
-          />
-          <kbd className="text-[11px] font-sans px-1.5 py-0.5 rounded bg-white/10 text-white/50 border border-white/10">
-            ⌘K
-          </kbd>
-        </div>
+        <AdminSearch pages={groups.flatMap(g => g.items)} />
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
           <button
@@ -140,13 +145,7 @@ export default function AdminLayout() {
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
-          <button
-            aria-label="Notifications"
-            className="relative text-white/70 hover:text-white p-2 rounded-[10px] hover:bg-white/10 transition"
-          >
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand ring-2 ring-ink-950" />
-          </button>
+          <AttentionBell key={pathname} />
 
           {/* Avatar menu */}
           <div className="relative" ref={menuRef}>
