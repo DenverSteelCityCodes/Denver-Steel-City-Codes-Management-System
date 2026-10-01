@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, GraduationCap, Users, Shield, LayoutGrid,
-  CalendarDays, ListChecks, Mic, Settings2, ClipboardCheck,
+  CalendarDays, ListChecks, Mic, Settings2, ClipboardCheck, Megaphone,
   Sun, Moon, Menu, X, LogOut, ChevronDown,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -95,7 +95,10 @@ export default function AdminLayout() {
   const groups: NavGroup[] = [
     {
       heading: 'Overview',
-      items: [{ to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true }],
+      items: [
+        { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+        { to: '/admin/updates', label: 'Updates', icon: Megaphone },
+      ],
     },
     {
       heading: 'People',
