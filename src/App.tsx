@@ -14,6 +14,7 @@ import AdminSessions from './pages/AdminSessions'
 import AdminDuties from './pages/AdminDuties'
 import AdminInterviews from './pages/AdminInterviews'
 import AdminFormEditor from './pages/AdminFormEditor'
+import AdminAttendance from './pages/AdminAttendance'
 import VolunteerDashboard from './pages/VolunteerDashboard'
 import ParentDashboard from './pages/ParentDashboard'
 import ParentRegistrationPage from './pages/ParentRegistrationPage'
@@ -55,6 +56,7 @@ function App() {
               <Route path="/admin/duties" element={<AdminDuties />} />
               <Route path="/admin/interviews" element={<AdminInterviews />} />
               <Route path="/admin/forms" element={<AdminFormEditor />} />
+              <Route path="/admin/attendance" element={<AdminAttendance />} />
             </Route>
           </Route>
 

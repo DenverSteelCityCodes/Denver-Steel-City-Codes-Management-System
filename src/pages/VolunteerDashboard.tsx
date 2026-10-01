@@ -1,20 +1,17 @@
 import { useState } from 'react'
-import { Users, CheckCheck, Clock, CalendarDays } from 'lucide-react'
+import { Users, Clock, CalendarDays } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAssignedClass } from '../hooks/useAssignedClass'
-import { useAttendance } from '../hooks/useAttendance'
 import { useDutySlots } from '../hooks/useDutyRoles'
-import AttendanceRow from '../components/AttendanceRow'
+import RollCallPanel from '../components/RollCallPanel'
 import { BrandBar } from '../components/Wordmark'
 import InterviewSlotPicker from '../components/InterviewSlotPicker'
 import { useOpenInterviewSlots, formatSlot } from '../hooks/useOpenInterviewSlots'
 import { useMyInterview } from '../hooks/useMyInterview'
-import type { AssignedSection } from '../hooks/useAssignedClass'
-import type { AttendanceAction } from '../types/database'
 import { useSessions } from '../hooks/useSessions'
 import { useScheduleItems } from '../hooks/useScheduleItems'
 import DailySchedule, { ScheduleHeading } from '../components/DailySchedule'
-import { localDateISO, sessionOnDay, formatTimeRange } from '../lib/campDay'
+import { localDateISO, sessionOnDay } from '../lib/campDay'
 
 // The day's plan for whichever session is running today (or the next one).
 function TodaySchedulePanel() {
@@ -215,106 +212,11 @@ function InterviewCard() {
   )
 }
 
-function SectionPanel({ section }: { section: AssignedSection }) {
-  const { getStatus, logAction, loading: attendanceLoading } = useAttendance(section.id)
-  const [busyId, setBusyId] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
-
-  const presentCount = section.students.filter(s => getStatus(s.id) === 'check_in').length
-
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3500)
-  }
-
-  async function handleAction(studentId: string, studentName: string, action: AttendanceAction) {
-    setBusyId(studentId)
-    try {
-      await logAction(studentId, section.id, action)
-      showToast(action === 'check_in' ? `${studentName} checked in` : `${studentName} checked out`)
-    } catch {
-      showToast('Something went wrong — try again')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  async function markAllPresent() {
-    for (const student of section.students) {
-      if (getStatus(student.id) !== 'check_in') {
-        await handleAction(student.id, student.full_name, 'check_in')
-      }
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Section header */}
-      <div className="bg-surface border border-border rounded-xl shadow-sm p-4 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="font-sans font-bold text-xl text-ink">{section.class_name}</h2>
-          <p className="font-sans text-sm text-ink-muted mt-0.5">
-            {section.label}{section.week ? ` · Week ${section.week}` : ''}
-          </p>
-          {(section.start_time || section.room) && (
-            <p className="font-sans text-xs text-ink-muted mt-0.5">
-              {[section.start_time && `${section.days} · ${formatTimeRange(section.start_time, section.end_time)}`, section.room].filter(Boolean).join(' · ')}
-            </p>
-          )}
-        </div>
-        {!attendanceLoading && (
-          <div className="text-right">
-            <p className="font-sans font-bold text-3xl text-ink tabular-nums leading-none">
-              {presentCount}<span className="text-ink-muted font-normal text-xl">/{section.students.length}</span>
-            </p>
-            <p className="font-sans text-xs text-ink-muted mt-0.5">present</p>
-          </div>
-        )}
-      </div>
-
-      {/* Mark all */}
-      {!attendanceLoading && presentCount < section.students.length && (
-        <button
-          onClick={markAllPresent}
-          disabled={busyId !== null}
-          className="w-full h-11 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center justify-center gap-2 hover:bg-success-soft hover:text-success hover:border-success/30 transition disabled:opacity-50"
-        >
-          <CheckCheck size={16} /> Mark all present
-        </button>
-      )}
-
-      {/* Roster */}
-      {section.students.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl shadow-sm p-8 text-center">
-          <p className="font-sans text-ink-muted text-sm">No students enrolled in this section yet.</p>
-        </div>
-      ) : (
-        <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-          {section.students.map(student => (
-            <AttendanceRow
-              key={student.id}
-              student={student}
-              status={getStatus(student.id)}
-              onAction={action => handleAction(student.id, student.full_name, action)}
-              busy={busyId === student.id}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 max-w-xs px-4 py-3 bg-surface-raised border-l-4 border-success rounded-xl shadow-lg font-sans text-sm font-semibold text-ink">
-          {toast}
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function VolunteerDashboard() {
   const { profile, signOut, user } = useAuth()
   const { assignedSections, isAccepted, applicationStatus, loading } = useAssignedClass()
+  const { sessions } = useSessions()
+  const sessionOf = (sessionId: string | null) => sessions.find(s => s.id === sessionId) ?? null
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
@@ -393,7 +295,7 @@ export default function VolunteerDashboard() {
             </div>
             <div className="space-y-8">
               {assignedSections.map(sec => (
-                <SectionPanel key={sec.id} section={sec} />
+                <RollCallPanel key={sec.id} section={sec} session={sessionOf(sec.session_id)} />
               ))}
             </div>
             <TodaySchedulePanel />

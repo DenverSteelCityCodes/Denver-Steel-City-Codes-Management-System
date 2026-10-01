@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, GraduationCap, Users, Shield, LayoutGrid,
-  CalendarDays, ListChecks, Mic, Settings2,
+  CalendarDays, ListChecks, Mic, Settings2, ClipboardCheck,
   Sun, Moon, Menu, X, LogOut, ChevronDown,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -108,6 +108,7 @@ export default function AdminLayout() {
     {
       heading: 'Program',
       items: [
+        { to: '/admin/attendance', label: 'Attendance', icon: ClipboardCheck },
         { to: '/admin/classes', label: 'Classes', icon: LayoutGrid },
         { to: '/admin/sessions', label: 'Sessions', icon: CalendarDays },
         { to: '/admin/duties', label: 'Duty schedule', icon: ListChecks },
