@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
+import { useSearchParams, Link } from 'react-router-dom'
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users, Printer } from 'lucide-react'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
 import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SectionInput } from '../hooks/useAdminClasses'
@@ -817,6 +817,9 @@ function SectionRow({
         <button onClick={onRoster} title={rosterOpen ? 'Hide roster' : 'View roster'} aria-expanded={rosterOpen} aria-label={`${rosterOpen ? 'Hide' : 'View'} ${section.label} roster`} className={`p-1.5 rounded-[6px] transition ${rosterOpen ? 'text-ink bg-brand-soft' : 'text-ink-muted hover:text-ink hover:bg-brand-soft'}`}>
           <Users size={14} />
         </button>
+        <Link to={`/print/roster/${section.id}`} title="Printable roster" aria-label={`Print ${section.label} roster`} className="p-1.5 text-ink-muted hover:text-ink hover:bg-surface rounded-[6px] transition">
+          <Printer size={14} />
+        </Link>
         <button onClick={onEdit} title="Edit section" aria-label={`Edit ${section.label}`} className="p-1.5 text-ink-muted hover:text-ink hover:bg-surface rounded-[6px] transition">
           <Pencil size={14} />
         </button>

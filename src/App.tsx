@@ -16,6 +16,7 @@ import AdminInterviews from './pages/AdminInterviews'
 import AdminFormEditor from './pages/AdminFormEditor'
 import AdminAttendance from './pages/AdminAttendance'
 import AdminUpdates from './pages/AdminUpdates'
+import PrintRoster from './pages/PrintRoster'
 import VolunteerDashboard from './pages/VolunteerDashboard'
 import ParentDashboard from './pages/ParentDashboard'
 import ParentRegistrationPage from './pages/ParentRegistrationPage'
@@ -64,6 +65,11 @@ function App() {
 
           <Route element={<ProtectedRoute allowedRoles={['volunteer']} />}>
             <Route path="/volunteer" element={<VolunteerDashboard />} />
+          </Route>
+
+          {/* Paper fallback: printable section roster for admins and the section's crew */}
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'volunteer']} />}>
+            <Route path="/print/roster/:sectionId" element={<PrintRoster />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['parent']} />}>
