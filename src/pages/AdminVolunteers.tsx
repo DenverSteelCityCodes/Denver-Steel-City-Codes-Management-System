@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Wand2, Check, X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Download } from 'lucide-react'
 import { useVolunteers } from '../hooks/useVolunteers'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import { useAppSettings } from '../hooks/useAppSettings'
 import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
+import { useSessions, campSessions, formatSessionDates } from '../hooks/useSessions'
 import { matchVolunteers, type AssignmentPair } from '../lib/volunteerMatcher'
 import DataTable from '../components/DataTable'
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
@@ -103,16 +105,17 @@ const STATUS_BADGE: Record<string, string> = {
   rejected: 'bg-danger-soft text-danger',
 }
 
-function ApplicationReviewModal({
+// Full application review, shown inline when an application row is expanded.
+function ApplicationReview({
   app,
+  weekLabels,
   onAccept,
   onReject,
-  onClose,
 }: {
   app: VolunteerApplication
+  weekLabels: [string, string]
   onAccept: (app: VolunteerApplication, expLevel: ExperienceLevel) => Promise<void>
   onReject: (appId: string, notes?: string) => Promise<void>
-  onClose: () => void
 }) {
   const [mode, setMode] = useState<'view' | 'accept' | 'reject'>('view')
   const [expLevel, setExpLevel] = useState<ExperienceLevel>('junior')
@@ -125,7 +128,7 @@ function ApplicationReviewModal({
     setActionError(null)
     try {
       await onAccept(app, expLevel)
-      onClose()
+      setMode('view')
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -138,7 +141,9 @@ function ApplicationReviewModal({
     setActionError(null)
     try {
       await onReject(app.id, rejectNotes || undefined)
-      onClose()
+      setMode('view')
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
       setBusy(false)
     }
@@ -154,33 +159,13 @@ function ApplicationReviewModal({
   ].filter(s => s.value !== null)
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div
-        className="bg-surface border border-border rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-          <div className="flex items-center gap-3">
-            <h2 className="font-sans font-bold text-lg text-ink">
-              {app.first_name} {app.last_name}
-            </h2>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_BADGE[app.status] ?? ''}`}>
-              {app.status}
-            </span>
-          </div>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink transition">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Modal body */}
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5 text-sm font-sans">
+    <div className="border-t border-border bg-surface-sunken/40">
+        <div className="px-4 sm:px-5 py-4 space-y-5 text-sm font-sans">
 
           {/* Personal */}
           <section className="space-y-2">
             <p className="font-semibold text-xs uppercase tracking-widest text-ink-muted">Contact</p>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-ink">
+            <div className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-ink">
               <span className="text-ink-muted">Email</span><span>{app.email}</span>
               <span className="text-ink-muted">Phone</span><span>{app.phone}</span>
               <span className="text-ink-muted">Age</span><span>{app.age}</span>
@@ -193,10 +178,10 @@ function ApplicationReviewModal({
           {/* Availability */}
           <section className="space-y-2">
             <p className="font-semibold text-xs uppercase tracking-widest text-ink-muted">Availability</p>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2">
               {[
-                { label: 'Session 1 (Jun 1–5)', v: app.availability_week_1 },
-                { label: 'Session 2 (Jun 8–12)', v: app.availability_week_2 },
+                { label: weekLabels[0], v: app.availability_week_1 },
+                { label: weekLabels[1], v: app.availability_week_2 },
               ].map(({ label, v }) => (
                 <span key={label} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                   v ? 'bg-success-soft text-success' : 'bg-surface-sunken text-ink-muted border border-border-strong'
@@ -248,15 +233,15 @@ function ApplicationReviewModal({
               <p className="font-semibold text-xs uppercase tracking-widest text-ink-muted">Skill levels</p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-ink">
                 {skills.map(({ label, value }) => (
-                  <>
-                    <span key={label + 'l'} className="text-ink-muted">{label}</span>
-                    <span key={label + 'v'} className="flex items-center gap-1">
+                  <Fragment key={label}>
+                    <span className="text-ink-muted">{label}</span>
+                    <span className="flex items-center gap-1" aria-label={`${value} out of 5`}>
                       {Array.from({ length: 5 }, (_, i) => (
                         <span key={i} className={`w-3 h-3 rounded-full ${i < (value ?? 0) ? 'bg-brand' : 'bg-border-strong'}`} />
                       ))}
                       <span className="ml-1 text-ink-muted text-xs">{value}/5</span>
                     </span>
-                  </>
+                  </Fragment>
                 ))}
               </div>
             </section>
@@ -282,7 +267,7 @@ function ApplicationReviewModal({
               {app.guardian_signature && (
                 <><span className="text-ink-muted">Guardian signature</span><span className="italic">{app.guardian_signature}</span></>
               )}
-              <span className="text-ink-muted">Interview confirmed</span>
+              <span className="text-ink-muted">Signed up for interview</span>
               <span className={app.interview_confirmed ? 'text-success' : 'text-danger'}>
                 {app.interview_confirmed ? 'Yes' : 'No'}
               </span>
@@ -297,11 +282,10 @@ function ApplicationReviewModal({
           )}
         </div>
 
-        {/* Modal footer — actions */}
         {app.status === 'pending' && (
-          <div className="px-6 py-4 border-t border-border shrink-0 space-y-3">
+          <div className="px-4 sm:px-5 py-4 border-t border-border space-y-3">
             {actionError && (
-              <p className="text-danger text-sm font-sans">⚠ {actionError}</p>
+              <p role="alert" className="text-danger text-sm font-sans">{actionError}</p>
             )}
 
             {mode === 'view' && (
@@ -369,7 +353,6 @@ function ApplicationReviewModal({
             )}
           </div>
         )}
-      </div>
     </div>
   )
 }
@@ -380,13 +363,27 @@ export default function AdminVolunteers() {
   const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
   const { applications, loading: appsLoading, acceptApplication, rejectApplication } = useVolunteerApplications()
 
-  const [tab, setTab] = useState<Tab>('roster')
+  // ?tab=applications (from the top-bar search / dashboard links) opens that tab.
+  const [params, setParams] = useSearchParams()
+  const urlTab: Tab | null = params.get('tab') === 'applications' ? 'applications' : params.get('tab') === 'roster' ? 'roster' : null
+  const [appliedTab, setAppliedTab] = useState(urlTab)
+  const [tab, setTab] = useState<Tab>(urlTab ?? 'roster')
+  if (urlTab !== appliedTab) {
+    setAppliedTab(urlTab)
+    if (urlTab) setTab(urlTab)
+  }
   const [week, setWeek] = useState<1 | 2>(1)
   const [preview, setPreview] = useState<AssignmentPair[] | null>(null)
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [appFilter, setAppFilter] = useState<AppFilter>('pending')
-  const [reviewApp, setReviewApp] = useState<VolunteerApplication | null>(null)
+  const [assignError, setAssignError] = useState<string | null>(null)
+  const [settingError, setSettingError] = useState<string | null>(null)
+  const { sessions } = useSessions()
+  const weeks = campSessions(sessions)
+  const weekLabels: [string, string] = [0, 1].map(i =>
+    weeks[i] ? `${weeks[i].name} (${formatSessionDates(weeks[i], false)})` : `Week ${i + 1}`,
+  ) as [string, string]
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const applicationsOpen = settings['volunteer_applications_open'] === 'true'
@@ -402,6 +399,7 @@ export default function AdminVolunteers() {
   async function applyAssignments() {
     if (!preview) return
     setApplying(true)
+    setAssignError(null)
     try {
       await Promise.all(
         preview
@@ -417,6 +415,8 @@ export default function AdminVolunteers() {
       await refetchClasses()
       setApplied(true)
       setPreview(null)
+    } catch (e) {
+      setAssignError(`Some assignments couldn't be saved: ${e instanceof Error ? e.message : 'unknown error'}. Refresh to see what was applied.`)
     } finally {
       setApplying(false)
     }
@@ -451,6 +451,18 @@ export default function AdminVolunteers() {
         : <span className="text-ink-faint">—</span>,
     },
     {
+      header: 'Assigned to',
+      accessor: (v: VolunteerWithProfile) => {
+        const spots = classes.flatMap(c => c.sections.flatMap(sec => {
+          const role = sec.lead_id === v.id ? 'lead' : sec.supports.some(x => x.id === v.id) ? 'support' : null
+          return role ? [`${sec.label}${sec.week ? ` W${sec.week}` : ''} (${role})`] : []
+        }))
+        return spots.length > 0
+          ? <span className="text-xs text-ink">{spots.join(' · ')}</span>
+          : <span className="text-xs text-ink-faint">Unassigned</span>
+      },
+    },
+    {
       header: 'Notes',
       accessor: (v: VolunteerWithProfile) => (
         <span className="text-ink-muted text-xs truncate max-w-xs block">{v.interview_notes ?? '—'}</span>
@@ -459,8 +471,7 @@ export default function AdminVolunteers() {
   ]
 
   return (
-    <div className="min-h-screen bg-bg">
-      <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 space-y-6">
 
         {/* Tab bar */}
         <div className="flex rounded-xl border border-border-strong overflow-hidden w-fit">
@@ -470,7 +481,9 @@ export default function AdminVolunteers() {
           ] as { key: Tab; label: string }[]).map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => { setTab(key); setParams({ tab: key }, { replace: true }) }}
+              role="tab"
+              aria-selected={tab === key}
               className={`h-10 px-5 font-sans font-semibold text-sm transition ${
                 tab === key ? 'bg-brand text-brand-on' : 'bg-surface text-ink hover:bg-surface-sunken'
               }`}
@@ -503,18 +516,18 @@ export default function AdminVolunteers() {
             </section>
 
             <section className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
                   <h2 className="font-sans font-bold text-xl text-ink">Auto-assign volunteers</h2>
-                  <p className="font-sans text-sm text-ink-muted mt-0.5">Pairs one senior + one junior per section based on week availability.</p>
+                  <p className="font-sans text-sm text-ink-muted mt-0.5">Fills open lead (senior) and support (junior) spots for the chosen week. Existing assignments are kept.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   <div className="flex rounded-[10px] border border-border-strong overflow-hidden">
                     {([1, 2] as const).map(w => (
                       <button
                         key={w}
                         onClick={() => { setWeek(w); setPreview(null); setApplied(false) }}
-                        className={`h-9 px-4 font-sans font-semibold text-sm transition ${
+                        className={`h-9 px-4 font-sans font-semibold text-sm whitespace-nowrap transition ${
                           week === w ? 'bg-brand text-brand-on' : 'bg-surface text-ink hover:bg-surface-sunken'
                         }`}
                       >
@@ -524,12 +537,16 @@ export default function AdminVolunteers() {
                   </div>
                   <button
                     onClick={runMatcher}
-                    className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
+                    className="h-9 px-4 whitespace-nowrap bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
                   >
                     <Wand2 size={15} /> Preview matches
                   </button>
                 </div>
               </div>
+
+              {assignError && (
+                <p role="alert" className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">{assignError}</p>
+              )}
 
               {applied && (
                 <div className="flex items-center gap-2 px-4 py-3 bg-success-soft text-success rounded-[10px] font-sans font-semibold text-sm">
@@ -540,10 +557,14 @@ export default function AdminVolunteers() {
               {preview && (
                 <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
                   <div className="bg-surface-sunken border-b border-border px-4 py-3 flex items-center justify-between">
-                    <p className="font-sans font-semibold text-sm text-ink">Week {week} preview — review before applying</p>
+                    <p className="font-sans font-semibold text-sm text-ink">
+                      Week {week} preview — {preview.some(p => p.lead || p.support)
+                        ? 'review before applying'
+                        : 'nothing new to assign'}
+                    </p>
                     <button
                       onClick={applyAssignments}
-                      disabled={applying}
+                      disabled={applying || !preview.some(p => p.lead || p.support)}
                       className="h-9 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50"
                     >
                       {applying
@@ -552,7 +573,8 @@ export default function AdminVolunteers() {
                       {applying ? 'Applying…' : 'Apply assignments'}
                     </button>
                   </div>
-                  <table className="w-full text-sm">
+                  <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[560px]">
                     <thead>
                       <tr className="border-b border-border">
                         <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Class</th>
@@ -563,6 +585,11 @@ export default function AdminVolunteers() {
                     <tbody>
                       {preview.map(p => {
                         const cls = classes.find(c => c.id === p.classId)
+                        const sec = cls?.sections.find(x => x.id === p.sectionId)
+                        const cell = (proposed: VolunteerWithProfile | null, current: string | null, missing: string) =>
+                          proposed ? <span className="font-semibold text-success">+ {proposed.profiles.display_name}</span>
+                            : current ? <span>{current} <span className="text-ink-faint text-xs">(current)</span></span>
+                            : <span className="text-ink-faint">{missing}</span>
                         return (
                           <tr key={p.sectionId} className="border-b border-border last:border-0 hover:bg-surface-sunken/60 transition">
                             <td className="px-4 py-3.5 font-sans text-ink">
@@ -570,16 +597,17 @@ export default function AdminVolunteers() {
                               <span className="text-ink-muted ml-1.5 text-xs">· {p.sectionLabel}{p.week ? ` W${p.week}` : ''}</span>
                             </td>
                             <td className="px-4 py-3.5 font-sans text-ink">
-                              {p.lead ? p.lead.profiles.display_name : <span className="text-ink-faint">No senior available</span>}
+                              {cell(p.lead, sec?.lead?.display_name ?? null, 'No senior available')}
                             </td>
                             <td className="px-4 py-3.5 font-sans text-ink">
-                              {p.support ? p.support.profiles.display_name : <span className="text-ink-faint">No junior available</span>}
+                              {cell(p.support, sec?.supports.map(x => x.display_name).join(', ') || null, 'No junior available')}
                             </td>
                           </tr>
                         )
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </section>
@@ -600,7 +628,12 @@ export default function AdminVolunteers() {
                   <Download size={15} /> Export CSV
                 </button>
                 <button
-                  onClick={() => updateSetting('volunteer_applications_open', applicationsOpen ? 'false' : 'true')}
+                  onClick={() => {
+                    setSettingError(null)
+                    updateSetting('volunteer_applications_open', applicationsOpen ? 'false' : 'true')
+                      .catch(e => setSettingError(`Couldn't change this: ${e instanceof Error ? e.message : 'unknown error'}`))
+                  }}
+                  aria-pressed={applicationsOpen}
                   disabled={settingsLoading}
                   className={`flex items-center gap-2 h-10 px-4 rounded-[10px] font-sans font-semibold text-sm border transition disabled:opacity-50 ${
                     applicationsOpen
@@ -615,10 +648,22 @@ export default function AdminVolunteers() {
               </div>
             </div>
 
+            {settingError && <p role="alert" className="px-3 py-2 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">{settingError}</p>}
+
             {applicationsOpen && (
               <div className="flex items-center gap-2 text-xs font-sans text-success bg-success-soft border border-success/20 rounded-[10px] px-3 py-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                Application form at <span className="font-semibold ml-1">/apply</span> is live — share this link or a QR code to advertise.
+                <span>
+                  The application form is live at{' '}
+                  <a href="/apply" target="_blank" rel="noreferrer" className="font-semibold underline">{window.location.origin}/apply</a>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}/apply`) }}
+                  className="ml-auto h-7 px-2.5 rounded-[6px] bg-surface border border-success/30 font-semibold hover:bg-success/10 transition"
+                >
+                  Copy link
+                </button>
               </div>
             )}
 
@@ -655,6 +700,7 @@ export default function AdminVolunteers() {
                     <button
                       className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-surface-sunken/60 transition text-left"
                       onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
+                      aria-expanded={expandedId === app.id}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
@@ -682,25 +728,12 @@ export default function AdminVolunteers() {
                     </button>
 
                     {expandedId === app.id && (
-                      <div className="px-4 pb-4 pt-1 border-t border-border bg-surface-sunken/40">
-                        <div className="flex flex-wrap gap-4 text-sm font-sans mb-3">
-                          <span className="text-ink-muted">Email: <span className="text-ink">{app.email}</span></span>
-                          <span className="text-ink-muted">Age: <span className="text-ink">{app.age}</span></span>
-                          <span className="text-ink-muted">1st choice: <span className="text-ink">{app.course_first_choice}</span></span>
-                          <span className="text-ink-muted">2nd choice: <span className="text-ink">{app.course_second_choice}</span></span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {app.cs_languages.map(l => (
-                            <span key={l} className="px-2 py-0.5 rounded-full bg-surface border border-border-strong text-xs font-semibold text-ink">{l}</span>
-                          ))}
-                        </div>
-                        <button
-                          onClick={() => setReviewApp(app)}
-                          className="h-8 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-xs rounded-[10px] hover:bg-surface-sunken transition"
-                        >
-                          Full review
-                        </button>
-                      </div>
+                      <ApplicationReview
+                        app={app}
+                        weekLabels={weekLabels}
+                        onAccept={acceptApplication}
+                        onReject={rejectApplication}
+                      />
                     )}
                   </div>
                 ))}
@@ -708,16 +741,6 @@ export default function AdminVolunteers() {
             )}
           </div>
         )}
-      </main>
-
-      {reviewApp && (
-        <ApplicationReviewModal
-          app={reviewApp}
-          onAccept={acceptApplication}
-          onReject={rejectApplication}
-          onClose={() => setReviewApp(null)}
-        />
-      )}
     </div>
   )
 }

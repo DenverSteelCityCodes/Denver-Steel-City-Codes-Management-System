@@ -75,9 +75,13 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
     const focus = anyFull
       ? [...fullSecs].sort((a, b) => b.waitlisted - a.waitlisted)[0]
       : [...nearSecs].sort((a, b) => b.taken / b.capacity - a.taken / a.capacity)[0]
-    const more = capacitySecs.length - 1
     const waitNote = focus.waitlisted > 0 ? `, ${focus.waitlisted} waitlisted` : ''
-    const moreNote = more > 0 ? ` · +${more} more` : ''
+    // Say what the rest are rather than a bare "+N more": other full sections, then nearly full ones.
+    const otherFull = anyFull ? fullSecs.length - 1 : 0
+    const otherNear = anyFull ? nearSecs.length : nearSecs.length - 1
+    const moreNote =
+      (otherFull > 0 ? ` · ${otherFull} more full` : '') +
+      (otherNear > 0 ? ` · ${otherNear} ${anyFull ? '' : 'more '}nearly full` : '')
     items.push({
       key: 'capacity',
       icon: anyFull ? TriangleAlert : Gauge,
@@ -109,14 +113,15 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       title: `${pending.length} volunteer ${plural(pending.length, 'application', 'applications')} pending`,
       detail: `Awaiting review — oldest is ${oldest} ${plural(oldest, 'day', 'days')} old`,
       ctaLabel: 'Review applications',
-      to: '/admin/volunteers',
+      to: '/admin/volunteers?tab=applications',
       wide: false,
     })
   }
 
-  // ── 3. Accepted applicants with no interview booked ──────────────────────
+  // ── 3. Applicants awaiting review who haven't picked an interview time ────
+  // (the interview comes before a decision, so this is about pending applications)
   const bookedAppIds = new Set(slots.filter(s => s.booking).map(s => s.booking!.application_id))
-  const unscheduled = applications.filter(a => a.status === 'accepted' && !bookedAppIds.has(a.id))
+  const unscheduled = applications.filter(a => a.status === 'pending' && !bookedAppIds.has(a.id))
   if (unscheduled.length > 0) {
     items.push({
       key: 'interviews',
@@ -125,8 +130,8 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       cardCls: '',
       badge: null,
       badgeCls: null,
-      title: `${unscheduled.length} ${plural(unscheduled.length, 'interview', 'interviews')} to schedule`,
-      detail: 'Accepted applicants with no interview booked',
+      title: `${unscheduled.length} ${plural(unscheduled.length, 'applicant has', 'applicants have')} no interview yet`,
+      detail: "They haven't picked a time — post more slots or book them in",
       ctaLabel: 'Open interviews',
       to: '/admin/interviews',
       wide: false,

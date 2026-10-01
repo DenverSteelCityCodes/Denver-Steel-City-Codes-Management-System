@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Student, OnboardingConfirmation } from '../types/database'
+import { gradeToAge } from '../lib/campers'
 
 export function useStudents() {
   const { user } = useAuth()
@@ -27,19 +28,8 @@ export function useStudents() {
     setLoading(false)
   }
 
-  async function addStudent(payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) {
-    const { data, error } = await supabase
-      .from('students')
-      .insert({ ...payload, parent_id: user!.id })
-      .select()
-      .single()
 
-    if (error) throw new Error(error.message)
-    setStudents(prev => [...prev, data])
-    return data
-  }
-
-  async function updateStudent(id: string, payload: Pick<Student, 'full_name' | 'age' | 'medical_info'>) {
+  async function updateStudent(id: string, payload: Partial<Omit<Student, 'id' | 'parent_id' | 'created_at'>>) {
     const { data, error } = await supabase
       .from('students')
       .update(payload)
@@ -60,6 +50,8 @@ export function useStudents() {
       .from('students')
       .update({
         ...fields,
+        // Grade moves up each summer; age drives section eligibility, so keep them in step.
+        ...(gradeToAge(fields.grade) ? { age: gradeToAge(fields.grade) } : {}),
         medical_info: fields.medical_conditions ?? null,
         registration_year: campYear,
         waiver_signed_at: new Date().toISOString(),
@@ -73,5 +65,5 @@ export function useStudents() {
     return data as Student
   }
 
-  return { students, loading, error, addStudent, updateStudent, confirmOnboarding, refetch: fetchStudents }
+  return { students, loading, error, updateStudent, confirmOnboarding, refetch: fetchStudents }
 }

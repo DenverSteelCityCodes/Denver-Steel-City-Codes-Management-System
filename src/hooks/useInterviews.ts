@@ -44,7 +44,7 @@ export function useInterviews() {
       .order('slot_datetime', { ascending: true })
 
     setSlots(
-      (data ?? []).map((s: any) => ({
+      ((data ?? []) as unknown as (Omit<InterviewSlot, 'booking'> & { booking: InterviewBooking | InterviewBooking[] | null })[]).map(s => ({
         ...s,
         booking: Array.isArray(s.booking)
           ? (s.booking[0] ?? null)
@@ -64,13 +64,13 @@ export function useInterviews() {
       duration_minutes: payload.duration_minutes ?? 15,
       notes: payload.notes ?? null,
     })
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 
   async function deleteSlot(id: string) {
     const { error } = await supabase.from('interview_slots').delete().eq('id', id)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     setSlots(s => s.filter(x => x.id !== id))
   }
 
@@ -80,21 +80,13 @@ export function useInterviews() {
       application_id: applicationId,
       admin_notes: adminNotes ?? null,
     })
-    if (error) throw error
-    await supabase
-      .from('volunteer_applications')
-      .update({ interview_confirmed: true })
-      .eq('id', applicationId)
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 
-  async function unbookSlot(bookingId: string, applicationId: string) {
+  async function unbookSlot(bookingId: string) {
     const { error } = await supabase.from('interview_bookings').delete().eq('id', bookingId)
-    if (error) throw error
-    await supabase
-      .from('volunteer_applications')
-      .update({ interview_confirmed: false })
-      .eq('id', applicationId)
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 
@@ -103,7 +95,7 @@ export function useInterviews() {
       .from('interview_bookings')
       .update({ admin_notes: adminNotes })
       .eq('id', bookingId)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchSlots()
   }
 

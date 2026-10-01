@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Class, Section } from '../types/database'
+import { fetchSectionFill } from '../lib/sectionFill'
+
+// Row shape of the nested classes → sections → crew select below.
+type ProfileName = { profile: { display_name: string } | null } | null
+interface RawSection extends Section {
+  lead: ProfileName
+  section_supports: { volunteer_id: string; volunteer: ProfileName }[] | null
+}
 
 export interface SupportEntry {
   id: string
@@ -10,7 +18,8 @@ export interface SupportEntry {
 export interface SectionWithCrew extends Section {
   lead: { display_name: string } | null
   supports: SupportEntry[]
-  registered_count: number
+  registered_count: number   // confirmed + pending
+  waitlist_count: number
 }
 
 export interface ClassWithSections extends Class {
@@ -28,6 +37,7 @@ export function useAdminClasses() {
 
   async function fetchClasses() {
     setLoading(true)
+    const fillPromise = fetchSectionFill().catch(() => new Map())
     const { data, error } = await supabase
       .from('classes')
       .select(`
@@ -38,23 +48,25 @@ export function useAdminClasses() {
           section_supports (
             volunteer_id,
             volunteer:volunteers ( profile:profiles ( display_name ) )
-          ),
-          registrations(count)
+          )
         )
       `)
       .order('name', { ascending: true })
 
     if (error) { setError(error.message); setLoading(false); return }
+    const fill = await fillPromise
 
-    const shaped: ClassWithSections[] = (data ?? []).map((c: any) => {
-      const sections: SectionWithCrew[] = (c.sections ?? []).map((s: any) => ({
+    const rows = (data ?? []) as unknown as (Class & { sections: RawSection[] | null })[]
+    const shaped: ClassWithSections[] = rows.map(c => {
+      const sections: SectionWithCrew[] = (c.sections ?? []).map(({ section_supports, ...s }) => ({
         ...s,
         lead: s.lead?.profile ?? null,
-        supports: (s.section_supports ?? []).map((ss: any) => ({
+        supports: (section_supports ?? []).map(ss => ({
           id: ss.volunteer_id,
           display_name: ss.volunteer?.profile?.display_name ?? '',
         })),
-        registered_count: s.registrations?.[0]?.count ?? 0,
+        registered_count: fill.get(s.id)?.active ?? 0,
+        waitlist_count: fill.get(s.id)?.waitlist ?? 0,
       }))
       return {
         ...c,
@@ -121,7 +133,8 @@ export function useAdminClasses() {
     if (error) throw new Error(error.message)
 
     if (supportIds !== undefined) {
-      await supabase.from('section_supports').delete().eq('section_id', id)
+      const { error: delErr } = await supabase.from('section_supports').delete().eq('section_id', id)
+      if (delErr) throw new Error(delErr.message)
       if (supportIds.length > 0) {
         const { error: ssErr } = await supabase.from('section_supports').insert(
           supportIds.map(vid => ({ section_id: id, volunteer_id: vid }))

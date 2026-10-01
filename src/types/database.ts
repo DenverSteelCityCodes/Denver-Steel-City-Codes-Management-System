@@ -99,6 +99,8 @@ export interface Registration {
   student_id: string
   section_id: string
   status: RegistrationStatus
+  // Camp year, stamped by the database from the section's session.
+  year: number
   created_at: string
 }
 
@@ -209,6 +211,7 @@ export interface VolunteerApplication {
 
 export interface ParentProfile {
   id: string
+  email: string | null
   phone: string | null
   emergency_contact_name: string | null
   emergency_contact_phone: string | null

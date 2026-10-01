@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Search, Download, X, AlertCircle, UserCheck } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { Search, Download, AlertCircle, UserCheck, ChevronDown } from 'lucide-react'
+import InlineConfirm from '../components/InlineConfirm'
+import { realNote } from '../lib/campers'
 import { useAdminStudents, type AdminStudent } from '../hooks/useAdminStudents'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import type { RegistrationStatus } from '../types/database'
@@ -7,138 +10,155 @@ import type { RegistrationStatus } from '../types/database'
 const STATUS_BADGE: Record<RegistrationStatus, string> = {
   confirmed:  'bg-success-soft text-success',
   pending:    'bg-warning-soft text-warning',
-  waitlisted: 'bg-surface-sunken text-ink-muted border border-border-strong',
+  waitlisted: 'bg-info-soft text-info',
   cancelled:  'bg-danger-soft text-danger',
 }
 
-function StudentDetailModal({
+type RegAction = { kind: 'remove'; regId: string } | null
+
+// Inline detail panel shown under an expanded student row.
+function StudentDetail({
   student,
   allSections,
   onStatusChange,
   onMoveSection,
   onRemoveReg,
-  onClose,
 }: {
   student: AdminStudent
   allSections: { id: string; label: string; class_name: string; week: 1 | 2 | null }[]
   onStatusChange: (regId: string, status: RegistrationStatus) => Promise<void>
   onMoveSection: (regId: string, sectionId: string) => Promise<void>
   onRemoveReg: (regId: string) => Promise<void>
-  onClose: () => void
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const [pending, setPending] = useState<RegAction>(null)
 
   async function run(key: string, fn: () => Promise<void>) {
     setBusy(key)
     setErr(null)
-    try { await fn() }
+    try { await fn(); setPending(null) }
     catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong') }
     finally { setBusy(null) }
   }
 
+  const allergies = realNote(student.allergies)
+  const medical = realNote(student.medical_conditions) ?? realNote(student.medical_info)
+  const facts: [string, string | null][] = [
+    ['Grade', student.grade],
+    ['School', student.school_name],
+    ['Registered for', student.registration_year ? String(student.registration_year) : null],
+    ['Parent', student.parent_name],
+    ['Parent phone', student.parent_phone],
+    ['Emergency contact', student.emergency_contact_name
+      ? `${student.emergency_contact_name}${student.emergency_contact_relation ? ` (${student.emergency_contact_relation})` : ''}${student.emergency_contact_phone ? ` · ${student.emergency_contact_phone}` : ''}`
+      : null],
+  ]
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface border border-border rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-          <h2 className="font-sans font-bold text-lg text-ink">{student.full_name}</h2>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink transition"><X size={20} /></button>
+    <div className="px-4 sm:px-5 py-4 bg-surface-sunken border-t border-border space-y-4 font-sans text-sm">
+      {(allergies || medical) && (
+        <div className="flex items-start gap-2 rounded-[10px] border border-danger/30 bg-danger-soft px-3 py-2.5 text-danger">
+          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          <div>
+            {allergies && <p><span className="font-semibold">Allergies:</span> {allergies}</p>}
+            {medical && <p><span className="font-semibold">Medical:</span> {medical}</p>}
+          </div>
         </div>
+      )}
 
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5 text-sm font-sans">
-          <section className="space-y-1.5">
-            <p className="font-semibold text-xs uppercase tracking-widest text-ink-muted">Student info</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-ink">
-              <span className="text-ink-muted">Age</span><span>{student.age}</span>
-              <span className="text-ink-muted">Parent</span><span>{student.parent_name}</span>
-              {student.medical_info && (
-                <>
-                  <span className="text-ink-muted">Medical notes</span>
-                  <span className="text-danger font-semibold">{student.medical_info}</span>
-                </>
-              )}
-              <span className="text-ink-muted">Added</span>
-              <span>{new Date(student.created_at).toLocaleDateString()}</span>
-            </div>
-          </section>
+      <dl className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1.5">
+        {facts.map(([k, v]) => (
+          <div key={k} className="contents">
+            <dt className="text-ink-muted">{k}</dt>
+            <dd className="text-ink min-w-0 break-words">{v || '—'}</dd>
+          </div>
+        ))}
+      </dl>
 
-          <section className="space-y-2">
-            <p className="font-semibold text-xs uppercase tracking-widest text-ink-muted">Registrations</p>
-            {student.registrations.length === 0 ? (
-              <p className="text-ink-muted text-xs">No registrations yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {student.registrations.map(reg => (
-                  <div key={reg.id} className="bg-surface-sunken border border-border rounded-[10px] p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-ink">{reg.class_name}</p>
-                        <p className="text-xs text-ink-muted">
-                          {reg.section_label}{reg.section_week ? ` · Week ${reg.section_week}` : ''}
-                        </p>
-                      </div>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_BADGE[reg.status]}`}>
-                        {reg.status}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(['confirmed', 'pending', 'waitlisted', 'cancelled'] as RegistrationStatus[])
-                        .filter(s => s !== reg.status)
-                        .map(s => (
-                          <button
-                            key={s}
-                            onClick={() => run(`status-${reg.id}-${s}`, () => onStatusChange(reg.id, s))}
-                            disabled={!!busy}
-                            className="h-7 px-3 rounded-full text-xs font-semibold border transition capitalize bg-surface border-border-strong text-ink hover:bg-surface-sunken disabled:opacity-40"
-                          >
-                            {busy === `status-${reg.id}-${s}`
-                              ? <span className="w-3 h-3 rounded-full border-2 border-brand border-t-transparent animate-spin inline-block" />
-                              : `→ ${s}`}
-                          </button>
-                        ))}
-                      <button
-                        onClick={() => run(`move-${reg.id}`, () => onRemoveReg(reg.id))}
-                        disabled={!!busy}
-                        className="h-7 px-3 rounded-full text-xs font-semibold border transition bg-danger-soft text-danger border-danger/30 hover:bg-danger/10 disabled:opacity-40"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-ink-muted shrink-0">Move to:</span>
-                      <select
-                        className="flex-1 h-7 px-2 rounded-[6px] bg-surface border border-border-strong text-ink font-sans text-xs focus:outline-none focus:ring-2 focus:ring-brand"
-                        defaultValue=""
-                        disabled={!!busy}
-                        onChange={e => {
-                          if (!e.target.value) return
-                          run(`move-${reg.id}`, () => onMoveSection(reg.id, e.target.value))
-                          e.target.value = ''
-                        }}
-                      >
-                        <option value="">Select section…</option>
-                        {allSections
-                          .filter(s => s.id !== reg.section_id)
-                          .map(s => (
-                            <option key={s.id} value={s.id}>
-                              {s.class_name} — {s.label}{s.week ? ` (W${s.week})` : ''}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
+      <div className="space-y-2">
+        <p className="font-semibold text-xs uppercase tracking-widest text-ink-muted">Registrations</p>
+        {student.registrations.length === 0 ? (
+          <p className="text-ink-muted text-sm">Not registered for any section.</p>
+        ) : (
+          student.registrations.map(reg => (
+            <div key={reg.id} className="bg-surface border border-border rounded-[10px] overflow-hidden">
+              <div className="p-3 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink">{reg.class_name}</p>
+                    <p className="text-xs text-ink-muted">{reg.section_label}{reg.section_week ? ` · Week ${reg.section_week}` : ''}</p>
                   </div>
-                ))}
+                  <span className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_BADGE[reg.status]}`}>
+                    {reg.status}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-ink-muted">Set status:</span>
+                  {(['confirmed', 'pending', 'waitlisted', 'cancelled'] as RegistrationStatus[])
+                    .filter(st => st !== reg.status)
+                    .map(st => (
+                      <button
+                        key={st}
+                        onClick={() => run(`status-${reg.id}-${st}`, () => onStatusChange(reg.id, st))}
+                        disabled={!!busy}
+                        className="h-8 px-3 rounded-full text-xs font-semibold border transition capitalize bg-surface border-border-strong text-ink hover:bg-surface-sunken disabled:opacity-40"
+                      >
+                        {busy === `status-${reg.id}-${st}`
+                          ? <span className="w-3 h-3 rounded-full border-2 border-brand border-t-transparent animate-spin inline-block" />
+                          : st}
+                      </button>
+                    ))}
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <label htmlFor={`move-${reg.id}`} className="text-xs text-ink-muted shrink-0">Move to section:</label>
+                  <select
+                    id={`move-${reg.id}`}
+                    className="flex-1 h-9 px-2 rounded-[8px] bg-surface border border-border-strong text-ink text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                    value=""
+                    disabled={!!busy}
+                    onChange={e => {
+                      const target = e.target.value
+                      if (target) void run(`move-${reg.id}`, () => onMoveSection(reg.id, target))
+                    }}
+                  >
+                    <option value="">Choose a section…</option>
+                    {allSections
+                      .filter(sec => sec.id !== reg.section_id)
+                      .map(sec => (
+                        <option key={sec.id} value={sec.id}>
+                          {sec.class_name} — {sec.label}{sec.week ? ` (Week ${sec.week})` : ''}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={() => setPending({ kind: 'remove', regId: reg.id })}
+                    disabled={!!busy}
+                    className="h-9 px-3 rounded-[8px] text-xs font-semibold border transition bg-surface text-danger border-danger/40 hover:bg-danger-soft disabled:opacity-40"
+                  >
+                    Remove registration
+                  </button>
+                </div>
               </div>
-            )}
-          </section>
-
-          {err && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-danger-soft text-danger rounded-[8px] text-xs">
-              <AlertCircle size={14} /> {err}
+              {pending?.regId === reg.id && (
+                <InlineConfirm
+                  message={`Remove ${student.full_name} from ${reg.class_name} · ${reg.section_label}? Their attendance for this section is deleted too.`}
+                  confirmLabel="Remove"
+                  busy={busy === `remove-${reg.id}`}
+                  onConfirm={() => run(`remove-${reg.id}`, () => onRemoveReg(reg.id))}
+                  onCancel={() => setPending(null)}
+                />
+              )}
             </div>
-          )}
-        </div>
+          ))
+        )}
       </div>
+
+      {err && (
+        <div role="alert" className="flex items-center gap-2 px-3 py-2 bg-danger-soft text-danger rounded-[8px] text-sm">
+          <AlertCircle size={14} /> {err}
+        </div>
+      )}
     </div>
   )
 }
@@ -185,9 +205,17 @@ export default function AdminStudents() {
   const { students, loading, error, updateRegistrationStatus, moveStudentToSection, removeRegistration } = useAdminStudents()
   const { classes } = useAdminClasses()
 
-  const [search, setSearch] = useState('')
+  // ?q= comes from the top-bar search; re-applied if it changes while the page is open.
+  const [params] = useSearchParams()
+  const urlQuery = params.get('q') ?? ''
+  const [appliedQuery, setAppliedQuery] = useState(urlQuery)
+  const [search, setSearch] = useState(urlQuery)
+  if (urlQuery !== appliedQuery) {
+    setAppliedQuery(urlQuery)
+    setSearch(urlQuery)
+  }
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [selected, setSelected] = useState<AdminStudent | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const allSections = useMemo(() =>
     classes.flatMap(c => c.sections.map(s => ({
@@ -226,8 +254,7 @@ export default function AdminStudents() {
   }, [students])
 
   return (
-    <div className="min-h-screen bg-bg">
-      <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-5">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 space-y-5">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-sans font-bold text-2xl text-ink">Students</h1>
           <button
@@ -280,83 +307,67 @@ export default function AdminStudents() {
           </div>
         ) : (
           <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface-sunken/40">
-                  <th className="px-5 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Student</th>
-                  <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Age</th>
-                  <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Parent</th>
-                  <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Registrations</th>
-                  <th className="px-4 py-3 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Medical</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((s, idx) => (
-                  <tr
-                    key={s.id}
-                    onClick={() => setSelected(s)}
-                    className={`cursor-pointer hover:bg-surface-sunken/50 transition ${idx < filtered.length - 1 ? 'border-b border-border' : ''}`}
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
-                          <span className="font-sans font-bold text-xs text-brand">{s.full_name[0]}</span>
-                        </div>
-                        <span className="font-sans font-semibold text-sm text-ink">{s.full_name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 font-sans text-sm text-ink">{s.age}</td>
-                    <td className="px-4 py-3.5 font-sans text-sm text-ink-muted">{s.parent_name}</td>
-                    <td className="px-4 py-3.5">
-                      {s.registrations.length === 0 ? (
-                        <span className="text-xs text-ink-faint font-sans">None</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {s.registrations.map(r => (
-                            <span key={r.id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${STATUS_BADGE[r.status]}`}>
-                              {r.class_name}{r.section_week ? ` W${r.section_week}` : ''} · {r.status}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      {s.medical_info ? (
-                        <span className="text-xs font-semibold text-danger">{s.medical_info.slice(0, 40)}{s.medical_info.length > 40 ? '…' : ''}</span>
-                      ) : (
-                        <span className="text-xs text-ink-faint">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Column headings (desktop) */}
+            <div className="hidden md:grid grid-cols-[minmax(0,1.4fr)_60px_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_24px] gap-4 px-5 py-3 border-b border-border bg-surface-sunken/40">
+              {['Student', 'Age', 'Parent', 'Registrations', 'Medical', ''].map(h => (
+                <span key={h} className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">{h}</span>
+              ))}
+            </div>
+            <ul className="divide-y divide-border">
+              {filtered.map(s => {
+                const open = expandedId === s.id
+                const flag = realNote(s.allergies) ?? realNote(s.medical_conditions) ?? realNote(s.medical_info)
+                return (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(open ? null : s.id)}
+                      aria-expanded={open}
+                      className="w-full text-left px-4 sm:px-5 py-3.5 hover:bg-surface-sunken/50 transition grid grid-cols-[minmax(0,1fr)_24px] md:grid-cols-[minmax(0,1.4fr)_60px_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_24px] gap-x-4 gap-y-2 items-center"
+                    >
+                      <span className="flex items-center gap-3 min-w-0">
+                        <span className="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center shrink-0 font-sans font-bold text-xs text-warning">{s.full_name[0]}</span>
+                        <span className="min-w-0">
+                          <span className="block font-sans font-semibold text-sm text-ink truncate">{s.full_name}</span>
+                          <span className="block md:hidden font-sans text-xs text-ink-muted truncate">Age {s.age} · {s.parent_name}</span>
+                        </span>
+                      </span>
+                      <span className="hidden md:block font-sans text-sm text-ink tabular-nums">{s.age}</span>
+                      <span className="hidden md:block font-sans text-sm text-ink-muted truncate">{s.parent_name}</span>
+                      <span className="col-span-1 md:col-span-1 row-start-2 md:row-start-auto flex flex-wrap gap-1 min-w-0">
+                        {s.registrations.length === 0 ? (
+                          <span className="text-xs text-ink-faint font-sans">Not registered</span>
+                        ) : s.registrations.map(r => (
+                          <span key={r.id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[r.status]}`}>
+                            {r.class_name}{r.section_week ? ` W${r.section_week}` : ''} · <span className="capitalize ml-1">{r.status}</span>
+                          </span>
+                        ))}
+                      </span>
+                      <span className="hidden md:block min-w-0">
+                        {flag
+                          ? <span className="block text-xs font-semibold text-danger truncate" title={flag}>{flag}</span>
+                          : <span className="text-xs text-ink-faint">—</span>}
+                      </span>
+                      <ChevronDown size={16} className={`row-start-1 col-start-2 md:row-start-auto md:col-start-auto text-ink-muted justify-self-end transition-transform ${open ? 'rotate-180' : ''}`} />
+                    </button>
+                    {open && (
+                      <StudentDetail
+                        student={s}
+                        allSections={allSections}
+                        onStatusChange={(id, status) => updateRegistrationStatus(id, status)}
+                        onMoveSection={(regId, sectionId) => moveStudentToSection(regId, sectionId)}
+                        onRemoveReg={regId => removeRegistration(regId)}
+                      />
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
             <div className="px-5 py-2.5 border-t border-border bg-surface-sunken/20">
-              <p className="font-sans text-xs text-ink-muted">{filtered.length} student{filtered.length !== 1 ? 's' : ''} shown · click a row to view details</p>
+              <p className="font-sans text-xs text-ink-muted">{filtered.length} student{filtered.length !== 1 ? 's' : ''} shown · select a student for details and registrations</p>
             </div>
           </div>
         )}
-      </main>
-
-      {selected && (
-        <StudentDetailModal
-          student={selected}
-          allSections={allSections}
-          onStatusChange={async (id, status) => {
-            await updateRegistrationStatus(id, status)
-            setSelected(s => s ? { ...s, registrations: s.registrations.map(r => r.id === id ? { ...r, status } : r) } : null)
-          }}
-          onMoveSection={async (regId, sectionId) => {
-            await moveStudentToSection(regId, sectionId)
-            setSelected(null)
-          }}
-          onRemoveReg={async (regId) => {
-            await removeRegistration(regId)
-            setSelected(s => s ? { ...s, registrations: s.registrations.filter(r => r.id !== regId) } : null)
-          }}
-          onClose={() => setSelected(null)}
-        />
-      )}
     </div>
   )
 }

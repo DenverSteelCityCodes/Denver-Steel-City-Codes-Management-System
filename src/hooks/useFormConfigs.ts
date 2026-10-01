@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export interface FieldConfig {
-  visible?: boolean
-  required?: boolean
-  label?: string
-}
+import type { FieldConfig } from '../lib/formFields'
+export type { FieldConfig }
 
 export interface FormConfig {
   enabled: boolean
@@ -40,7 +37,7 @@ export function useFormConfigs() {
       .from('form_configs')
       .update({ config: merged, updated_at: new Date().toISOString() })
       .eq('form_key', formKey)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchConfigs()
   }
 
@@ -58,7 +55,7 @@ export function useFormConfigs() {
       .from('form_configs')
       .update({ config: merged, updated_at: new Date().toISOString() })
       .eq('form_key', formKey)
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchConfigs()
   }
 
