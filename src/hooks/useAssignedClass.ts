@@ -28,6 +28,8 @@ export interface AssignedSection {
   room: string | null
   class_id: string
   class_name: string
+  // True when the volunteer leads the section (may post updates); false for supports.
+  is_lead: boolean
   students: AssignedStudent[]
 }
 
@@ -107,6 +109,7 @@ export function useAssignedClass() {
     }
 
     const allSections = [...leadSections, ...supportSections]
+    const leadIdSet = new Set(leadSections.map(s => s.id))
 
     if (allSections.length === 0) {
       setAssignedSections([])
@@ -141,6 +144,7 @@ export function useAssignedClass() {
           room: sec.room,
           class_id: sec.class_id,
           class_name: sec.classes?.name ?? '',
+          is_lead: leadIdSet.has(sec.id),
           students,
         }
       })
