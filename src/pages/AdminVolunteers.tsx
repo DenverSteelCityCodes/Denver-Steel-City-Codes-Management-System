@@ -451,6 +451,18 @@ export default function AdminVolunteers() {
         : <span className="text-ink-faint">—</span>,
     },
     {
+      header: 'Assigned to',
+      accessor: (v: VolunteerWithProfile) => {
+        const spots = classes.flatMap(c => c.sections.flatMap(sec => {
+          const role = sec.lead_id === v.id ? 'lead' : sec.supports.some(x => x.id === v.id) ? 'support' : null
+          return role ? [`${sec.label}${sec.week ? ` W${sec.week}` : ''} (${role})`] : []
+        }))
+        return spots.length > 0
+          ? <span className="text-xs text-ink">{spots.join(' · ')}</span>
+          : <span className="text-xs text-ink-faint">Unassigned</span>
+      },
+    },
+    {
       header: 'Notes',
       accessor: (v: VolunteerWithProfile) => (
         <span className="text-ink-muted text-xs truncate max-w-xs block">{v.interview_notes ?? '—'}</span>

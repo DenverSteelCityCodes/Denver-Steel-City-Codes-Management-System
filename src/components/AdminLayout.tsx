@@ -38,7 +38,7 @@ export default function AdminLayout() {
 
   // ── Live badge counts ──────────────────────────────────────
   // Re-queried on every navigation so they reflect what was just done on the previous page.
-  // Volunteers: applications awaiting a decision. Interviews: accepted applicants with no booking.
+  // Volunteers: applications awaiting a decision. Interviews: pending applicants with no booking.
   const [pendingCount, setPendingCount] = useState(0)
   const [unscheduledCount, setUnscheduledCount] = useState(0)
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function AdminLayout() {
       const booked = new Set((bookings.data ?? []).map(b => b.application_id as string))
       const list = apps.data ?? []
       setPendingCount(list.filter(a => a.status === 'pending').length)
-      setUnscheduledCount(list.filter(a => a.status === 'accepted' && !booked.has(a.id)).length)
+      setUnscheduledCount(list.filter(a => a.status === 'pending' && !booked.has(a.id)).length)
     })
     return () => { cancelled = true }
   }, [pathname])

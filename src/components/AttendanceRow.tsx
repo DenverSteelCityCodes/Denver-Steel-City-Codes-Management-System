@@ -49,7 +49,7 @@ export default function AttendanceRow({ student, status, onAction, busy }: Props
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-sans font-semibold text-sm text-ink">{student.full_name}</span>
           <span className="font-sans text-xs text-ink-muted">Age {student.age}</span>
-          {medicalNote && <MedicalFlag info={medicalNote} />}
+          {medicalNote && <MedicalFlag info={medicalNote} footnote="Confidential — for camp staff only." />}
         </div>
         {status && (
           <p className={`text-xs font-sans mt-0.5 ${isIn ? 'text-success' : 'text-ink-muted'}`}>
@@ -74,6 +74,8 @@ export default function AttendanceRow({ student, status, onAction, busy }: Props
         <button
           onClick={() => act('check_in')}
           disabled={busy || isIn}
+          aria-label={`Check in ${student.full_name}`}
+          aria-pressed={isIn}
           className={`h-11 px-4 flex items-center gap-1.5 font-sans font-semibold text-sm transition disabled:cursor-not-allowed ${
             isIn
               ? 'bg-success text-surface'
@@ -89,6 +91,8 @@ export default function AttendanceRow({ student, status, onAction, busy }: Props
         <button
           onClick={() => act('check_out')}
           disabled={busy || isOut || !status}
+          aria-label={`Check out ${student.full_name}`}
+          aria-pressed={isOut}
           className={`h-11 px-4 flex items-center gap-1.5 font-sans font-semibold text-sm transition disabled:cursor-not-allowed ${
             isOut
               ? 'bg-ink-muted text-surface'

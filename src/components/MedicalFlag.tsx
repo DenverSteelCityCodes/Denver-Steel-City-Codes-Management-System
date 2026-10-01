@@ -4,7 +4,7 @@ import { HeartPulse } from 'lucide-react'
 // Medical / allergy chip that expands the details in place (no modal). Render the chip where it
 // belongs in the header and let the note flow below it via `children`-less layout: the note is
 // rendered right after the chip, full width, when open.
-export default function MedicalFlag({ info }: { info: string }) {
+export default function MedicalFlag({ info, footnote = "Shared with your camper's volunteers and camp admins only." }: { info: string; footnote?: string }) {
   const [open, setOpen] = useState(false)
   const id = useId()
 
@@ -23,7 +23,7 @@ export default function MedicalFlag({ info }: { info: string }) {
       {open && (
         <p id={id} className="basis-full mt-1 px-3 py-2 rounded-[8px] bg-danger-soft border border-danger/20 font-sans text-sm text-ink">
           {info}
-          <span className="block mt-1 text-xs text-ink-muted">Shared with your camper's volunteers and camp admins only.</span>
+          <span className="block mt-1 text-xs text-ink-muted">{footnote}</span>
         </p>
       )}
     </>
