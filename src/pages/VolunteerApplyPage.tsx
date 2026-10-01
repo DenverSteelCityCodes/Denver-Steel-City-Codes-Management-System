@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase'
 import { BrandBar } from '../components/Wordmark'
 import { useSessions, activeCampYear, campSessions, formatSessionDates } from '../hooks/useSessions'
 import { useFormConfig } from '../hooks/useFormConfig'
+import InterviewSlotPicker from '../components/InterviewSlotPicker'
+import { useOpenInterviewSlots, formatSlot } from '../hooks/useOpenInterviewSlots'
 
 const GRADES = ['9th', '10th', '11th', '12th', 'College']
 const SCHOOLS = [
@@ -55,7 +57,7 @@ interface FormData {
   otherCurricula: string
   volunteerSignature: string
   guardianSignature: string
-  interviewConfirmed: boolean
+  interviewSlotId: string
 }
 
 const INITIAL: FormData = {
@@ -67,7 +69,7 @@ const INITIAL: FormData = {
   skillPython: null, skillJava: null, skillHtml: null,
   skillCss: null, skillJavascript: null, skillMicrocontrollers: null,
   courseFirst: '', courseSecond: '', otherCurricula: '',
-  volunteerSignature: '', guardianSignature: '', interviewConfirmed: false,
+  volunteerSignature: '', guardianSignature: '', interviewSlotId: '',
 }
 
 function SkillRating({
@@ -126,6 +128,11 @@ export default function VolunteerApplyPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  // Interview times are booked in-app (SignUpGenius-style) as the last step.
+  const { slots: openSlots, refetch: refetchSlots } = useOpenInterviewSlots()
+  // Set once the account + application are saved, so a failed booking can be retried alone.
+  const [applicationSaved, setApplicationSaved] = useState(false)
+  const [bookedTime, setBookedTime] = useState<string | null>(null)
 
   useEffect(() => {
     supabase
@@ -189,7 +196,7 @@ export default function VolunteerApplyPage() {
     if (step === 4) {
       if (!form.volunteerSignature.trim()) return 'Your signature is required'
       if (Number(form.age) < 18 && !form.guardianSignature.trim()) return 'Parent/guardian signature is required for applicants under 18'
-      if (!form.interviewConfirmed) return 'Please confirm that you have signed up for an interview slot'
+      if (openSlots && openSlots.length > 0 && !form.interviewSlotId) return 'Please pick an interview time'
     }
     return null
   }
@@ -215,6 +222,7 @@ export default function VolunteerApplyPage() {
     setError(null)
     setSubmitting(true)
 
+    if (!applicationSaved) {
     // Profile is created server-side by handle_new_user trigger with role: 'volunteer'
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
@@ -267,7 +275,8 @@ export default function VolunteerApplyPage() {
       other_curricula: form.otherCurricula || null,
       volunteer_signature: form.volunteerSignature,
       guardian_signature: form.guardianSignature || null,
-      interview_confirmed: form.interviewConfirmed,
+      // Set to true by book_my_interview() once a time is actually booked.
+      interview_confirmed: false,
     })
 
     if (insertError) {
@@ -279,6 +288,24 @@ export default function VolunteerApplyPage() {
       )
       setSubmitting(false)
       return
+    }
+
+    setApplicationSaved(true)
+    }
+
+    if (form.interviewSlotId) {
+      const { data: slotTime, error: bookError } = await supabase.rpc('book_my_interview', {
+        p_slot_id: form.interviewSlotId,
+        p_email: form.email.trim(),
+      })
+      if (bookError) {
+        setError(`Your application was saved, but we couldn't book that time: ${bookError.message}`)
+        set('interviewSlotId', '')
+        refetchSlots()
+        setSubmitting(false)
+        return
+      }
+      setBookedTime(slotTime as string)
     }
 
     setSubmitted(true)
@@ -326,6 +353,15 @@ export default function VolunteerApplyPage() {
           <p className="font-sans text-ink-muted text-sm mb-2">
             Thank you, <strong className="text-ink">{form.firstName}</strong>. We've received your application.
           </p>
+          {bookedTime ? (
+            <p className="font-sans text-sm mb-2 px-3 py-2 rounded-[10px] bg-success-soft text-success font-semibold">
+              Interview booked: {formatSlot(bookedTime)}
+            </p>
+          ) : (
+            <p className="font-sans text-sm mb-2 text-ink-muted">
+              Pick an interview time from your volunteer dashboard once times are posted.
+            </p>
+          )}
           <p className="font-sans text-ink-muted text-sm mb-6">
             Check your email for a confirmation link to activate your account. You'll hear back after your interview.
           </p>
@@ -616,24 +652,20 @@ export default function VolunteerApplyPage() {
               )}
 
               <div className="bg-surface-sunken border border-border rounded-xl p-4 space-y-3">
-                <p className="font-sans font-semibold text-sm text-ink">Interview requirement</p>
+                <p id="vol-interview" className="font-sans font-semibold text-sm text-ink">Pick your interview time *</p>
                 <p className="font-sans text-xs text-ink-muted">
-                  Before submitting, you must sign up for a follow-up interview. Interviews are held online and take approximately 15 minutes. Sign up at:{' '}
-                  <a
-                    href="https://www.signupgenius.com/go/10C0B4EADAE2BA2FAC34-61881283-sccvolunteer"
-                    target="_blank" rel="noreferrer"
-                    className="text-brand hover:underline break-all"
-                  >
-                    SignUpGenius
-                  </a>
+                  Every volunteer has a short online interview (about 15 minutes). Choose a time that works — you can change it later from your volunteer dashboard.
                 </p>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 mt-0.5 accent-brand"
-                    checked={form.interviewConfirmed} onChange={e => set('interviewConfirmed', e.target.checked)} />
-                  <span className="font-sans text-sm text-ink">
-                    I confirm that I have signed up for an interview slot on SignUpGenius.
-                  </span>
-                </label>
+                {openSlots === null ? (
+                  <div className="h-10 bg-surface rounded-[10px] animate-pulse" />
+                ) : (
+                  <InterviewSlotPicker
+                    slots={openSlots}
+                    value={form.interviewSlotId}
+                    onChange={id => set('interviewSlotId', id)}
+                    labelledBy="vol-interview"
+                  />
+                )}
               </div>
             </div>
           )}
@@ -667,7 +699,7 @@ export default function VolunteerApplyPage() {
                 {submitting
                   ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
                   : <CheckCircle2 size={16} />}
-                {submitting ? 'Submitting…' : 'Submit application'}
+                {submitting ? 'Submitting…' : applicationSaved ? 'Book interview time' : 'Submit application'}
               </button>
             )}
           </div>

@@ -6,6 +6,9 @@ import { useAttendance } from '../hooks/useAttendance'
 import { useDutySlots } from '../hooks/useDutyRoles'
 import AttendanceRow from '../components/AttendanceRow'
 import { BrandBar } from '../components/Wordmark'
+import InterviewSlotPicker from '../components/InterviewSlotPicker'
+import { useOpenInterviewSlots, formatSlot } from '../hooks/useOpenInterviewSlots'
+import { useMyInterview } from '../hooks/useMyInterview'
 import type { AssignedSection } from '../hooks/useAssignedClass'
 import type { AttendanceAction } from '../types/database'
 
@@ -108,6 +111,82 @@ function DutyPanel({ userId }: { userId: string }) {
           </div>
         ))}
     </div>
+  )
+}
+
+// Pending applicants see their interview time and can pick or change it (SignUpGenius-style).
+function InterviewCard() {
+  const { interview, loading, book } = useMyInterview()
+  const { slots, refetch } = useOpenInterviewSlots()
+  const [choosing, setChoosing] = useState(false)
+  const [picked, setPicked] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function save() {
+    if (!picked) { setErr('Pick a time first'); return }
+    setSaving(true)
+    setErr(null)
+    try {
+      await book(picked)
+      setChoosing(false)
+      setPicked('')
+      refetch()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Something went wrong')
+      refetch()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="h-24 bg-surface border border-border rounded-xl animate-pulse" />
+  const showPicker = choosing || !interview
+
+  return (
+    <section aria-labelledby="interview-heading" className="bg-surface border border-border rounded-xl shadow-sm p-5 sm:p-6 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 id="interview-heading" className="font-sans font-semibold text-lg text-ink flex items-center gap-2">
+            <CalendarDays size={18} className="text-warning" /> Your interview
+          </h2>
+          <p className="font-sans text-sm text-ink-muted mt-0.5">
+            {interview
+              ? <>Booked for <strong className="text-ink">{formatSlot(interview.slot_datetime)}</strong> · {interview.duration_minutes} min, online.</>
+              : 'Pick a time for your short online interview.'}
+          </p>
+        </div>
+        {interview && !choosing && (
+          <button
+            onClick={() => setChoosing(true)}
+            className="h-10 px-4 shrink-0 rounded-[10px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition"
+          >
+            Change time
+          </button>
+        )}
+      </div>
+
+      {showPicker && slots && (
+        <div className="space-y-3">
+          <InterviewSlotPicker slots={slots} value={picked} onChange={setPicked} labelledBy="interview-heading" />
+          {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
+          {slots.length > 0 && (
+            <div className="flex justify-end gap-2">
+              {interview && (
+                <button onClick={() => { setChoosing(false); setPicked(''); setErr(null) }}
+                  className="h-10 px-4 rounded-[10px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">
+                  Keep my time
+                </button>
+              )}
+              <button onClick={save} disabled={saving || !picked}
+                className="h-10 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">
+                {saving ? 'Booking…' : interview ? 'Move my interview' : 'Book this time'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -249,6 +328,7 @@ export default function VolunteerDashboard() {
           </div>
         ) : !isAccepted ? (
           /* Application pending — volunteer role set but no volunteers row yet */
+          <>
           <div className="bg-surface border border-border rounded-xl shadow-sm p-10 text-center">
             <div className="w-14 h-14 rounded-full bg-warning-soft flex items-center justify-center mx-auto mb-4">
               <Clock size={24} className="text-warning" />
@@ -258,6 +338,8 @@ export default function VolunteerDashboard() {
               Your application is being reviewed. You'll be notified once an admin accepts it and assigns you to a section.
             </p>
           </div>
+          <InterviewCard />
+          </>
         ) : assignedSections.length === 0 ? (
           /* Accepted but not yet assigned to any section */
           <>
