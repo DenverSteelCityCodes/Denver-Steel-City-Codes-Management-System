@@ -15,19 +15,14 @@ export interface CourseConstraint {
   requirementNote?: string
 }
 
+// Notes never repeat a cap or which weeks a course runs: both come from the sections an admin
+// creates, so hard-coded numbers here would drift from what the capacity meters show.
 const RULES: { match: string; constraint: CourseConstraint }[] = [
   {
     match: 'microcontroller',
     constraint: {
       allowedGrades: ['7th', '8th', '9th'],
-      requirementNote:
-        'Rising grades 7–9 with at least intermediate Python knowledge. Capped at 20 per week.',
-    },
-  },
-  {
-    match: 'web development',
-    constraint: {
-      requirementNote: 'Capped at 25 per week. Not offered in Week 2.',
+      requirementNote: 'For campers entering grades 7–9 with at least intermediate Python knowledge.',
     },
   },
 ]

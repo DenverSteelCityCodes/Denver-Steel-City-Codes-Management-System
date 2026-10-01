@@ -12,22 +12,36 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
   if (students.length === 0) return 'Add your first camper to get started.'
 
   const active = registrations.filter(r => r.status !== 'cancelled')
-  const pending = active.filter(r => r.status === 'pending').length
-  const waitlisted = active.filter(r => r.status === 'waitlisted').length
-  const subject = students.length === 1 ? 'Your camper is' : 'Your campers are'
-  const waitNote = waitlisted > 0 ? ` ${waitlisted === 1 ? 'One spot is' : `${waitlisted} spots are`} on a waitlist.` : ''
-
   if (active.length === 0) {
     return students.length === 1
       ? "Your camper isn't signed up yet — browse classes to find a fit."
       : 'No sign-ups yet — browse classes to find a fit for your campers.'
   }
+
+  const pending = active.filter(r => r.status === 'pending').length
+  const waitlisted = active.filter(r => r.status === 'waitlisted').length
+  const confirmedIds = new Set(active.filter(r => r.status === 'confirmed').map(r => r.student_id))
+  const unenrolled = students.filter(s => !active.some(r => r.student_id === s.id))
+  const firstName = (s: Student) => s.first_name ?? s.full_name.split(' ')[0]
+
+  const subject = students.length === 1 ? 'Your camper is' : 'Your campers are'
+  const waitNote = waitlisted > 0 ? ` ${waitlisted === 1 ? 'One spot is' : `${waitlisted} spots are`} on a waitlist.` : ''
+  const unenrolledNote = unenrolled.length === 0 ? ''
+    : unenrolled.length === 1 ? ` ${firstName(unenrolled[0])} isn't signed up yet.`
+    : ` ${unenrolled.length} campers aren't signed up yet.`
+
   if (pending > 0) {
     const spots = pending === 1 ? 'one spot still to confirm' : `${pending} spots still to confirm`
-    return `${subject} signed up — ${spots}.${waitNote}`
+    return `${subject} signed up — ${spots}.${waitNote}${unenrolledNote}`
   }
-  if (waitlisted > 0 && waitlisted === active.length) return `${subject} on a waitlist — we'll reach out if a spot opens.`
-  return `${subject} all set for camp.${waitNote}`
+  if (confirmedIds.size === 0) return `${subject} on a waitlist — we'll reach out if a spot opens.${unenrolledNote}`
+  // Only say "all set" for the campers who actually have a confirmed spot.
+  const lead = confirmedIds.size === students.length
+    ? `${subject} all set for camp.`
+    : confirmedIds.size === 1
+      ? `${firstName(students.find(s => confirmedIds.has(s.id))!)} is all set for camp.`
+      : `${confirmedIds.size} of your campers are all set for camp.`
+  return `${lead}${waitNote}${unenrolledNote}`
 }
 
 export default function ParentDashboard() {

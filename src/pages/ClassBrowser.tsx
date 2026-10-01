@@ -23,9 +23,11 @@ interface SectionCardProps {
   registering?: boolean
   // Course-level grade restriction (#44), e.g. Microcontrollers is rising 7–9 only.
   gradeBlock?: string | null
+  // Name of the class this camper already holds a spot in for the same week (one class per week).
+  weekClash?: string | null
 }
 
-function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, gradeBlock }: SectionCardProps) {
+function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, gradeBlock, weekClash }: SectionCardProps) {
   const ageEligible = studentAge !== undefined
     ? studentAge >= section.age_min && studentAge <= section.age_max
     : true
@@ -81,6 +83,12 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
           {registrationStatus === 'cancelled' && <span className="text-ink-muted">Cancelled</span>}
           {studentName && <span className="text-ink-muted font-normal">· {studentName}</span>}
         </div>
+      ) : weekClash && !isFull ? (
+        // Campers take one class per week; the waitlist of a full class stays open as a backup.
+        <p className="flex items-start gap-1.5 font-sans text-sm text-ink-muted">
+          <Info size={15} className="shrink-0 mt-0.5" />
+          Already in {weekClash} this week
+        </p>
       ) : onRegister ? (
         <button
           onClick={onRegister}
@@ -103,7 +111,7 @@ export default function ClassBrowser() {
   const [searchParams] = useSearchParams()
   const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
   const { students, confirmOnboarding } = useStudents()
-  const { registerStudent, isRegistered, getRegistration } = useRegistrations()
+  const { registrations, registerStudent, isRegistered, getRegistration } = useRegistrations()
   const { sessions } = useSessions()
   const { profile } = useAuth()
   const { profile: parentProfile } = useParentProfile()
@@ -315,9 +323,21 @@ export default function ClassBrowser() {
                         ? isRegistered(selectedStudentId, sec.id)
                         : false
 
+                      // One held spot per camper per week (also enforced by the database).
+                      const weekClash = selectedStudentId
+                        ? registrations.find(r =>
+                            r.student_id === selectedStudentId &&
+                            r.section_id !== sec.id &&
+                            (r.status === 'pending' || r.status === 'confirmed') &&
+                            r.year === campYear &&
+                            r.sections?.week != null && r.sections.week === sec.week,
+                          )?.sections?.classes?.name ?? null
+                        : null
+
                       return (
                         <SectionCard
                           key={sec.id}
+                          weekClash={weekClash}
                           section={sec}
                           studentName={selectedStudent?.full_name}
                           studentAge={selectedStudent?.age}

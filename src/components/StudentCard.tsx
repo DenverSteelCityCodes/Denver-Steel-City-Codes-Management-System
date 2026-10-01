@@ -28,9 +28,15 @@ function rollupStatus(
   if (active.length === 0) {
     return { label: 'Not enrolled', className: 'bg-surface-sunken text-ink-muted', Icon: null }
   }
-  const needsAction = active.some(r => r.status === 'pending' || r.status === 'waitlisted')
-  if (needsAction) {
-    return { label: 'Action pending', className: 'bg-warning-soft text-warning', Icon: Clock }
+  // Nothing here needs the parent to act — say what we're waiting on instead of "action pending".
+  if (active.some(r => r.status === 'pending')) {
+    return { label: 'Awaiting confirmation', className: 'bg-warning-soft text-warning', Icon: Clock }
+  }
+  if (active.every(r => r.status === 'waitlisted')) {
+    return { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List }
+  }
+  if (active.some(r => r.status === 'waitlisted')) {
+    return { label: 'Partly waitlisted', className: 'bg-info-soft text-info', Icon: List }
   }
   return { label: 'All set', className: 'bg-success-soft text-success', Icon: CircleCheck }
 }
@@ -157,7 +163,7 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
                 <span className="text-xs font-sans text-ink-muted shrink-0">Age {student.age}</span>
                 {medicalNote && <MedicalFlag info={medicalNote} />}
               </div>
-              {/* Rollup status badge: all confirmed → All set, any pending/waitlisted → Action pending, none → Not enrolled */}
+              {/* Rollup status badge: all confirmed → All set, pending → Awaiting confirmation, waitlisted → On waitlist, none → Not enrolled */}
               <span
                 className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${rollup.className}`}
               >
@@ -223,7 +229,7 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
           to={`/parent/classes?camper=${student.id}`}
           className="h-10 px-3.5 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[8px] hover:bg-surface-sunken flex items-center gap-1.5 transition shadow-sm"
         >
-          <GraduationCap size={14} /> Register for another class
+          <GraduationCap size={14} /> {registrations.some(r => r.status !== 'cancelled') ? 'Register for another class' : 'Register for a class'}
         </Link>
       </div>
     </div>
