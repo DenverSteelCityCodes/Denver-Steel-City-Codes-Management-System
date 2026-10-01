@@ -12,8 +12,10 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
   if (students.length === 0) return 'Add your first camper to get started.'
 
   const active = registrations.filter(r => r.status !== 'cancelled')
-  const pending = active.filter(r => r.status === 'pending' || r.status === 'waitlisted').length
+  const pending = active.filter(r => r.status === 'pending').length
+  const waitlisted = active.filter(r => r.status === 'waitlisted').length
   const subject = students.length === 1 ? 'Your camper is' : 'Your campers are'
+  const waitNote = waitlisted > 0 ? ` ${waitlisted === 1 ? 'One spot is' : `${waitlisted} spots are`} on a waitlist.` : ''
 
   if (active.length === 0) {
     return students.length === 1
@@ -22,9 +24,10 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
   }
   if (pending > 0) {
     const spots = pending === 1 ? 'one spot still to confirm' : `${pending} spots still to confirm`
-    return `${subject} signed up — ${spots}.`
+    return `${subject} signed up — ${spots}.${waitNote}`
   }
-  return `${subject} all set for camp.`
+  if (waitlisted > 0 && waitlisted === active.length) return `${subject} on a waitlist — we'll reach out if a spot opens.`
+  return `${subject} all set for camp.${waitNote}`
 }
 
 export default function ParentDashboard() {

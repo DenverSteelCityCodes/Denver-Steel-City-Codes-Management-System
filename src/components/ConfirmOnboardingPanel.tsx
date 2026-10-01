@@ -3,8 +3,18 @@ import { ShieldCheck } from 'lucide-react'
 import { GRADES } from '../lib/campers'
 import type { Student, OnboardingConfirmation } from '../types/database'
 
+// Saved parent details (parent_profiles + account name) used when the camper record has none.
+export interface ParentDefaults {
+  parent_name?: string | null
+  parent_phone?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relation?: string | null
+}
+
 interface Props {
   student: Student
+  parentDefaults?: ParentDefaults
   campYear: number
   submitting?: boolean
   onConfirm: (fields: OnboardingConfirmation) => Promise<void> | void
@@ -15,17 +25,17 @@ interface Props {
 // their onboarding has been reviewed and confirmed for the active camp year. This inline panel shows the
 // camper's existing info (prefilled), lets the parent correct anything stale, re-sign the waiver,
 // and explicitly attest it is current — the official form requires fresh info every summer.
-export default function ConfirmOnboardingPanel({ student, campYear, submitting, onConfirm, onClose }: Props) {
+export default function ConfirmOnboardingPanel({ student, parentDefaults, campYear, submitting, onConfirm, onClose }: Props) {
   const [form, setForm] = useState<OnboardingConfirmation>({
     full_name: student.full_name,
     grade: student.grade ?? null,
     shirt_size: student.shirt_size ?? null,
     laptop_available: student.laptop_available ?? null,
-    parent_name: student.parent_name ?? null,
-    parent_phone: student.parent_phone ?? null,
-    emergency_contact_name: student.emergency_contact_name ?? null,
-    emergency_contact_phone: student.emergency_contact_phone ?? null,
-    emergency_contact_relation: student.emergency_contact_relation ?? null,
+    parent_name: student.parent_name ?? parentDefaults?.parent_name ?? null,
+    parent_phone: student.parent_phone ?? parentDefaults?.parent_phone ?? null,
+    emergency_contact_name: student.emergency_contact_name ?? parentDefaults?.emergency_contact_name ?? null,
+    emergency_contact_phone: student.emergency_contact_phone ?? parentDefaults?.emergency_contact_phone ?? null,
+    emergency_contact_relation: student.emergency_contact_relation ?? parentDefaults?.emergency_contact_relation ?? null,
     allergies: student.allergies ?? null,
     medical_conditions: student.medical_conditions ?? student.medical_info ?? null,
     free_reduced_lunch: student.free_reduced_lunch ?? null,

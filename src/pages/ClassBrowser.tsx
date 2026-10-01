@@ -7,6 +7,8 @@ import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear } from '../hooks/useSessions'
 import CapacityMeter from '../components/CapacityMeter'
 import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
+import { useParentProfile } from '../hooks/useParentProfile'
+import { useAuth } from '../context/AuthContext'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import type { RegistrationStatus, OnboardingConfirmation } from '../types/database'
 
@@ -103,6 +105,8 @@ export default function ClassBrowser() {
   const { students, confirmOnboarding } = useStudents()
   const { registerStudent, isRegistered, getRegistration } = useRegistrations()
   const { sessions } = useSessions()
+  const { profile } = useAuth()
+  const { profile: parentProfile } = useParentProfile()
 
   // Pre-select the camper when deep-linked from a StudentCard ("Register for another class").
   const [selectedStudentId, setSelectedStudentId] = useState<string>(searchParams.get('camper') ?? '')
@@ -242,6 +246,13 @@ export default function ClassBrowser() {
           <ConfirmOnboardingPanel
             key={`${selectedStudent.id}-${pendingSection.id}`}
             student={selectedStudent}
+            parentDefaults={{
+              parent_name: profile?.display_name,
+              parent_phone: parentProfile?.phone,
+              emergency_contact_name: parentProfile?.emergency_contact_name,
+              emergency_contact_phone: parentProfile?.emergency_contact_phone,
+              emergency_contact_relation: parentProfile?.emergency_contact_relation,
+            }}
             campYear={campYear}
             submitting={confirming}
             onConfirm={handleConfirmOnboarding}

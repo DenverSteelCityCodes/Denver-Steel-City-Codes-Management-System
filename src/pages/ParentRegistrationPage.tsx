@@ -137,6 +137,7 @@ export default function ParentRegistrationPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [waitlistedCount, setWaitlistedCount] = useState(0)
+  const [registeredCount, setRegisteredCount] = useState(0)
 
   // Display name derived from the split first/last fields (full_name is composed on submit).
   const studentFullName = `${form.first_name} ${form.last_name}`.trim()
@@ -379,6 +380,7 @@ export default function ParentRegistrationPage() {
         return
       }
       setWaitlistedCount((regs ?? []).filter(r => r.status === 'waitlisted').length)
+      setRegisteredCount((regs ?? []).length)
     }
 
     setSubmitted(true)
@@ -406,11 +408,14 @@ export default function ParentRegistrationPage() {
           <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={28} className="text-success" />
           </div>
-          <h1 className="font-sans font-bold text-2xl text-ink mb-2">Registration submitted!</h1>
+          <h1 className="font-sans font-bold text-2xl text-ink mb-2">{waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : 'Registration submitted!'}</h1>
           <p className="font-sans text-ink-muted text-sm mb-6">
-            <strong className="text-ink">{studentFullName}</strong> has been registered. Your registration is pending confirmation from our team.
-            {waitlistedCount > 0 && (
-              <> {waitlistedCount === 1 ? 'One class was' : 'Some classes were'} full, so {studentFullName} is on the waitlist there — we'll reach out if a spot opens.</>
+            {waitlistedCount === 0 ? (
+              <><strong className="text-ink">{studentFullName}</strong>'s spot is held. Our team will confirm it soon.</>
+            ) : waitlistedCount === registeredCount ? (
+              <>That class is full, so <strong className="text-ink">{studentFullName}</strong> is on the waitlist. We'll reach out if a spot opens.</>
+            ) : (
+              <><strong className="text-ink">{studentFullName}</strong>'s spot is held in one class. The other was full, so they're on its waitlist — we'll reach out if a spot opens.</>
             )}
           </p>
           <button

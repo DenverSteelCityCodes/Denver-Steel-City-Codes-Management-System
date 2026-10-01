@@ -133,11 +133,11 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
     (realNote(student.medical_conditions) ?? realNote(student.medical_info)) && `Medical: ${realNote(student.medical_conditions) ?? realNote(student.medical_info)}`,
   ].filter(Boolean).join(' · ')
   const initials = student.full_name
-    .split(' ')
-    .map(n => n[0])
+    .split(/\s+/)
+    .map(n => n.match(/\p{L}/u)?.[0] ?? '')
     .join('')
     .toUpperCase()
-    .slice(0, 2)
+    .slice(0, 2) || '?'
 
   const rollup = rollupStatus(registrations)
   const RollupIcon = rollup.Icon
