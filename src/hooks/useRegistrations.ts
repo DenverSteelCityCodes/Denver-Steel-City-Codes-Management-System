@@ -10,9 +10,16 @@ export interface RegistrationWithSection extends Registration {
     age_max: number
     capacity: number
     week: number | null
+    session_id: string | null
+    days: string
+    start_time: string | null
+    end_time: string | null
+    room: string | null
     classes: { name: string }
   }
 }
+
+const SECTION_SELECT = 'sections ( label, age_min, age_max, capacity, week, session_id, days, start_time, end_time, room, classes ( name ) )'
 
 export function useRegistrations() {
   const { user } = useAuth()
@@ -29,11 +36,7 @@ export function useRegistrations() {
     setLoading(true)
     const { data, error } = await supabase
       .from('registrations')
-      .select(`
-        *,
-        students!inner(parent_id),
-        sections ( label, age_min, age_max, capacity, week, classes ( name ) )
-      `)
+      .select(`*, students!inner(parent_id), ${SECTION_SELECT}`)
       .eq('students.parent_id', user!.id)
       .order('created_at', { ascending: false })
 
@@ -48,7 +51,7 @@ export function useRegistrations() {
     const { data, error } = await supabase
       .from('registrations')
       .insert({ student_id: studentId, section_id: sectionId, status })
-      .select(`*, sections ( label, age_min, age_max, capacity, week, classes ( name ) )`)
+      .select(`*, ${SECTION_SELECT}`)
       .single()
 
     if (error) throw new Error(error.message)
