@@ -21,6 +21,11 @@ export interface AssignedSection {
   age_max: number
   capacity: number
   week: 1 | 2 | null
+  session_id: string | null
+  days: string
+  start_time: string | null
+  end_time: string | null
+  room: string | null
   class_id: string
   class_name: string
   students: AssignedStudent[]
@@ -34,9 +39,16 @@ interface RawSection {
   age_max: number
   capacity: number
   week: 1 | 2 | null
+  session_id: string | null
+  days: string
+  start_time: string | null
+  end_time: string | null
+  room: string | null
   class_id: string
   classes: { name: string } | null
 }
+
+const SECTION_COLS = 'id, label, age_min, age_max, capacity, week, session_id, days, start_time, end_time, room, class_id, classes ( name )'
 
 export function useAssignedClass() {
   const { user } = useAuth()
@@ -59,7 +71,7 @@ export function useAssignedClass() {
       // Sections where volunteer is the lead
       supabase
         .from('sections')
-        .select(`id, label, age_min, age_max, capacity, week, class_id, classes ( name )`)
+        .select(SECTION_COLS)
         .eq('lead_id', user!.id),
       // Section IDs where volunteer is a support
       supabase
@@ -88,7 +100,7 @@ export function useAssignedClass() {
     if (supportSectionIds.length > 0) {
       const { data, error } = await supabase
         .from('sections')
-        .select(`id, label, age_min, age_max, capacity, week, class_id, classes ( name )`)
+        .select(SECTION_COLS)
         .in('id', supportSectionIds)
       if (error) { setError(error.message); setLoading(false); return }
       supportSections = (data ?? []) as unknown as RawSection[]
@@ -122,6 +134,11 @@ export function useAssignedClass() {
           age_max: sec.age_max,
           capacity: sec.capacity,
           week: sec.week,
+          session_id: sec.session_id,
+          days: sec.days,
+          start_time: sec.start_time,
+          end_time: sec.end_time,
+          room: sec.room,
           class_id: sec.class_id,
           class_name: sec.classes?.name ?? '',
           students,
