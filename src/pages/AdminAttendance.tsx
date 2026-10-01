@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Users, UserCheck, AlertTriangle, BellOff, Phone, RefreshCw, ChevronDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import AttendanceExport from '../components/AttendanceExport'
+import { Users, UserCheck, AlertTriangle, BellOff, Phone, RefreshCw, ChevronDown, Printer } from 'lucide-react'
 import StatCard from '../components/StatCard'
 import { useAttendanceBoard } from '../hooks/useAttendanceBoard'
 import type { BoardSection, BoardStudent } from '../hooks/useAttendanceBoard'
@@ -60,13 +62,19 @@ function SectionCard({ section }: { section: BoardSection }) {
   return (
     <section className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
       <div className="p-4 sm:p-5 space-y-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex items-start justify-between gap-3">
+          <div className="min-w-0">
           <h2 className="font-sans font-bold text-base text-ink break-words">{section.className} · {section.label}</h2>
           <p className="font-sans text-xs text-ink-muted">
             {section.leadName ? `Lead: ${section.leadName}` : 'No lead assigned'}
             {section.room ? ` · ${section.room}` : ''}
             {` · ${section.roster.length} camper${section.roster.length === 1 ? '' : 's'}`}
           </p>
+          </div>
+          <Link to={`/print/roster/${section.id}`} title="Printable roster" aria-label={`Print ${section.label} roster`}
+            className="p-2 shrink-0 text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-[8px] transition">
+            <Printer size={16} />
+          </Link>
         </div>
         <div className="flex flex-wrap gap-2">
           {ROLL_CALLS.map(({ key, label }) => {
@@ -222,6 +230,7 @@ export default function AdminAttendance() {
           )}
         </>
       )}
+      {!loading && <AttendanceExport />}
     </div>
   )
 }
