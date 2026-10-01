@@ -62,3 +62,9 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.book_my_interview(UUID, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.book_my_interview(UUID, TEXT) TO anon, authenticated;
+
+-- Course names/descriptions are public catalog info; the signed-out /apply form lists them as
+-- course preferences (it silently fell back to a hardcoded list before). Sections — ages,
+-- capacity, crew — and everything else stay protected.
+DROP POLICY IF EXISTS "public_read_classes" ON classes;
+CREATE POLICY "public_read_classes" ON classes FOR SELECT TO anon USING (true);
