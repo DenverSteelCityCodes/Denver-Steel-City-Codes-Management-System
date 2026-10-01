@@ -7,8 +7,8 @@
 // What needs code is the grade gate and the surfaced prerequisite for Microcontrollers.
 
 export interface CourseConstraint {
-  // Allowed CURRENT-year grades — the form collects the current-year grade, and Microcontrollers
-  // is for "rising 7th–9th graders" (i.e. current 6th–8th). Undefined = no grade limit.
+  // Allowed grades, in the form's "entering in the fall" terms (the camper's grade next school
+  // year). Microcontrollers is for rising 7th–9th graders. Undefined = no grade limit.
   allowedGrades?: string[]
   // Advisory prerequisite shown to parents. Verified by staff at registration — we can't reliably
   // auto-check a camper's Python level, so this is surfaced, not hard-blocked.
@@ -19,7 +19,7 @@ const RULES: { match: string; constraint: CourseConstraint }[] = [
   {
     match: 'microcontroller',
     constraint: {
-      allowedGrades: ['6th', '7th', '8th'],
+      allowedGrades: ['7th', '8th', '9th'],
       requirementNote:
         'Rising grades 7–9 with at least intermediate Python knowledge. Capped at 20 per week.',
     },
@@ -43,6 +43,6 @@ export function courseConstraint(className: string): CourseConstraint | null {
 export function gradeBlockReason(constraint: CourseConstraint | null, grade?: string | null): string | null {
   if (!constraint?.allowedGrades || !grade) return null
   if (constraint.allowedGrades.includes(grade)) return null
-  const grades = constraint.allowedGrades.map(g => g.replace(/\D/g, '')).join(', ')
-  return `Open to grades ${grades} only`
+  const nums = constraint.allowedGrades.map(g => g.replace(/\D/g, ''))
+  return `Open to students entering grades ${nums[0]}–${nums[nums.length - 1]}`
 }

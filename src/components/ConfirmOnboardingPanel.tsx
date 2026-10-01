@@ -115,7 +115,7 @@ export default function ConfirmOnboardingPanel({ student, campYear, submitting, 
 
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="ob-2" className={labelCls}>Grade ({campYear - 1}-{campYear} school year) *</label>
+              <label htmlFor="ob-2" className={labelCls}>Grade entering fall {campYear} *</label>
               <select id="ob-2" className={inputCls} value={form.grade ?? ''} onChange={e => set('grade', e.target.value)}>
                 <option value="">Select…</option>
                 {GRADES.map(g => <option key={g} value={g}>{g}</option>)}

@@ -99,7 +99,7 @@ function CamperEditor({ student, onSave, onDone }: { student: Student; onSave: P
         <div><label htmlFor={id('first')} className={label}>First name</label><input id={id('first')} autoFocus className={input} value={form.first_name} onChange={e => set('first_name', e.target.value)} /></div>
         <div><label htmlFor={id('last')} className={label}>Last name</label><input id={id('last')} className={input} value={form.last_name} onChange={e => set('last_name', e.target.value)} /></div>
         <div>
-          <label htmlFor={id('grade')} className={label}>Grade</label>
+          <label htmlFor={id('grade')} className={label}>Grade (entering fall)</label>
           <select id={id('grade')} className={input} value={form.grade} onChange={e => set('grade', e.target.value)}>
             <option value="">Select…</option>
             {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
