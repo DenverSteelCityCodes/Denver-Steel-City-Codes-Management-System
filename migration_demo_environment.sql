@@ -5,6 +5,12 @@
 -- every state, interview slots relative to "now", and four one-click demo accounts.
 -- It runs nightly (pg_cron) so public demo visitors can't break it for the next person.
 --
+-- Camp is always in session in the demo: Week 1 is the current Monday–Friday (Denver time; the
+-- following week when reset on a weekend) and Week 2 the week after, so the "today" views —
+-- roll calls, the parent "this week" card, the admin attendance board — have something to show.
+-- Roll calls are seeded for the days of Week 1 already past plus this morning's arrival (two
+-- sections left for the crew to take live), and a few updates are posted.
+--
 -- Not in git: demo account passwords and accounts to keep. Fill these per environment:
 --   insert into private.demo_accounts (key, email, password) values ('admin', ..., ...), ...;
 --   insert into private.demo_keep_users (id) values (...);   -- e.g. the owner's own logins
@@ -85,8 +91,16 @@ DECLARE
   vol_ids UUID[] := '{}'; v UUID; i INT; d DATE; t RECORD;
   demo RECORD; demo_parent UUID; demo_vol UUID; demo_app UUID; demo_admin UUID;
   app_id UUID; slot_id UUID;
+  today DATE := (now() AT TIME ZONE 'America/Denver')::date;
+  -- Monday of the current week, or of next week when it's already the weekend.
+  w1_start DATE := date_trunc('week', today)::date + CASE WHEN extract(isodow FROM today) >= 6 THEN 7 ELSE 0 END;
+  w1_end DATE; w2_start DATE; w2_end DATE; camp_year INT;
+  reg RECORD; rc TEXT; absent BOOLEAN; author UUID;
 BEGIN
+  w1_end := w1_start + 4; w2_start := w1_start + 7; w2_end := w1_start + 11;
+  camp_year := extract(year FROM w1_start)::int;
   -- ── 1. Wipe camp data (keeps duty types, demo accounts and owner logins) ──
+  DELETE FROM roll_call_marks; DELETE FROM updates; DELETE FROM schedule_items;
   DELETE FROM attendance_logs; DELETE FROM registrations; DELETE FROM students;
   DELETE FROM duty_assignments; DELETE FROM duty_slots;
   DELETE FROM interview_bookings; DELETE FROM interview_slots; DELETE FROM volunteer_applications;
@@ -102,8 +116,22 @@ BEGIN
     ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = now();
 
   -- ── 2. Camp weeks and courses ──
-  INSERT INTO sessions (name, year, start_date, end_date, is_active) VALUES ('Week 1', 2027, '2027-06-07', '2027-06-11', true) RETURNING id INTO w1;
-  INSERT INTO sessions (name, year, start_date, end_date, is_active) VALUES ('Week 2', 2027, '2027-06-14', '2027-06-18', true) RETURNING id INTO w2;
+  INSERT INTO sessions (name, year, start_date, end_date, is_active) VALUES ('Week 1', camp_year, w1_start, w1_end, true) RETURNING id INTO w1;
+  INSERT INTO sessions (name, year, start_date, end_date, is_active) VALUES ('Week 2', camp_year, w2_start, w2_end, true) RETURNING id INTO w2;
+
+  -- The same daily schedule both weeks (parents and volunteers see it on their dashboards).
+  INSERT INTO schedule_items (session_id, start_time, end_time, title, location)
+  SELECT wk_id.id, item.start_time, item.end_time, item.title, item.location
+  FROM (VALUES (w1), (w2)) wk_id(id)
+  CROSS JOIN (VALUES
+    (time '08:30', time '09:00', 'Drop-off', 'Front lobby'),
+    (time '09:00', time '10:30', 'Morning session', 'Classrooms'),
+    (time '10:30', time '10:45', 'Snack break', 'Courtyard'),
+    (time '10:45', time '12:00', 'Morning session continues', 'Classrooms'),
+    (time '12:00', time '12:45', 'Lunch', 'Cafeteria'),
+    (time '12:45', time '14:30', 'Afternoon session', 'Classrooms'),
+    (time '14:30', time '15:00', 'Show and tell', 'Classrooms'),
+    (time '15:00', time '15:30', 'Pickup', 'Front lobby')) item(start_time, end_time, title, location);
 
   INSERT INTO classes (name, description) VALUES ('Intro to Python',
     'First steps in programming: variables, loops and functions, building small games and art with Python.') RETURNING id INTO c_py;
@@ -114,16 +142,16 @@ BEGIN
   INSERT INTO classes (name, description) VALUES ('Microcontrollers',
     'Program real hardware — LEDs, sensors and buttons — with CircuitPython. For campers entering grades 7–9 with some Python experience.') RETURNING id INTO c_micro;
 
-  INSERT INTO sections (class_id, label, age_min, age_max, capacity, week, session_id) VALUES
-    (c_py,    'PY-A',              9, 10, 12, 1, w1),
-    (c_py,    'PY-B',             11, 13, 16, 1, w1),
-    (c_py,    'PY-A',              9, 10, 14, 2, w2),
-    (c_py,    'PY-B',             11, 13, 16, 2, w2),
-    (c_java,  'JAVA-1',           11, 14, 14, 1, w1),
-    (c_java,  'JAVA-1',           11, 14, 14, 2, w2),
-    (c_web,   'WEB-1',            10, 13, 18, 1, w1),
-    (c_micro, 'MC-1',             12, 14, 10, 1, w1),
-    (c_micro, 'MC-1',             12, 14, 10, 2, w2);
+  INSERT INTO sections (class_id, label, age_min, age_max, capacity, week, session_id, start_time, end_time, room) VALUES
+    (c_py,    'PY-A',              9, 10, 12, 1, w1, '09:00', '15:00', 'Room 101'),
+    (c_py,    'PY-B',             11, 13, 16, 1, w1, '09:00', '15:00', 'Room 102'),
+    (c_py,    'PY-A',              9, 10, 14, 2, w2, '09:00', '15:00', 'Room 101'),
+    (c_py,    'PY-B',             11, 13, 16, 2, w2, '09:00', '15:00', 'Room 102'),
+    (c_java,  'JAVA-1',           11, 14, 14, 1, w1, '09:00', '15:00', 'Room 201'),
+    (c_java,  'JAVA-1',           11, 14, 14, 2, w2, '09:00', '15:00', 'Room 201'),
+    (c_web,   'WEB-1',            10, 13, 18, 1, w1, '09:00', '15:00', 'Room 202'),
+    (c_micro, 'MC-1',             12, 14, 10, 1, w1, '09:00', '15:00', 'Maker Lab'),
+    (c_micro, 'MC-1',             12, 14, 10, 2, w2, '09:00', '15:00', 'Maker Lab');
 
   -- ── 3. Demo accounts ──
   FOR demo IN SELECT * FROM private.demo_accounts LOOP
@@ -254,7 +282,7 @@ BEGIN
             (ARRAY['Grandma','Grandpa','Aunt','Uncle'])[1 + fam % 4] || ' ' || ln, '720-555-01' || lpad(fam::text, 2, '0'),
             (ARRAY['Grandparent','Grandparent','Aunt','Uncle'])[1 + fam % 4]);
     nkids := CASE WHEN fam % 7 = 0 THEN 3 WHEN fam % 3 = 0 THEN 2 ELSE 1 END;
-    yr := CASE WHEN fam % 8 = 0 THEN 2026 ELSE 2027 END;   -- returning families who still need to confirm
+    yr := CASE WHEN fam % 8 = 0 THEN camp_year - 1 ELSE camp_year END;   -- returning families who still need to confirm
     FOR k IN 1..nkids LOOP
       kid := kid + 1;
       g := grades[1 + (kid * 7) % 6];
@@ -274,11 +302,11 @@ BEGIN
         CASE WHEN kid % 9 = 4 THEN medical[1 + (kid / 9) % 4] ELSE 'None' END,
         CASE WHEN kid % 9 = 4 THEN medical[1 + (kid / 9) % 4] END,
         kid % 5 = 0, kid % 10 = 0, (ARRAY['Friend or family','School announcement','Teacher/counselor','Social media','Returning camper'])[1 + kid % 5],
-        yr = 2026 OR kid % 4 = 0, true, kid_first[1 + (kid - 1) % 60] || ' ' || ln, pf || ' ' || ln,
+        yr < camp_year OR kid % 4 = 0, true, kid_first[1 + (kid - 1) % 60] || ' ' || ln, pf || ' ' || ln,
         now() - interval '30 days', yr)
       RETURNING id INTO student_id;
 
-      CONTINUE WHEN yr = 2026;   -- returning camper who hasn't confirmed for this summer yet
+      CONTINUE WHEN yr < camp_year;   -- returning camper who hasn't confirmed for this summer yet
       -- Register into an eligible section of their week — the emptier one, with a little noise so
       -- it isn't perfectly even. A third of campers come both weeks.
       FOR wk IN SELECT unnest(CASE WHEN kid % 3 = 0 THEN ARRAY[1, 2] WHEN kid % 3 = 2 THEN ARRAY[2] ELSE ARRAY[1] END) LOOP
@@ -309,7 +337,7 @@ BEGIN
       SELECT count(*) INTO cap FROM registrations WHERE section_id = sec.id AND status = 'waitlisted';
       EXIT WHEN taken >= sec.capacity AND cap >= 2;
       SELECT st2.id INTO student_id FROM students st2
-      WHERE st2.age BETWEEN sec.age_min AND sec.age_max AND st2.registration_year = 2027
+      WHERE st2.age BETWEEN sec.age_min AND sec.age_max AND st2.registration_year = camp_year
         AND (sec.name <> 'Microcontrollers' OR st2.grade IN ('7th','8th','9th'))
         -- not already booked anywhere in Week 1 (a camper can't be in two rooms at once)
         AND NOT EXISTS (SELECT 1 FROM registrations r JOIN sections s4 ON s4.id = r.section_id
@@ -335,13 +363,13 @@ BEGIN
     VALUES
       (demo_parent, 'Maya', 'Brooks', 'Maya Brooks', 12, '7th', 'Cherry Creek School District', 'Campus Middle School', 'M',
        true, 'Taylor Brooks', '303-555-0199', 'Morgan Brooks', '720-555-0199', 'Aunt', 'Peanuts', 'None', 'Friend or family',
-       false, true, 'Maya Brooks', 'Taylor Brooks', now() - interval '20 days', 2027),
+       false, true, 'Maya Brooks', 'Taylor Brooks', now() - interval '20 days', camp_year),
       (demo_parent, 'Eli', 'Brooks', 'Eli Brooks', 9, '4th', 'Cherry Creek School District', 'Cottonwood Creek Elementary', 'S',
        false, 'Taylor Brooks', '303-555-0199', 'Morgan Brooks', '720-555-0199', 'Aunt', 'None', 'None', 'Friend or family',
-       false, true, 'Eli Brooks', 'Taylor Brooks', now() - interval '20 days', 2027),
+       false, true, 'Eli Brooks', 'Taylor Brooks', now() - interval '20 days', camp_year),
       (demo_parent, 'Noor', 'Brooks', 'Noor Brooks', 13, '8th', 'Cherry Creek School District', 'Campus Middle School', 'L',
        true, 'Taylor Brooks', '303-555-0199', 'Morgan Brooks', '720-555-0199', 'Aunt', 'None',
-       'Asthma — inhaler in backpack', 'Returning camper', true, true, 'Noor Brooks', 'Taylor Brooks', now() - interval '380 days', 2026);
+       'Asthma — inhaler in backpack', 'Returning camper', true, true, 'Noor Brooks', 'Taylor Brooks', now() - interval '380 days', camp_year - 1);
     INSERT INTO registrations (student_id, section_id, status)
     SELECT st2.id, s.id, 'confirmed' FROM students st2, sections s JOIN classes c ON c.id = s.class_id
     WHERE st2.parent_id = demo_parent AND st2.first_name = 'Maya' AND c.name = 'Web Development';
@@ -351,15 +379,15 @@ BEGIN
   END IF;
 
   -- ── 7. Duty schedule: four duties each camp day; volunteers have claimed most spots ──
-  FOR d IN SELECT gs::date FROM generate_series(date '2027-06-07', date '2027-06-18', interval '1 day') gs LOOP
+  FOR d IN SELECT gs::date FROM generate_series(w1_start, w2_end, interval '1 day') gs LOOP
     CONTINUE WHEN extract(isodow FROM d) > 5;
     FOR t IN SELECT id, name FROM duty_types ORDER BY name LOOP
       INSERT INTO duty_slots (duty_type_id, session_id, slot_date, capacity)
-      VALUES (t.id, CASE WHEN d <= date '2027-06-11' THEN w1 ELSE w2 END, d, 2)
+      VALUES (t.id, CASE WHEN d <= w1_end THEN w1 ELSE w2 END, d, 2)
       RETURNING id INTO slot_id;
       INSERT INTO duty_assignments (duty_slot_id, volunteer_id)
       SELECT slot_id, vo.id FROM volunteers vo
-      WHERE CASE WHEN d <= date '2027-06-11' THEN vo.availability_week_1 ELSE vo.availability_week_2 END
+      WHERE CASE WHEN d <= w1_end THEN vo.availability_week_1 ELSE vo.availability_week_2 END
         AND vo.id IS DISTINCT FROM demo_vol
       ORDER BY hashtext(vo.id::text || d::text || t.name) LIMIT (hashtext(d::text || t.name) & 1) + 1;
     END LOOP;
@@ -367,8 +395,51 @@ BEGIN
   -- The demo volunteer has signed up for a couple of duties and has open ones to try.
   INSERT INTO duty_assignments (duty_slot_id, volunteer_id)
   SELECT ds.id, demo_vol FROM duty_slots ds JOIN duty_types dt ON dt.id = ds.duty_type_id
-  WHERE demo_vol IS NOT NULL AND dt.name = 'Morning Check-In' AND ds.slot_date IN ('2027-06-07', '2027-06-09')
+  WHERE demo_vol IS NOT NULL AND dt.name = 'Morning Check-In' AND ds.slot_date IN (w1_start, w1_start + 2)
     AND (SELECT count(*) FROM duty_assignments da WHERE da.duty_slot_id = ds.id) < ds.capacity;
+
+  -- ── 8. Camp in session: roll calls for Week 1 so far ──
+  -- Every past camp day of Week 1 has all three roll calls; today has the arrival roll call for
+  -- every Week 1 section except Python B (the demo volunteer's room) and Microcontrollers, which
+  -- the crew takes live. A few campers are marked absent so the admin board isn't empty.
+  FOR d IN SELECT gs::date FROM generate_series(w1_start, LEAST(today, w1_end), interval '1 day') gs LOOP
+    FOR reg IN SELECT r.student_id, r.section_id, s.lead_id, s.label, c.name
+               FROM registrations r JOIN sections s ON s.id = r.section_id JOIN classes c ON c.id = s.class_id
+               WHERE s.week = 1 AND r.status IN ('confirmed', 'pending') LOOP
+      FOREACH rc IN ARRAY ARRAY['arrival', 'after_lunch', 'dismissal'] LOOP
+        IF d = today THEN
+          EXIT WHEN rc <> 'arrival';
+          CONTINUE WHEN reg.label = 'PY-B' OR reg.name = 'Microcontrollers';
+        END IF;
+        -- about one camper in twenty misses a day; two Python A campers are missing this morning
+        absent := (hashtext(reg.student_id::text || d::text) % 20 = 0)
+               OR (d = today AND reg.label = 'PY-A' AND hashtext(reg.student_id::text) % 5 = 0);
+        INSERT INTO roll_call_marks (section_id, student_id, day, roll_call, present, marked_by, marked_at)
+        VALUES (reg.section_id, reg.student_id, d, rc, NOT absent, reg.lead_id,
+                (d + CASE rc WHEN 'arrival' THEN time '09:05' WHEN 'after_lunch' THEN time '12:50' ELSE time '14:55' END) AT TIME ZONE 'America/Denver');
+      END LOOP;
+    END LOOP;
+  END LOOP;
+
+  -- ── 9. Updates: a welcome from the admin, a note to the crew, and a lead's end-of-day post ──
+  author := coalesce(demo_admin, (SELECT id FROM profiles WHERE role = 'admin' ORDER BY created_at LIMIT 1));
+  IF author IS NOT NULL THEN
+    INSERT INTO updates (author_id, author_name, audience, body, created_at) VALUES
+      (author, '', 'everyone', 'Welcome to Week 1! Drop-off is 8:30–9:00 in the front lobby and pickup starts at 3:00. Please send a water bottle and a labelled laptop charger each day.',
+       (w1_start - 2 + time '17:00') AT TIME ZONE 'America/Denver'),
+      (author, '', 'volunteers', 'Crew huddle at 8:15 each morning by the check-in table. Roll calls happen at arrival, after lunch and at dismissal — take them on your phone from the dashboard.',
+       (w1_start - 1 + time '19:30') AT TIME ZONE 'America/Denver'),
+      (author, '', 'parents', 'Reminder: Friday is show-and-tell at 2:30. Families are welcome to come early and see what the campers built this week.',
+       (w1_start + time '12:15') AT TIME ZONE 'America/Denver');
+  END IF;
+  INSERT INTO updates (author_id, author_name, audience, section_id, body, created_at)
+  SELECT s.lead_id, '', 'section', s.id,
+    'Great first day in Web Dev! Everyone built their first page with a heading, a photo and a link. Tomorrow we add colour with CSS — no homework, just bring your ideas.',
+    (w1_start + time '15:20') AT TIME ZONE 'America/Denver'
+  FROM sections s JOIN classes c ON c.id = s.class_id
+  WHERE c.name = 'Web Development' AND s.week = 1 AND s.lead_id IS NOT NULL;
+  -- The insert trigger stamps author_name from profiles; this re-stamp keeps the seed explicit.
+  UPDATE updates u SET author_name = p.display_name FROM profiles p WHERE p.id = u.author_id;
 
   RETURN format('demo reset: %s families, %s campers, %s registrations, %s volunteers, %s applications',
     (SELECT count(*) FROM parent_profiles), (SELECT count(*) FROM students), (SELECT count(*) FROM registrations),
