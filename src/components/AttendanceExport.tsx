@@ -5,8 +5,27 @@ import { ROLL_CALLS, localDateISO, sessionDays } from '../lib/campDay'
 import { downloadCsv, toCsv } from '../lib/csv'
 
 interface SecRow { id: string; label: string; classes: { name: string } | null }
-interface RegRow { section_id: string; students: { id: string; full_name: string } | { id: string; full_name: string }[] | null }
-interface MarkRow { section_id: string; student_id: string; day: string; roll_call: string; present: boolean }
+type Stud = { id: string; full_name: string }
+interface RegRow { section_id: string; students: Stud | Stud[] | null }
+interface MarkRow { section_id: string; student_id: string; day: string; roll_call: string; present: boolean; students: Stud | Stud[] | null }
+
+// PostgREST caps a response (1000 rows by default), and a full week of marks is more than that,
+// so read every page. `page` must order by a unique column so pages don't overlap.
+const PAGE = 1000
+async function fetchAll<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
+): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1)
+    if (error) throw new Error(error.message)
+    const rows = (data ?? []) as T[]
+    out.push(...rows)
+    if (rows.length < PAGE) return out
+  }
+}
+
+const one = (s: Stud | Stud[] | null): Stud | null => Array.isArray(s) ? s[0] ?? null : s
 
 export default function AttendanceExport() {
   const { sessions } = useSessions()
@@ -36,38 +55,47 @@ export default function AttendanceExport() {
       let regs: RegRow[] = []
       let marks: MarkRow[] = []
       if (ids.length) {
-        const [r, m] = await Promise.all([
-          supabase.from('registrations').select('section_id, students ( id, full_name )')
-            .in('section_id', ids).in('status', ['confirmed', 'pending']),
-          supabase.from('roll_call_marks').select('section_id, student_id, day, roll_call, present')
-            .in('section_id', ids).gte('day', session.start_date).lte('day', session.end_date),
+        [regs, marks] = await Promise.all([
+          fetchAll<RegRow>((from, to) =>
+            supabase.from('registrations').select('section_id, students ( id, full_name )')
+              .in('section_id', ids).in('status', ['confirmed', 'pending']).order('id').range(from, to)),
+          fetchAll<MarkRow>((from, to) =>
+            supabase.from('roll_call_marks').select('section_id, student_id, day, roll_call, present, students ( id, full_name )')
+              .in('section_id', ids).gte('day', session.start_date).lte('day', session.end_date).order('id').range(from, to)),
         ])
-        if (r.error) throw new Error(r.error.message)
-        if (m.error) throw new Error(m.error.message)
-        regs = (r.data ?? []) as unknown as RegRow[]
-        marks = (m.data ?? []) as unknown as MarkRow[]
       }
 
       const markMap = new Map<string, boolean>()
       for (const m of marks) markMap.set(`${m.section_id}|${m.student_id}|${m.day}|${m.roll_call}`, m.present)
       const secMap = new Map(sections.map(s => [s.id, s]))
-      const days = sessionDays(session)
+
+      // Who gets rows: everyone enrolled now, plus anyone with marks in a section they have since
+      // left (cancelled or moved mid-week), so the record of the days they attended survives.
+      const campers = new Map<string, { secId: string; stud: Stud }>()
+      for (const r of regs) {
+        const stud = one(r.students)
+        if (stud) campers.set(`${r.section_id}|${stud.id}`, { secId: r.section_id, stud })
+      }
+      for (const m of marks) {
+        const key = `${m.section_id}|${m.student_id}`
+        const stud = one(m.students)
+        if (stud && !campers.has(key)) campers.set(key, { secId: m.section_id, stud })
+      }
+      // Camp days, plus any other day in the session that has a mark (a weekend event).
+      const days = [...new Set([...sessionDays(session), ...marks.map(m => m.day)])].sort()
 
       const rows: { cls: string; sec: string; camper: string; day: string; cells: string[] }[] = []
-      for (const r of regs) {
-        const sec = secMap.get(r.section_id)
-        const studs = Array.isArray(r.students) ? r.students : r.students ? [r.students] : []
+      for (const { secId, stud } of campers.values()) {
+        const sec = secMap.get(secId)
         if (!sec) continue
-        for (const st of studs) {
-          for (const day of days) {
-            rows.push({
-              cls: sec.classes?.name ?? '', sec: sec.label, camper: st.full_name, day,
-              cells: ROLL_CALLS.map(rc => {
-                const v = markMap.get(`${sec.id}|${st.id}|${day}|${rc.key}`)
-                return v === undefined ? '' : v ? 'present' : 'absent'
-              }),
-            })
-          }
+        for (const day of days) {
+          rows.push({
+            cls: sec.classes?.name ?? '', sec: sec.label, camper: stud.full_name, day,
+            cells: ROLL_CALLS.map(rc => {
+              const v = markMap.get(`${sec.id}|${stud.id}|${day}|${rc.key}`)
+              return v === undefined ? '' : v ? 'present' : 'absent'
+            }),
+          })
         }
       }
       const cmp = (a: string, b: string) => a.localeCompare(b)

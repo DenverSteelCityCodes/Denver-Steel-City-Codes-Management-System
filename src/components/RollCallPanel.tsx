@@ -18,7 +18,7 @@ interface Props {
 export default function RollCallPanel({ section, session }: Props) {
   const today = localDateISO()
   const inSession = !!session && session.start_date <= today && session.end_date >= today
-  const { marks, loading, getMark, taken, setMark, markAllPresent, refetch } = useRollCalls(inSession ? section.id : undefined, today)
+  const { marks, loading, error: loadError, getMark, taken, setMark, markAllPresent, refetch } = useRollCalls(inSession ? section.id : undefined, today)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [chosen, setChosen] = useState<RollCallKind | null>(null)
@@ -109,7 +109,14 @@ export default function RollCallPanel({ section, session }: Props) {
             })}
           </div>
 
-          {!loading && ids.length > 0 && (
+          {loadError && (
+            <p role="alert" className="font-sans text-sm text-danger">
+              Couldn't load today's marks, so what you see may be out of date.{' '}
+              <button type="button" onClick={() => void refetch()} className="underline font-semibold">Try again</button>
+            </p>
+          )}
+
+          {!loading && !loadError && ids.length > 0 && (
             !allMarked ? (
               <button
                 onClick={() => run(() => markAllPresent(ids, current))}

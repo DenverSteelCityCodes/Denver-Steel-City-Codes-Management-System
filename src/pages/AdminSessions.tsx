@@ -85,7 +85,7 @@ function SessionForm({
         <label className="flex items-center gap-3 cursor-pointer">
           <input type="checkbox" className="w-4 h-4 accent-brand"
             checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
-          <span className="font-sans text-sm text-ink">Open for registration <span className="text-ink-muted">(shown to parents and volunteers)</span></span>
+          <span className="font-sans text-sm text-ink">Show on sign-up forms <span className="text-ink-muted">(to pause sign-ups mid-season, close the form under Forms instead)</span></span>
         </label>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onCancel}
@@ -320,7 +320,7 @@ export default function AdminSessions() {
                       <p className="font-sans font-semibold text-base text-ink">{s.name}</p>
                       <span className="text-xs font-semibold text-ink-muted">{s.year}</span>
                       {s.is_active ? (
-                        <span className="px-2 py-0.5 rounded-full bg-success-soft text-success text-xs font-semibold">Open</span>
+                        <span className="px-2 py-0.5 rounded-full bg-success-soft text-success text-xs font-semibold">Shown</span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full bg-surface-sunken text-ink-muted text-xs font-semibold border border-border">Hidden</span>
                       )}

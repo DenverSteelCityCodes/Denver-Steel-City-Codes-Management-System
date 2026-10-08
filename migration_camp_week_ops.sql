@@ -183,7 +183,9 @@ GRANT EXECUTE ON FUNCTION public.section_lead_names() TO authenticated;
 CREATE OR REPLACE FUNCTION public.update_recipient_emails(p_audience TEXT, p_section_id UUID DEFAULT NULL)
 RETURNS TEXT[] LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
 DECLARE
-  is_admin BOOLEAN := private.auth_user_role() = 'admin';
+  -- coalesce: a signed-in user with no profile row has a NULL role, and NOT (NULL OR false) is
+  -- NULL, which would skip both permission checks below.
+  is_admin BOOLEAN := coalesce(private.auth_user_role() = 'admin', false);
   parents  TEXT[];
   vols     TEXT[];
 BEGIN
@@ -195,7 +197,7 @@ BEGIN
     IF p_section_id IS NULL THEN
       RAISE EXCEPTION 'Pick a section' USING ERRCODE = 'P0001';
     END IF;
-    IF NOT (is_admin OR private.auth_volunteer_has_section(p_section_id)) THEN
+    IF NOT (is_admin OR coalesce(private.auth_volunteer_has_section(p_section_id), false)) THEN
       RAISE EXCEPTION 'Only this section''s crew or an admin can email its families' USING ERRCODE = '42501';
     END IF;
     RETURN ARRAY(

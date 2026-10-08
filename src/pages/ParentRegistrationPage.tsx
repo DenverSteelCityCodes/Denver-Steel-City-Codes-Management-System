@@ -268,7 +268,7 @@ export default function ParentRegistrationPage() {
       if (q('candy_consent').required && !form.candy_consent) return `Please confirm: ${q('candy_consent').label}`
     }
     if (step === 4) {
-      if (campSessions.length === 0) return "Registration isn't open yet — no camp sessions are scheduled"
+      if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet — no camp sessions are scheduled"
       if (!form.session1 && !form.session2) return 'Please select at least one session'
       if (form.session1 && !isSelectable(1, form.class_week1)) return `Please select a class for ${campSessions[0]?.name ?? 'Session 1'}`
       if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
@@ -645,11 +645,12 @@ export default function ParentRegistrationPage() {
 
               {sessionsLoading || classesLoading ? (
                 <p className="font-sans text-sm text-ink-muted">Loading sessions…</p>
-              ) : campSessions.length === 0 ? (
+              ) : !campSessions.some(s => s.is_active) ? (
                 <div className="border border-border rounded-[14px] p-4 bg-surface-sunken font-sans text-sm text-ink-muted">
                   Registration isn't open yet — no camp sessions are scheduled for {campYear}.
                 </div>
               ) : campSessions.map((session, i) => {
+                if (!session.is_active) return null
                 const week = (i + 1) as 1 | 2
                 const key = week === 1 ? 'session1' as const : 'session2' as const
                 const classKey = week === 1 ? 'class_week1' as const : 'class_week2' as const

@@ -398,7 +398,7 @@ export default function VolunteerApplyPage() {
         <div className="text-center mb-8">
           <h1 className="font-sans font-bold text-2xl text-ink mb-1">{campYear} Volunteer Application</h1>
           <p className="font-sans text-ink-muted text-sm">
-            Denver Summer Camp{weeks.length > 0 && <> · {weeks.map(w => formatSessionDates(w, false)).join(' & ')}</>}
+            Denver Summer Camp{weeks.some(w => w.is_active) && <> · {weeks.filter(w => w.is_active).map(w => formatSessionDates(w, false)).join(' & ')}</>}
           </p>
         </div>
 
@@ -495,7 +495,7 @@ export default function VolunteerApplyPage() {
                   {[
                     { key: 'availabilityWeek1' as const, session: weeks[0], fallback: 'Session 1' },
                     { key: 'availabilityWeek2' as const, session: weeks[1], fallback: 'Session 2' },
-                  ].map(({ key, session, fallback }) => ({
+                  ].filter(({ session }) => !session || session.is_active).map(({ key, session, fallback }) => ({
                     key,
                     label: session ? `${session.name}: ${formatSessionDates(session, false)}` : fallback,
                   })).map(({ key, label }) => (
