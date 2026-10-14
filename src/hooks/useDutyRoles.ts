@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 export interface DutyType {
@@ -31,12 +31,14 @@ export interface DutyAssignment {
 export function useDutyTypes() {
   const [types, setTypes] = useState<DutyType[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => { fetchTypes() }, [])
 
   async function fetchTypes() {
-    const { data } = await supabase.from('duty_types').select('*').order('name')
-    setTypes(data ?? [])
+    const { data, error } = await supabase.from('duty_types').select('*').order('name')
+    setError(error?.message ?? null)
+    if (!error) setTypes(data ?? [])
     setLoading(false)
   }
 
@@ -52,16 +54,21 @@ export function useDutyTypes() {
     setTypes(t => t.filter(x => x.id !== id))
   }
 
-  return { types, loading, createType, deleteType, refetch: fetchTypes }
+  return { types, loading, error, createType, deleteType, refetch: fetchTypes }
 }
 
 export function useDutySlots(sessionId?: string) {
   const [slots, setSlots] = useState<DutySlot[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  // Only the latest request may write state, so a slow response for an old filter can't
+  // overwrite the slots for the filter now selected.
+  const latestRequest = useRef(0)
 
   useEffect(() => { fetchSlots() }, [sessionId])
 
   async function fetchSlots() {
+    const requestId = ++latestRequest.current
     setLoading(true)
     let q = supabase
       .from('duty_slots')
@@ -77,7 +84,10 @@ export function useDutySlots(sessionId?: string) {
 
     if (sessionId) q = q.eq('session_id', sessionId)
 
-    const { data } = await q
+    const { data, error } = await q
+    if (requestId !== latestRequest.current) return
+    setError(error?.message ?? null)
+    if (error) { setLoading(false); return }
     setSlots(
       ((data ?? []) as Omit<DutySlot, 'assigned_count'>[]).map(s => ({
         ...s,
@@ -120,5 +130,5 @@ export function useDutySlots(sessionId?: string) {
     await fetchSlots()
   }
 
-  return { slots, loading, createSlot, deleteSlot, claimSlot, unclaimSlot, refetch: fetchSlots }
+  return { slots, loading, error, createSlot, deleteSlot, claimSlot, unclaimSlot, refetch: fetchSlots }
 }

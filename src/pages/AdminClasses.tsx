@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, useLocation, Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users, Printer } from 'lucide-react'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
-import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SectionInput } from '../hooks/useAdminClasses'
+import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SectionInput, type RegistrationTally } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
 import { supabase } from '../lib/supabase'
 import { formatTimeRange } from '../lib/campDay'
+import { realNote } from '../lib/campers'
 
 // Everything on this page edits in place — no modals. Forms open where the thing lives
 // (top of the list, the class header, the section row) and Esc cancels.
@@ -118,12 +119,15 @@ interface SectionFormState {
 function SectionForm({
   classId,
   section,
+  enrolled,
   volunteerOptions,
   onSave,
   onCancel,
 }: {
   classId: string
   section?: SectionWithCrew
+  // Confirmed + pending campers in this section; null when the seat counts couldn't be loaded.
+  enrolled?: number | null
   volunteerOptions: { id: string; display_name: string }[]
   onSave: (payload: SectionInput, supportIds: string[]) => Promise<void>
   onCancel: () => void
@@ -180,7 +184,8 @@ function SectionForm({
           room: form.room.trim() || null,
           lead_id: form.lead_id || null,
         },
-        form.support_ids,
+        // Never save the lead as a support of the same section too.
+        form.support_ids.filter(id => id !== form.lead_id),
       )
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Something went wrong')
@@ -193,6 +198,16 @@ function SectionForm({
   const agePreview = form.age_min && form.age_max && !isNaN(ageMin) && !isNaN(ageMax) && ageMax >= ageMin
     ? `Ages ${ageMin}–${ageMax}`
     : null
+
+  // Lowering capacity below current enrolment is allowed, but say what it means before saving.
+  const capNum = Number(form.capacity)
+  const capacityWarning = !section || !form.capacity || isNaN(capNum) || capNum < 1
+    ? null
+    : enrolled === null
+      ? (capNum < section.capacity ? "Current enrolment couldn't be loaded — check the roster before lowering capacity." : null)
+      : enrolled !== undefined && capNum < enrolled
+        ? `${enrolled} camper${enrolled === 1 ? ' is' : 's are'} enrolled; ${enrolled - capNum} will be over capacity.`
+        : null
 
   const assigned = new Set(form.support_ids)
   const availableSupports = volunteerOptions.filter(v => !assigned.has(v.id) && v.id !== form.lead_id)
@@ -225,6 +240,9 @@ function SectionForm({
             onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))}
             placeholder="e.g. 20" className={inputCls} />
           {fieldErr('capacity')}
+          {!errors.capacity && capacityWarning && (
+            <p role="status" className="mt-1 text-warning text-xs font-sans font-semibold">{capacityWarning}</p>
+          )}
         </div>
 
         <div>
@@ -303,7 +321,11 @@ function SectionForm({
         <div>
           <label className={labelCls} htmlFor="sec-lead">Lead <span className="font-normal text-ink-muted">(optional)</span></label>
           <select id="sec-lead" value={form.lead_id}
-            onChange={e => setForm(f => ({ ...f, lead_id: e.target.value }))} className={inputCls}>
+            onChange={e => {
+              const id = e.target.value
+              // The lead can't also be a support of this section.
+              setForm(f => ({ ...f, lead_id: id, support_ids: f.support_ids.filter(s => s !== id) }))
+            }} className={inputCls}>
             <option value="">Unassigned</option>
             {volunteerOptions.map(v => <option key={v.id} value={v.id}>{v.display_name}</option>)}
           </select>
@@ -354,7 +376,8 @@ function SectionForm({
 interface RosterEntry {
   studentName: string
   studentAge: number
-  medicalInfo: string | null
+  allergies: string | null
+  medical: string | null
   parentName: string
   status: string
 }
@@ -369,6 +392,7 @@ const STATUS_BADGE: Record<string, string> = {
 function SectionRoster({ sectionId }: { sectionId: string }) {
   const [roster, setRoster] = useState<RosterEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -377,21 +401,28 @@ function SectionRoster({ sectionId }: { sectionId: string }) {
       .select(`
         status,
         students (
-          full_name, age, medical_info,
+          full_name, age, allergies, medical_conditions, medical_info,
           profiles:parent_id ( display_name )
         )
       `)
       .eq('section_id', sectionId)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return
+        setLoadError(error?.message ?? null)
         setRoster(
           ((data ?? []) as unknown as {
             status: RosterEntry['status']
-            students: { full_name: string; age: number; medical_info: string | null; profiles: { display_name: string } | null } | null
+            students: {
+              full_name: string; age: number
+              allergies: string | null; medical_conditions: string | null; medical_info: string | null
+              profiles: { display_name: string } | null
+            } | null
           }[]).map(r => ({
             studentName: r.students?.full_name ?? '—',
             studentAge: r.students?.age ?? 0,
-            medicalInfo: r.students?.medical_info ?? null,
+            // realNote drops the "None" / "N/A" parents are asked to type, so only real notes flag.
+            allergies: realNote(r.students?.allergies),
+            medical: realNote(r.students?.medical_conditions) ?? realNote(r.students?.medical_info),
             parentName: r.students?.profiles?.display_name ?? '—',
             status: r.status,
           }))
@@ -411,16 +442,20 @@ function SectionRoster({ sectionId }: { sectionId: string }) {
 
   return (
     <div className="px-4 sm:px-5 pb-4">
-      {roster.length === 0 ? (
+      {loadError ? (
+        <p role="alert" className="font-sans text-sm text-danger bg-danger-soft rounded-[10px] px-4 py-3">
+          Couldn't load the roster: {loadError}
+        </p>
+      ) : roster.length === 0 ? (
         <p className="font-sans text-sm text-ink-muted bg-surface border border-border rounded-[10px] px-4 py-3">
           No campers registered in this section yet.
         </p>
       ) : (
         <div className="bg-surface border border-border rounded-[10px] overflow-x-auto">
-          <table className="w-full text-sm min-w-[420px]">
+          <table className="w-full text-sm min-w-[520px]">
             <thead>
               <tr className="border-b border-border">
-                {['Camper', 'Age', 'Parent', 'Status'].map(h => (
+                {['Camper', 'Age', 'Allergies / medical', 'Parent', 'Status'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-left font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">{h}</th>
                 ))}
               </tr>
@@ -428,13 +463,16 @@ function SectionRoster({ sectionId }: { sectionId: string }) {
             <tbody>
               {roster.map((r, i) => (
                 <tr key={i} className={i < roster.length - 1 ? 'border-b border-border' : ''}>
-                  <td className="px-4 py-2.5 font-sans font-semibold text-ink">
-                    {r.studentName}
-                    {r.medicalInfo && (
-                      <span className="ml-1.5 text-xs font-normal text-danger" title={r.medicalInfo} aria-label={`Medical note: ${r.medicalInfo}`}>⚕</span>
-                    )}
-                  </td>
+                  <td className="px-4 py-2.5 font-sans font-semibold text-ink">{r.studentName}</td>
                   <td className="px-4 py-2.5 font-sans text-ink tabular-nums">{r.studentAge}</td>
+                  <td className="px-4 py-2.5 font-sans text-xs">
+                    {r.allergies || r.medical ? (
+                      <span className="block text-danger">
+                        {r.allergies && <span className="block"><span className="font-semibold">Allergies:</span> {r.allergies}</span>}
+                        {r.medical && <span className="block"><span className="font-semibold">Medical:</span> {r.medical}</span>}
+                      </span>
+                    ) : <span className="text-ink-faint">—</span>}
+                  </td>
                   <td className="px-4 py-2.5 font-sans text-ink-muted">{r.parentName}</td>
                   <td className="px-4 py-2.5">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_BADGE[r.status] ?? ''}`}>
@@ -461,24 +499,35 @@ type Editing =
   | null
 
 type PendingDelete = { kind: 'class'; id: string } | { kind: 'section'; id: string } | null
+// Registration counts for the pending delete, fetched fresh when the confirm opens.
+type DeleteTally =
+  | { id: string; state: 'loading' }
+  | { id: string; state: 'ok'; tally: RegistrationTally }
+  | { id: string; state: 'error'; message: string }
 
 export default function AdminClasses() {
-  const { classes, loading, error, createClass, updateClass, deleteClass, createSection, updateSection, deleteSection } = useAdminClasses()
+  const {
+    classes, loading, error, fillError, refetch, countRegistrations,
+    createClass, updateClass, deleteClass, createSection, updateSection, deleteSection,
+  } = useAdminClasses()
   const { volunteers } = useVolunteers()
 
   const volunteerOptions = volunteers.map(v => ({ id: v.id, display_name: v.profiles.display_name }))
 
-  // ?open=<classId> (from the top-bar search) expands that class.
+  // ?open=<classId> (from the top-bar search) expands that class. Keyed on the location key,
+  // not the id, so picking the same class again after collapsing it re-opens it.
   const [params] = useSearchParams()
+  const location = useLocation()
   const urlOpen = params.get('open')
-  const [appliedOpen, setAppliedOpen] = useState(urlOpen)
+  const [appliedKey, setAppliedKey] = useState(location.key)
   const [expandedId, setExpandedId] = useState<string | null>(urlOpen)
-  if (urlOpen !== appliedOpen) {
-    setAppliedOpen(urlOpen)
+  if (location.key !== appliedKey) {
+    setAppliedKey(location.key)
     if (urlOpen) setExpandedId(urlOpen)
   }
   const [editing, setEditing] = useState<Editing>(null)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null)
+  const [deleteTally, setDeleteTally] = useState<DeleteTally | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [rosterSectionId, setRosterSectionId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -488,20 +537,49 @@ export default function AdminClasses() {
     setEditing(next)
   }
 
+  // Counts every registration the delete would cascade away (cancelled ones too), fresh from
+  // the table rather than the cached seat counts, which can be stale or missing.
+  function requestDelete(target: NonNullable<PendingDelete>, sectionIds: string[]) {
+    setEditing(null)
+    setPendingDelete(target)
+    setDeleteTally({ id: target.id, state: 'loading' })
+    countRegistrations(sectionIds).then(
+      tally => setDeleteTally(cur => cur?.id === target.id ? { id: target.id, state: 'ok', tally } : cur),
+      (e: unknown) => setDeleteTally(cur => cur?.id === target.id
+        ? { id: target.id, state: 'error', message: e instanceof Error ? e.message : 'unknown error' }
+        : cur),
+    )
+  }
+
   // Deleting cascades: class → sections → registrations + attendance, so the strip says what goes.
+  function registrationsText(id: string) {
+    const t = deleteTally?.id === id ? deleteTally : null
+    if (!t || t.state === 'loading') return 'Counting registrations…'
+    if (t.state === 'error') {
+      return `Registrations couldn't be counted (${t.message}), so assume every registration in it — confirmed, pending, waitlisted and cancelled — is deleted along with its attendance history.`
+    }
+    const { active, waitlisted, cancelled } = t.tally
+    const total = active + waitlisted + cancelled
+    if (total === 0) return 'There are no registrations of any status.'
+    const parts = [
+      active && `${active} confirmed/pending`,
+      waitlisted && `${waitlisted} waitlisted`,
+      cancelled && `${cancelled} cancelled`,
+    ].filter(Boolean).join(', ')
+    return `${total} registration${total === 1 ? '' : 's'} (${parts}) and their attendance history will be deleted.`
+  }
+
   function classDeleteMessage(cls: ClassWithSections) {
-    const regs = cls.sections.reduce((n, s) => n + s.registered_count + s.waitlist_count, 0)
     return cls.sections.length === 0
       ? `Delete ${cls.name}? It has no sections. This can't be undone.`
-      : `Delete ${cls.name}? This also deletes its ${cls.sections.length} section${cls.sections.length === 1 ? '' : 's'}, ${regs} registration${regs === 1 ? '' : 's'} and their attendance history. This can't be undone.`
+      : `Delete ${cls.name}? This also deletes its ${cls.sections.length} section${cls.sections.length === 1 ? '' : 's'}. ${registrationsText(cls.id)} This can't be undone.`
   }
 
   function sectionDeleteMessage(sec: SectionWithCrew) {
-    const regs = sec.registered_count + sec.waitlist_count
-    return regs === 0
-      ? `Delete ${sec.label}? No campers are registered. This can't be undone.`
-      : `Delete ${sec.label}? ${regs} registration${regs === 1 ? '' : 's'} (including waitlist) and their attendance history will be deleted. This can't be undone.`
+    return `Delete ${sec.label}? ${registrationsText(sec.id)} This can't be undone.`
   }
+
+  const tallyLoading = deleteTally?.state === 'loading'
 
   async function confirmDelete() {
     if (!pendingDelete) return
@@ -537,6 +615,12 @@ export default function AdminClasses() {
 
         {error && (
           <div className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">⚠ {error}</div>
+        )}
+        {!error && fillError && (
+          <div role="alert" className="flex items-center justify-between gap-3 px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">
+            <span>⚠ Seat counts couldn't be loaded ({fillError}), so the capacity bars below aren't accurate.</span>
+            <button type="button" onClick={() => void refetch()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
+          </div>
         )}
 
         {editing?.kind === 'new-class' && (
@@ -630,7 +714,7 @@ export default function AdminClasses() {
                           <Pencil size={15} />
                         </button>
                         <button
-                          onClick={() => { setEditing(null); setPendingDelete({ kind: 'class', id: cls.id }) }}
+                          onClick={() => requestDelete({ kind: 'class', id: cls.id }, cls.sections.map(s => s.id))}
                           aria-label={`Delete ${cls.name}`}
                           title="Delete class"
                           className={`${iconBtn} hover:text-danger hover:bg-danger-soft`}
@@ -645,7 +729,7 @@ export default function AdminClasses() {
                     <InlineConfirm
                       message={classDeleteMessage(cls)}
                       confirmLabel="Delete class"
-                      busy={deleting}
+                      busy={deleting || tallyLoading}
                       onConfirm={confirmDelete}
                       onCancel={() => setPendingDelete(null)}
                     />
@@ -667,6 +751,7 @@ export default function AdminClasses() {
                                     <SectionForm
                                       classId={cls.id}
                                       section={sec}
+                                      enrolled={fillError ? null : sec.registered_count}
                                       volunteerOptions={volunteerOptions}
                                       onCancel={() => setEditing(null)}
                                       onSave={async (payload, supportIds) => {
@@ -681,7 +766,7 @@ export default function AdminClasses() {
                                     section={sec}
                                     rosterOpen={rosterSectionId === sec.id}
                                     onEdit={() => startEditing({ kind: 'section', sectionId: sec.id })}
-                                    onDelete={() => { setEditing(null); setPendingDelete({ kind: 'section', id: sec.id }) }}
+                                    onDelete={() => requestDelete({ kind: 'section', id: sec.id }, [sec.id])}
                                     onRoster={() => setRosterSectionId(rosterSectionId === sec.id ? null : sec.id)}
                                   />
                                 )}
@@ -689,7 +774,7 @@ export default function AdminClasses() {
                                   <InlineConfirm
                                     message={sectionDeleteMessage(sec)}
                                     confirmLabel="Delete section"
-                                    busy={deleting}
+                                    busy={deleting || tallyLoading}
                                     onConfirm={confirmDelete}
                                     onCancel={() => setPendingDelete(null)}
                                   />
@@ -708,8 +793,11 @@ export default function AdminClasses() {
                             volunteerOptions={volunteerOptions}
                             onCancel={() => setEditing(null)}
                             onSave={async (payload, supportIds) => {
-                              await createSection(payload, supportIds)
+                              const { warning } = await createSection(payload, supportIds)
+                              // Close even on a partial save: the section exists now, and a second
+                              // submit would create a duplicate.
                               setEditing(null)
+                              if (warning) setActionError(warning)
                             }}
                           />
                         ) : (

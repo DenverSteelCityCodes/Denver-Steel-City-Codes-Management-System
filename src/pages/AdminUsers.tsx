@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ShieldCheck, Users, GraduationCap, AlertTriangle } from 'lucide-react'
-import { useAdminUsers, type AdminUser } from '../hooks/useAdminUsers'
+import { useAdminUsers, fetchCrewAssignments, type AdminUser, type CrewAssignments } from '../hooks/useAdminUsers'
 import { useAuth } from '../context/AuthContext'
 import InlineConfirm from '../components/InlineConfirm'
 import type { UserRole } from '../types/database'
@@ -11,21 +11,58 @@ const ROLE_LABELS: Record<UserRole, { label: string; badge: string }> = {
   parent:    { label: 'Parent',    badge: 'bg-info-soft text-info' },
 }
 
+// Section crew spots of a volunteer whose role is being changed (they're cleared on confirm).
+type CrewCheck =
+  | { userId: string; state: 'loading' }
+  | { userId: string; state: 'ok'; crew: CrewAssignments }
+  | { userId: string; state: 'error'; message: string }
+
+const listJoin = (xs: string[]) => xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
+
+function crewNote(check: CrewCheck | null): string {
+  if (!check || check.state === 'loading') return 'Checking their section assignments…'
+  if (check.state === 'error') return `Couldn't check their section assignments (${check.message}); any they have will be cleared.`
+  const { lead, support } = check.crew
+  if (lead.length === 0 && support.length === 0) return "They aren't on any section crew."
+  const parts = [
+    lead.length > 0 && `lead of ${listJoin(lead)}`,
+    support.length > 0 && `support of ${listJoin(support)}`,
+  ].filter(Boolean)
+  return `They'll be removed as ${parts.join(' and as ')}, leaving ${lead.length + support.length === 1 ? 'that spot' : 'those spots'} open.`
+}
+
 // What a role change actually means for the person, spelled out before it happens.
-function roleChangeMessage(user: AdminUser, newRole: UserRole) {
+function roleChangeMessage(user: AdminUser, newRole: UserRole, crew: CrewCheck | null) {
   const who = user.display_name
-  if (newRole === 'admin') return `Make ${who} an admin? They'll be able to see every camper's details and change anything, including other people's roles.`
+  const leaving = user.role === 'volunteer' ? ` ${crewNote(crew)}` : ''
+  if (newRole === 'admin') return `Make ${who} an admin? They'll be able to see every camper's details and change anything, including other people's roles.${leaving}`
   if (newRole === 'volunteer') return `Change ${who} to a volunteer? They'll see the volunteer area, but only get a section and duties once a volunteer record exists (accept their application on the Volunteers page).`
-  return `Change ${who} to a parent? They'll lose access to the ${user.role} area and see the parent dashboard instead.`
+  return `Change ${who} to a parent? They'll lose access to the ${user.role} area and see the parent dashboard instead.${leaving}`
 }
 
 export default function AdminUsers() {
   const { profile: currentUser } = useAuth()
-  const { users, loading, updateRole } = useAdminUsers()
+  const { users, loading, error, updateRole, refetch } = useAdminUsers()
 
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [pending, setPending] = useState<{ userId: string; newRole: UserRole } | null>(null)
+  const [crewCheck, setCrewCheck] = useState<CrewCheck | null>(null)
+
+  function requestRoleChange(user: AdminUser, newRole: UserRole) {
+    setErr(null)
+    setPending(newRole === user.role ? null : { userId: user.id, newRole })
+    // Look up a volunteer's crew spots fresh each time, so the confirm names what gets cleared.
+    if (user.role === 'volunteer' && newRole !== user.role) {
+      setCrewCheck({ userId: user.id, state: 'loading' })
+      fetchCrewAssignments(user.id).then(
+        crew => setCrewCheck(cur => cur?.userId === user.id ? { userId: user.id, state: 'ok', crew } : cur),
+        (e: unknown) => setCrewCheck(cur => cur?.userId === user.id
+          ? { userId: user.id, state: 'error', message: e instanceof Error ? e.message : 'unknown error' }
+          : cur),
+      )
+    }
+  }
 
   async function confirmRoleChange() {
     if (!pending) return
@@ -61,6 +98,11 @@ export default function AdminUsers() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => <div key={i} className="h-14 bg-surface border border-border rounded-[14px] animate-pulse" />)}
+        </div>
+      ) : error ? (
+        <div role="alert" className="flex items-center justify-between gap-3 px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">
+          <span className="flex items-center gap-2"><AlertTriangle size={16} /> Couldn't load accounts: {error}</span>
+          <button type="button" onClick={() => void refetch()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
         </div>
       ) : (
         <div className="space-y-8">
@@ -126,11 +168,7 @@ export default function AdminUsers() {
                                   id={`role-${user.id}`}
                                   value={isPending ? pending!.newRole : user.role}
                                   disabled={busy && isPending}
-                                  onChange={e => {
-                                    const newRole = e.target.value as UserRole
-                                    setErr(null)
-                                    setPending(newRole === user.role ? null : { userId: user.id, newRole })
-                                  }}
+                                  onChange={e => requestRoleChange(user, e.target.value as UserRole)}
                                   className="h-9 pl-2.5 pr-7 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition cursor-pointer"
                                 >
                                   {(['admin', 'volunteer', 'parent'] as UserRole[]).map(r => (
@@ -144,9 +182,9 @@ export default function AdminUsers() {
                         {isPending && (
                           <InlineConfirm
                             tone={pending!.newRole === 'admin' ? 'danger' : 'neutral'}
-                            message={roleChangeMessage(user, pending!.newRole)}
+                            message={roleChangeMessage(user, pending!.newRole, crewCheck?.userId === user.id ? crewCheck : null)}
                             confirmLabel={`Make ${ROLE_LABELS[pending!.newRole].label.toLowerCase()}`}
-                            busy={busy}
+                            busy={busy || (user.role === 'volunteer' && crewCheck?.userId === user.id && crewCheck.state === 'loading')}
                             onConfirm={confirmRoleChange}
                             onCancel={() => setPending(null)}
                           />

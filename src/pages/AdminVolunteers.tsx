@@ -358,7 +358,7 @@ function ApplicationReview({
 }
 
 export default function AdminVolunteers() {
-  const { volunteers, loading: vLoading } = useVolunteers()
+  const { volunteers, loading: vLoading, refetch: refetchVolunteers } = useVolunteers()
   const { classes, updateSection, refetch: refetchClasses } = useAdminClasses()
   const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
   const { applications, loading: appsLoading, acceptApplication, rejectApplication } = useVolunteerApplications()
@@ -731,7 +731,11 @@ export default function AdminVolunteers() {
                       <ApplicationReview
                         app={app}
                         weekLabels={weekLabels}
-                        onAccept={acceptApplication}
+                        onAccept={async (app, level) => {
+                          await acceptApplication(app, level)
+                          // The new volunteer row should show on the Roster tab and in auto-assign now.
+                          await refetchVolunteers()
+                        }}
                         onReject={rejectApplication}
                       />
                     )}

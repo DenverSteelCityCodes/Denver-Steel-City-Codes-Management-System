@@ -36,6 +36,8 @@ function BookPanel({
   onCancel: () => void
 }) {
   const [apps, setApps] = useState<Application[] | null>(null)
+  const [appsError, setAppsError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [selectedId, setSelectedId] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
@@ -50,9 +52,13 @@ function BookPanel({
       .order('last_name')
       // A booking row is what makes someone "booked" (interview_confirmed is only the applicant's
       // own "I signed up" checkbox from the apply form).
-      .then(({ data }) => { if (!cancelled) setApps(data ?? []) })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        setAppsError(error?.message ?? null)
+        setApps(error ? null : data ?? [])
+      })
     return () => { cancelled = true }
-  }, [])
+  }, [reloadKey])
   const unbooked = apps?.filter(a => !bookedAppIds.has(a.id)) ?? null
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,12 +84,17 @@ function BookPanel({
         <div>
           <label htmlFor="book-applicant" className="block font-sans text-sm font-semibold text-ink mb-1.5">Applicant</label>
           <select id="book-applicant" autoFocus value={selectedId} onChange={e => setSelectedId(e.target.value)} className={inputCls}>
-            <option value="">{unbooked === null ? 'Loading…' : 'Select applicant…'}</option>
+            <option value="">{appsError ? "Couldn't load applicants" : unbooked === null ? 'Loading…' : 'Select applicant…'}</option>
             {(unbooked ?? []).map(a => (
               <option key={a.id} value={a.id}>{a.first_name} {a.last_name} — {a.email}</option>
             ))}
           </select>
-          {unbooked?.length === 0 && (
+          {appsError ? (
+            <p role="alert" className="mt-1 font-sans text-xs text-danger">
+              Couldn't load applicants: {appsError}.{' '}
+              <button type="button" onClick={() => setReloadKey(k => k + 1)} className="font-semibold hover:underline">Retry</button>
+            </p>
+          ) : unbooked?.length === 0 && (
             <p className="mt-1 font-sans text-xs text-ink-muted">Every applicant already has an interview booked.</p>
           )}
         </div>
@@ -157,7 +168,7 @@ type Panel =
   | null
 
 export default function AdminInterviews() {
-  const { slots, loading, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes } = useInterviews()
+  const { slots, loading, error: loadError, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, refetch } = useInterviews()
 
   const [slotForm, setSlotForm] = useState({ date: '', time: '', duration: '15' })
   const [addingSlot, setAddingSlot] = useState(false)
@@ -256,17 +267,24 @@ export default function AdminInterviews() {
         {err && <p role="alert" className="text-danger text-sm font-sans">{err}</p>}
       </div>
 
+      {loadError && (
+        <div role="alert" className="flex items-center justify-between gap-3 px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">
+          <span>Couldn't load interview slots: {loadError}</span>
+          <button type="button" onClick={() => void refetch()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => <div key={i} className="h-16 bg-surface border border-border rounded-[14px] animate-pulse" />)}
         </div>
-      ) : slots.length === 0 ? (
+      ) : slots.length === 0 ? (loadError ? null : (
         <div className="bg-surface border border-border rounded-[14px] p-12 text-center">
           <Calendar size={24} className="text-ink-muted mx-auto mb-3" />
           <p className="font-sans font-semibold text-ink mb-1">No interview slots yet</p>
           <p className="font-sans text-sm text-ink-muted">Add a few times above, then book applicants into them.</p>
         </div>
-      ) : (
+      )) : (
         <div className="space-y-6">
           {Object.entries(grouped)
             .sort(([a], [b]) => a.localeCompare(b))

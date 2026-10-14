@@ -15,13 +15,16 @@ export function useVolunteers() {
 
   async function fetchVolunteers() {
     setLoading(true)
+    // The volunteers row outlives a role change, so only count people whose role is still
+    // 'volunteer' (otherwise a demoted parent/admin stays assignable and gets auto-matched).
     const { data, error } = await supabase
       .from('volunteers')
-      .select('*, profiles(display_name)')
+      .select('*, profiles!inner(display_name, role)')
+      .eq('profiles.role', 'volunteer')
       .order('created_at', { ascending: true })
 
-    if (error) setError(error.message)
-    else setVolunteers((data ?? []) as VolunteerWithProfile[])
+    setError(error?.message ?? null)
+    if (!error) setVolunteers((data ?? []) as VolunteerWithProfile[])
     setLoading(false)
   }
 
