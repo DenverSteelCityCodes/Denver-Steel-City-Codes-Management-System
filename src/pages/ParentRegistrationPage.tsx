@@ -371,7 +371,9 @@ export default function ParentRegistrationPage() {
       : await supabase.from('students').insert({ parent_id: user.id, ...studentPayload, registration_year: null }).select().single()
 
     if (studentErr) {
-      setError('Failed to save registration. Please try again.')
+      // P0001 = a rule the database explains itself (e.g. the new age doesn't fit the camper's
+      // current class); anything else is a generic failure.
+      setError(studentErr.code === 'P0001' ? studentErr.message : 'Failed to save registration. Please try again.')
       setSubmitting(false)
       return
     }
