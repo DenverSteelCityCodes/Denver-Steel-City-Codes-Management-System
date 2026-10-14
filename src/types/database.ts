@@ -1,7 +1,6 @@
 export type UserRole = 'admin' | 'volunteer' | 'parent'
 export type ExperienceLevel = 'junior' | 'senior'
 export type RegistrationStatus = 'pending' | 'confirmed' | 'waitlisted' | 'cancelled'
-export type AttendanceAction = 'check_in' | 'check_out'
 
 export interface Profile {
   id: string
@@ -143,14 +142,6 @@ export interface Registration {
   // Camp year, stamped by the database from the section's session.
   year: number
   created_at: string
-}
-
-export interface AttendanceLog {
-  id: string
-  student_id: string
-  section_id: string
-  action: AttendanceAction
-  timestamp: string
 }
 
 export interface Session {

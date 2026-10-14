@@ -114,7 +114,7 @@ function StepDots({ current, total }: { current: number; total: number }) {
 
 export default function ParentRegistrationPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const studentId = searchParams.get('studentId')
   const { profile, user } = useAuth()
   const { classes, loading: classesLoading } = useClasses()
@@ -138,6 +138,13 @@ export default function ParentRegistrationPage() {
   const [submitted, setSubmitted] = useState(false)
   const [waitlistedCount, setWaitlistedCount] = useState(0)
   const [registeredCount, setRegisteredCount] = useState(0)
+  // Re-registration prefill status, keyed by studentId + attempt so Retry refetches. Until it has
+  // loaded, the form isn't shown — submitting a blank form would insert a duplicate camper.
+  const [prefillAttempt, setPrefillAttempt] = useState(0)
+  const [camperPrefill, setCamperPrefill] = useState<{ key: string; error: string | null } | null>(null)
+  const camperPrefillKey = `${studentId}:${prefillAttempt}`
+  const camperPrefillPending = !!studentId && camperPrefill?.key !== camperPrefillKey
+  const camperPrefillError = studentId && !camperPrefillPending ? camperPrefill?.error ?? null : null
 
   // Display name derived from the split first/last fields (full_name is composed on submit).
   const studentFullName = `${form.first_name} ${form.last_name}`.trim()
@@ -188,11 +195,22 @@ export default function ParentRegistrationPage() {
   useEffect(() => {
     if (!studentId) return
     let cancelled = false
+    const key = `${studentId}:${prefillAttempt}`
     ;(async () => {
       const { data, error: fetchErr } = await supabase
         .from('students').select('*').eq('id', studentId).maybeSingle()
-      if (cancelled || fetchErr || !data) return
+      if (cancelled) return
+      if (fetchErr || !data) {
+        setCamperPrefill({
+          key,
+          error: fetchErr
+            ? `Couldn't load your camper's details: ${fetchErr.message}`
+            : "We couldn't find that camper on your account.",
+        })
+        return
+      }
       setEditingId(data.id)
+      setCamperPrefill({ key, error: null })
       setForm(f => ({
         ...f,
         first_name: data.first_name ?? '',
@@ -222,7 +240,7 @@ export default function ParentRegistrationPage() {
       }))
     })()
     return () => { cancelled = true }
-  }, [studentId])
+  }, [studentId, prefillAttempt])
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm(f => ({ ...f, [key]: value }))
@@ -309,6 +327,8 @@ export default function ParentRegistrationPage() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setError('Not authenticated'); setSubmitting(false); return }
+    // Re-registering a camper whose details never loaded must not fall through to an insert.
+    if (studentId && !editingId) { setError("Your camper's details haven't loaded yet."); setSubmitting(false); return }
 
     const studentPayload = {
       first_name: form.first_name.trim(),
@@ -340,22 +360,28 @@ export default function ParentRegistrationPage() {
       candy_consent: form.candy_consent,
       waiver_signature: form.waiver_signature.trim(),
       guardian_signature: form.guardian_signature.trim(),
-      waiver_signed_at: new Date().toISOString(),
-      registration_year: campYear,
     }
 
     // Re-registration updates the existing camper for the new year; a brand-new camper inserts.
+    // registration_year + waiver_signed_at are stamped only once a class is booked (below), so a
+    // rejected class doesn't leave the camper "confirmed for this summer" with nothing booked. A new
+    // camper inserts with null explicitly — the column defaults to a fixed year.
     const { data: student, error: studentErr } = editingId
       ? await supabase.from('students').update(studentPayload).eq('id', editingId).select().single()
-      : await supabase.from('students').insert({ parent_id: user.id, ...studentPayload }).select().single()
+      : await supabase.from('students').insert({ parent_id: user.id, ...studentPayload, registration_year: null }).select().single()
 
     if (studentErr) {
       setError('Failed to save registration. Please try again.')
       setSubmitting(false)
       return
     }
-    // From here on a retry must update this camper, not insert a second copy.
+    // From here on a retry must update this camper, not insert a second copy — including after a
+    // reload, so the new camper's id goes into the URL like a re-registration's.
     setEditingId(student.id)
+    if (!studentId) {
+      setCamperPrefill({ key: `${student.id}:${prefillAttempt}`, error: null })
+      setSearchParams({ studentId: student.id }, { replace: true })
+    }
 
     // Remember the parent's contact details for next time (#52, #54). Not fatal if it fails —
     // the same details are already on the camper record.
@@ -379,14 +405,22 @@ export default function ParentRegistrationPage() {
       const { data: regs, error: regErr } = await supabase
         .from('registrations').insert(regsToCreate).select('status')
       if (regErr) {
+        // Stay on this step with the server's reason; editingId is set, so resubmitting (after
+        // going Back to change the class) updates this camper rather than inserting another.
         setError(regErr.code === '23505'
           ? `${studentFullName} is already registered for that class.`
-          : `Your camper was saved, but we couldn't record the class selection: ${regErr.message}`)
+          : `Your camper's details are saved, but the class couldn't be booked: ${regErr.message}. Go back to change the class, then submit again.`)
         setSubmitting(false)
         return
       }
       setWaitlistedCount((regs ?? []).filter(r => r.status === 'waitlisted').length)
       setRegisteredCount((regs ?? []).length)
+
+      // A class is booked: now mark the camper confirmed for this summer. Not fatal if it fails —
+      // the booking stands, and the worst case is a re-confirmation prompt later.
+      await supabase.from('students')
+        .update({ registration_year: campYear, waiver_signed_at: new Date().toISOString() })
+        .eq('id', student.id)
     }
 
     setSubmitted(true)
@@ -450,6 +484,35 @@ export default function ParentRegistrationPage() {
         >
           Back to dashboard
         </button>
+      </div>
+    )
+  }
+
+  if (camperPrefillPending || camperPrefillError) {
+    return (
+      <div className="max-w-lg mx-auto px-4 pt-16 pb-16 text-center">
+        {camperPrefillError ? (
+          <>
+            <h1 className="font-sans font-bold text-2xl text-ink mb-2">Couldn't load your camper</h1>
+            <p role="alert" className="font-sans text-sm text-ink-muted mb-6">{camperPrefillError}</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setPrefillAttempt(a => a + 1)}
+                className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] transition"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => navigate('/parent')}
+                className="h-11 px-6 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition"
+              >
+                Back to dashboard
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-center"><div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" /></div>
+        )}
       </div>
     )
   }
@@ -753,12 +816,14 @@ export default function ParentRegistrationPage() {
               </button>
             )}
             {step < 5 ? (
-              <button type="button" onClick={handleNext}
+              // Distinct keys: without them React reuses the Next <button> as Submit and the click
+              // that lands on the last step can fire a submit.
+              <button key="next" type="button" onClick={handleNext}
                 className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition">
                 Next <ChevronRight size={16} />
               </button>
             ) : (
-              <button type="submit" disabled={submitting}
+              <button key="submit" type="submit" disabled={submitting}
                 className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50">
                 {submitting
                   ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />

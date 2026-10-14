@@ -20,12 +20,19 @@ const MAX = 2000
 // post is saved; long lists are copied to the clipboard instead. Nothing is sent by the server.
 export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = true }: Props) {
   const [audience, setAudience] = useState<UpdateAudience>(mode.kind === 'lead' ? 'section' : 'everyone')
-  const [sectionId, setSectionId] = useState<string>(mode.kind === 'lead' ? mode.section.id : (mode.sections[0]?.id ?? ''))
+  const [pickedSectionId, setSectionId] = useState('')
+  // Derived, not initialised once: admin sections usually arrive after mount, and the select shows
+  // the first one, so state must agree with what's on screen.
+  const sectionId = mode.kind === 'lead'
+    ? mode.section.id
+    : mode.sections.some(s => s.id === pickedSectionId) ? pickedSectionId : (mode.sections[0]?.id ?? '')
   const [body, setBody] = useState('')
   const [alsoEmail, setAlsoEmail] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  // Addresses to copy by hand when neither the mail link nor the clipboard could carry them.
+  const [manualEmails, setManualEmails] = useState<string[] | null>(null)
 
   const sectionLabel = mode.kind === 'lead' ? mode.section.label : mode.sections.find(s => s.id === sectionId)?.label
   const audienceCopy: Record<UpdateAudience, string> = {
@@ -43,26 +50,36 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
     setBusy(true)
     setErr(null)
     setNote(null)
+    setManualEmails(null)
     try {
       await onPost({ audience, section_id: audience === 'section' ? sectionId : null, body: text })
-      if (alsoEmail) {
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't post — try again")
+      setBusy(false)
+      return
+    }
+    // The post is saved: clear the composer even if emailing fails, so nobody posts it twice.
+    setBody('')
+    setAlsoEmail(false)
+    if (alsoEmail) {
+      try {
         const emails = await fetchRecipientEmails(audience, sectionId)
         const result = await openMailOrCopy(emails, 'Steel City Codes: camp update', text)
+        if (result.kind === 'draft_without_recipients') setManualEmails(result.emails)
         setNote(result.kind === 'opened'
           ? `Posted. Your mail app opened with ${emails.length} ${emails.length === 1 ? 'address' : 'addresses'} in BCC.`
           : result.kind === 'copied'
             ? `Posted. ${result.count} addresses copied — paste them into BCC in your mail app.`
-            : 'Posted. No email addresses found for this audience.')
-      } else {
-        setNote('Posted.')
+            : result.kind === 'draft_without_recipients'
+              ? `Posted. Your mail app opened without recipients — copy these ${result.emails.length} addresses into BCC.`
+              : 'Posted. No email addresses found for this audience.')
+      } catch (e) {
+        setErr(`Posted. Couldn't fetch email addresses: ${e instanceof Error ? e.message : 'unknown error'}`)
       }
-      setBody('')
-      setAlsoEmail(false)
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Couldn't post — try again")
-    } finally {
-      setBusy(false)
+    } else {
+      setNote('Posted.')
     }
+    setBusy(false)
   }
 
   const input = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
@@ -128,6 +145,16 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
       </div>
       {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
       {note && <p role="status" className="font-sans text-sm text-success">{note}</p>}
+      {manualEmails && (
+        <textarea
+          readOnly
+          aria-label="Recipient email addresses"
+          rows={3}
+          value={manualEmails.join(', ')}
+          onFocus={e => e.currentTarget.select()}
+          className="w-full px-3.5 py-2.5 rounded-[10px] bg-surface-sunken border border-border-strong text-ink font-sans text-xs resize-y"
+        />
+      )}
     </form>
   )
 }

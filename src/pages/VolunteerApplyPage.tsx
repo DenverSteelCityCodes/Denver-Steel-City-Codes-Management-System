@@ -133,6 +133,9 @@ export default function VolunteerApplyPage() {
   // Set once the account + application are saved, so a failed booking can be retried alone.
   const [applicationSaved, setApplicationSaved] = useState(false)
   const [bookedTime, setBookedTime] = useState<string | null>(null)
+  // The account signUp created in this page session. If the application insert then fails, a
+  // retry reuses it — calling signUp again would fail with "already registered" and strand them.
+  const [createdAccount, setCreatedAccount] = useState<{ email: string; userId: string | null } | null>(null)
 
   useEffect(() => {
     supabase
@@ -223,32 +226,39 @@ export default function VolunteerApplyPage() {
     setSubmitting(true)
 
     if (!applicationSaved) {
-    // Profile is created server-side by handle_new_user trigger with role: 'volunteer'
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: { data: { display_name: `${form.firstName} ${form.lastName}`, role: 'volunteer' } },
-    })
+    let userId: string | null
+    if (createdAccount && createdAccount.email === form.email) {
+      userId = createdAccount.userId
+    } else {
+      // Profile is created server-side by handle_new_user trigger with role: 'volunteer'
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: { data: { display_name: `${form.firstName} ${form.lastName}`, role: 'volunteer' } },
+      })
 
-    if (signUpError) {
-      setError(signUpError.message)
-      setSubmitting(false)
-      return
-    }
-
-    // When email confirmations are enabled, Supabase silently "succeeds" for
-    // already-registered emails but returns identities: []. Catch this before
-    // attempting the insert to avoid a raw 409 conflict.
-    if (authData.user?.identities?.length === 0) {
-      setError('An application has already been submitted with this email address. Check your inbox for a confirmation link.')
-      setSubmitting(false)
-      return
+      // An existing account (a parent, or an earlier applicant) with this email: with email
+      // confirmations on, Supabase "succeeds" but returns identities: []; with them off, it errors.
+      // Either way it says nothing about an application existing.
+      const existingAccount = "There's already an account with this email. If you applied before, sign in to check on it — otherwise apply with a different email."
+      if (signUpError) {
+        setError(/already registered/i.test(signUpError.message) ? existingAccount : signUpError.message)
+        setSubmitting(false)
+        return
+      }
+      if (authData.user?.identities?.length === 0) {
+        setError(existingAccount)
+        setSubmitting(false)
+        return
+      }
+      userId = authData.user?.id ?? null
+      setCreatedAccount({ email: form.email, userId })
     }
 
     const schoolName = form.school === 'Other' ? form.schoolOther : form.school
 
     const { error: insertError } = await supabase.from('volunteer_applications').insert({
-      user_id: authData.user?.id ?? null,
+      user_id: userId,
       first_name: form.firstName,
       last_name: form.lastName,
       email: form.email,
@@ -687,13 +697,15 @@ export default function VolunteerApplyPage() {
               </button>
             )}
             {step < 4 ? (
-              <button type="button" onClick={handleNext}
+              // Distinct keys: without them React reuses the Next <button> as Submit and the click
+              // that lands on the last step can fire a submit.
+              <button key="next" type="button" onClick={handleNext}
                 className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition"
               >
                 Next <ChevronRight size={16} />
               </button>
             ) : (
-              <button type="submit" disabled={submitting}
+              <button key="submit" type="submit" disabled={submitting}
                 className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting

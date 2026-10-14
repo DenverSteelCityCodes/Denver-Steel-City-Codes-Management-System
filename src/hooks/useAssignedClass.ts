@@ -68,6 +68,7 @@ export function useAssignedClass() {
 
   async function fetchAssignedSections() {
     setLoading(true)
+    setError(null)
 
     const [leadRes, supportRes, volunteerRes, appRes] = await Promise.all([
       // Sections where volunteer is the lead
@@ -85,6 +86,9 @@ export function useAssignedClass() {
       supabase.rpc('my_volunteer_application').maybeSingle(),
     ])
 
+    // A failed lookup must not read as "not accepted" / "under review" — surface it instead.
+    const lookupErr = volunteerRes.error ?? appRes.error
+    if (lookupErr) { setError(lookupErr.message); setLoading(false); return }
     setIsAccepted(!!volunteerRes.data)
     setApplicationStatus((appRes.data as { status: string } | null)?.status ?? null)
 
@@ -117,13 +121,15 @@ export function useAssignedClass() {
       return
     }
 
+    let rosterErr: string | null = null
     const result: AssignedSection[] = await Promise.all(
       allSections.map(async sec => {
-        const { data: regs } = await supabase
+        const { data: regs, error: regsErr } = await supabase
           .from('registrations')
           .select('students(id, full_name, age, medical_info, allergies, medical_conditions, emergency_contact_name, emergency_contact_phone, parent_phone)')
           .eq('section_id', sec.id)
           .in('status', ['confirmed', 'pending'])
+        if (regsErr) rosterErr = regsErr.message
 
         const students: AssignedStudent[] = (regs ?? [])
           .flatMap((r: { students: AssignedStudent | AssignedStudent[] | null }) =>
@@ -150,6 +156,8 @@ export function useAssignedClass() {
       })
     )
 
+    // An empty roster from a failed query would read as "no students enrolled".
+    if (rosterErr) { setError(rosterErr); setLoading(false); return }
     setAssignedSections(result)
     setLoading(false)
   }

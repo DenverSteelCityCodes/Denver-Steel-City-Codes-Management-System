@@ -7,6 +7,18 @@ export const ROLL_CALLS: { key: RollCallKind; label: string; short: string }[] =
   { key: 'dismissal', label: 'Dismissal', short: 'Dism.' },
 ]
 
+// Default roll-call tab by local time of day: Arrival until 11:30, After lunch until 14:30,
+// Dismissal after. Minutes since local midnight.
+export const AFTER_LUNCH_FROM_MIN = 11 * 60 + 30
+export const DISMISSAL_FROM_MIN = 14 * 60 + 30
+
+export function rollCallForTime(d: Date = new Date()): RollCallKind {
+  const mins = d.getHours() * 60 + d.getMinutes()
+  if (mins < AFTER_LUNCH_FROM_MIN) return 'arrival'
+  if (mins < DISMISSAL_FROM_MIN) return 'after_lunch'
+  return 'dismissal'
+}
+
 export function rollCallLabel(kind: RollCallKind): string {
   return ROLL_CALLS.find(r => r.key === kind)?.label ?? kind
 }
