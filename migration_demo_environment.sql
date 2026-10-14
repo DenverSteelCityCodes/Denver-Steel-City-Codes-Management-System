@@ -29,14 +29,20 @@ REVOKE ALL ON private.demo_accounts, private.demo_keep_users FROM PUBLIC, anon, 
 
 -- Create (or refresh) an email/password auth user with a stable id derived from the email.
 -- handle_new_user() creates the profile from the metadata role (parent/volunteer).
+-- An account that already has this email (e.g. a demo login first created through the normal
+-- sign-up, with a random id) is refreshed in place: inserting a second row with the same email
+-- would violate auth.users' email uniqueness and fail every nightly reset.
 CREATE OR REPLACE FUNCTION private.demo_user(p_email TEXT, p_name TEXT, p_role TEXT, p_password TEXT DEFAULT NULL)
 RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private, auth, extensions AS $$
 DECLARE
-  uid UUID := md5('scc-demo:' || lower(p_email))::uuid;
+  uid UUID := coalesce(
+    (SELECT id FROM auth.users WHERE lower(email) = lower(p_email) ORDER BY created_at LIMIT 1),
+    md5('scc-demo:' || lower(p_email))::uuid);
   pw  TEXT := crypt(coalesce(p_password, gen_random_uuid()::text), gen_salt('bf'));
 BEGIN
   IF EXISTS (SELECT 1 FROM auth.users WHERE id = uid) THEN
     UPDATE auth.users SET encrypted_password = pw, email = lower(p_email),
+      email_confirmed_at = coalesce(email_confirmed_at, now()),
       raw_user_meta_data = jsonb_build_object('display_name', p_name, 'role', p_role), updated_at = now()
     WHERE id = uid;
     UPDATE public.profiles SET display_name = p_name WHERE id = uid;

@@ -8,8 +8,9 @@ export interface MyInterview {
   duration_minutes: number
 }
 
-// The signed-in applicant's own interview booking (RLS: volunteer_read_own_booking), plus a
-// rebook action that goes through book_my_interview().
+// The signed-in applicant's own interview time (my_interview() RPC — applicants can't read
+// interview_bookings directly, it holds admin notes), plus a rebook action that goes through
+// book_my_interview().
 export function useMyInterview() {
   const { user } = useAuth()
   const [interview, setInterview] = useState<MyInterview | null>(null)
@@ -20,13 +21,11 @@ export function useMyInterview() {
     if (!user) return
     let cancelled = false
     supabase
-      .from('interview_bookings')
-      .select('slot_id, slot:interview_slots ( slot_datetime, duration_minutes )')
+      .rpc('my_interview')
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return
-        const row = data as unknown as { slot_id: string; slot: { slot_datetime: string; duration_minutes: number } | null } | null
-        setInterview(row?.slot ? { slot_id: row.slot_id, ...row.slot } : null)
+        setInterview((data as MyInterview | null) ?? null)
         setLoading(false)
       })
     return () => { cancelled = true }

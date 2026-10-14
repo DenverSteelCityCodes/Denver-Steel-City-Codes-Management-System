@@ -81,12 +81,12 @@ export function useAssignedClass() {
         .select('section_id')
         .eq('volunteer_id', user!.id),
       supabase.from('volunteers').select('id').eq('id', user!.id).maybeSingle(),
-      supabase.from('volunteer_applications').select('status')
-        .eq('user_id', user!.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      // RPC, not a table read: applicants can't SELECT volunteer_applications (admin notes).
+      supabase.rpc('my_volunteer_application').maybeSingle(),
     ])
 
     setIsAccepted(!!volunteerRes.data)
-    setApplicationStatus(appRes.data?.status ?? null)
+    setApplicationStatus((appRes.data as { status: string } | null)?.status ?? null)
 
     if (leadRes.error) { setError(leadRes.error.message); setLoading(false); return }
     if (supportRes.error) { setError(supportRes.error.message); setLoading(false); return }

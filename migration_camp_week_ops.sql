@@ -11,6 +11,28 @@
 --   5. RPCs: section_lead_names() (first names for parents' "this week" card) and
 --      update_recipient_emails() (fills the mail client's BCC; no server-side sending).
 
+-- ── 0. Who counts as camp community ──────────────────────────
+-- profiles.role is chosen at signup ('parent' by default, or 'volunteer'), so it says nothing
+-- about whether someone is actually part of camp. Camp-only content (the daily schedule, posted
+-- updates, crew names) is gated on these instead:
+--   active parent = has a camper holding a seat (pending/confirmed), same rule as
+--                   update_recipient_emails(); volunteer = has a volunteers row (accepted crew).
+
+CREATE OR REPLACE FUNCTION private.auth_is_active_parent()
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM registrations r JOIN students s ON s.id = r.student_id
+    WHERE s.parent_id = auth.uid() AND r.status IN ('confirmed', 'pending'));
+$$;
+CREATE OR REPLACE FUNCTION private.auth_is_volunteer()
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM volunteers WHERE id = auth.uid());
+$$;
+REVOKE ALL ON FUNCTION private.auth_is_active_parent() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION private.auth_is_volunteer()     FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.auth_is_active_parent() TO authenticated;
+GRANT EXECUTE ON FUNCTION private.auth_is_volunteer()     TO authenticated;
+
 -- ── 1. Section schedule ───────────────────────────────────────
 
 ALTER TABLE sections
@@ -37,7 +59,8 @@ DROP POLICY IF EXISTS "admin_all_schedule_items" ON schedule_items;
 DROP POLICY IF EXISTS "read_schedule_items"      ON schedule_items;
 CREATE POLICY "admin_all_schedule_items" ON schedule_items FOR ALL
     USING (private.auth_user_role() = 'admin') WITH CHECK (private.auth_user_role() = 'admin');
-CREATE POLICY "read_schedule_items" ON schedule_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY "read_schedule_items" ON schedule_items FOR SELECT TO authenticated
+    USING (private.auth_is_volunteer() OR private.auth_is_active_parent());
 
 -- ── 3. Roll calls ─────────────────────────────────────────────
 
@@ -70,6 +93,19 @@ $$;
 REVOKE ALL ON FUNCTION private.roll_call_mark_ok(UUID, UUID, UUID) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION private.roll_call_mark_ok(UUID, UUID, UUID) TO authenticated;
 
+-- Crew may only write marks for yesterday, today or tomorrow (Denver). The roll-call screen only
+-- ever marks "today" by the device's clock; ±1 day absorbs a device/Denver date mismatch around
+-- midnight and allows a late fix to yesterday, while stopping back-dated or pre-filled marks
+-- for other days. (Bounding by the section's session instead would still allow rewriting a
+-- whole week, and both-weeks sections have no session_id.) Admins are unrestricted.
+CREATE OR REPLACE FUNCTION private.roll_call_day_ok(p_day DATE)
+RETURNS BOOLEAN LANGUAGE sql STABLE SET search_path = public AS $$
+  SELECT p_day BETWEEN (now() AT TIME ZONE 'America/Denver')::date - 1
+                   AND (now() AT TIME ZONE 'America/Denver')::date + 1;
+$$;
+REVOKE ALL ON FUNCTION private.roll_call_day_ok(DATE) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.roll_call_day_ok(DATE) TO authenticated;
+
 ALTER TABLE roll_call_marks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "admin_all_roll_calls"       ON roll_call_marks;
 DROP POLICY IF EXISTS "volunteer_read_roll_calls"  ON roll_call_marks;
@@ -82,10 +118,10 @@ CREATE POLICY "admin_all_roll_calls" ON roll_call_marks FOR ALL
 CREATE POLICY "volunteer_read_roll_calls" ON roll_call_marks FOR SELECT TO authenticated
     USING (private.auth_volunteer_has_section(section_id));
 CREATE POLICY "volunteer_write_roll_calls" ON roll_call_marks FOR INSERT TO authenticated
-    WITH CHECK (private.roll_call_mark_ok(section_id, student_id, marked_by));
+    WITH CHECK (private.roll_call_mark_ok(section_id, student_id, marked_by) AND private.roll_call_day_ok(day));
 CREATE POLICY "volunteer_edit_roll_calls" ON roll_call_marks FOR UPDATE TO authenticated
-    USING (private.auth_volunteer_has_section(section_id))
-    WITH CHECK (private.roll_call_mark_ok(section_id, student_id, marked_by));
+    USING (private.auth_volunteer_has_section(section_id) AND private.roll_call_day_ok(day))
+    WITH CHECK (private.roll_call_mark_ok(section_id, student_id, marked_by) AND private.roll_call_day_ok(day));
 CREATE POLICY "parent_read_roll_calls" ON roll_call_marks FOR SELECT TO authenticated
     USING (EXISTS (SELECT 1 FROM students s WHERE s.id = roll_call_marks.student_id AND s.parent_id = auth.uid()));
 
@@ -152,9 +188,9 @@ CREATE POLICY "admin_all_updates" ON updates FOR ALL
     USING (private.auth_user_role() = 'admin') WITH CHECK (private.auth_user_role() = 'admin');
 CREATE POLICY "read_my_updates" ON updates FOR SELECT TO authenticated
     USING (
-        audience = 'everyone'
-        OR (audience = 'parents'    AND private.auth_user_role() = 'parent')
-        OR (audience = 'volunteers' AND private.auth_user_role() = 'volunteer')
+        (audience = 'everyone'      AND (private.auth_is_active_parent() OR private.auth_is_volunteer()))
+        OR (audience = 'parents'    AND private.auth_is_active_parent())
+        OR (audience = 'volunteers' AND private.auth_is_volunteer())
         OR (audience = 'section'    AND (private.auth_volunteer_has_section(section_id)
                                          OR private.auth_parent_has_section(section_id)))
     );
@@ -166,13 +202,16 @@ CREATE POLICY "author_delete_update" ON updates FOR DELETE TO authenticated
 -- ── 5. RPCs ───────────────────────────────────────────────────
 
 -- Lead's first name per section: parents can't read profiles or volunteers, and a first name is
--- all the "this week" card needs.
+-- all the "this week" card needs. Admins and crew get every section; a parent only the sections
+-- their campers hold a seat in.
 CREATE OR REPLACE FUNCTION public.section_lead_names()
 RETURNS TABLE (section_id UUID, lead_first_name TEXT)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT s.id, split_part(p.display_name, ' ', 1)
   FROM sections s JOIN profiles p ON p.id = s.lead_id
-  WHERE auth.uid() IS NOT NULL;
+  WHERE private.auth_user_role() = 'admin'
+     OR private.auth_is_volunteer()
+     OR private.auth_parent_has_section(s.id);
 $$;
 REVOKE ALL ON FUNCTION public.section_lead_names() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.section_lead_names() TO authenticated;
