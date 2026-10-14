@@ -9,6 +9,8 @@
 --      interview_bookings is replaced by two RPCs that return their own rows without notes.
 --   3. Parents can't change a camper's age to one their current class doesn't allow (stops
 --      "raise age → register for an older class → lower age").
+--   4. Volunteer interview notes move from volunteers.interview_notes (readable by the volunteer
+--      through volunteer_select_self) to an admin-only volunteer_notes table.
 
 -- ── 1. Application throttle ───────────────────────────────────
 
@@ -107,3 +109,28 @@ REVOKE EXECUTE ON FUNCTION public.students_guard_age() FROM PUBLIC, anon, authen
 DROP TRIGGER IF EXISTS students_guard_age ON students;
 CREATE TRIGGER students_guard_age BEFORE UPDATE OF age ON students
     FOR EACH ROW EXECUTE FUNCTION public.students_guard_age();
+
+-- ── 4. Volunteer interview notes are admin-only ───────────────
+-- RLS can't hide one column from the row's owner while showing it to admins (both are
+-- `authenticated`), so the notes get their own table.
+
+CREATE TABLE IF NOT EXISTS volunteer_notes (
+    volunteer_id UUID PRIMARY KEY REFERENCES volunteers(id) ON DELETE CASCADE,
+    notes        TEXT NOT NULL,
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE volunteer_notes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "admin_all_volunteer_notes" ON volunteer_notes;
+CREATE POLICY "admin_all_volunteer_notes" ON volunteer_notes
+    FOR ALL USING (private.auth_user_role() = 'admin') WITH CHECK (private.auth_user_role() = 'admin');
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'volunteers' AND column_name = 'interview_notes') THEN
+    INSERT INTO volunteer_notes (volunteer_id, notes)
+    SELECT id, interview_notes FROM volunteers WHERE interview_notes IS NOT NULL
+    ON CONFLICT (volunteer_id) DO NOTHING;
+    ALTER TABLE volunteers DROP COLUMN interview_notes;
+  END IF;
+END $$;

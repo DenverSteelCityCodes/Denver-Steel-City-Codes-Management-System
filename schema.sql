@@ -32,7 +32,6 @@ CREATE TABLE volunteers (
     experience_level    experience_level NOT NULL,
     availability_week_1 BOOLEAN NOT NULL DEFAULT FALSE,
     availability_week_2 BOOLEAN NOT NULL DEFAULT FALSE,
-    interview_notes     TEXT,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

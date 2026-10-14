@@ -187,14 +187,17 @@ BEGIN
   FOR i IN 1..array_length(vol_names, 1) LOOP
     v := private.demo_user(lower(replace(vol_names[i], ' ', '.')) || '@example.com', vol_names[i], 'volunteer');
     vol_ids := vol_ids || v;
-    INSERT INTO volunteers (id, experience_level, availability_week_1, availability_week_2, interview_notes)
+    INSERT INTO volunteers (id, experience_level, availability_week_1, availability_week_2)
     VALUES (v, CASE WHEN i <= 8 THEN 'senior' ELSE 'junior' END::experience_level,
-            i % 5 <> 0, i % 4 <> 1,
-            CASE WHEN i <= 8 THEN 'Returning volunteer, comfortable leading a room.' ELSE 'Great energy; pair with a senior lead.' END);
+            i % 5 <> 0, i % 4 <> 1);
+    INSERT INTO volunteer_notes (volunteer_id, notes)
+    VALUES (v, CASE WHEN i <= 8 THEN 'Returning volunteer, comfortable leading a room.' ELSE 'Great energy; pair with a senior lead.' END);
   END LOOP;
   IF demo_vol IS NOT NULL THEN
-    INSERT INTO volunteers (id, experience_level, availability_week_1, availability_week_2, interview_notes)
-    VALUES (demo_vol, 'senior', true, true, 'Taught Python at a library coding club; strong with younger campers.');
+    INSERT INTO volunteers (id, experience_level, availability_week_1, availability_week_2)
+    VALUES (demo_vol, 'senior', true, true);
+    INSERT INTO volunteer_notes (volunteer_id, notes)
+    VALUES (demo_vol, 'Taught Python at a library coding club; strong with younger campers.');
   END IF;
   INSERT INTO volunteers (id, experience_level, availability_week_1, availability_week_2)
   SELECT p.id, 'senior', true, true FROM profiles p JOIN private.demo_keep_users k ON k.id = p.id
