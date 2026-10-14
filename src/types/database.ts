@@ -66,7 +66,6 @@ export interface Volunteer {
   experience_level: ExperienceLevel
   availability_week_1: boolean
   availability_week_2: boolean
-  interview_notes: string | null
   created_at: string
 }
 
