@@ -27,7 +27,7 @@ const EXTRA_LABELS: Record<string, string> = {
 }
 const REASONS: Record<string, string> = {
   admin_removed: 'Removed by an admin', parent_cancel: 'Parent cancelled', section_cancelled: 'Class cancelled',
-  declined_offer: 'Offer declined', offer_expired: 'Offer expired', took_other_seat: 'Took another spot',
+  declined_offer: 'Offer declined', offer_expired: 'Offer expired', took_other_seat: 'Took another spot', parent_swap: 'Parent switched class',
   auto_confirm: 'Auto-confirmed', merged: 'Merged duplicate', waitlist_offer: 'Waitlist offer', offer_accepted: 'Offer accepted',
 }
 

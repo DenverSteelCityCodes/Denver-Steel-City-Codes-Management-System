@@ -1,6 +1,6 @@
 # 12: Parent switches class within the same week
 
-**Status:** ⬜ not started · **Issue:** #81 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** ✅ [PR #129](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/129) · **Issue:** #81 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 10, 11 · **Unblocks:** —
 **Plan reference:** Plan flow P5, §6 decisions Q-W1 and Q-W4
 
@@ -31,4 +31,6 @@ Switching classes needs an admin today. A self-swap before the deadline saves ad
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17 (`migration_parent_swap.sql`). `my_swap_options()` lists the other same-week classes the camper fits (age band, the Microcontrollers grade rule matched by class name like `courseConstraints.ts`, no clash with a seat in the other week for a both-weeks section) with live spots left. Full ones are listed too, so the card can explain why they can't be picked. `swap_my_registration()` re-checks everything under the locks (the camper's advisory lock, then both sections in id order). It checks the earlier of the two classes' deadlines and moves the same row (audit reason `parent_swap`). The spec 10 trigger offers the freed seat; the spec 09 trigger sends one `registration_moved` email.
+- Concurrency was verified with two real connections: see `test-plans/parent-swap-concurrency.md`.
 - The admin move (`moveStudentToSection`) bypasses these checks on purpose. Leave it, but log it (spec 05).

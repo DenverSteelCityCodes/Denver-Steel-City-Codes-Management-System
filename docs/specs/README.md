@@ -40,7 +40,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ✅ | [10a](10a-block-same-week-backups.md) | #78 | Block same-week waitlist backups | P0 | S | — | B |
 | ✅ | [10](10-waitlist-offers.md) | #79 | Waitlist offers: 48 h, decided order, auto-withdraw | P0 | M | 05, 06, 09, 10a | B |
 | ✅ | [11](11-parent-cancel.md) | #80 | Parent cancel before deadline, change requests, contact card | P0 | S | 06, 09, 13 | B |
-| ⬜ | [12](12-parent-swap.md) | #81 | Parent swap class (same week, free seat only) | P0 | M | 10, 11 | B |
+| ✅ | [12](12-parent-swap.md) | #81 | Parent swap class (same week, free seat only) | P0 | M | 10, 11 | B |
 | ✅ | [13](13-season-settings.md) | #82 | Opening time, deadlines, offer windows, countdown | P0 | S | — | B |
 | ✅ | [14](14-auto-confirm-and-alerts.md) | #83 | Auto-confirm, "no lead" alert, duplicate-camper report | P0 | S | — | B |
 | ✅ | [15](15-history-and-undo.md) | #84 | Admin history strip + revert | P0 | M | 05, 06 | B |

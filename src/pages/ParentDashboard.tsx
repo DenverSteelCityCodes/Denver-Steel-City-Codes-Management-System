@@ -69,6 +69,7 @@ export default function ParentDashboard() {
     cancelSpot: async (id: string) => { await myChanges.cancelSpot(id); await refetchRegistrations() },
     acceptOffer: async (id: string) => { await myChanges.acceptOffer(id); await refetchRegistrations() },
     declineOffer: async (id: string) => { await myChanges.declineOffer(id); await refetchRegistrations() },
+    swapSpot: async (id: string, sectionId: string) => { await myChanges.swapSpot(id, sectionId); await refetchRegistrations() },
   }
   const todayMarks = useMyRollCalls(localDateISO())
   const { updates: posts, loading: postsLoading } = useUpdates(20)
