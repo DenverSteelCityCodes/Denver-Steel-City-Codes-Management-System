@@ -16,7 +16,8 @@
 -- Closing the camper registration form (Forms → Close form) is enforced here too, so it also
 -- stops registrations from the class browser, not just the wizard.
 --
--- Apply after migration_security_hardening.sql.
+-- Apply after migration_security_hardening.sql, and re-apply after migration_soft_cancel.sql
+-- (the cancelled-section check reads sections.cancelled_at).
 
 -- ── 1. sections.session_id follows sections.week ──────────────
 
@@ -78,6 +79,11 @@ BEGIN
   -- Admins (and trusted server contexts) may place anyone anywhere with any status.
   IF auth.uid() IS NULL OR auth_user_role() = 'admin' THEN
     RETURN NEW;
+  END IF;
+
+  -- A cancelled section takes no new sign-ups (migration_soft_cancel.sql adds the column).
+  IF sec.cancelled_at IS NOT NULL THEN
+    RAISE EXCEPTION 'That class was cancelled. Please pick another one.' USING ERRCODE = 'P0001';
   END IF;
 
   IF (SELECT (config->>'enabled')::boolean FROM form_configs WHERE form_key = 'student_registration') IS FALSE THEN

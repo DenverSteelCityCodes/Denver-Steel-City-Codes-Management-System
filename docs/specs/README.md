@@ -15,6 +15,7 @@ A Claude session can be started on any spec with: *"Build `docs/specs/<file>` fo
 
 - **The database enforces every rule.** Trigger, RLS policy or SECURITY DEFINER RPC. The UI only explains it. Parents and volunteers never get direct UPDATE/DELETE on registrations.
 - **New tables:** RLS on, policies written, explicit `GRANT`s. Supabase stops auto-exposing new tables to the API from 2026-10-30, per the note in `supabase/config.toml`. After PR 5, add the table to the audit trigger. After PR 20, give it a `chapter_id`.
+- **Never add a second foreign key between two tables the app joins without a `!hint`** (e.g. registrations → sections). PostgREST then answers every such embed with HTTP 300 "more than one relationship", and browsers may cache that error. Use a plain column, or add `!fk_name` hints to every embed in the same PR. (Learned the hard way in spec 06.)
 - **New SECURITY DEFINER functions:** `SET search_path`, `REVOKE ALL … FROM PUBLIC, anon`, grant only to `authenticated`. Helpers go in the `private` schema.
 - **Every state change a family or volunteer cares about** sends a notification through the outbox (after PR 9). Reply-to is `denver@steelcitycodes.org` (per chapter after PR 20).
 - **Design:** v1.0 style guide via semantic tokens (`design_system.md`; never raw hex); Josefin Sans/Slab; role colors; **no modals**: inline editing and `InlineConfirm`. Check at 375 px and in dark mode. Every input has a linked label; errors use `role="alert"` and get focus.

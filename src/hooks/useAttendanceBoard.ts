@@ -105,7 +105,8 @@ export function useAttendanceBoard() {
           lead:volunteers!sections_lead_id_fkey ( profile:profiles ( display_name ) ),
           registrations ( status, students ( id, full_name, age, allergies, medical_conditions, medical_info, parent_name, parent_phone, emergency_contact_name, emergency_contact_phone ) )
         `)
-        .eq('session_id', current.id),
+        .eq('session_id', current.id)
+        .is('cancelled_at', null),
       supabase
         .from('roll_call_marks')
         .select('section_id, student_id, roll_call, present, marked_at')

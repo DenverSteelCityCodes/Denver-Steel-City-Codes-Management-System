@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, CircleCheck, List, ShieldCheck, CheckCircle2 } from 'lucide-react'
+import { Bell, CircleCheck, List, ShieldCheck, CheckCircle2, CircleX } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
@@ -69,6 +69,17 @@ export default function ParentBell() {
         key: `confirm-${s.id}`, icon: ShieldCheck, tone: 'bg-info-soft text-info',
         text: `Confirm ${s.full_name}'s details for ${campYear} before registering`,
         to: `/parent/classes?camper=${s.id}`, needsAction: true,
+      })),
+    // A class the camp cancelled, with no other spot that week yet: the family should pick again.
+    ...registrations
+      .filter(r => r.status === 'cancelled' && r.cancel_reason === 'section_cancelled'
+        && !registrations.some(o => o.student_id === r.student_id && o.id !== r.id
+          && (o.status === 'confirmed' || o.status === 'pending')
+          && (o.sections?.week == null || r.sections?.week == null || o.sections.week === r.sections.week)))
+      .map(r => ({
+        key: `cancelled-${r.id}`, icon: CircleX, tone: 'bg-danger-soft text-danger',
+        text: `${nameOf(r.student_id)}'s ${r.sections?.classes?.name ?? 'class'} was cancelled. Pick another class`,
+        to: `/parent/classes?camper=${r.student_id}`, needsAction: true,
       })),
     ...registrations
       .filter(r => r.status === 'waitlisted')

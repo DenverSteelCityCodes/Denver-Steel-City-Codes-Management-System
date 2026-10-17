@@ -3,7 +3,7 @@ import { useSearchParams, useLocation, Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users, Printer } from 'lucide-react'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
-import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SectionInput, type RegistrationTally } from '../hooks/useAdminClasses'
+import { useAdminClasses, type SectionWithCrew, type SectionInput, type RegistrationTally } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
 import { supabase } from '../lib/supabase'
@@ -509,6 +509,7 @@ export default function AdminClasses() {
   const {
     classes, loading, error, fillError, refetch, countRegistrations,
     createClass, updateClass, deleteClass, createSection, updateSection, deleteSection,
+    cancelSection, cancelClass,
   } = useAdminClasses()
   const { volunteers } = useVolunteers()
 
@@ -551,46 +552,58 @@ export default function AdminClasses() {
     )
   }
 
-  // Deleting cascades: class → sections → registrations + attendance, so the strip says what goes.
-  function registrationsText(id: string) {
+  // Removing depends on the fresh tally: an empty section or class is deleted; one with any
+  // registration is cancelled instead (cancel_section / cancel_class keep every registration as
+  // cancelled, so families keep their history and the change can be undone).
+  function removeMode(id: string): 'loading' | 'delete' | 'cancel' {
     const t = deleteTally?.id === id ? deleteTally : null
-    if (!t || t.state === 'loading') return 'Counting registrations…'
-    if (t.state === 'error') {
-      return `Registrations couldn't be counted (${t.message}), so assume every registration in it — confirmed, pending, waitlisted and cancelled — is deleted along with its attendance history.`
-    }
+    if (!t || t.state === 'loading') return 'loading'
+    if (t.state === 'error') return 'cancel'
     const { active, waitlisted, cancelled } = t.tally
-    const total = active + waitlisted + cancelled
-    if (total === 0) return 'There are no registrations of any status.'
-    const parts = [
-      active && `${active} confirmed/pending`,
-      waitlisted && `${waitlisted} waitlisted`,
-      cancelled && `${cancelled} cancelled`,
-    ].filter(Boolean).join(', ')
-    return `${total} registration${total === 1 ? '' : 's'} (${parts}) and their attendance history will be deleted.`
+    return active + waitlisted + cancelled === 0 ? 'delete' : 'cancel'
   }
 
-  function classDeleteMessage(cls: ClassWithSections) {
-    return cls.sections.length === 0
-      ? `Delete ${cls.name}? It has no sections. This can't be undone.`
-      : `Delete ${cls.name}? This also deletes its ${cls.sections.length} section${cls.sections.length === 1 ? '' : 's'}. ${registrationsText(cls.id)} This can't be undone.`
-  }
-
-  function sectionDeleteMessage(sec: SectionWithCrew) {
-    return `Delete ${sec.label}? ${registrationsText(sec.id)} This can't be undone.`
+  function removeMessage(kind: 'class' | 'section', name: string, id: string, sectionCount = 0) {
+    const mode = removeMode(id)
+    if (mode === 'loading') return 'Checking for registrations…'
+    if (mode === 'delete') {
+      if (kind === 'section') return `Delete ${name}? It has no registrations. This can't be undone.`
+      return sectionCount === 0
+        ? `Delete ${name}? It has no sections. This can't be undone.`
+        : `Delete ${name}? Its ${sectionCount} section${sectionCount === 1 ? ' has' : 's have'} no registrations. This can't be undone.`
+    }
+    const t = deleteTally?.id === id ? deleteTally : null
+    const lead = t?.state === 'error'
+      ? `Registrations couldn't be counted (${t.message}), so this cancels rather than deletes. `
+      : ''
+    const counts = t?.state === 'ok'
+      ? [t.tally.active && `${t.tally.active} camper${t.tally.active === 1 ? '' : 's'} with a spot`,
+         t.tally.waitlisted && `${t.tally.waitlisted} waitlisted`].filter(Boolean).join(' and ')
+      : ''
+    return `${lead}Cancel ${name}${kind === 'class' ? ' and all its sections' : ''}? ${counts ? `${counts} will be taken out. ` : ''}` +
+      'Registrations are kept as cancelled, families see "Cancelled by camp" with a link to pick another class, ' +
+      "and they go first on that week's waitlists."
   }
 
   const tallyLoading = deleteTally?.state === 'loading'
 
   async function confirmDelete() {
     if (!pendingDelete) return
+    const mode = removeMode(pendingDelete.id)
+    if (mode === 'loading') return
     setDeleting(true)
     setActionError(null)
     try {
-      if (pendingDelete.kind === 'class') await deleteClass(pendingDelete.id)
-      else await deleteSection(pendingDelete.id)
+      if (mode === 'delete') {
+        if (pendingDelete.kind === 'class') await deleteClass(pendingDelete.id)
+        else await deleteSection(pendingDelete.id)
+      } else {
+        if (pendingDelete.kind === 'class') await cancelClass(pendingDelete.id)
+        else await cancelSection(pendingDelete.id)
+      }
       setPendingDelete(null)
     } catch (e) {
-      setActionError(`Couldn't delete: ${e instanceof Error ? e.message : 'unknown error'}`)
+      setActionError(`Couldn't ${mode === 'delete' ? 'delete' : 'cancel'}: ${e instanceof Error ? e.message : 'unknown error'}`)
     } finally {
       setDeleting(false)
     }
@@ -715,8 +728,8 @@ export default function AdminClasses() {
                         </button>
                         <button
                           onClick={() => requestDelete({ kind: 'class', id: cls.id }, cls.sections.map(s => s.id))}
-                          aria-label={`Delete ${cls.name}`}
-                          title="Delete class"
+                          aria-label={`Remove ${cls.name}`}
+                          title="Remove class (cancels it if it has registrations)"
                           className={`${iconBtn} hover:text-danger hover:bg-danger-soft`}
                         >
                           <Trash2 size={15} />
@@ -727,8 +740,9 @@ export default function AdminClasses() {
 
                   {pendingDelete?.kind === 'class' && pendingDelete.id === cls.id && (
                     <InlineConfirm
-                      message={classDeleteMessage(cls)}
-                      confirmLabel="Delete class"
+                      message={removeMessage('class', cls.name, cls.id, cls.sections.length)}
+                      confirmLabel={removeMode(cls.id) === 'delete' ? 'Delete class' : 'Cancel class'}
+                      cancelLabel="Keep class"
                       busy={deleting || tallyLoading}
                       onConfirm={confirmDelete}
                       onCancel={() => setPendingDelete(null)}
@@ -772,8 +786,9 @@ export default function AdminClasses() {
                                 )}
                                 {pendingDelete?.kind === 'section' && pendingDelete.id === sec.id && (
                                   <InlineConfirm
-                                    message={sectionDeleteMessage(sec)}
-                                    confirmLabel="Delete section"
+                                    message={removeMessage('section', sec.label, sec.id)}
+                                    confirmLabel={removeMode(sec.id) === 'delete' ? 'Delete section' : 'Cancel section'}
+                                    cancelLabel="Keep section"
                                     busy={deleting || tallyLoading}
                                     onConfirm={confirmDelete}
                                     onCancel={() => setPendingDelete(null)}
@@ -846,11 +861,14 @@ function SectionRow({
     : ''
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:grid md:grid-cols-[1fr_auto_auto_auto_auto] md:gap-4 px-4 sm:px-5 py-3.5">
+    <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 md:grid md:grid-cols-[1fr_auto_auto_auto_auto] md:gap-4 px-4 sm:px-5 py-3.5 ${section.cancelled_at ? 'opacity-70' : ''}`}>
       {/* Label + week badge (own line on phones) */}
       <div className="min-w-0 w-full md:w-auto">
         <div className="flex items-center gap-2 min-w-0">
         <span className="font-sans font-semibold text-sm text-ink truncate">{section.label}</span>
+        {section.cancelled_at && (
+          <span className="shrink-0 px-2 py-0.5 rounded-full bg-danger-soft text-danger text-xs font-semibold">Cancelled</span>
+        )}
         {section.week && (
           <span className="shrink-0 px-2 py-0.5 rounded-full bg-brand-soft text-warning text-xs font-semibold border border-brand/20">
             W{section.week}
@@ -908,17 +926,22 @@ function SectionRow({
         <Link to={`/print/roster/${section.id}`} title="Printable roster" aria-label={`Print ${section.label} roster`} className="p-1.5 text-ink-muted hover:text-ink hover:bg-surface rounded-[6px] transition">
           <Printer size={14} />
         </Link>
-        <button onClick={onEdit} title="Edit section" aria-label={`Edit ${section.label}`} className="p-1.5 text-ink-muted hover:text-ink hover:bg-surface rounded-[6px] transition">
-          <Pencil size={14} />
-        </button>
-        <button
-          onClick={onDelete}
-          title="Delete section"
-          aria-label={`Delete ${section.label}`}
-          className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition"
-        >
-          <Trash2 size={14} />
-        </button>
+        {/* A cancelled section keeps its registrations as history: view and print only. */}
+        {!section.cancelled_at && (
+          <>
+            <button onClick={onEdit} title="Edit section" aria-label={`Edit ${section.label}`} className="p-1.5 text-ink-muted hover:text-ink hover:bg-surface rounded-[6px] transition">
+              <Pencil size={14} />
+            </button>
+            <button
+              onClick={onDelete}
+              title="Remove section (cancels it if it has registrations)"
+              aria-label={`Remove ${section.label}`}
+              className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition"
+            >
+              <Trash2 size={14} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

@@ -178,7 +178,9 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
             ) : (
               <ul className="mt-3 space-y-2.5">
                 {registrations.map(reg => {
-                  const cfg = STATUS_CONFIG[reg.status]
+                  // A class the camp cancelled reads differently from one the family dropped.
+                  const byCamp = reg.status === 'cancelled' && reg.cancel_reason === 'section_cancelled'
+                  const cfg = byCamp ? { ...STATUS_CONFIG.cancelled, label: 'Cancelled by camp' } : STATUS_CONFIG[reg.status]
                   const Icon = cfg.Icon
                   const week = reg.sections?.week
                   return (
@@ -204,6 +206,15 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
                       )}
                       {cfg.note && (
                         <p className="mt-0.5 ml-1 text-xs font-sans text-ink-faint">{cfg.note}</p>
+                      )}
+                      {byCamp && (
+                        <p className="mt-0.5 ml-1 text-xs font-sans text-ink-muted">
+                          Sorry, this class was cancelled.{' '}
+                          <Link to={`/parent/classes?camper=${student.id}`} className="font-semibold text-ink hover:underline">
+                            Pick another class
+                          </Link>{' '}
+                          (you're first in line for that week's waitlists).
+                        </p>
                       )}
                     </li>
                   )

@@ -11,7 +11,7 @@
 - Families in a cancelled section get an email with a rebook link and go to the **front of the line** on any waitlist they join that week (Q-N1, decided 2026-10-16).
 
 ## Scope: what to build
-- Columns on `registrations`: `cancelled_at timestamptz`, `cancel_reason text` (`admin_removed, parent_cancel, section_cancelled, declined_offer, offer_expired, took_other_seat`), `cancelled_by uuid`, `displaced_from_section uuid` (set when a section is cancelled).
+- Columns on `registrations`: `cancelled_at timestamptz`, `cancel_reason text` (`admin_removed, parent_cancel, section_cancelled, declined_offer, offer_expired, took_other_seat`), `cancelled_by uuid`, `displaced_from_section uuid` (set when a section is cancelled; a plain column, **not** a foreign key, see the note below).
 - A trigger keeps `cancelled_at/by` in step whenever status becomes `cancelled`.
 - Admin "Remove registration" → sets `cancelled` with reason `admin_removed` (no DELETE). Hard delete stays possible only through the SQL editor.
 - FK `registrations.section_id` → `ON DELETE RESTRICT` (was CASCADE). A section with any registration can't be deleted.
@@ -39,5 +39,7 @@
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17. **Incident while building:** `displaced_from_section` was first added as a foreign key to `sections`. That made every `registrations → sections` embed ambiguous (HTTP 300), so parents saw "Not enrolled" on the demo for about 30 minutes, until the FK was dropped. Browsers that cached the 300 needed a refresh. The rule is now in the specs README.
+- The parent bell also shows "<camper>'s class was cancelled. Pick another class" until the camper holds another spot that week.
 - Update `useAdminStudents.removeRegistration` and the AdminStudents confirm copy ("The registration is kept as cancelled…").
 - `useAdminClasses.deleteSection/deleteClass` and their cascade-count warnings change meaning: rewrite the copy.

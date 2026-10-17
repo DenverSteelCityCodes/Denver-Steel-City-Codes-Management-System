@@ -94,8 +94,9 @@ function StudentDetail({
     if (action.kind === 'remove') {
       // attendance_logs / roll_call_marks reference the student and section, not the registration.
       return {
-        message: `Remove ${student.full_name} from ${where}? The registration is deleted and its seat freed. Attendance already taken for this section stays on file.`,
+        message: `Remove ${student.full_name} from ${where}? The registration is kept as cancelled (with who and when) and its seat is freed. Attendance already taken stays on file.`,
         confirmLabel: 'Remove',
+        cancelLabel: 'Keep',
         tone: 'danger' as const,
       }
     }
@@ -232,13 +233,15 @@ function StudentDetail({
                         </option>
                       ))}
                   </select>
-                  <button
-                    onClick={() => setPending({ kind: 'remove', regId: reg.id })}
-                    disabled={!!busy}
-                    className="h-9 px-3 rounded-[8px] text-xs font-semibold border transition bg-surface text-danger border-danger/40 hover:bg-danger-soft disabled:opacity-40"
-                  >
-                    Remove registration
-                  </button>
+                  {reg.status !== 'cancelled' && (
+                    <button
+                      onClick={() => setPending({ kind: 'remove', regId: reg.id })}
+                      disabled={!!busy}
+                      className="h-9 px-3 rounded-[8px] text-xs font-semibold border transition bg-surface text-danger border-danger/40 hover:bg-danger-soft disabled:opacity-40"
+                    >
+                      Remove registration
+                    </button>
+                  )}
                 </div>
               </div>
               {pending?.regId === reg.id && (
@@ -312,7 +315,8 @@ export default function AdminStudents() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const allSections = useMemo<SectionOption[]>(() =>
-    classes.flatMap(c => c.sections.map(s => ({
+    // Cancelled sections take no one, so they're never a move target.
+    classes.flatMap(c => c.sections.filter(s => !s.cancelled_at).map(s => ({
       id: s.id,
       label: s.label,
       class_name: c.name,
