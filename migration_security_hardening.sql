@@ -36,9 +36,20 @@ BEGIN
 END $$;
 
 -- Pinned search_path.
+-- Admin MFA (spec 27, migration_admin_mfa.sql): an admin whose session hasn't passed the second
+-- step (JWT aal claim below 'aal2') gets NO role here, so every admin policy and admin check
+-- refuses them at the API too. app_settings 'admin_mfa_required' = 'false' turns this off (the
+-- public demo, whose one-click admin can't do TOTP); a missing setting means required.
 CREATE OR REPLACE FUNCTION private.auth_user_role()
 RETURNS user_role LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT role FROM profiles WHERE id = auth.uid();
+  SELECT CASE
+           WHEN p.role = 'admin'
+            AND coalesce(auth.jwt() ->> 'aal', 'aal1') <> 'aal2'
+            AND coalesce((SELECT s.value FROM app_settings s WHERE s.key = 'admin_mfa_required'), 'true') <> 'false'
+           THEN NULL
+           ELSE p.role
+         END
+  FROM profiles p WHERE p.id = auth.uid();
 $$;
 
 -- ── 1. Finish section_supports (sections.support_id → join table) ─

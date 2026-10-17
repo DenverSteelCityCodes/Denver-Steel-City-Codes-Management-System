@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ShieldCheck, Users, GraduationCap, AlertTriangle } from 'lucide-react'
 import { useAdminUsers, fetchCrewAssignments, type AdminUser, type CrewAssignments } from '../hooks/useAdminUsers'
 import { useAuth } from '../context/AuthContext'
 import InlineConfirm from '../components/InlineConfirm'
+import { supabase } from '../lib/supabase'
 import type { UserRole } from '../types/database'
 
 const ROLE_LABELS: Record<UserRole, { label: string; badge: string }> = {
@@ -48,6 +49,28 @@ export default function AdminUsers() {
   const [err, setErr] = useState<string | null>(null)
   const [pending, setPending] = useState<{ userId: string; newRole: UserRole } | null>(null)
   const [crewCheck, setCrewCheck] = useState<CrewCheck | null>(null)
+
+  // Two-step sign-in per admin (spec 27): how many authenticators each has, and resetting a
+  // colleague's after a lost phone.
+  const [mfa, setMfa] = useState<Map<string, number> | null>(null)
+  const [mfaReset, setMfaReset] = useState<string | null>(null)
+  const [mfaTick, setMfaTick] = useState(0)
+  useEffect(() => {
+    let alive = true
+    supabase.rpc('admin_mfa_status').then(({ data }) => {
+      if (alive && data) setMfa(new Map((data as { user_id: string; factors: number }[]).map(r => [r.user_id, r.factors])))
+    })
+    return () => { alive = false }
+  }, [mfaTick])
+
+  async function confirmMfaReset(userId: string) {
+    setBusy(true); setErr(null)
+    const { error: e } = await supabase.rpc('admin_reset_mfa', { p_user_id: userId })
+    setBusy(false)
+    if (e) { setErr(e.message); return }
+    setMfaReset(null)
+    setMfaTick(t => t + 1)
+  }
 
   function requestRoleChange(user: AdminUser, newRole: UserRole) {
     setErr(null)
@@ -148,6 +171,17 @@ export default function AdminUsers() {
                                 {user.email ?? 'No email on file'}
                                 <span className="text-ink-faint"> · joined {new Date(user.created_at).toLocaleDateString()}</span>
                               </p>
+                              {user.role === 'admin' && mfa && (
+                                <p className="font-sans text-xs text-ink-muted flex flex-wrap items-center gap-x-2">
+                                  <span>Two-step sign-in: {(mfa.get(user.id) ?? 0) > 0 ? 'on' : 'not set up yet'}</span>
+                                  {!isSelf && (mfa.get(user.id) ?? 0) > 0 && mfaReset !== user.id && (
+                                    <button type="button" onClick={() => { setErr(null); setMfaReset(user.id) }}
+                                      className="min-h-6 font-semibold text-ink-muted hover:text-danger hover:underline">
+                                      Reset
+                                    </button>
+                                  )}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -179,6 +213,15 @@ export default function AdminUsers() {
                             )}
                           </div>
                         </div>
+                        {mfaReset === user.id && (
+                          <InlineConfirm
+                            message={`Reset ${user.display_name ?? 'this admin'}'s two-step sign-in? Their authenticator is removed and they're signed out everywhere; they set up a new one at their next sign-in. Only do this once you're sure it's really them asking (for example, a lost phone).`}
+                            confirmLabel="Reset two-step"
+                            busy={busy}
+                            onConfirm={() => { void confirmMfaReset(user.id) }}
+                            onCancel={() => setMfaReset(null)}
+                          />
+                        )}
                         {isPending && (
                           <InlineConfirm
                             tone={pending!.newRole === 'admin' ? 'danger' : 'neutral'}

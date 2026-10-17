@@ -122,7 +122,7 @@ Every three months (suggested: January, April, July, October) and whenever someo
 
 - [ ] List the admins (Supabase → SQL editor): `select p.display_name, u.email, u.last_sign_in_at from profiles p join auth.users u on u.id = p.id where p.role = 'admin' order by u.last_sign_in_at;`
 - [ ] Confirm each one still needs admin. Change anyone who doesn't to parent or volunteer.
-- [ ] Every admin has MFA turned on (once spec 27 ships; until then, check they use a password manager).
+- [ ] Every admin shows **Two-step sign-in: on** in Admin → Users (spec 27). Use **Reset** there only after confirming in person or by phone that it's really them.
 - [ ] Volunteers: confirm last season's leads and helpers are no longer assigned to sections (Admin → Classes). Volunteer access to campers follows section assignment (spec 04).
 - [ ] Remove or ban accounts of people who have left.
 - [ ] Shared credentials (if any: a shared Vercel, Supabase or email-provider login) are rotated, and shared logins are replaced by personal accounts where the service allows it.
