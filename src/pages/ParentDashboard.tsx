@@ -5,6 +5,9 @@ import { useStudents } from '../hooks/useStudents'
 import { useRegistrations, type RegistrationWithSection } from '../hooks/useRegistrations'
 import StudentCard from '../components/StudentCard'
 import ThisWeekCard from '../components/ThisWeekCard'
+import RollCallStatus from '../components/RollCallStatus'
+import { useMyRollCalls } from '../hooks/useMyRollCalls'
+import { localDateISO } from '../lib/campDay'
 import type { Student } from '../types/database'
 
 // Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
@@ -48,6 +51,7 @@ export default function ParentDashboard() {
   const { profile } = useAuth()
   const { students, loading, updateStudent } = useStudents()
   const { registrations } = useRegistrations()
+  const todayMarks = useMyRollCalls(localDateISO())
 
   const subhead = buildSubhead(students, registrations)
 
@@ -82,7 +86,11 @@ export default function ParentDashboard() {
           </div>
         </div>
 
-        <ThisWeekCard students={students} registrations={registrations} />
+        <ThisWeekCard
+          students={students}
+          registrations={registrations}
+          renderStatus={(st, reg) => <RollCallStatus marks={todayMarks.filter(m => m.student_id === st.id && m.section_id === reg.section_id)} />}
+        />
 
         {loading ? (
           <div className="space-y-3">

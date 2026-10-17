@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import {
   GraduationCap, Users, LayoutGrid, List, CalendarDays, Shield, Settings2, Mic,
-  CircleCheck, Clock,
+  CircleCheck, Clock, ClipboardCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminStats } from '../hooks/useAdminStats'
@@ -24,6 +24,7 @@ interface QuickLink {
 }
 
 const QUICK_LINKS: QuickLink[] = [
+  { to: '/admin/attendance', label: 'Attendance', desc: "Today's roll calls and who's unaccounted for.", icon: ClipboardCheck },
   { to: '/admin/classes', label: 'Classes', desc: 'Create, edit, set capacity.', icon: LayoutGrid },
   { to: '/admin/volunteers', label: 'Volunteers', desc: 'Roster, assignments, applications.', icon: Users },
   { to: '/admin/students', label: 'Students', desc: 'Manage registrations and rosters.', icon: GraduationCap },
