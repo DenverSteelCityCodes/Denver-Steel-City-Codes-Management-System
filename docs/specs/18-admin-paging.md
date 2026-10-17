@@ -1,6 +1,6 @@
 # 18: Server-side paging and search for admin lists
 
-**Status:** ⬜ not started · **Issue:** #87 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #122](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/122) · **Issue:** #87 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** —
 **Plan reference:** Plan §2.3 'what breaks first' #4
 
@@ -32,4 +32,5 @@ Admin Students and Users fetch every row. 🔎 Supabase's API returns at most 1,
 - Check the actual `max_rows` setting in the dashboard (API settings) and record it.
 
 ## Notes for the builder
+- Built 2026-10-17, **changed from the spec**: instead of a server-side `admin_students_page()` RPC, every admin list now pages through the API in 1,000-row chunks (`src/lib/fetchAll.ts`), and the Students list renders 100 rows at a time with "Show 100 more". At SCC's expected size (under ~2,000 campers) the full list is small, and client-side search and filters stay instant, so the RPC would be overbuilding. Revisit if a chapter passes ~5,000 campers. The `max_rows` setting is confirmed as 1,000 (2026-10-17).
 - None.

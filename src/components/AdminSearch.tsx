@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, LayoutGrid, GraduationCap, UserPlus, CornerDownLeft } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { fetchAll } from '../lib/fetchAll'
 
 interface Result {
   key: string
@@ -52,10 +53,12 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
     if (!force && index && Date.now() - indexLoadedAt.current < INDEX_MAX_AGE_MS) return
     indexLoading.current = true
     setIndexError(null)
+    // Campers and applications are paged past the API's 1,000-row cap (spec 18).
+    const all = <T,>(p: Promise<T[]>) => p.then(data => ({ data, error: null as { message: string } | null }), (e: unknown) => ({ data: null as T[] | null, error: { message: e instanceof Error ? e.message : 'unknown error' } }))
     Promise.all([
       supabase.from('classes').select('id, name'),
-      supabase.from('students').select('id, full_name'),
-      supabase.from('volunteer_applications').select('id, first_name, last_name, status'),
+      all(fetchAll<{ id: string; full_name: string }>(async (from, to) => supabase.from('students').select('id, full_name').order('id').range(from, to))),
+      all(fetchAll<{ id: string; first_name: string; last_name: string; status: string }>(async (from, to) => supabase.from('volunteer_applications').select('id, first_name, last_name, status').order('id').range(from, to))),
     ]).then(([classes, students, apps]) => {
       const err = classes.error ?? students.error ?? apps.error
       // Keep any older index on failure; the dropdown shows the error with a Retry.

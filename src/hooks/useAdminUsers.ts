@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { fetchAll } from '../lib/fetchAll'
 import type { Profile, UserRole } from '../types/database'
 
 export interface AdminUser extends Profile {
@@ -36,13 +37,22 @@ export function useAdminUsers() {
 
   async function fetchUsers() {
     setLoading(true)
-    const [{ data, error }, emails] = await Promise.all([
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-      // Admin-only RPC: profiles has no email, and display names alone can't tell accounts apart.
-      supabase.rpc('admin_user_emails'),
-    ])
-    const byId = new Map(((emails.data ?? []) as { id: string; email: string; last_sign_in_at: string | null }[])
-      .map(e => [e.id, e]))
+    // Paged past the API's 1,000-row cap (spec 18).
+    let data: Profile[] | null = null
+    let error: { message: string } | null = null
+    let emails: { id: string; email: string; last_sign_in_at: string | null }[] = []
+    try {
+      ;[data, emails] = await Promise.all([
+        fetchAll<Profile>(async (from, to) => supabase.from('profiles').select('*')
+          .order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, to)),
+        // Admin-only RPC: profiles has no email, and display names alone can't tell accounts apart.
+        fetchAll<{ id: string; email: string; last_sign_in_at: string | null }>(async (from, to) =>
+          supabase.rpc('admin_user_emails').order('id', { ascending: true }).range(from, to)),
+      ])
+    } catch (e) {
+      error = { message: e instanceof Error ? e.message : 'unknown error' }
+    }
+    const byId = new Map(emails.map(e => [e.id, e]))
 
     setError(error?.message ?? null)
     if (!error) setUsers((data ?? []).map(p => ({

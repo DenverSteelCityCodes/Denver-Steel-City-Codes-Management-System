@@ -312,6 +312,11 @@ export default function AdminStudents() {
     if (urlQuery || applied.q) setSearch(urlQuery)
   }
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  // Render 100 rows at a time (spec 18); a new search or filter starts again at 100.
+  const PAGE = 100
+  const filterKey = `${search}|${statusFilter}`
+  const [limit, setLimit] = useState({ key: filterKey, n: PAGE })
+  const shown = limit.key === filterKey ? limit.n : PAGE
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const allSections = useMemo<SectionOption[]>(() =>
@@ -417,7 +422,7 @@ export default function AdminStudents() {
               ))}
             </div>
             <ul className="divide-y divide-border">
-              {filtered.map(s => {
+              {filtered.slice(0, shown).map(s => {
                 const open = expandedId === s.id
                 const flag = realNote(s.allergies) ?? realNote(s.medical_conditions) ?? realNote(s.medical_info)
                 return (
@@ -469,7 +474,20 @@ export default function AdminStudents() {
               })}
             </ul>
             <div className="px-5 py-2.5 border-t border-border bg-surface-sunken/20">
-              <p className="font-sans text-xs text-ink-muted">{filtered.length} student{filtered.length !== 1 ? 's' : ''} shown · select a student for details and registrations</p>
+              <p className="font-sans text-xs text-ink-muted">
+                {filtered.length > shown
+                  ? `Showing ${shown} of ${filtered.length} students`
+                  : `${filtered.length} student${filtered.length !== 1 ? 's' : ''} shown`} · select a student for details and registrations
+              </p>
+              {filtered.length > shown && (
+                <button
+                  type="button"
+                  onClick={() => setLimit({ key: filterKey, n: shown + PAGE })}
+                  className="mt-2 h-9 px-3.5 rounded-[8px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition"
+                >
+                  Show {Math.min(PAGE, filtered.length - shown)} more
+                </button>
+              )}
             </div>
           </div>
         )}
