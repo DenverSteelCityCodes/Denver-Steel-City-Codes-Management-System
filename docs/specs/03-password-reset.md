@@ -1,6 +1,6 @@
 # 03: Forgot password, reset page, resend confirmation
 
-**Status:** ⬜ not started · **Issue:** #71 · **Priority:** P0 · **Effort:** S · **Phase:** A
+**Status:** ✅ [PR #114](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/114) · **Issue:** #71 · **Priority:** P0 · **Effort:** S · **Phase:** A
 **Depends on:** 02 · **Unblocks:** —
 **Plan reference:** Plan §0 Risk 3, flow P1
 
