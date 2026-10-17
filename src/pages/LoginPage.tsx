@@ -51,7 +51,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('Wrong email or password. Try again.')
+      setError('Wrong email or password. Try again, or use "Forgot password?" above.')
       setLoading(false)
       return
     }
@@ -118,9 +118,14 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block font-sans font-semibold text-sm text-ink" htmlFor="password">
-              Password
-            </label>
+            <div className="flex items-baseline justify-between gap-2">
+              <label className="block font-sans font-semibold text-sm text-ink" htmlFor="password">
+                Password
+              </label>
+              <Link to="/forgot" className="inline-flex items-center min-h-6 -my-1 py-1 font-sans text-xs font-semibold text-ink-muted hover:text-ink hover:underline">
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"

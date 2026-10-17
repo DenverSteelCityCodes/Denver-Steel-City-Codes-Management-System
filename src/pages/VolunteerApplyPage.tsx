@@ -234,7 +234,10 @@ export default function VolunteerApplyPage() {
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
-        options: { data: { display_name: `${form.firstName} ${form.lastName}`, role: 'volunteer' } },
+        options: {
+          data: { display_name: `${form.firstName} ${form.lastName}`, role: 'volunteer' },
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
       })
 
       // An existing account (a parent, or an earlier applicant) with this email: with email
@@ -684,6 +687,13 @@ export default function VolunteerApplyPage() {
           {error && (
             <p role="alert" className="mt-4 text-danger text-sm font-sans flex items-center gap-1.5">
               <span>⚠</span> {error}
+            </p>
+          )}
+          {error?.startsWith("There's already an account") && (
+            <p className="mt-2 font-sans text-sm text-ink-muted">
+              <Link to="/login" className="text-ink font-semibold hover:underline">Sign in</Link>
+              {' · '}
+              <Link to="/forgot" className="text-ink font-semibold hover:underline">Forgot your password?</Link>
             </p>
           )}
 
