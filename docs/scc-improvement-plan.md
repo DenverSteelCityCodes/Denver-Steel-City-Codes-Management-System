@@ -18,7 +18,7 @@
 | 1 | **Sign-up emails stop after 2 an hour.** New accounts must confirm by email, and Supabase's built-in sender is capped at 2 emails/hour ([Supabase docs](https://supabase.com/docs/guides/auth/auth-smtp)). | On opening night almost every new parent waits for a confirmation link that never arrives. This is the first thing to break, and it has nothing to do with load. | Custom SMTP (PR 2), **S** |
 | 2 | **There is no production database.** The only project (`rdckxazvoeixgwtjhrlf`) is the public demo, and a nightly job **deletes every non-demo account**. | Real families registered there would be wiped at 3 am. | Separate prod project (PR 1), **S** |
 | 3 | **No password reset.** ✅ There's no "Forgot password" anywhere (`resetPasswordForEmail` is never called). | Returning families from 2026 who forgot their password are locked out and email you instead. | PR 3, **S** |
-| 4 | **Volunteer access to camper data is broader than the roster needs.** ✅ Found 2026-10-16 (details are kept off this public repo until spec 04 merges). Many volunteers are teenagers (the apply form accepts 14+). | A minor-privacy risk to close before any real family registers. Only fictional demo data is involved today. | PR 4, **S** |
+| 4 | **Volunteers could read camper data they don't need.** ✅ On 2026-10-16, signed in as the demo volunteer, a direct API read returned *every column* for 19 campers, including free/reduced-lunch status, school, the camper's email and the waiver signatures, and a camper whose registration was cancelled. Many volunteers are teenagers (the apply form accepts 14+). | A minor-privacy exposure; only fictional demo data was involved. **✅ Fixed 2026-10-17 in [PR #110](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/110):** re-checked, the same read now returns 0 rows, and crew get roster fields only through `section_roster()`. | PR 4 ✅ |
 | 5 | **Changes are silent and irreversible.** No audit log. Deleting a section hard-deletes its registrations. Waitlist promotion is manual, with no email. Parents can't drop or swap without contacting you. | You can't answer "who changed this?" or undo a mistake. Every change becomes an email to you. | PRs 5–6, 10–12, 15 |
 
 ### Top 5 wins (highest value per hour)
@@ -359,7 +359,7 @@ flowchart TD
 
 ## 2. Domain 2: Engineering
 
-**Summary.** The database layer is the strongest part. Capacity, age, one-class-per-week, roles, duty capacity and interview booking are all enforced server-side with row locks. The gaps are traceability (no audit), lifecycle (no soft-cancel, waitlist or deadlines), one privacy gap (volunteer access to camper data, PR 4), and operations (no prod project, no tests in CI, manual migrations and deploys). Performance is fine for today's data. Pages feel slow because of request fan-out, not slow queries.
+**Summary.** The database layer is the strongest part. Capacity, age, one-class-per-week, roles, duty capacity and interview booking are all enforced server-side with row locks. The gaps are traceability (no audit), lifecycle (no soft-cancel, waitlist or deadlines), one privacy gap (volunteer access to camper data, now fixed in PR #110), and operations (no prod project, no tests in CI, manual migrations and deploys). Performance is fine for today's data. Pages feel slow because of request fan-out, not slow queries.
 
 ### 2.1 Self-service editing with admin override
 
@@ -400,7 +400,7 @@ flowchart TD
 | **Bad input: age outside range** | Not offered in the UI; refused by the DB with a reason; age can't be edited out of range of a held class | DB: `age_min/age_max` CHECKs, insert trigger, `students_guard_age` | ✅ |
 | **Missing guardian contact** | Can't finish registration without parent phone/email and an emergency contact | UI validation ✅. 🔎 **DB doesn't require them** (nullable). Add a CHECK, or require them in the `register_camper` RPC (PR 17) | ⚠️ UI only |
 | **Parent can't see another family** | Every camper/registration/roll-call read is filtered to `parent_id = auth.uid()` | DB: RLS ✅ (policies read; plus `test-plans/camp-week-rls-tests.sql`, 36 impersonation checks). PR 8 runs them in CI | ✅ |
-| **Volunteer sees only what's needed** | Crew sees name, age, allergies, medical, emergency contact and parent name and phone *for campers holding a seat in their section* | A `section_roster()` RPC returns only those fields, only for seated campers; volunteer screens read through it | ❌ broader than this today (PR 4) |
+| **Volunteer sees only what's needed** | Crew sees name, age, allergies, medical, emergency contact and parent name and phone *for campers holding a seat in their section* | A `section_roster()` RPC returns only those fields, only for seated campers; volunteer screens read through it | ✅ fixed in PR #110 (before: the `volunteer_read_students` policy gave crew the full row for any status) |
 | **Admin cancels a class with people in it** | Soft-cancel: registrations → `cancelled` with reason, families emailed with a rebook link, history kept. Hard delete only when empty | DB: `ON DELETE RESTRICT` from registrations → sections (instead of CASCADE) + `cancel_section()` RPC | ⚠️ hard cascade delete behind a confirm (PR 6) |
 
 ### 2.3 Performance and load

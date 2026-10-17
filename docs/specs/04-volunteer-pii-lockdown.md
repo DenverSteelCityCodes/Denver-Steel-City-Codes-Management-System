@@ -5,7 +5,9 @@
 **Plan reference:** Plan §0 Risk 4, §2.2 'volunteer sees only what's needed', §2.4 who-sees-what
 
 ## Why
-A review on 2026-10-16 found that volunteer access to camper records is broader than the roster needs. The specifics are kept off this public repo until this spec merges; the Regional Director has them. Many volunteers are 14–17, so crew access should be the minimum a roster needs. Only fictional demo data is involved today; this must land before any real family registers.
+Verified 2026-10-16: signed in as the demo volunteer, a direct API `select` on `students` returned **every column** for 19 campers. That included free/reduced-lunch status, school, the camper's email and signatures, and a camper whose registration was cancelled. Many volunteers are 14–17. The policy `volunteer_read_students` (`USING private.auth_volunteer_has_student(id)`) granted the whole row for any registration status. *(Kept generic in the repo until the fix merged; restored 2026-10-17.)*
+
+**Re-verified after the fix (2026-10-17):** the same read returns 0 rows; `section_roster()` returns 8 seated campers with roster fields only; another section's roster is refused; cancelled registrations aren't visible.
 
 ## Decided rules
 - Crew may see, for campers **holding a seat** in **their own section** (status `confirmed`, plus legacy `pending`; not `offered`, since an offered camper isn't attending yet): name, age, allergies, medical conditions, emergency contact name/phone/relation, parent name and phone. Nothing else.
