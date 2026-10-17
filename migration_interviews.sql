@@ -44,11 +44,5 @@ CREATE POLICY "read_interview_slots" ON interview_slots
 
 CREATE POLICY "admin_all_interview_bookings" ON interview_bookings
     FOR ALL USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
-CREATE POLICY "volunteer_read_own_booking" ON interview_bookings
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM volunteer_applications va
-            WHERE va.id = interview_bookings.application_id
-              AND va.user_id = auth.uid()
-        )
-    );
+-- No applicant SELECT here (admin_notes would leak): applicants read their own time through
+-- my_interview() in migration_review_hardening.sql.

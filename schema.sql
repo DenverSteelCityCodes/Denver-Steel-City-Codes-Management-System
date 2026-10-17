@@ -32,7 +32,6 @@ CREATE TABLE volunteers (
     experience_level    experience_level NOT NULL,
     availability_week_1 BOOLEAN NOT NULL DEFAULT FALSE,
     availability_week_2 BOOLEAN NOT NULL DEFAULT FALSE,
-    interview_notes     TEXT,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -324,10 +323,8 @@ CREATE POLICY "admin_write_settings" ON app_settings
 CREATE POLICY "public_insert_application" ON volunteer_applications
     FOR INSERT WITH CHECK (true);
 
--- Applicant can read their own application once logged in
-CREATE POLICY "self_read_application" ON volunteer_applications
-    FOR SELECT
-    USING (user_id = auth.uid());
+-- Applicants have no direct SELECT (admin_notes would leak); they read their own application
+-- through my_volunteer_application() in migration_review_hardening.sql.
 
 CREATE POLICY "admin_all_applications" ON volunteer_applications
     FOR ALL

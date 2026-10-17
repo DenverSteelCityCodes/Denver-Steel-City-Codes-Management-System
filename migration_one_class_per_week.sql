@@ -120,3 +120,8 @@ END;
 $$;
 
 REVOKE EXECUTE ON FUNCTION public.registrations_before_insert() FROM PUBLIC, anon, authenticated;
+
+-- This file is the only definition of registrations_before_insert() (function and trigger).
+DROP TRIGGER IF EXISTS registrations_before_insert ON registrations;
+CREATE TRIGGER registrations_before_insert BEFORE INSERT ON registrations
+    FOR EACH ROW EXECUTE FUNCTION public.registrations_before_insert();

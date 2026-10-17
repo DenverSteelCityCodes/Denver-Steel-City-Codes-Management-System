@@ -6,8 +6,10 @@
 --   exposes no applicant data.
 -- book_my_interview(slot, email): books — or moves — the caller's single interview. The applicant
 --   is identified by their signed-in account, or (right after submitting /apply, before they've
---   confirmed their email) by a pending application with that email from the last hour. The slot
---   row is locked so two people can't take the same time.
+--   confirmed their email) by a pending application with that email from the last hour. The
+--   email path can only make the first booking; moving one needs the applicant's session. A move
+--   updates the booking row in place so admin notes survive. The slot row is locked so two
+--   people can't take the same time.
 
 CREATE OR REPLACE FUNCTION public.open_interview_slots()
 RETURNS TABLE (id UUID, slot_datetime TIMESTAMPTZ, duration_minutes SMALLINT)
@@ -25,6 +27,7 @@ CREATE OR REPLACE FUNCTION public.book_my_interview(p_slot_id UUID, p_email TEXT
 RETURNS TIMESTAMPTZ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   app_id    UUID;
+  by_email  BOOLEAN := false;
   slot_time TIMESTAMPTZ;
 BEGIN
   IF auth.uid() IS NOT NULL THEN
@@ -37,9 +40,17 @@ BEGIN
     WHERE lower(email) = lower(trim(p_email)) AND status = 'pending'
       AND created_at > now() - interval '1 hour'
     ORDER BY created_at DESC LIMIT 1;
+    by_email := app_id IS NOT NULL;
   END IF;
   IF app_id IS NULL THEN
     RAISE EXCEPTION 'We couldn''t find your application to attach the interview to' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Knowing an email is not proof of identity: the email path may only make the FIRST booking.
+  -- Moving an existing booking needs the applicant's own session (or an admin, who edits
+  -- interview_bookings directly).
+  IF by_email AND EXISTS (SELECT 1 FROM interview_bookings WHERE application_id = app_id) THEN
+    RAISE EXCEPTION 'This application already has an interview booked. Sign in to change the time.' USING ERRCODE = '42501';
   END IF;
 
   SELECT slot_datetime INTO slot_time FROM interview_slots
@@ -52,10 +63,11 @@ BEGIN
     RAISE EXCEPTION 'Someone just booked that time — please pick another' USING ERRCODE = 'P0001';
   END IF;
 
-  DELETE FROM interview_bookings WHERE application_id = app_id AND slot_id <> p_slot_id;
-  INSERT INTO interview_bookings (slot_id, application_id)
-  VALUES (p_slot_id, app_id)
-  ON CONFLICT (application_id) DO NOTHING;
+  -- Move the existing booking in place (keeps the admin's interview notes), else create one.
+  UPDATE interview_bookings SET slot_id = p_slot_id WHERE application_id = app_id;
+  IF NOT FOUND THEN
+    INSERT INTO interview_bookings (slot_id, application_id) VALUES (p_slot_id, app_id);
+  END IF;
   UPDATE volunteer_applications SET interview_confirmed = true WHERE id = app_id;
   RETURN slot_time;
 END;

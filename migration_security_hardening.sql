@@ -10,10 +10,33 @@
 --   H7  section_fill view bypassed RLS and was readable signed-out
 -- Also finishes migration_section_supports.sql, which never applied on the live DB because it
 -- dropped sections.support_id while section_fill and two policies still depended on it.
+--
+-- Safe to re-run (2026-10-14 review): helpers are moved into `private` only if they are still
+-- in `public`, then (re)defined in `private`; registrations_before_insert() is defined only in
+-- migration_one_class_per_week.sql, so re-running this file can't roll it back.
 
--- ── 0. Pin search_path on the role helper ─────────────────────
+-- ── 0. RLS helpers live in a non-exposed schema ───────────────
+-- Anything in `public` is callable at /rest/v1/rpc/<name>. Earlier files create these helpers in
+-- public; moving them (rather than creating new copies) keeps every existing policy working,
+-- because policies reference functions by OID. A helper already in private is left where it is.
 
-CREATE OR REPLACE FUNCTION auth_user_role()
+CREATE SCHEMA IF NOT EXISTS private;
+GRANT USAGE ON SCHEMA private TO anon, authenticated;
+
+DO $$
+DECLARE
+  f TEXT;
+BEGIN
+  FOREACH f IN ARRAY ARRAY['auth_user_role()', 'auth_volunteer_has_section(uuid)',
+                           'auth_volunteer_has_student(uuid)', 'application_user_ok(uuid, text)'] LOOP
+    IF to_regprocedure('public.' || f) IS NOT NULL AND to_regprocedure('private.' || f) IS NULL THEN
+      EXECUTE format('ALTER FUNCTION public.%s SET SCHEMA private', f);
+    END IF;
+  END LOOP;
+END $$;
+
+-- Pinned search_path.
+CREATE OR REPLACE FUNCTION private.auth_user_role()
 RETURNS user_role LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT role FROM profiles WHERE id = auth.uid();
 $$;
@@ -43,7 +66,7 @@ DROP POLICY IF EXISTS "volunteer_read_assigned_sections"    ON sections;
 DROP POLICY IF EXISTS "volunteer_read_classes_via_sections" ON classes;
 ALTER TABLE sections DROP COLUMN IF EXISTS support_id;
 
-CREATE OR REPLACE FUNCTION auth_volunteer_has_section(p_section_id UUID)
+CREATE OR REPLACE FUNCTION private.auth_volunteer_has_section(p_section_id UUID)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT EXISTS (
     SELECT 1 FROM sections sec
@@ -54,8 +77,8 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
   );
 $$;
 
-CREATE OR REPLACE FUNCTION auth_volunteer_has_student(p_student_id UUID)
-RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+CREATE OR REPLACE FUNCTION private.auth_volunteer_has_student(p_student_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
   SELECT EXISTS (
     SELECT 1 FROM registrations r
     WHERE r.student_id = p_student_id AND auth_volunteer_has_section(r.section_id)
@@ -68,14 +91,14 @@ DROP POLICY IF EXISTS "read_section_supports"               ON section_supports;
 DROP POLICY IF EXISTS "volunteer_read_own_section_supports" ON section_supports;
 
 CREATE POLICY "admin_all_section_supports" ON section_supports FOR ALL
-    USING (auth_user_role() = 'admin') WITH CHECK (auth_user_role() = 'admin');
+    USING (private.auth_user_role() = 'admin') WITH CHECK (private.auth_user_role() = 'admin');
 CREATE POLICY "volunteer_read_own_section_supports" ON section_supports FOR SELECT TO authenticated
-    USING (auth_volunteer_has_section(section_id));
+    USING (private.auth_volunteer_has_section(section_id));
 
 CREATE POLICY "volunteer_read_assigned_sections" ON sections FOR SELECT TO authenticated
-    USING (auth_volunteer_has_section(id));
+    USING (private.auth_volunteer_has_section(id));
 CREATE POLICY "volunteer_read_classes_via_sections" ON classes FOR SELECT TO authenticated
-    USING (EXISTS (SELECT 1 FROM sections s WHERE s.class_id = classes.id AND auth_volunteer_has_section(s.id)));
+    USING (EXISTS (SELECT 1 FROM sections s WHERE s.class_id = classes.id AND private.auth_volunteer_has_section(s.id)));
 
 -- ── 2. Fill counts that aren't filtered by the caller's RLS (H1) ─
 -- Parents can only SELECT their own registrations, so an embedded registrations(count) showed
@@ -114,21 +137,34 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION guard_profile_role()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+-- Also refuses to demote or delete the last admin (Users & roles checks this too, but only
+-- client-side). auth.uid() is NULL for the SQL editor / service role / cron: those are trusted.
+CREATE OR REPLACE FUNCTION public.guard_profile_role()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 BEGIN
-  -- auth.uid() is NULL for the SQL editor / service role: those are trusted.
-  IF auth.uid() IS NOT NULL
-     AND NEW.role IS DISTINCT FROM OLD.role
+  IF auth.uid() IS NULL THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+
+  IF TG_OP = 'UPDATE' AND NEW.role IS DISTINCT FROM OLD.role
      AND auth_user_role() IS DISTINCT FROM 'admin' THEN
     RAISE EXCEPTION 'Only an admin can change account roles' USING ERRCODE = '42501';
   END IF;
-  RETURN NEW;
+
+  IF OLD.role = 'admin' AND (TG_OP = 'DELETE' OR NEW.role IS DISTINCT FROM 'admin') THEN
+    -- Serialize admin removals so two admins demoting each other can't both pass the check.
+    PERFORM pg_advisory_xact_lock(hashtextextended('profiles:last-admin', 0));
+    IF NOT EXISTS (SELECT 1 FROM profiles WHERE role = 'admin' AND id <> OLD.id) THEN
+      RAISE EXCEPTION 'There has to be at least one admin. Make someone else an admin first.' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
 END;
 $$;
+REVOKE EXECUTE ON FUNCTION public.guard_profile_role() FROM PUBLIC, anon, authenticated;
 DROP TRIGGER IF EXISTS profiles_guard_role ON profiles;
-CREATE TRIGGER profiles_guard_role BEFORE UPDATE ON profiles
-    FOR EACH ROW EXECUTE FUNCTION guard_profile_role();
+CREATE TRIGGER profiles_guard_role BEFORE UPDATE OR DELETE ON profiles
+    FOR EACH ROW EXECUTE FUNCTION public.guard_profile_role();
 
 -- Profiles are created by handle_new_user; clients never insert them.
 DROP POLICY IF EXISTS "self_insert_profile" ON profiles;
@@ -145,46 +181,9 @@ CREATE POLICY "parent_insert_own_registrations" ON registrations FOR INSERT TO a
     WITH CHECK (EXISTS (SELECT 1 FROM students s WHERE s.id = registrations.student_id AND s.parent_id = auth.uid()));
 -- No parent UPDATE/DELETE: confirming, moving and cancelling are admin actions.
 
-CREATE OR REPLACE FUNCTION registrations_before_insert()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  sec     sections%ROWTYPE;
-  stu_age SMALLINT;
-  taken   INT;
-BEGIN
-  -- Row lock serializes concurrent sign-ups for the same section so capacity can't be overrun.
-  SELECT * INTO sec FROM sections WHERE id = NEW.section_id FOR UPDATE;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'That section no longer exists' USING ERRCODE = 'P0001';
-  END IF;
-
-  NEW.year := COALESCE(
-    (SELECT year FROM sessions WHERE id = sec.session_id),
-    (SELECT MAX(year) FROM sessions WHERE is_active),
-    NEW.year
-  );
-
-  -- Admins (and trusted server contexts) may place anyone anywhere with any status.
-  IF auth.uid() IS NULL OR auth_user_role() = 'admin' THEN
-    RETURN NEW;
-  END IF;
-
-  SELECT age INTO stu_age FROM students WHERE id = NEW.student_id;
-  IF stu_age IS NULL OR stu_age < sec.age_min OR stu_age > sec.age_max THEN
-    RAISE EXCEPTION 'This section is for ages %–%', sec.age_min, sec.age_max USING ERRCODE = 'P0001';
-  END IF;
-
-  SELECT COUNT(*) INTO taken FROM registrations
-  WHERE section_id = sec.id AND status IN ('confirmed', 'pending');
-
-  NEW.status := CASE WHEN taken >= sec.capacity THEN 'waitlisted'::registration_status
-                     ELSE 'pending'::registration_status END;
-  RETURN NEW;
-END;
-$$;
-DROP TRIGGER IF EXISTS registrations_before_insert ON registrations;
-CREATE TRIGGER registrations_before_insert BEFORE INSERT ON registrations
-    FOR EACH ROW EXECUTE FUNCTION registrations_before_insert();
+-- Status, eligibility, capacity and year are set by the registrations_before_insert() trigger.
+-- Its canonical definition (function and trigger) is in migration_one_class_per_week.sql; an
+-- older body used to live here and silently replaced the newer one when this file was re-run.
 
 -- ── 5. Volunteers: only admins create or change volunteer records (C4) ─
 
@@ -193,8 +192,8 @@ DROP POLICY IF EXISTS "volunteer_update_self" ON volunteers;
 
 -- ── 6. Volunteer applications: public insert, but no spoofing ──
 
-CREATE OR REPLACE FUNCTION application_user_ok(p_user_id UUID, p_email TEXT)
-RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, auth AS $$
+CREATE OR REPLACE FUNCTION private.application_user_ok(p_user_id UUID, p_email TEXT)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
   -- The apply form signs up first, then inserts before the email is confirmed (no session yet),
   -- so allow a just-created account whose email matches the application.
   SELECT p_user_id IS NULL
@@ -212,17 +211,29 @@ CREATE POLICY "public_insert_application" ON volunteer_applications FOR INSERT T
         -- (required by the apply form), so it is allowed to be true here.
         status = 'pending'
         AND admin_notes IS NULL
-        AND application_user_ok(user_id, email)
+        AND private.application_user_ok(user_id, email)
+        -- Admins can close applications (Volunteers / Form editor); that must stop direct API
+        -- inserts too, not just hide the form. app_settings is publicly readable.
+        AND EXISTS (SELECT 1 FROM app_settings
+                    WHERE key = 'volunteer_applications_open' AND value = 'true')
     );
+-- Per-email throttle: volunteer_applications_before_insert() in migration_review_hardening.sql.
 
 -- ── 7. Duty slots: capacity enforced server-side ──────────────
 
-CREATE OR REPLACE FUNCTION duty_assignments_before_insert()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+-- Runs on INSERT and on UPDATE OF duty_slot_id: volunteer_manage_own_duties is FOR ALL, so
+-- without the UPDATE case a volunteer could claim an open slot, then PATCH duty_slot_id to a
+-- full one.
+CREATE OR REPLACE FUNCTION public.duty_assignments_before_insert()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
   cap   SMALLINT;
   taken INT;
 BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.duty_slot_id IS NOT DISTINCT FROM OLD.duty_slot_id THEN
+    RETURN NEW;
+  END IF;
+  -- Row lock serializes concurrent claims on the same slot.
   SELECT capacity INTO cap FROM duty_slots WHERE id = NEW.duty_slot_id FOR UPDATE;
   SELECT COUNT(*) INTO taken FROM duty_assignments WHERE duty_slot_id = NEW.duty_slot_id;
   IF taken >= cap AND auth_user_role() IS DISTINCT FROM 'admin' THEN
@@ -231,9 +242,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+REVOKE EXECUTE ON FUNCTION public.duty_assignments_before_insert() FROM PUBLIC, anon, authenticated;
 DROP TRIGGER IF EXISTS duty_assignments_before_insert ON duty_assignments;
-CREATE TRIGGER duty_assignments_before_insert BEFORE INSERT ON duty_assignments
-    FOR EACH ROW EXECUTE FUNCTION duty_assignments_before_insert();
+CREATE TRIGGER duty_assignments_before_insert BEFORE INSERT OR UPDATE OF duty_slot_id ON duty_assignments
+    FOR EACH ROW EXECUTE FUNCTION public.duty_assignments_before_insert();
 
 -- ── 8. Schedules and assignments: signed-in users only ────────
 
@@ -244,30 +256,20 @@ CREATE POLICY "read_duty_slots"       ON duty_slots       FOR SELECT TO authenti
 CREATE POLICY "read_duty_assignments" ON duty_assignments FOR SELECT TO authenticated USING (true);
 CREATE POLICY "read_interview_slots"  ON interview_slots  FOR SELECT TO authenticated USING (true);
 
--- ── 9. Keep RLS helpers out of the public REST API ────────────
--- Anything in `public` is callable at /rest/v1/rpc/<name>. Policies reference functions by OID,
--- so moving the helpers to a non-exposed schema keeps every policy working.
+-- ── 9. Trigger functions are not API endpoints ───────────────
+-- (The RLS helpers were moved to `private` in section 0.)
 
-CREATE SCHEMA IF NOT EXISTS private;
-GRANT USAGE ON SCHEMA private TO anon, authenticated;
-
-ALTER FUNCTION public.auth_user_role()                        SET SCHEMA private;
-ALTER FUNCTION public.auth_volunteer_has_section(UUID)         SET SCHEMA private;
-ALTER FUNCTION public.auth_volunteer_has_student(UUID)         SET SCHEMA private;
-ALTER FUNCTION public.application_user_ok(UUID, TEXT)          SET SCHEMA private;
-
-ALTER FUNCTION private.auth_volunteer_has_student(UUID)        SET search_path = public, private;
-ALTER FUNCTION private.application_user_ok(UUID, TEXT)         SET search_path = public, private, auth;
-ALTER FUNCTION public.guard_profile_role()                     SET search_path = public, private;
-ALTER FUNCTION public.registrations_before_insert()            SET search_path = public, private;
-ALTER FUNCTION public.duty_assignments_before_insert()         SET search_path = public, private;
-
--- Trigger functions never need to be callable by API roles.
 REVOKE EXECUTE ON FUNCTION public.handle_new_user()                FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.guard_profile_role()             FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.registrations_before_insert()    FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.duty_assignments_before_insert() FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.rls_auto_enable()                FROM PUBLIC, anon, authenticated;
+-- rls_auto_enable() is Supabase's "auto-enable RLS" event trigger function; it only exists on
+-- projects where that dashboard option was turned on.
+DO $$
+BEGIN
+  IF to_regprocedure('public.rls_auto_enable()') IS NOT NULL THEN
+    REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC, anon, authenticated;
+  END IF;
+END $$;
 
 -- ── 10. Admin-only account lookup for linking volunteer applications ─
 -- An application can arrive without user_id (e.g. the email already had an account). Admins
@@ -287,16 +289,25 @@ GRANT EXECUTE ON FUNCTION public.admin_user_id_for_email(TEXT) TO authenticated;
 
 -- ── 11. Admin-only account emails for Users & roles ───────────
 -- profiles has no email; admins need it to tell accounts apart before changing a role.
+-- Created only if missing: migration_demo_environment.sql replaces it with a version that hides
+-- kept accounts, and re-running this file must not undo that.
 
-CREATE OR REPLACE FUNCTION public.admin_user_emails()
-RETURNS TABLE (id UUID, email TEXT, last_sign_in_at TIMESTAMPTZ)
-LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
+DO $do$
 BEGIN
-  IF private.auth_user_role() IS DISTINCT FROM 'admin' THEN
-    RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
+  IF to_regprocedure('public.admin_user_emails()') IS NULL THEN
+    EXECUTE $def$
+      CREATE FUNCTION public.admin_user_emails()
+      RETURNS TABLE (id UUID, email TEXT, last_sign_in_at TIMESTAMPTZ)
+      LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
+      BEGIN
+        IF private.auth_user_role() IS DISTINCT FROM 'admin' THEN
+          RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
+        END IF;
+        RETURN QUERY SELECT u.id, u.email::text, u.last_sign_in_at FROM auth.users u;
+      END;
+      $$
+    $def$;
   END IF;
-  RETURN QUERY SELECT u.id, u.email::text, u.last_sign_in_at FROM auth.users u;
-END;
-$$;
+END $do$;
 REVOKE ALL ON FUNCTION public.admin_user_emails() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_user_emails() TO authenticated;
