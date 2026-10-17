@@ -1,6 +1,6 @@
 # 09: Notifications outbox, sender and templates
 
-**Status:** ⬜ not started · **Issue:** #77 · **Priority:** P0 · **Effort:** M · **Phase:** B: Feb-critical
+**Status:** 🟨 outbox built ([PR #125](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/125)); sending waits for spec 02 · **Issue:** #77 · **Priority:** P0 · **Effort:** M · **Phase:** B: Feb-critical
 **Depends on:** 02 · **Unblocks:** 10, 11, 12, 14, L2, and every notify-on-change rule
 **Plan reference:** Plan §1 cross-cutting 'clear feedback', §1.5 cross-role table, §3 rank 1
 

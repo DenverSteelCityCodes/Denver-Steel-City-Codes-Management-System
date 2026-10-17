@@ -36,7 +36,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ✅ | [06](06-soft-cancel.md) | #74 | Soft-cancel registrations, cancel-section RPC, RESTRICT deletes | P0 | M | 05 | A |
 | ✅ | [07](07-edit-conflicts.md) | #75 | `updated_at` + conflict-checked saves | P0 | S | — | A |
 | ⬜ | [08](08-tests-and-ci.md) | #76 | Vitest, SQL/RLS tests, seat-race test, GitHub Actions | P0 | M | 01 | A |
-| ⬜ | [09](09-email-outbox.md) | #77 | Notifications outbox + sender + templates | P0 | M | 02 | B |
+| 🟨 | [09](09-email-outbox.md) | #77 | Notifications outbox + sender + templates | P0 | M | 02 | B |
 | ✅ | [10a](10a-block-same-week-backups.md) | #78 | Block same-week waitlist backups | P0 | S | — | B |
 | ⬜ | [10](10-waitlist-offers.md) | #79 | Waitlist offers: 48 h, decided order, auto-withdraw | P0 | M | 05, 06, 09, 10a | B |
 | ⬜ | [11](11-parent-cancel.md) | #80 | Parent cancel before deadline, change requests, contact card | P0 | S | 06, 09, 13 | B |
