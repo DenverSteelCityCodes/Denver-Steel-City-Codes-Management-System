@@ -47,11 +47,11 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [17](17-fewer-round-trips.md) | #86 | Shared query cache, `register_camper()` RPC, volunteer home RPC | P1 | M | 16 | B |
 | ⬜ | [18](18-admin-paging.md) | #87 | Server-side paging + search for admin lists | P0 | S | — | B |
 | ⬜ | [19](19-load-test-runbook-dry-run.md) | #88 | Load test, restore drill, PITR, runbooks, dry run | P0 | M | 01–18, L1–L3, L5 | B |
-| ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Privacy notice, terms, 18+ guardian attestation | P0 | S | counsel | Legal |
-| ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, counsel | Legal |
+| ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
+| ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |
 | ⬜ | [L4](L4-retention.md) | #92 | Retention policy + nightly anonymize job | P0 policy / P1 job | S | 05 | Legal |
-| ⬜ | [L5](L5-breach-runbook.md) | #93 | Security-incident runbook + access review | P0 | S | — | Legal |
+| ⬜ | [L5](L5-breach-runbook.md) | #93 | Site security-incident runbook + access review | P0 | S | — | Legal |
 | ⬜ | [20](20-chapters.md) | #94 | Chapters + chapter-scoped admin RLS | P1 ★ | L | 05, 08 | C |
 | ⬜ | [21](21-national-dashboard.md) | #95 | National dashboard | P1 ★ | M | 20 | C |
 | ⬜ | [22](22-n-week-seasons.md) | #96 | Seasons with any number of weeks | P1 ★ | L | 20 | C |
@@ -69,20 +69,19 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 
 ## Non-code tasks (people, not PRs; these block specs)
 
+Org-level compliance (insurance, licensing, counsel, volunteer screening) is **handled by SCC outside the site** and isn't tracked here. These are only the inputs the site needs. The website's own documents (privacy policy, terms, accessibility statement, data protection assessment, retention policy, incident runbook) **are** in scope: see plan §4.2.
+
 | ✓ | Task | Owner ❓ | Needed by | Blocks |
 |---|---|---|---|---|
-| ⬜ | Ask national for its counsel / insurer contact; else book [CLC nonprofit office hours](https://coloradolawyerscommittee.org/virtual-office-hours) (check eligibility as a chapter) | Regional Director | **Oct 31** | L1, L2, licensing |
-| ⬜ | Child-care licensing: ask counsel or CDEC whether SCC needs a license or exemption | Regional Director + counsel | Nov 30 | everything, if the answer is "license" |
-| ⬜ | Counsel-approved waiver + consent text (in national's name) | Counsel | **Jan 5** | L2 |
-| ⬜ | Privacy notice + terms text (national = controller) | Counsel (Claude can draft) | Jan 5 | L1 |
-| ⬜ | Data protection assessment, 2 pages (Colorado minors' amendment) | Claude drafts, counsel reviews | Jan 15 | — |
+| ⬜ | Get SCC's official waiver + consent text (in national's name) | Regional Director → SCC national | **Jan 5** | L2 |
+| ⬜ | Website privacy policy + terms of use: Claude drafts from what the site collects; SCC reviews and approves | Claude → SCC national | Draft Nov 15 · approved Jan 5 | L1 |
+| ⬜ | Data protection assessment for the site, 2 pages (Colorado minors' amendment) | Claude drafts, SCC reviews | Jan 15 | — |
 | ⬜ | Decide who owns prod Supabase, Vercel and email-provider accounts (Q-H1); billing for a second Supabase project (Q-H3) | Regional Director + national | Oct 31 | 01 |
 | ⬜ | DNS access for `steelcitycodes.org` (SPF/DKIM for system email; maybe a registration subdomain) (Q-H5) | National IT ❓ | Nov 15 | 02 |
 | ⬜ | Sign vendor DPAs (Supabase, Vercel, email provider) as national | National | Jan 31 | — |
 | ⬜ | Turn on Point-in-Time Recovery (paid add-on) for Feb–Aug | Account owner | Feb 1 | 19 |
-| ⬜ | Insurance: does SCC's policy require waiver language or volunteer screening? (Q-L8) | National | Dec 15 | L2, L7 |
-| ⬜ | Volunteer screening + youth-protection policy with national (Q-L7) | National | Mar | L7 |
-| ⬜ | Retention schedule sign-off (plan §4.3) | Counsel | Jan 15 | L4 |
+| ⬜ | Does SCC want volunteer clearances recorded in the site? (Q-L9) | SCC national | Mar | L7 |
+| ⬜ | SCC's retention policy, or sign-off on plan §4.3 | SCC national | Jan 15 | L4 |
 | ⬜ | Peak 2027 numbers (Q-H4) and the registration opening date/time | Regional Director | Dec 1 | 13, 19 |
 | ⬜ | Recruit 5 real parents for the February dry run | Regional Director | Jan 20 | 19 |
 

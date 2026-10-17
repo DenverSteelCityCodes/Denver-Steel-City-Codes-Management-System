@@ -29,13 +29,14 @@
 4. **Audit log + undo** (PRs 5, 15). One generic database trigger makes every change traceable and the admin override safe.
 5. **Auto-confirm + "section has no lead" alert** (PR 14). Today each "Spot held" registration is confirmed one at a time ✅. Decided 2026-10-16: the confirm step checks nothing, so seats are confirmed the moment they're held. That removes hours of clicking and a confusing status.
 
-### Legal must-dos before February (detail in §4; none of this is legal advice)
+### Website legal must-dos before February (detail in §4)
 
-1. **Have counsel review the waiver.** Colorado lets a parent waive a child's future negligence claims only if the decision is "voluntary and informed" ([C.R.S. 13-22-107](https://colorado.public.law/statutes/crs_13-22-107)). Today's waiver is hardcoded app text, mentions "refund", bundles five consents, and we don't store which version anyone signed ✅.
-2. **Confirm we don't need a child-care license.** Colorado exempts single-skill classes, but the exemption ends when "activities other than the identified single skill" are provided ([CDEC](https://cdec.colorado.gov/for-providers/legal-exemption-from-child-care-licensing)). Our schedule has lunch, breaks and "candy consent" ✅. This is a question for counsel, not for code.
-3. **Publish a privacy notice and run a short data protection assessment.** Colorado's 2025 minors' amendment has no size threshold, and we knowingly serve minors: volunteers aged 14–17 hold their own accounts ✅ ([Lowenstein summary](https://www.lowenstein.com/news-insights/publications/client-alerts/colorado-tightens-rules-on-minors-online-data-are-you-ready-for-october-1-data-privacy)).
-4. **Unbundle photo consent** (opt-in, default off, visible on rosters), and record each signature with the waiver version it was for (PR L2).
-5. **Write a disposal policy and a breach plan.** Colorado gives 30 days to notify residents after a breach, plus the Attorney General at 500+ ([Mintz](https://www.mintz.com/mintz-matrix/colorado)).
+**Scope (decided 2026-10-17):** SCC's insurance, licensing, legal counsel and volunteer-screening policies are already in place and stay outside this plan. The website is an extension of SCC, so these items cover only what the site replaces or adds:
+
+1. **Carry SCC's official waiver, versioned.** Today's waiver is hardcoded app text that may not match SCC's official one. It says "Denver Summer Camp", mentions refunds, bundles five consents, and we don't store which version anyone signed ✅. Use SCC's text and record every signature against its version (PR L2).
+2. **Publish the website's own documents:** a privacy policy (what the site collects, who sees it, how long it's kept, how to ask for changes or deletion), terms of use and an accessibility statement. Claude drafts them from what the site actually stores, and SCC reviews. Keep a short internal data protection assessment too. Colorado's 2025 minors' amendment has no size threshold, and the site knowingly serves minors: volunteers aged 14–17 hold their own accounts ✅ ([Lowenstein summary](https://www.lowenstein.com/news-insights/publications/client-alerts/colorado-tightens-rules-on-minors-online-data-are-you-ready-for-october-1-data-privacy)).
+3. **Unbundle photo consent** (opt-in, default off, visible on rosters) (PRs L2, L3).
+4. **Handle the site's own data properly:** a retention job that follows SCC's retention policy, and a site incident runbook that plugs into SCC's existing process. Colorado gives 30 days to notify residents after a breach ([Mintz](https://www.mintz.com/mintz-matrix/colorado)) (PRs L4, L5).
 
 ### Build order at a glance (detail in §5)
 
@@ -46,7 +47,7 @@ Dec–Jan  Feb-critical  9 email outbox · 10 waitlist offers · 11 cancel · 12
                        14 auto-confirm + no-lead alert · 15 history/undo UI · 16 wizard drafts
                        17 fewer round trips · 18 admin pagination · 19 load test + runbook + dry run
 Oct–Jan  Legal track   L1 privacy notice + terms · L2 waiver/consent records · L3 photo flag on roster
-         (alongside)   L4 disposal policy + retention job · L5 breach runbook · counsel + licensing check
+         (alongside)   L4 retention job · L5 site incident runbook · website privacy policy + terms (drafted, SCC reviews)
 Feb 2027 Registration opens (Denver pilot)
 Mar–Jun  Handoff       20 chapters · 21 national view · 22 N-week seasons · 23 per-chapter forms
                        24 second guardian · 25 volunteer self-service · 26 docs + admin guide
@@ -133,7 +134,7 @@ flowchart TD
 | Progress lives in memory; back, reload or a killed tab loses it | 🔴 on phones | PR 16 |
 | Fill counts are loaded once. A seat shown as open can be gone by step 5, which surprises the parent with a waitlist | 🟠 | Re-check fill on entering step 4 and before submit; say "1 spot left" honestly (PR 16) |
 | Submit is four separate writes with no transaction. A failure after the camper is saved leaves "camper with no class" (handled with a retry, but fragile) | 🟡 | One `register_camper()` RPC in a transaction (PR 17) |
-| Waiver text is hardcoded in the page, says "Denver Summer Camp", bundles photo release with the liability waiver, and records no version | 🔴 legal | Counsel-reviewed, versioned waiver with separate consents and an emailed copy (PR L2, §4) |
+| Waiver text is hardcoded in the page, says "Denver Summer Camp", bundles photo release with the liability waiver, and records no version | 🔴 legal | SCC's official waiver text, versioned, with separate consents and an emailed copy (PR L2, §4) |
 | Age is derived from grade (`4th→9 … 9th→14`); no date of birth | 🟡 | ❓ Q-P2: is grade the official eligibility rule? |
 
 #### P3. Register an existing camper (class browser + yearly re-confirm) ✅
@@ -528,7 +529,7 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 | 11 | Household: invite a second guardian | Parents | Med | M | P1 | Kills duplicate kids at the source |
 | 12 | Volunteer self-service: availability, preferences, switch request, "can't make it" | Volunteers | Med | M | P1 | Matches the brief; feeds the no-lead alert |
 | 13 | Admin MFA ★ | Admins | Med | S | P1 | Admins see every child's medical data |
-| 14 | Volunteer clearance tracking with expiry that blocks crewing ★ | Admins, national | High (for PA) | S | P1 (PR L7) | Pennsylvania requires three clearances for adult volunteers with children (§4.1); ❓ national's own policy |
+| 14 | Volunteer clearance tracking with expiry that blocks crewing ★ | Admins, national | High (for PA) | S | P1 (PR L7) | Only if SCC wants clearance records in the site (Q-L9); Pennsylvania's three-clearance rule is the model (§4.1) |
 | 15 | Volunteer hours certificate | Teen volunteers | Med | S | P2 | Students need service hours; roll calls + crew dates already give us the data |
 | 16 | SMS reminders | Parents | Med | M | P2 | Email first; SMS costs money per message |
 | 17 | Priority window for returning families / lottery | Parents | — | M | ✗ dropped | Decided 2026-10-16: fixed-time first come for everyone |
@@ -538,37 +539,51 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 
 ## 4. Domain 4: Legal and compliance
 
-> **This is not legal advice, and I'm not a lawyer.** It's an engineer's map of the legal questions this system raises, so that a lawyer's hour goes to the right places. Every legal claim is 🔎 until counsel confirms it. Sources are mostly law-firm summaries and official pages loaded in October 2026, and laws and rules change: Colorado's Attorney General is still writing rules for the minors' amendment. **The Denver pilot is governed by Colorado + federal law. Each national chapter adds its own state's rules.**
+> **Scope (decided 2026-10-17):** SCC's organization-level compliance (insurance, child-care licensing, legal counsel, volunteer screening and reporting policies) is already handled by SCC and is **out of scope** here. The website is an extension of SCC, so this section covers only the legal duties created by what the site replaces (hardcoded forms, emails from personal inboxes) or adds (accounts, stored data, system emails). This isn't legal advice: 🔎 claims come from law-firm summaries and official pages loaded in October 2026. **The website's own documents are in scope:** privacy policy, terms of use, accessibility statement, email footer wording, and the internal data protection assessment, retention policy and incident runbook. SCC's own legal contacts review anything the site publishes. **The Denver pilot falls under Colorado and federal law; each new chapter's site configuration follows its state.**
 
-**Summary.** Four things carry real legal weight before February. **First, the waiver:** it's what protects SCC if a child is hurt, and today it's hardcoded app text with no record of which version anyone signed. **Second, child-care licensing:** a non-code question that could matter more than anything in this plan. **Third, minors' privacy:** we knowingly hold accounts for 14–17-year-old volunteers and data on 9–14-year-old campers, which brings in Colorado's 2025 minors' amendment. **Fourth, breach and retention duties:** we need written policies, and records kept long enough to defend a claim. Most fixes are documents plus two small PRs (L1, L2). COPPA, FERPA and HIPAA look mostly *not* to apply, provided campers never get their own logins or email from us.
+**Summary.** Three things matter for the site before February. **First, the waiver:** the site must show SCC's official waiver exactly and keep a reproducible record of who signed which version. **Second, minors' privacy:** the site holds accounts for 14–17-year-old volunteers and data on 9–14-year-old campers, which brings in Colorado's 2025 minors' amendment for the site itself (privacy notice, data protection assessment, minimal crew access). **Third, the site's data lifecycle:** retention, incident handling and email rules for what it stores and sends. The fixes are two small PRs (L1, L2) plus SCC-provided text. COPPA, FERPA and HIPAA look mostly *not* to apply, provided campers never get their own logins or email from us.
 
 ### 4.1 Findings: what applies, what it means, what we're missing
 
 | Area | Applies to us? 🔎 | What it requires (short) | Gap today ✅ | Fix | P | Effort |
 |---|---|---|---|---|---|---|
-| **Parent waiver of a minor's claims** | Yes (Colorado) | A parent may release a child's *prospective negligence* claims, but only if the decision is "voluntary and informed"; gross negligence or willful conduct can't be waived ([C.R.S. 13-22-107](https://colorado.public.law/statutes/crs_13-22-107); [Colo. App. on "voluntary and informed"](https://caselaw.findlaw.com/co-court-of-appeals/1548014.html)) | Text hardcoded in `ParentRegistrationPage.tsx`, not visibly counsel-reviewed. Bundles liability, medical authorization, photo release, tech use and conduct. Says "without refund" (❓ is camp free?). No version stored; can't reproduce what a parent agreed to | Counsel-approved text; stored versioned; each consent shown and acknowledged separately; emailed copy | **P0** | M (PR L2) + counsel |
+| **Parent waiver of a minor's claims** | Yes (Colorado) | A parent may release a child's *prospective negligence* claims, but only if the decision is "voluntary and informed"; gross negligence or willful conduct can't be waived ([C.R.S. 13-22-107](https://colorado.public.law/statutes/crs_13-22-107); [Colo. App. on "voluntary and informed"](https://caselaw.findlaw.com/co-court-of-appeals/1548014.html)) | Text hardcoded in `ParentRegistrationPage.tsx`, and may differ from SCC's official waiver. Bundles liability, medical authorization, photo release, tech use and conduct. Says "without refund" (❓ is camp free?). No version stored; can't reproduce what a parent agreed to | SCC's official text; stored versioned; each consent shown and acknowledged separately; emailed copy | **P0** | M (PR L2) |
 | **Electronic signatures** | Yes | Typed-name signatures are generally valid under E-SIGN and Colorado's UETA, if intent is clear, the signature is tied to the signer, and the record can be retained and reproduced 🔎 | We store typed names + a timestamp, but not the account that signed, the exact text, or a copy given to the parent | Signature record: account id, typed name, waiver version + hash, time, user agent; PDF/email receipt | **P0** | (in L2) |
 | **Photo / media release** | Yes (consent) | Use of a child's image needs the guardian's permission; best practice is a separate, revocable opt-in | Bundled into the waiver, so signing the waiver forces consent; volunteers can't see who opted out | Separate opt-in (default off), editable later; "No photos" flag on rosters and print rosters | **P0** | S (L2 + L3) |
-| **Child-care licensing** | ❓ Possibly | Colorado licenses child care unless exempt. A single-skill class is exempt, but "any time activities other than the identified single skill are provided" it needs a license ([CDEC exemptions](https://cdec.colorado.gov/for-providers/legal-exemption-from-child-care-licensing); [C.R.S. 26.5-5-304](https://colorado.public.law/statutes/crs_26.5-5-304)) | Our schedule includes lunch, break supervision and duty slots ✅. Meals are allowed under the exemption 🔎; breaks/games may not be | Counsel or CDEC to confirm whether SCC needs an exemption filing or a license. No code unless they say so | **P0** (question) | — |
+| **Child-care licensing** | Handled by SCC outside the site | — | — | No site work | — | — |
 | **Colorado Privacy Act (CPA)** | 🔎 Base law: probably not. Nonprofits are covered, but the threshold is 100,000 consumers/year ([BCLP](https://www.bclplaw.com/print/v2/content/1524736/the-colorado-privacy-act-applies-to-non-profits-is-your-non-profit-ready.pdf)) | Controller duties, consumer rights, sensitive-data consent | — | Plan for national scale (all chapters together could approach thresholds over years) | P2 | — |
 | **CPA minors' amendment (SB 24-041, eff. Oct 1 2025)** | 🔎 **Likely yes.** No volume threshold; triggered by offering an online service to a consumer you *know* is under 18 ([Lowenstein](https://www.lowenstein.com/news-insights/publications/client-alerts/colorado-tightens-rules-on-minors-online-data-are-you-ready-for-october-1-data-privacy); [bill](https://leg.colorado.gov/bills/sb24-041)) | Reasonable care to avoid "heightened risk of harm" to minors; a **data protection assessment**; no targeted ads, sale or profiling of minors' data without consent; no design features to extend use; precise-geolocation limits. Consent from the minor, or a parent if under 13 | Teen volunteers (14–17) hold accounts ✅. No assessment, no privacy notice. Good news: no ads, trackers, data sales or geolocation ✅ | Write a 2-page data protection assessment; publish a privacy notice; keep "no trackers" as a written rule; tighten volunteer access to camper data (PR 4) | **P0** | S (docs) |
 | **COPPA (federal, amended rule enforced Apr 22 2026)** | 🔎 Mostly no. It covers online services directed to children under 13, or with actual knowledge of collecting *from* them ([Davis Polk](https://www.davispolk.com/insights/client-update/ftc-prioritizes-coppa-enforcement-new-compliance-obligations-take-effect)). Parents, not campers, use the app | Verifiable parental consent, notice, data minimization, retention limits, security program | A **camper email** field exists. If it's ever used to contact campers or give them logins, COPPA comes into play | Remove the camper email field (or document that it's for the parent's reference only and never contacted); written rule: no camper accounts without a COPPA review | **P0** (decision) | S |
 | **Data breach notification** | Yes (Colorado) | Notify affected Colorado residents within **30 days** of determining a breach; the Attorney General if 500+; credit bureaus if 1,000+ ([Mintz](https://www.mintz.com/mintz-matrix/colorado); [Perkins Coie](https://perkinscoie.com/print/pdf/node/1156)) | No incident plan; no one assigned; no access logs to scope a breach (PR 5 helps) | Breach runbook: who decides, the 30-day clock, notice templates, contacts (Supabase, Vercel, AG) | **P0** | S (L5) |
 | **Reasonable security + disposal** | 🔎 Yes (Colorado requires reasonable security procedures and a **written policy for destroying** personal information; verify current text) | Written disposal policy; destroy when no longer needed | Nothing is ever deleted; no written policy | Disposal policy + nightly retention job (§4.3) | **P0** policy / P1 job | S (L4) |
-| **Volunteer screening (Colorado)** | 🔎 No general statute for private nonprofit volunteers found | — (but insurers and national often require screening) | Interview only; no clearance record | Youth-protection policy: two adults per room (lead + support already does this ✅), training, reporting path. ❓ national's standard | P1 | — |
-| **Volunteer clearances (Pennsylvania, for national)** | Yes, for PA programs | Adult volunteers responsible for children need a State Police criminal check, a DHS child-abuse clearance, and an FBI fingerprint check (waived for unpaid PA residents of 10+ years who sign an affirmation); renewed every 60 months ([Villanova](https://www.villanova.edu/villanova/generalcounsel/uco/minors/background_checks.html); [district sheet](https://www.wmasd.org/Downloads/Clearance%20Information%20Sheet%20Volunteers3.pdf)) | No clearance fields | Clearance tracking with expiry that blocks crewing until renewed (like [Better Impact](https://support.betterimpact.com/en/articles/8429304-comprehensive-guide-to-background-checks)) | P1 ★ | S (L7) |
-| **Mandatory reporting** | 🔎 Colorado's list names professions; unpaid volunteers appear not to be listed ([C.R.S. 19-3-304](https://colorado.public.law/statutes/crs_19-3-304)) | — | No in-app or written reporting procedure (incidents are phone-only by earlier decision) | Written policy: volunteer → admin immediately → authorities. Staff (if any are paid) may be mandated reporters. No code | P1 | — |
+| **Volunteer screening / youth protection** | Handled by SCC outside the site | — | — | No site work. Lead + support per section already gives two adults per room ✅ | — | — |
+| **Volunteer clearances (Pennsylvania, for national)** | SCC's screening policy decides; the site can **record** clearances so crewing respects them | Adult volunteers responsible for children need a State Police criminal check, a DHS child-abuse clearance, and an FBI fingerprint check (waived for unpaid PA residents of 10+ years who sign an affirmation); renewed every 60 months ([Villanova](https://www.villanova.edu/villanova/generalcounsel/uco/minors/background_checks.html); [district sheet](https://www.wmasd.org/Downloads/Clearance%20Information%20Sheet%20Volunteers3.pdf)) | No clearance fields | If SCC wants it in the site: clearance tracking with expiry that blocks crewing until renewed (like [Better Impact](https://support.betterimpact.com/en/articles/8429304-comprehensive-guide-to-background-checks)) | P1 ★ | S (L7) |
+| **Mandatory reporting** | Handled by SCC outside the site | — | — | No site work | — | — |
 | **Accessibility (ADA)** | 🔎 Likely (Title III: public programs run by private nonprofits); courts differ on websites | Equal access; WCAG 2.1 AA is the common benchmark | Labels and alerts done ✅; no full audit | Automated + manual WCAG 2.1 AA audit, fixes, an accessibility statement with `denver@steelcitycodes.org` as contact | P1 | M (L6) |
 | **Email / SMS rules** | Yes once we send email (PR 9) | CAN-SPAM: transactional email is mostly exempt; newsletters need an unsubscribe link and a postal address. SMS (TCPA) needs prior express consent | "Also email" goes from a personal inbox | Separate transactional from announcement email; footer with unsubscribe + address; SMS only with a consent checkbox (P2) | P0 (with PR 9) | S |
 | **FERPA / Colorado student-data law** | 🔎 No, unless we contract with a school district. FERPA binds schools that get federal funds | Data-sharing agreements if a district shares records | District dropdown suggests outreach through schools ❓ | If any district partnership exists or is planned, get its data agreement reviewed | P2 | — |
 | **HIPAA** | 🔎 No (we're not a health plan or provider) | — | Medical data is still sensitive | Treat it as sensitive anyway: crew-only access (PR 4), never in exports by default | — | — |
 | **Vendors (processors)** | Yes | Contracts with processors handling personal data (DPAs); know where data lives | Supabase, Vercel, Google Fonts; email provider coming. No DPAs on file ❓; project region unknown ❓ | Accept Supabase's, Vercel's and the email provider's DPAs; record the region in the privacy notice | P1 | S |
 | **Accounts and age** | Yes (terms) | Parent accounts should be 18+ guardians; minors' accounts need guardian consent | Signup has no guardian/18+ attestation; volunteer apply already requires a guardian signature under 18 ✅ | Signup checkbox: "I'm 18+ and the parent or legal guardian" + link to terms | **P0** | S (L1) |
-| **Who is the legal "controller"?** | ❓ | The privacy notice, contracts and breach notices must name the entity responsible | Unknown whether Denver is its own legal entity or a chapter of a national 501(c)(3) | Office hours Q-L1; it decides whose name goes on L1 | **P0** (question) | — |
+| **Who is the legal "controller"?** | ✅ Decided | The privacy notice, contracts and breach notices must name the entity responsible | — | SCC national (Denver is a chapter, Q-L1) | — | — |
 
 ### 4.2 Proposed changes (summary first)
 
-**Documents (counsel or owner writes them; I can draft them):** privacy notice · terms of use · waiver + consent text (counsel) · data protection assessment · disposal/retention policy · breach response runbook · youth-protection and reporting policy · accessibility statement · per-state legal checklist for new chapters (national).
+**Website document set (in scope; Claude drafts, SCC reviews, unless noted)**
+
+| Document | Public? | What it covers | Spec | Needed by |
+|---|---|---|---|---|
+| Privacy policy | Public (`/privacy`) | What the site collects about campers, parents and volunteers; why; who sees it (the §2.4 who-sees-what table); processors (Supabase, Vercel, email provider) and region; retention; how to see, correct or delete data; no ads, sale or trackers; children's and teens' data; contact `denver@steelcitycodes.org`; effective date and version | L1 | **Jan 5** |
+| Terms of use | Public (`/terms`) | Who may hold an account (18+ guardians; volunteers 14+ with guardian consent), acceptable use, account security, changes, contact | L1 | Jan 5 |
+| Accessibility statement | Public (`/accessibility`) | Standard targeted (WCAG 2.1 AA), known issues, how to get help | L6 | before the handoff |
+| Email footer wording | In every email | Who it's from, why you got it, contact; unsubscribe + postal address on announcements (CAN-SPAM) | 09 | with 09 |
+| Waiver and consents | Shown in the wizard | **SCC's official text as-is** (SCC provides it); the site only versions it and records signatures | L2 | **Jan 5** |
+| Data protection assessment | Internal | Colorado minors' amendment: risks to minors from the site's processing, and how each is reduced | tracker task | Jan 15 |
+| Retention policy for site data | Internal (summary in the privacy policy) | Plan §4.3, aligned to any SCC records policy | L4 | Jan 15 |
+| Site incident runbook | Internal | Plugs into SCC's existing incident process; the 30-day notice clock | L5 | with 19 |
+| New-chapter site checklist | Internal | What each chapter fills in for its site (waiver text, contact, time zone, clearances if used) | 26 | handoff |
+
+Org-level policies (insurance, licensing, volunteer screening, reporting) stay with SCC, outside the site.
 
 **Code (small PRs; table in §5):**
 - **L1. Privacy notice + terms pages; signup attestation.** `/privacy` and `/terms` linked from every footer, signup, apply and the wizard's waiver step. Signup checkbox: 18+ guardian. Contact: `denver@steelcitycodes.org`. **P0 · S.**
@@ -584,13 +599,13 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 - **L6. Accessibility audit + fixes + statement.** **P1 · M.**
 - **L7. Volunteer clearances.** `volunteer_clearances(volunteer_id, kind, issued_on, expires_on, verified_by)`; chapter setting "required clearances"; crewing blocked while one is missing or expired; expiry alerts. **P1 ★ · S.**
 
-### 4.3 Retention schedule (draft for counsel)
+### 4.3 Retention schedule (the site's default; SCC's own retention policy wins where it says otherwise)
 
 The original §2.4 proposal of "anonymize after 3 years" conflicted with defending a claim. 🔎 Colorado's injury limit is generally 2 years, but for minors it can run from the 18th birthday, and the courts are still refining exactly how ([Colo. Sup. Ct., *Kinslow v. Mohammadi*, 2024](https://www.coloradojudicial.gov/sites/default/files/2024-05/22SC787.pdf)). So, two tiers:
 
 | Record | Keep until | Then |
 |---|---|---|
-| Signed waivers/consents, roll-call marks, incident notes (if ever recorded), audit log entries about a camper | **Camper's 21st birthday** 🔎 (counsel to set) | Delete |
+| Signed waivers/consents, roll-call marks, incident notes (if ever recorded), audit log entries about a camper | **Camper's 21st birthday** 🔎 (SCC to confirm) | Delete |
 | Camper profile (contact, school, medical, demographics) | 2 years after their last camp session | Anonymize (keep year, grade, class for reporting) |
 | Medical/allergy text | 90 days after their last session (only needed during camp) | Clear the field |
 | Parent account + contact | 2 years after their last camper's session, or on request | Delete or anonymize |
@@ -628,13 +643,13 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | 17 | Fewer round trips: shared query cache (TanStack Query) across parent components; `register_camper()` transactional RPC; volunteer dashboard single RPC | P1 (do it if time) | M | 16 |
 | 18 | Server-side paging + search on admin Students and Users | P0 | S | — |
 | 19 | k6 load test against a staging copy (500 parents/15 min); backup restore drill; PITR on; registration-day runbook + breach runbook (L5); **full dry run with 5 real parents** | P0 | M | 1–18, L1–L3 |
-| **Legal track (runs alongside Phases A–B; documents need counsel)** |||||
-| L1 | `/privacy` + `/terms` pages, footer links, signup "18+ parent/guardian" attestation, contact `denver@steelcitycodes.org` | P0 | S | counsel text, Q-L1 |
-| L2 | Versioned `waivers` + `consents` tables; wizard renders the active waiver; separate opt-in consents (photo default off); signature record; emailed receipt; demographic questions marked optional with purpose; remove or relabel camper email | P0 | M | 9, counsel text |
+| **Legal track (runs alongside Phases A–B; SCC provides the waiver and privacy text)** |||||
+| L1 | `/privacy` + `/terms` pages, footer links, signup "18+ parent/guardian" attestation, contact `denver@steelcitycodes.org` | P0 | S | SCC review of Claude's drafts |
+| L2 | Versioned `waivers` + `consents` tables; wizard renders the active waiver; separate opt-in consents (photo default off); signature record; emailed receipt; demographic questions marked optional with purpose; remove or relabel camper email | P0 | M | 9, SCC's waiver text |
 | L3 | "No photos" flag on volunteer roster + print roster | P0 | S | 4, L2 |
-| L4 | Retention job implementing §4.3 (anonymize, logged) + written disposal policy | P0 policy / P1 job | S | 5 |
-| L5 | Breach runbook + quarterly admin-access review (ships inside PR 19) | P0 | S | — |
-| — | Not code: counsel waiver review · child-care licensing check (CDEC) · data protection assessment · vendor DPAs | P0 | — | — |
+| L4 | Retention job implementing §4.3 (anonymize, logged), following SCC's retention policy | P0 policy / P1 job | S | 5 |
+| L5 | Site incident runbook that plugs into SCC's process + quarterly admin-access review (ships inside PR 19) | P0 | S | — |
+| — | Not code: Claude drafts the website privacy policy, terms and data protection assessment for SCC to review · SCC provides its official waiver text · vendor DPAs | P0 | — | — |
 | **Phase C: Handoff (Mar – Jun 2027)** |||||
 | 20 | `chapters` + `chapter_id`; `chapter_admin` / `national_admin` RLS; time zone, name, logo, contact per chapter | P1 ★ | L | 5, 8 |
 | 21 | National dashboard (chapter list, roll-up, drill-in) | P1 ★ | M | 20 |
@@ -644,12 +659,12 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | 25 | Volunteer self-service: availability, preferences, switch request, "can't make it" | P1 | M | 14 |
 | 26 | Admin guide, runbook polish, architecture doc, per-state legal checklist for new chapters | P1 ★ | M | 20–23 |
 | L6 | Accessibility audit (WCAG 2.1 AA) + fixes + accessibility statement | P1 | M | — |
-| L7 | Volunteer clearances with expiry; crewing blocked when missing (PA-ready) | P1 ★ | S | 20 |
+| L7 | Volunteer clearances with expiry; crewing blocked when missing (PA-ready), only if SCC wants clearance records in the site | P1 ★ | S | 20 |
 | 27 | Admin MFA (TOTP) required for every admin account | P1 ★ | S | — |
 | 28 | Family data-deletion requests: parent asks in-app, admin approves, anonymize RPC (logged) | P1 | S | 5, L4 |
 | — | P2 backlog (each with a mini-spec in `docs/specs/backlog-p2.md`): SMS reminders, volunteer hours certificate, self-hosted fonts, server-side bell "seen" state, duty reminders and swaps, authorized-pickup list, magic-link sign-in, first-login lands in the wizard | P2 | — | — |
 
-**Critical path to February:** 1 → 2 → 9 → 10 → 12 → 19, with **L2** (needs counsel's waiver text by early January) joining at 9. If time runs short, cut **17** first and then **15** (the log still records everything; undo can be manual SQL for a season). Never cut 1–4, 9, 10, 19, L1 or L2. **Start counsel and the licensing question this month**: they have the longest lead time and need no code.
+**Critical path to February:** 1 → 2 → 9 → 10 → 12 → 19, with **L2** (needs SCC's official waiver text by early January) joining at 9. If time runs short, cut **17** first and then **15** (the log still records everything; undo can be manual SQL for a season). Never cut 1–4, 9, 10, 19, L1 or L2. **This month:** ask SCC for its official waiver text, and have Claude draft the website privacy policy and terms for SCC to review. These are the only non-code inputs February needs.
 
 ---
 
@@ -668,8 +683,7 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | Q-N1 Families in a cancelled section | **Email + rebook link + front of the line** on any waitlist they join that week | PRs 6 and 10 |
 | Q-W4 Same-week waitlist backups | **Blocked.** A camper who holds a seat in a week can't join another waitlist that week ("Already registered this week"). When a camper takes a seat, their other waitlist entries for that week are withdrawn automatically, and the parent is told | Changes the insert trigger (`migration_one_class_per_week.sql` currently allows backups) and the class browser button; PR 10 adds the auto-withdraw. The Q-W2b "skip" rule stays as a safety net |
 | Q-L1 Legal entity | **Denver is a chapter of the national nonprofit.** National is the legal "controller": its name goes on the privacy notice, terms, waiver and vendor contracts | L1/L2 text in national's name; vendor DPAs signed by national; strengthens the case for national owning the prod accounts (Q-H1) |
-| Q-L2 Counsel | **No one yet.** First step: ask national whether it has counsel or an insurer who reviews waivers. Fallbacks: the Colorado Lawyers Committee's [Nonprofit Legal Services Initiative](https://coloradolawyerscommittee.org/nonprofit-legal-services-initiative) (with the Colorado Nonprofit Association) offers [free weekly 45-minute office hours](https://coloradolawyerscommittee.org/virtual-office-hours) for Colorado 501(c)(3)s 🔎 (check eligibility for a chapter of an out-of-state nonprofit), or its Pro Bono Legal Group, which matches nonprofits with volunteer lawyers | Counsel review is now the long pole for L2 (waiver text by early January) |
-| Q-L3 Child-care licensing | **Not sure.** It becomes the first question for counsel (or a direct call to CDEC) | No code until answered; tracked in specs as a blocking non-code task |
+| Q-L2, Q-L3, Q-L7, Q-L8 Counsel, licensing, screening, insurance | **Handled by SCC outside the website** (2026-10-17). The site is an extension of SCC: it carries SCC's policies, it doesn't create new ones | Org-level items dropped from the to-do lists. L1/L2 use SCC-provided text. L7 records clearances only if SCC wants them in the site |
 | Q-V1 Volunteer class picking | **Preferences + admin assigns**; volunteers edit availability/preferences and can request a switch | PR 25 as specified; no self-pick |
 
 ### Still open
@@ -702,15 +716,11 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 - Q-H5. Who controls DNS for `steelcitycodes.org` (needed so system email can send from that domain)? Should system email reply to `denver@steelcitycodes.org`, or to a separate registration inbox?
 
 **Legal (§4)**
-- Q-L2b. Who wrote the current waiver text? Ask national for its counsel/insurer contact.
-- Q-L3b. For counsel/CDEC: does camp include anything beyond coding instruction and lunch (games, field trips, free play)?
-- Q-L4. Is camp free? If not: refunds, payments and receipts become legal and accounting work.
 - Q-L5. Is the camper email field used for anything? If not, remove it.
+- Q-L9. Does SCC want volunteer clearances recorded in the site (spec L7), or kept only in SCC's own records?
 - Q-L6. Any school-district partnerships that share student data with us?
-- Q-L7. What does national require for volunteer screening (clearances, training, two-adult rule)? Are there adult volunteers in Denver?
-- Q-L8. Insurance: does SCC's liability policy require specific waiver language or screening? (Insurers often do.)
 
-**Flows I'm least sure about (walk these first):** N1 national view (Q-N2, Q-N3). Done: P5 cancel/swap rules, P6 offer rules and order, V3 volunteer class picking, Q-P4, opening day, cancelled sections. **Legal:** Q-L1 answered (chapter of national); finding counsel and the licensing check are now action items, not questions.
+**Flows I'm least sure about (walk these first):** N1 national view (Q-N2, Q-N3). Done: P5 cancel/swap rules, P6 offer rules and order, V3 volunteer class picking, Q-P4, opening day, cancelled sections. **Legal:** settled. SCC handles org-level compliance. The site uses SCC's official waiver text and gets its own privacy policy, terms and accessibility statement (Claude drafts, SCC reviews).
 
 ---
 
@@ -720,5 +730,5 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 - **Live checks (local dev server against the demo DB, one-click demo accounts):** page timings in §2.3, and a read-only permission check as the demo volunteer (Risk 4).
 - **Not verified:** live DB schema, policies and advisors. The Supabase MCP refused access today, so DB facts come from the migration files, which the QA notes say were applied via MCP. 🔎 items about Supabase limits come from Supabase docs, not from your dashboard. Please check Auth → Rate limits and API → Max rows there.
 - **Comparable-tool research:** vendor docs and help-center pages, loaded October 2026. A few CampMinder pages need a login, and those claims come from search snippets.
-- **Legal research:** law-firm summaries, statute mirrors and state agency pages, loaded October 2026. I did not read official statute text for every item. Everything in §4 is 🔎 until counsel confirms it.
+- **Legal research:** law-firm summaries, statute mirrors and state agency pages, loaded October 2026. I did not read official statute text for every item. Everything in §4 is 🔎 until SCC's legal contacts confirm it.
 - **No application code, schema or data was changed.** The only writes: this document, plus a local read-only worktree of `main`.
