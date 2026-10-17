@@ -39,6 +39,3 @@ After acceptance, volunteers can't change anything about themselves (self-update
 - Q-V2 (can a junior cover as lead?) is still open. Suggestions list seniors only until it's decided.
 - Spec 22 (any number of weeks) will need per-session availability instead of `availability_week_1/2`.
 
-
-## From the inbox findings (2026-10-17)
-- Placement rule: a volunteer's sibling is never placed in that volunteer's section (a reserved-sibling policy exists). Store the link as `volunteers.sibling_student_ids` and warn in the section builder. Transport/carpool needs are a free-text field on availability.

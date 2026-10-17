@@ -9,7 +9,7 @@
 
 ## 0. One-page summary
 
-**Where things stand.** The app does a lot already. Parents register campers through a 5-step wizard, with waitlisting when a class is full. Volunteers apply, book an interview, get accepted and are crewed onto sections. Admins run classes, sessions, duties, interviews, roll calls, updates and exports. The database enforces the hard rules: capacity, age range, one class per week, and roles. Two things are missing. One is everything *after* the first sign-up: changing your mind, the waitlist moving, and anyone being told anything by email. The other is everything needed to run it at more than one chapter.
+**Where things stand.** The app does a lot already. Parents register campers through a 5-step wizard, with waitlisting when a class is full. Volunteers apply, book an interview, get accepted and are crewed onto sections. Admins run classes, sessions, duties, interviews, roll calls, updates and exports. The database enforces the hard rules: capacity, age range, one class per week, and roles. Two things are missing. One is everything *after* the first sign-up: changing your mind, the waitlist moving, and anyone being told anything by email. The other is everything needed to run it at more than one region.
 
 ### Top 5 risks (what hurts us in February if we do nothing)
 
@@ -50,7 +50,7 @@ Oct–Jan  Legal track   L1 privacy notice + terms · L2 waiver/consent records 
          (alongside)   L4 retention job · L5 site incident runbook · L6a accessibility pass on registration
                        website privacy policy + terms (drafted, SCC reviews)
 Feb 2027 Registration opens (Denver pilot)
-Mar–Jun  Handoff       20 chapters · 21 national view · 22 N-week seasons · 23 per-chapter forms
+Mar–Jun  Handoff       20 regions · 21 national view · 22 N-week seasons · 23 per-region forms
                        24 second guardian · 25 volunteer self-service · 26 docs + admin guide
                        L6 full accessibility audit + statement · L7 volunteer clearance tracking · per-state legal checklist
 ```
@@ -327,20 +327,20 @@ flowchart TD
 ```
 
 #### A5. Users and roles ✅
-Change role (last-admin guard on the server; a volunteer leaving crew is cleaned up). Friction: 🟠 one admin level, with no chapter scoping (PR 20). 🟠 no MFA for admins (P1).
+Change role (last-admin guard on the server; a volunteer leaving crew is cleaned up). Friction: 🟠 one admin level, with no region scoping (PR 20). 🟠 no MFA for admins (P1).
 
 #### A6. Communications ✅ (see P7). A7. Camp-day ops ✅: live "unaccounted" board, CSV export.
 
 ### 1.4 National-team admin view (N1) ❌ does not exist
 
-✅ There is no chapter concept anywhere in the schema. One admin role sees everything. Proposed (P1 for handoff, not for the Feb pilot):
+✅ There is no region concept anywhere in the schema. One admin role sees everything. Proposed (P1 for handoff, not for the Feb pilot):
 
 ```mermaid
 flowchart TD
-  A["National admin login"] --> B["Chapter list: Denver, …<br/>season status, fill %, waitlist, volunteers, alerts"]
-  B --> C["Drill into chapter = that chapter's admin view (read-only by default)"]
-  B --> D["Create chapter → invite chapter admin → copy last season's template"]
-  B --> E["Cross-chapter exports (aggregate, no camper PII by default)"]
+  A["National admin login"] --> B["Region list: Denver, …<br/>season status, fill %, waitlist, volunteers, alerts"]
+  B --> C["Drill into region = that region's admin view (read-only by default)"]
+  B --> D["Create region → invite region admin → copy last season's template"]
+  B --> E["Cross-region exports (aggregate, no camper PII by default)"]
 ```
 
 ### 1.5 Where flows cross roles
@@ -450,20 +450,20 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 | What | Where | Change |
 |---|---|---|
 | Exactly 2 weeks | `sections.week CHECK (1,2)`; `volunteers.availability_week_1/2`; application columns; wizard `session1/session2`; matcher `week: 1\|2` | `session_id` becomes the source of truth; availability becomes a `volunteer_availability(session_id)` table (PR 22) |
-| Time zone | `roll_call_day_ok()` uses `'America/Denver'`; client uses the device clock | `chapters.time_zone` (PR 20) |
-| School districts | 4 Denver-metro districts in the wizard | Per-chapter list in `form_configs` (PR 23) |
-| Waiver | Hardcoded text, "Denver Summer Camp", photo release bundled, no version stored | `waivers(chapter, year, version, body)`; store `waiver_id` on signature (PR L2 for Denver; PR 23 makes it per chapter) |
+| Time zone | `roll_call_day_ok()` uses `'America/Denver'`; client uses the device clock | `regions.time_zone` (PR 20) |
+| School districts | 4 Denver-metro districts in the wizard | Per-region list in `form_configs` (PR 23) |
+| Waiver | Hardcoded text, "Denver Summer Camp", photo release bundled, no version stored | `waivers(region, year, version, body)`; store `waiver_id` on signature (PR L2 for Denver; PR 23 makes it per region) |
 | Grades and age map | `4th–9th`, grade→age in `lib/campers.ts`; course rule by class-name substring ("microcontroller") | Per-section `grades_allowed`; drop name matching (PR 23) |
-| Branding / contact | "Steel City Codes // Denver" wordmark; `denver@steelcitycodes.org` (correct: it's Denver's official address) is written into the apply page | Chapter name/logo/contact columns, with Denver's row = `denver@steelcitycodes.org` (PR 20) |
+| Branding / contact | "Steel City Codes // Denver" wordmark; `denver@steelcitycodes.org` (correct: it's Denver's official address) is written into the apply page | Region name/logo/contact columns, with Denver's row = `denver@steelcitycodes.org` (PR 20) |
 | Year defaults | `students.registration_year DEFAULT 2026`, `registrations.year DEFAULT 2026` | Remove the defaults (the trigger already sets the year) |
-| Single tenant | No `chapter_id` on any table; admin = global; `app_settings`/`form_configs` global | `chapters` + `chapter_id` on top-level tables; RLS `chapter_admin`/`national_admin` (PR 20) |
+| Single tenant | No `region_id` on any table; admin = global; `app_settings`/`form_configs` global | `regions` + `region_id` on top-level tables; RLS `region_admin`/`national_admin` (PR 20) |
 
 **Docs and setup the national team needs (PR 26, but start the README in PR 1)**
 
 | Gap ✅ | Deliverable |
 |---|---|
 | `README.md` is the Vite template; `PLAN.md` describes the June schema | README: what it is, architecture diagram, local setup in 10 minutes, env vars, deploy |
-| Migrations are 18 flat `migration_*.sql` files applied by hand in an order written in comments; `CLAUDE.md` points to a `supabase/migrations/` folder that isn't on main | Move to Supabase CLI migrations (`supabase db push`) so a new chapter or project is one command (PR 1) |
+| Migrations are 18 flat `migration_*.sql` files applied by hand in an order written in comments; `CLAUDE.md` points to a `supabase/migrations/` folder that isn't on main | Move to Supabase CLI migrations (`supabase db push`) so a new region or project is one command (PR 1) |
 | No automated tests, no CI (`package.json` has no test script; no `.github/`) | GitHub Actions: build + lint + RLS SQL tests against a local Supabase (PR 8) |
 | Deploy is a manual `vercel deploy` from a laptop | Vercel Git integration: `main` → prod, PR → preview (PR 1) |
 | No admin guide | "Run a season" guide: setup checklist, registration day, camp week, wrap-up; with screenshots (PR 26) |
@@ -475,7 +475,7 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 - **No trackers ✅:** no analytics, ad or session-replay scripts. The only third-party request is Google Fonts, which sends visitors' IP addresses to Google. Self-hosting the two Josefin fonts removes it (P2, S).
 - **Who sees what (target):**
 
-| Data | Parent (own) | Lead/support (own section, seated campers) | Chapter admin | National |
+| Data | Parent (own) | Lead/support (own section, seated campers) | Region admin | National |
 |---|---|---|---|---|
 | Name, age, grade | ✅ | name and age (no grade) | ✅ | aggregate |
 | Allergies, medical, emergency contact, parent name + phone | ✅ | ✅ | ✅ | ✗ |
@@ -525,7 +525,7 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 | 6 | Auto-confirm + no-lead alert + duplicate-camper report | Admins | High | S | P0 | Hours saved in Feb and in camp week |
 | 7 | Scheduled registration opening (opens at 9:00 am sharp, with countdown) | Parents, admins | Med | S | P0 | Fair start; no one gets in early through a URL |
 | 8 | Versioned waiver + separate consents (photo opt-in) + emailed copy | Parents, legal | High | M | P0 (PR L2) | Legal exposure from the first February sign-up (§4) |
-| 9 | Chapters + national dashboard ★ | National | High (later) | L | P1 | Handoff blocker, not a pilot blocker |
+| 9 | Regions + national dashboard ★ | National | High (later) | L | P1 | Handoff blocker, not a pilot blocker |
 | 10 | N-week seasons (not just 2) ★ | Admins | Med | M | P1 | ❓ needed sooner if 2027 Denver runs 3+ weeks |
 | 11 | Household: invite a second guardian | Parents | Med | M | P1 | Kills duplicate kids at the source |
 | 12 | Volunteer self-service: availability, preferences, switch request, "can't make it" | Volunteers | Med | M | P1 | Matches the brief; feeds the no-lead alert |
@@ -540,7 +540,7 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 
 ## 4. Domain 4: Legal and compliance
 
-> **Scope (decided 2026-10-17):** SCC's organization-level compliance (insurance, child-care licensing, legal counsel, volunteer screening and reporting policies) is already handled by SCC and is **out of scope** here. The website is an extension of SCC, so this section covers only the legal duties created by what the site replaces (hardcoded forms, emails from personal inboxes) or adds (accounts, stored data, system emails). This isn't legal advice: 🔎 claims come from law-firm summaries and official pages loaded in October 2026. **The website's own documents are in scope:** privacy policy, terms of use, accessibility statement, email footer wording, and the internal data protection assessment, retention policy and incident runbook. SCC's own legal contacts review anything the site publishes. **The Denver pilot falls under Colorado and federal law; each new chapter's site configuration follows its state.**
+> **Scope (decided 2026-10-17):** SCC's organization-level compliance (insurance, child-care licensing, legal counsel, volunteer screening and reporting policies) is already handled by SCC and is **out of scope** here. The website is an extension of SCC, so this section covers only the legal duties created by what the site replaces (hardcoded forms, emails from personal inboxes) or adds (accounts, stored data, system emails). This isn't legal advice: 🔎 claims come from law-firm summaries and official pages loaded in October 2026. **The website's own documents are in scope:** privacy policy, terms of use, accessibility statement, email footer wording, and the internal data protection assessment, retention policy and incident runbook. SCC's own legal contacts review anything the site publishes. **The Denver pilot falls under Colorado and federal law; each new region's site configuration follows its state.**
 
 **Summary.** Three things matter for the site before February. **First, the waiver:** the site must show SCC's official waiver exactly and keep a reproducible record of who signed which version. **Second, minors' privacy:** the site holds accounts for 14–17-year-old volunteers and data on 9–14-year-old campers, which brings in Colorado's 2025 minors' amendment for the site itself (privacy notice, data protection assessment, minimal crew access). **Third, the site's data lifecycle:** retention, incident handling and email rules for what it stores and sends. The fixes are two small PRs (L1, L2) plus SCC-provided text. COPPA, FERPA and HIPAA look mostly *not* to apply, provided campers never get their own logins or email from us.
 
@@ -552,7 +552,7 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 | **Electronic signatures** | Yes | Typed-name signatures are generally valid under E-SIGN and Colorado's UETA, if intent is clear, the signature is tied to the signer, and the record can be retained and reproduced 🔎 | We store typed names + a timestamp, but not the account that signed, the exact text, or a copy given to the parent | Signature record: account id, typed name, waiver version + hash, time, user agent; PDF/email receipt | **P0** | (in L2) |
 | **Photo / media release** | Yes (consent) | Use of a child's image needs the guardian's permission; best practice is a separate, revocable opt-in | Bundled into the waiver, so signing the waiver forces consent; volunteers can't see who opted out | Separate opt-in (default off), editable later; "No photos" flag on rosters and print rosters | **P0** | S (L2 + L3) |
 | **Child-care licensing** | Handled by SCC outside the site | — | — | No site work | — | — |
-| **Colorado Privacy Act (CPA)** | 🔎 Base law: probably not. Nonprofits are covered, but the threshold is 100,000 consumers/year ([BCLP](https://www.bclplaw.com/print/v2/content/1524736/the-colorado-privacy-act-applies-to-non-profits-is-your-non-profit-ready.pdf)) | Controller duties, consumer rights, sensitive-data consent | — | Plan for national scale (all chapters together could approach thresholds over years) | P2 | — |
+| **Colorado Privacy Act (CPA)** | 🔎 Base law: probably not. Nonprofits are covered, but the threshold is 100,000 consumers/year ([BCLP](https://www.bclplaw.com/print/v2/content/1524736/the-colorado-privacy-act-applies-to-non-profits-is-your-non-profit-ready.pdf)) | Controller duties, consumer rights, sensitive-data consent | — | Plan for national scale (all regions together could approach thresholds over years) | P2 | — |
 | **CPA minors' amendment (SB 24-041, eff. Oct 1 2025)** | 🔎 **Likely yes.** No volume threshold; triggered by offering an online service to a consumer you *know* is under 18 ([Lowenstein](https://www.lowenstein.com/news-insights/publications/client-alerts/colorado-tightens-rules-on-minors-online-data-are-you-ready-for-october-1-data-privacy); [bill](https://leg.colorado.gov/bills/sb24-041)) | Reasonable care to avoid "heightened risk of harm" to minors; a **data protection assessment**; no targeted ads, sale or profiling of minors' data without consent; no design features to extend use; precise-geolocation limits. Consent from the minor, or a parent if under 13 | Teen volunteers (14–17) hold accounts ✅. No assessment, no privacy notice. Good news: no ads, trackers, data sales or geolocation ✅ | Write a 2-page data protection assessment; publish a privacy notice; keep "no trackers" as a written rule; tighten volunteer access to camper data (PR 4) | **P0** | S (docs) |
 | **COPPA (federal, amended rule enforced Apr 22 2026)** | 🔎 Mostly no. It covers online services directed to children under 13, or with actual knowledge of collecting *from* them ([Davis Polk](https://www.davispolk.com/insights/client-update/ftc-prioritizes-coppa-enforcement-new-compliance-obligations-take-effect)). Parents, not campers, use the app | Verifiable parental consent, notice, data minimization, retention limits, security program | A **camper email** field exists. If it's ever used to contact campers or give them logins, COPPA comes into play | Remove the camper email field (or document that it's for the parent's reference only and never contacted); written rule: no camper accounts without a COPPA review | **P0** (decision) | S |
 | **Data breach notification** | Yes (Colorado) | Notify affected Colorado residents within **30 days** of determining a breach; the Attorney General if 500+; credit bureaus if 1,000+ ([Mintz](https://www.mintz.com/mintz-matrix/colorado); [Perkins Coie](https://perkinscoie.com/print/pdf/node/1156)) | No incident plan; no one assigned; no access logs to scope a breach (PR 5 helps) | Breach runbook: who decides, the 30-day clock, notice templates, contacts (Supabase, Vercel, AG) | **P0** | S (L5) |
@@ -566,7 +566,7 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 | **HIPAA** | 🔎 No (we're not a health plan or provider) | — | Medical data is still sensitive | Treat it as sensitive anyway: crew-only access (PR 4), never in exports by default | — | — |
 | **Vendors (processors)** | Yes | Contracts with processors handling personal data (DPAs); know where data lives | Supabase, Vercel, Google Fonts; email provider coming. No DPAs on file ❓; project region unknown ❓ | Accept Supabase's, Vercel's and the email provider's DPAs; record the region in the privacy notice | P1 | S |
 | **Accounts and age** | Yes (terms) | Parent accounts should be 18+ guardians; minors' accounts need guardian consent | Signup has no guardian/18+ attestation; volunteer apply already requires a guardian signature under 18 ✅ | Signup checkbox: "I'm 18+ and the parent or legal guardian" + link to terms | **P0** | S (L1) |
-| **Who is the legal "controller"?** | ✅ Decided | The privacy notice, contracts and breach notices must name the entity responsible | — | SCC national (Denver is a chapter, Q-L1) | — | — |
+| **Who is the legal "controller"?** | ✅ Decided | The privacy notice, contracts and breach notices must name the entity responsible | — | SCC national (Denver is a region, Q-L1) | — | — |
 
 ### 4.2 Proposed changes (summary first)
 
@@ -582,14 +582,14 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 | Data protection assessment | Internal | Colorado minors' amendment: risks to minors from the site's processing, and how each is reduced | tracker task | Jan 15 |
 | Retention policy for site data | Internal (summary in the privacy policy) | Plan §4.3, aligned to any SCC records policy | L4 | Jan 15 |
 | Site incident runbook | Internal | Plugs into SCC's existing incident process; the 30-day notice clock | L5 | with 19 |
-| New-chapter site checklist | Internal | What each chapter fills in for its site (waiver text, contact, time zone, clearances if used) | 26 | handoff |
+| New-region site checklist | Internal | What each region fills in for its site (waiver text, contact, time zone, clearances if used) | 26 | handoff |
 
 Org-level policies (insurance, licensing, volunteer screening, reporting) stay with SCC, outside the site.
 
 **Code (small PRs; table in §5):**
 - **L1. Privacy notice + terms pages; signup attestation.** `/privacy` and `/terms` linked from every footer, signup, apply and the wizard's waiver step. Signup checkbox: 18+ guardian. Contact: `denver@steelcitycodes.org`. **P0 · S.**
 - **L2. Waiver and consent records.**
-  - New `waivers(id, chapter, year, kind, version, body, published_at)` holds the text; the wizard renders the active version instead of hardcoded text.
+  - New `waivers(id, region, year, kind, version, body, published_at)` holds the text; the wizard renders the active version instead of hardcoded text.
   - New `consents(student_id, waiver_id, kind, granted, signer_account, typed_name, signed_at, user_agent)`. Kinds: liability, medical authorization, photo/media (opt-in, default off), tech use, code of conduct.
   - The emailed receipt includes the exact text (depends on PR 9).
   - Demographic questions (ethnicity, gender, free/reduced lunch) are clearly labelled optional, with the purpose stated ("for grant reporting; never shown to volunteers").
@@ -599,7 +599,7 @@ Org-level policies (insurance, licensing, volunteer screening, reporting) stay w
 - **L5. Breach runbook + access review.** Runbook doc (who, the 30-day clock, templates); quarterly admin-access review (who's an admin, MFA on). Add to PR 19. **P0 · S.**
 - **L6a. Accessibility pass on the registration flow** (signup, wizard, class browser, camper card; keyboard, VoiceOver, TalkBack, axe; WCAG 2.1 AA), before the dry run. **P0 · S.**
 - **L6. Full accessibility audit of the remaining screens, axe in CI, and the accessibility statement.** **P1 · M.**
-- **L7. Volunteer clearances.** `volunteer_clearances(volunteer_id, kind, issued_on, expires_on, verified_by)`; chapter setting "required clearances"; crewing blocked while one is missing or expired; expiry alerts. **P1 ★ · S.**
+- **L7. Volunteer clearances.** `volunteer_clearances(volunteer_id, kind, issued_on, expires_on, verified_by)`; region setting "required clearances"; crewing blocked while one is missing or expired; expiry alerts. **P1 ★ · S.**
 
 ### 4.3 Retention schedule (the site's default; SCC's own retention policy wins where it says otherwise)
 
@@ -645,12 +645,15 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | 17 | Fewer round trips: shared query cache (TanStack Query) across parent components; `register_camper()` transactional RPC; volunteer dashboard single RPC | P1 (do it if time) | M | 16 |
 | 18 | Server-side paging + search on admin Students and Users | P0 | S | — |
 | 19 | k6 load test against a staging copy (500 parents/15 min); backup restore drill; PITR on; registration-day runbook + breach runbook (L5); **full dry run with 5 real parents** | P0 | M | 1–18, L1–L3, L5, L6a |
-| 29 | Laptop loans per camper-week: inventory cap, laptop waitlist, roster column (top inbox pain point) | P0 | M | 9, 13 |
-| 30 | "Notify me" interest list + public season status | P1 | S | 9, 13 |
-| 31 | Registration guardrails: rising-grade rule, prerequisites, repeat-course warning, "place with" request | P0 | M | 16 |
-| 32 | Admin register-on-behalf (late, walk-in, recovery), logged | P1 | S | 5, 13 |
-| 33 | Structured allergies/diet/accommodations, lunch roster; teachers see only their own campers | P0 | M | 4, L2 |
-| 34 | Urgent broadcast to a week's guardians + incident log | P1 | M | 5, 9 |
+| 29 | Laptop loans per camper-week: cap per session, queue, roster column (50 inbox threads, 39 in 2026) | P0 | M | 9 |
+| 30 | Public camp page (status, dates, location, courses, FAQ) + notify-me list | P1 | M | 9, 13 |
+| 31 | Course rules in the DB: grades, prerequisites, repeat-course warning, "place with" (fixes the insert bypass of the MC rule) | P0 | M | 5 |
+| 32 | Admin register-on-behalf with named, logged overrides | P1 | M | 5, 31 |
+| 33 | Structured allergies, accommodations, lunch list; teachers see only their own campers | P0 | M | 4, L2 |
+| 34 | Urgent announcements, week audiences, incident log, roll-call notes | P1 | M | 9 follow-up |
+| 35 | Volunteer interviews + onboarding: private links, emails, checklist, profile, "Meet the teachers" | P1 | M | 9 |
+| 36 | Authorized pickups + dated walk-home consent at dismissal (promoted from B6) | P1 | M | — |
+| B2 | Volunteer hours certificate in the 2026 letter format (promoted from P2) | P1 | S | 35 |
 | **Legal track (runs alongside Phases A–B; SCC provides the waiver and privacy text)** |||||
 | L1 | `/privacy` + `/terms` pages, footer links, signup "18+ parent/guardian" attestation, contact `denver@steelcitycodes.org` | P0 | S | SCC review of Claude's drafts |
 | L2 | Versioned `waivers` + `consents` tables; wizard renders the active waiver; separate opt-in consents (photo default off); signature record; emailed receipt; demographic questions marked optional with purpose; remove or relabel camper email | P0 | M | 9, SCC's waiver text |
@@ -659,19 +662,18 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | L5 | Site incident runbook that plugs into SCC's process + quarterly admin-access review (ships inside PR 19) | P0 | S | — |
 | L6a | Accessibility pass on the registration flow: signup, wizard, class browser, camper card (WCAG 2.1 AA; keyboard, VoiceOver, TalkBack, axe) | P0 | S | 03, 10–12, 16, L1, L2 |
 | — | Not code: Claude drafts the website privacy policy, terms and data protection assessment for SCC to review · SCC provides its official waiver text · vendor DPAs | P0 | — | — |
-| **Phase C: Handoff (Mar – Jun 2027)** |||||
-| 20 | `chapters` + `chapter_id`; `chapter_admin` / `national_admin` RLS; time zone, name, logo, contact per chapter | P1 ★ | L | 5, 8 |
-| 21 | National dashboard (chapter list, roll-up, drill-in) | P1 ★ | M | 20 |
+| **Phase C: Handoff (built before go-live wherever national's input isn't needed; see §6 Q-G1)** |||||
+| 20 | `regions` + `region_id`; `region_admin` / `national_admin` RLS; time zone, name, logo, contact per region | P1 ★ | L | 5, 8 |
+| 21 | National dashboard (region list, roll-up, drill-in) | P1 ★ | M | 20 |
 | 22 | N-week seasons: `session_id` everywhere, `volunteer_availability` table, wizard/matcher generalized | P1 ★ | L | 20 |
-| 23 | Per-chapter form content: districts, section grade rules, per-chapter waiver versions (on top of L2) | P1 ★ | M | 20, L2 |
+| 23 | Per-region form content: districts, section grade rules, per-region waiver versions (on top of L2) | P1 ★ | M | 20, L2 |
 | 24 | Households + guardian invites; admin merge | P1 | M | 5 |
 | 25 | Volunteer self-service: availability, preferences, switch request, "can't make it" | P1 | M | 14 |
-| 26 | Admin guide, runbook polish, architecture doc, per-state legal checklist for new chapters | P1 ★ | M | 20–23 |
+| 26 | Admin guide, runbook polish, architecture doc, per-state legal checklist for new regions | P1 ★ | M | 20–23 |
 | L6 | Full accessibility audit of the remaining screens, axe in CI, accessibility statement | P1 | M | L6a, 08 |
 | L7 | Volunteer clearances with expiry; crewing blocked when missing (PA-ready), only if SCC wants clearance records in the site | P1 ★ | S | 20 |
 | 27 | Admin MFA (TOTP) required for every admin account | P1 ★ | S | — |
 | 28 | Family data-deletion requests: parent asks in-app, admin approves, anonymize RPC (logged) | P1 | S | 5, L4 |
-| 35 | Volunteer onboarding: per-slot interview links + reminders, checklist with deadlines, bios, legal name; B2 hours certificate and B6 authorized pickups promoted to P1 | P1 | M | 9 |
 | — | P2 backlog (each with a mini-spec in `docs/specs/backlog-p2.md`): SMS reminders, volunteer hours certificate, self-hosted fonts, server-side bell "seen" state, duty reminders and swaps, authorized-pickup list, magic-link sign-in, first-login lands in the wizard | P2 | — | — |
 
 **Critical path to February:** 1 → 2 → 9 → 10 → 12 → 19, with **L2** (needs SCC's official waiver text by early January) joining at 9. If time runs short, cut **17** first and then **15** (the log still records everything; undo can be manual SQL for a season). Never cut 1–4, 9, 10, 19, L1 or L2. **This month:** ask SCC for its official waiver text, and have Claude draft the website privacy policy and terms for SCC to review. These are the only non-code inputs February needs.
@@ -692,10 +694,15 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | Q-R1 Opening day | **One fixed date and time for everyone, first come first served**; countdown; the waitlist absorbs overflow | PR 13; no early window, no lottery |
 | Q-N1 Families in a cancelled section | **Email + rebook link + front of the line** on any waitlist they join that week | PRs 6 and 10 |
 | Q-W4 Same-week waitlist backups | **Blocked.** A camper who holds a seat in a week can't join another waitlist that week ("Already registered this week"). When a camper takes a seat, their other waitlist entries for that week are withdrawn automatically, and the parent is told | Changes the insert trigger (`migration_one_class_per_week.sql` currently allows backups) and the class browser button; PR 10 adds the auto-withdraw. The Q-W2b "skip" rule stays as a safety net |
-| Q-L1 Legal entity | **Denver is a chapter of the national nonprofit.** National is the legal "controller": its name goes on the privacy notice, terms, waiver and vendor contracts | L1/L2 text in national's name; vendor DPAs signed by national; strengthens the case for national owning the prod accounts (Q-H1) |
+| Q-L1 Legal entity | **Denver is a region of the national nonprofit.** National is the legal "controller": its name goes on the privacy notice, terms, waiver and vendor contracts | L1/L2 text in national's name; vendor DPAs signed by national; strengthens the case for national owning the prod accounts (Q-H1) |
 | Q-L2, Q-L3, Q-L7, Q-L8 Counsel, licensing, screening, insurance | **Handled by SCC outside the website** (2026-10-17). The site is an extension of SCC: it carries SCC's policies, it doesn't create new ones | Org-level items dropped from the to-do lists. L1/L2 use SCC-provided text. L7 records clearances only if SCC wants them in the site |
 | Q-N1b How often classes get cancelled | **Probably never** (Regional Director, 2026-10-17). Cancel-section/class (PR 6) and the displaced-first offer order (PR 10) are built and stay as a safety net; no further work goes into that path | Don't prioritise polish or tests for class cancellation; keep the existing tests passing |
 | Q-V1 Volunteer class picking | **Preferences + admin assigns**; volunteers edit availability/preferences and can request a switch | PR 25 as specified; no self-pick |
+| Q-G1 Go-live gate (2026-10-17) | **Go-live waits only on national** (DNS for the sending domain and prod URL, account ownership, L1/L2 texts). **Everything else that is known gets built before go-live**, Phase C included | Phase C is no longer "after February"; only 02's DNS switch, L1/L2 text and L7's Q-L9 wait |
+| Q-F0 School-year clubs (2026-10-17) | **Out of scope for this app.** The weekly library/school clubs stay on forms and email | Inbox findings §4 |
+| Q-F5 Naming (2026-10-17) | **"Region"** for the Denver-level unit; "chapter" is national's word for a school-year club | Spec 20 renamed to regions; 21, 23, 26, L7 follow |
+| Q-F3 Pickups (2026-10-17) | **Record them in the site**: listed pickup adults, dated walk-home consent, who collected each camper | Spec 36 (B6 promoted) |
+| Q-F1a Grade rule | **Rising grade** (already how the app stores grade: "Grade (entering fall)") | Spec 31 uses it everywhere |
 
 ### Still open
 
@@ -716,8 +723,8 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 - Q-V3. Are any volunteers adults who need background checks? Does national require clearances for teen volunteers?
 
 **Admin and national (A4, N1)**
-- Q-N2. What does national need to see: just numbers, or per-camper records? Who at national gets access, and may they edit chapter data?
-- Q-N3. One shared app with chapters (recommended), or a copy per chapter?
+- Q-N2. What does national need to see: just numbers, or per-camper records? Who at national gets access, and may they edit region data?
+- Q-N3. One shared app with regions (recommended), or a copy per region?
 
 **Handoff and privacy**
 - Q-H1. Who owns the production Supabase, Vercel and email-provider accounts long term: Denver or national? (Affects PR 1.)
@@ -732,10 +739,10 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 - Q-L6. Any school-district partnerships that share student data with us?
 
 **From the inbox findings (2026-10-17, [docs/research/inbox-findings.md](research/inbox-findings.md))**
-- Q-F1. Confirm **rising grade** ("grade this fall") as the single eligibility rule (narrows Q-P2). Should prerequisites be hard blocks for parents, with an admin override? (Spec 31.)
-- Q-F2. How many loaner laptops in 2027, and will the host school lend them again? (Spec 29.)
-- Q-F3. Should the site record authorized pickups and walk-home consent (B6 promoted), or keep it to phone + ID check?
-- Q-F4. How long are incident records kept? (Spec 34, L4.)
+- Q-F1. Should prerequisites be hard blocks for parents (with "Request an exception" and an admin override), or warnings? Default: hard block (spec 31).
+- Q-F2. How many loaner laptops in 2027, and will the host school lend them again? Is first-come the right order? (Spec 29.)
+- Q-F4. How long are incident records kept? Default: 1 year after the season (spec 34, L4).
+- Q-F6. May volunteer photos (many are minors) appear on the parents' "Meet the teachers" page with the volunteer's consent, or does national require a guardian's too? (Spec 35.)
 
 **Flows I'm least sure about (walk these first):** N1 national view (Q-N2, Q-N3). Done: P5 cancel/swap rules, P6 offer rules and order, V3 volunteer class picking, Q-P4, opening day, cancelled sections. **Legal:** settled. SCC handles org-level compliance. The site uses SCC's official waiver text and gets its own privacy policy, terms and accessibility statement (Claude drafts, SCC reviews).
 
