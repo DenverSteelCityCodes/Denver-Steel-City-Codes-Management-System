@@ -1,6 +1,6 @@
 # L5: Site security-incident runbook and access review
 
-**Status:** ⬜ not started · **Issue:** #93 · **Priority:** P0 · **Effort:** S · **Phase:** Legal
+**Status:** 🟨 runbook drafted; review and tabletop open · **Issue:** #93 · **Priority:** P0 · **Effort:** S · **Phase:** Legal
 **Depends on:** none (ships inside 19) · **Unblocks:** 19
 **Plan reference:** Plan §4.1 breach row
 
@@ -29,4 +29,4 @@ Colorado requires notifying affected residents within 30 days of determining a b
 - None.
 
 ## Notes for the builder
-- None.
+- Drafted 2026-10-17: [`docs/runbooks/security-incident.md`](../runbooks/security-incident.md). It has the roles, containment steps with exact SQL and dashboard paths, assessment queries on the audit log, Colorado notice thresholds (🔎 to confirm with SCC's legal contacts), family and volunteer notice templates, the quarterly access review, contacts (names to fill in) and the tabletop scenario. The Done-when items need people: the review by the Regional Director and SCC national, and the tabletop exercise.
