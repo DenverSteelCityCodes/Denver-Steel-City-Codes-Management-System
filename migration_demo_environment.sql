@@ -513,3 +513,14 @@ REVOKE ALL ON FUNCTION private.demo_user(TEXT, TEXT, TEXT, TEXT) FROM PUBLIC, an
 -- Nightly at 03:00 Denver (09:00 UTC).
 SELECT cron.unschedule('reset-demo-nightly') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'reset-demo-nightly');
 SELECT cron.schedule('reset-demo-nightly', '0 9 * * *', $cron$SELECT private.reset_demo()$cron$);
+
+-- Demo only: reset_demo() rewrites the whole camp every night, which adds ~1,000 rows to audit.log
+-- (migration_audit_log.sql). Keep a week of them so the admin History strip has something to show,
+-- and drop the rest. Production keeps its log under the retention policy instead (spec L4).
+DO $$
+BEGIN
+  IF to_regclass('audit.log') IS NOT NULL THEN
+    PERFORM cron.unschedule('trim-demo-audit-log') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'trim-demo-audit-log');
+    PERFORM cron.schedule('trim-demo-audit-log', '30 9 * * *', $cron$DELETE FROM audit.log WHERE at < now() - interval '7 days'$cron$);
+  END IF;
+END $$;
