@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CheckCheck, Check, CalendarDays } from 'lucide-react'
+import { CheckCheck, Check, CalendarDays, Printer } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { AssignedSection } from '../hooks/useAssignedClass'
 import { useRollCalls } from '../hooks/useRollCalls'
 import RollCallRow from './RollCallRow'
@@ -152,9 +153,14 @@ export default function RollCallPanel({ section, session }: Props) {
               })}
             </div>
           )}
-          <button type="button" onClick={() => void refetch()} className="font-sans text-xs text-ink-muted hover:text-ink underline-offset-2 hover:underline">
-            Refresh
-          </button>
+          <div className="flex items-center justify-between">
+            <button type="button" onClick={() => void refetch()} className="font-sans text-xs text-ink-muted hover:text-ink underline-offset-2 hover:underline">
+              Refresh
+            </button>
+            <Link to={`/print/roster/${section.id}`} className="font-sans text-xs text-ink-muted hover:text-ink inline-flex items-center gap-1">
+              <Printer size={12} /> Paper roster
+            </Link>
+          </div>
         </>
       )}
     </div>

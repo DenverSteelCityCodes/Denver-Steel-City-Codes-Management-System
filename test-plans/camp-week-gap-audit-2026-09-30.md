@@ -53,3 +53,32 @@ text/email/phone (the app only puts the channel one tap away); ⏭ = out of scop
 7. Demo seed: Week 1 is the current Mon–Fri (next Mon–Fri when reset on a weekend), Week 2 the
    week after. Roll calls are seeded for the days already past this week plus this morning's
    arrival, with a few campers left unaccounted so the admin board has something to show.
+
+## What shipped (2026-09-30), stacked PRs on #57
+
+| Branch / PR | Contents | Verified |
+|---|---|---|
+| `feat/camp-week-ops` | `migration_camp_week_ops.sql` (section schedule columns, `schedule_items`, `roll_call_marks`, `updates`, RPCs, RLS), `reset_demo()` reseeds camp-in-session, shared hooks/types | 36 RLS impersonation checks in `camp-week-rls-tests.sql`, all pass; Supabase security advisor: no errors (two new role-checked SECURITY DEFINER RPCs join the existing intentional warnings) |
+| `feat/camp-schedule` | Section days/times/room editor, daily schedule editor on Sessions, parent "This week" card, volunteer time/room + today's schedule | Browser: admin edited a section room and added/removed a schedule block; parent and volunteer at 375 px, no overflow, no console errors |
+| `feat/roll-calls` | Volunteer roll-call panel, `/admin/attendance` board + attention item, parent roll-call chips | Browser: volunteer marked all present then one absent (tel: link appeared); admin board showed 4 unaccounted with parent + emergency tel:; parent saw "Arrival: present 9:05 AM" |
+| `feat/updates` | `/admin/updates`, lead composer on the volunteer dashboard, feeds, bells, "Also email" (mailto BCC / clipboard) | Browser: lead posted to PY-B, copied 9 addresses, deleted; parent bell "4 new" → opened → 1 pending action; admin page lists all |
+| `feat/print-roster-csv` | `/print/roster/:sectionId`, print links, attendance CSV per session | Browser: roster rendered with contacts + medical column; CSV export reported 225 rows (45 campers × 5 days) |
+
+Every branch: `tsc -b` clean, ESLint 0 errors (4 pre-existing warnings). Nothing merged to `main`.
+
+## Left to text, call and email (by design)
+
+Late arrivals, authorised pickups by someone else, incident reports, volunteer sick days. The app
+puts the number or address one tap away (tel: on every roster row and the attendance board,
+"Copy all parent emails" and "Email all parents" on the printable roster, "Also email" on updates).
+
+## Decisions that need the owner
+
+1. Roll-call names are fixed (arrival / after lunch / dismissal). Say if a fourth (e.g. "after
+   break") is needed; it is a one-line change plus seed.
+2. Updates cannot be edited, only deleted and re-posted. Fine for a camp week; say if editing matters.
+3. Supports (junior volunteers) can take roll calls but cannot post updates; only the lead can.
+4. The daily schedule is the same every day of a week. Per-day variation needs a `day` column.
+5. The old check-in / check-out buttons are gone from the volunteer screen; `attendance_logs`
+   stays in the database untouched. Drop it in a later migration if nobody misses it.
+6. Leaked-password protection is still off in Supabase Auth (dashboard-only setting).
