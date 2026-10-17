@@ -5,7 +5,7 @@ import { supabase } from './supabase'
 // loaded; otherwise someone else saved in between, and we refuse instead of overwriting them.
 
 // Readable names for the fields forms edit, used to say what the other person changed.
-const FIELD_LABELS: Record<string, string> = {
+export const FIELD_LABELS: Record<string, string> = {
   first_name: 'first name', last_name: 'last name', full_name: 'name', grade: 'grade', age: 'age',
   allergies: 'allergies', medical_conditions: 'medical conditions', medical_info: 'medical conditions',
   emergency_contact_name: 'emergency contact', emergency_contact_phone: 'emergency contact phone',

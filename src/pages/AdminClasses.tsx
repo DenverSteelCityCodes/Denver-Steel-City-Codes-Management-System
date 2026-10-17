@@ -3,6 +3,7 @@ import { useSearchParams, useLocation, Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users, Printer } from 'lucide-react'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
+import HistoryStrip from '../components/HistoryStrip'
 import { useAdminClasses, type SectionWithCrew, type SectionInput, type RegistrationTally } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
@@ -774,6 +775,15 @@ export default function AdminClasses() {
                                         setEditing(null)
                                       }}
                                     />
+                                    {/* Spec 15: who changed this section, with Revert. */}
+                                    <div className="mt-4">
+                                      <HistoryStrip
+                                        load={() => supabase.rpc('admin_history', { p_table: 'sections', p_row_id: sec.id })}
+                                        tableName="sections"
+                                        personName={id => volunteerOptions.find(v => v.id === id)?.display_name ?? 'a former volunteer'}
+                                        onReverted={async () => { await refetch(); setEditing(null) }}
+                                      />
+                                    </div>
                                   </div>
                                 ) : (
                                   <SectionRow
