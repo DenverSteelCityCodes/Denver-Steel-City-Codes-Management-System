@@ -47,11 +47,12 @@ Dec–Jan  Feb-critical  9 email outbox · 10 waitlist offers · 11 cancel · 12
                        14 auto-confirm + no-lead alert · 15 history/undo UI · 16 wizard drafts
                        17 fewer round trips · 18 admin pagination · 19 load test + runbook + dry run
 Oct–Jan  Legal track   L1 privacy notice + terms · L2 waiver/consent records · L3 photo flag on roster
-         (alongside)   L4 retention job · L5 site incident runbook · website privacy policy + terms (drafted, SCC reviews)
+         (alongside)   L4 retention job · L5 site incident runbook · L6a accessibility pass on registration
+                       website privacy policy + terms (drafted, SCC reviews)
 Feb 2027 Registration opens (Denver pilot)
 Mar–Jun  Handoff       20 chapters · 21 national view · 22 N-week seasons · 23 per-chapter forms
                        24 second guardian · 25 volunteer self-service · 26 docs + admin guide
-                       L6 accessibility audit · L7 volunteer clearance tracking · per-state legal checklist
+                       L6 full accessibility audit + statement · L7 volunteer clearance tracking · per-state legal checklist
 ```
 
 ### Context fields you left blank (my best reading, please correct)
@@ -559,7 +560,7 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 | **Volunteer screening / youth protection** | Handled by SCC outside the site | — | — | No site work. Lead + support per section already gives two adults per room ✅ | — | — |
 | **Volunteer clearances (Pennsylvania, for national)** | SCC's screening policy decides; the site can **record** clearances so crewing respects them | Adult volunteers responsible for children need a State Police criminal check, a DHS child-abuse clearance, and an FBI fingerprint check (waived for unpaid PA residents of 10+ years who sign an affirmation); renewed every 60 months ([Villanova](https://www.villanova.edu/villanova/generalcounsel/uco/minors/background_checks.html); [district sheet](https://www.wmasd.org/Downloads/Clearance%20Information%20Sheet%20Volunteers3.pdf)) | No clearance fields | If SCC wants it in the site: clearance tracking with expiry that blocks crewing until renewed (like [Better Impact](https://support.betterimpact.com/en/articles/8429304-comprehensive-guide-to-background-checks)) | P1 ★ | S (L7) |
 | **Mandatory reporting** | Handled by SCC outside the site | — | — | No site work | — | — |
-| **Accessibility (ADA)** | 🔎 Likely (Title III: public programs run by private nonprofits); courts differ on websites | Equal access; WCAG 2.1 AA is the common benchmark | Labels and alerts done ✅; no full audit | Automated + manual WCAG 2.1 AA audit, fixes, an accessibility statement with `denver@steelcitycodes.org` as contact | P1 | M (L6) |
+| **Accessibility (ADA)** | 🔎 Likely (Title III: public programs run by private nonprofits); courts differ on websites | Equal access; WCAG 2.1 AA is the common benchmark | Labels and alerts done ✅; no full audit | **Before February:** a WCAG 2.1 AA pass on the registration flow (signup, wizard, class browser, camper card), L6a. **For the handoff:** automated + manual WCAG 2.1 AA audit, fixes, an accessibility statement with `denver@steelcitycodes.org` as contact | **P0** flow (L6a) / P1 rest (L6) | S (L6a) + M (L6) |
 | **Email / SMS rules** | Yes once we send email (PR 9) | CAN-SPAM: transactional email is mostly exempt; newsletters need an unsubscribe link and a postal address. SMS (TCPA) needs prior express consent | "Also email" goes from a personal inbox | Separate transactional from announcement email; footer with unsubscribe + address; SMS only with a consent checkbox (P2) | P0 (with PR 9) | S |
 | **FERPA / Colorado student-data law** | 🔎 No, unless we contract with a school district. FERPA binds schools that get federal funds | Data-sharing agreements if a district shares records | District dropdown suggests outreach through schools ❓ | If any district partnership exists or is planned, get its data agreement reviewed | P2 | — |
 | **HIPAA** | 🔎 No (we're not a health plan or provider) | — | Medical data is still sensitive | Treat it as sensitive anyway: crew-only access (PR 4), never in exports by default | — | — |
@@ -596,7 +597,8 @@ Org-level policies (insurance, licensing, volunteer screening, reporting) stay w
 - **L3. "No photos" flag on rosters + print roster.** **P0 · S.** Deps: L2, PR 4.
 - **L4. Retention job.** Implements the §4.3 schedule; anonymizes, doesn't hard-delete records still under hold; logged. **P1 · S.** Deps: PR 5.
 - **L5. Breach runbook + access review.** Runbook doc (who, the 30-day clock, templates); quarterly admin-access review (who's an admin, MFA on). Add to PR 19. **P0 · S.**
-- **L6. Accessibility audit + fixes + statement.** **P1 · M.**
+- **L6a. Accessibility pass on the registration flow** (signup, wizard, class browser, camper card; keyboard, VoiceOver, TalkBack, axe; WCAG 2.1 AA), before the dry run. **P0 · S.**
+- **L6. Full accessibility audit of the remaining screens, axe in CI, and the accessibility statement.** **P1 · M.**
 - **L7. Volunteer clearances.** `volunteer_clearances(volunteer_id, kind, issued_on, expires_on, verified_by)`; chapter setting "required clearances"; crewing blocked while one is missing or expired; expiry alerts. **P1 ★ · S.**
 
 ### 4.3 Retention schedule (the site's default; SCC's own retention policy wins where it says otherwise)
@@ -642,13 +644,14 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | 16 | Wizard: step in URL, local draft + resume card, back/unsaved guard, live fill re-check, focus errors (consents move to L2) | P0 | M | — |
 | 17 | Fewer round trips: shared query cache (TanStack Query) across parent components; `register_camper()` transactional RPC; volunteer dashboard single RPC | P1 (do it if time) | M | 16 |
 | 18 | Server-side paging + search on admin Students and Users | P0 | S | — |
-| 19 | k6 load test against a staging copy (500 parents/15 min); backup restore drill; PITR on; registration-day runbook + breach runbook (L5); **full dry run with 5 real parents** | P0 | M | 1–18, L1–L3 |
+| 19 | k6 load test against a staging copy (500 parents/15 min); backup restore drill; PITR on; registration-day runbook + breach runbook (L5); **full dry run with 5 real parents** | P0 | M | 1–18, L1–L3, L5, L6a |
 | **Legal track (runs alongside Phases A–B; SCC provides the waiver and privacy text)** |||||
 | L1 | `/privacy` + `/terms` pages, footer links, signup "18+ parent/guardian" attestation, contact `denver@steelcitycodes.org` | P0 | S | SCC review of Claude's drafts |
 | L2 | Versioned `waivers` + `consents` tables; wizard renders the active waiver; separate opt-in consents (photo default off); signature record; emailed receipt; demographic questions marked optional with purpose; remove or relabel camper email | P0 | M | 9, SCC's waiver text |
 | L3 | "No photos" flag on volunteer roster + print roster | P0 | S | 4, L2 |
 | L4 | Retention job implementing §4.3 (anonymize, logged), following SCC's retention policy | P0 policy / P1 job | S | 5 |
 | L5 | Site incident runbook that plugs into SCC's process + quarterly admin-access review (ships inside PR 19) | P0 | S | — |
+| L6a | Accessibility pass on the registration flow: signup, wizard, class browser, camper card (WCAG 2.1 AA; keyboard, VoiceOver, TalkBack, axe) | P0 | S | 03, 10–12, 16, L1, L2 |
 | — | Not code: Claude drafts the website privacy policy, terms and data protection assessment for SCC to review · SCC provides its official waiver text · vendor DPAs | P0 | — | — |
 | **Phase C: Handoff (Mar – Jun 2027)** |||||
 | 20 | `chapters` + `chapter_id`; `chapter_admin` / `national_admin` RLS; time zone, name, logo, contact per chapter | P1 ★ | L | 5, 8 |
@@ -658,7 +661,7 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | 24 | Households + guardian invites; admin merge | P1 | M | 5 |
 | 25 | Volunteer self-service: availability, preferences, switch request, "can't make it" | P1 | M | 14 |
 | 26 | Admin guide, runbook polish, architecture doc, per-state legal checklist for new chapters | P1 ★ | M | 20–23 |
-| L6 | Accessibility audit (WCAG 2.1 AA) + fixes + accessibility statement | P1 | M | — |
+| L6 | Full accessibility audit of the remaining screens, axe in CI, accessibility statement | P1 | M | L6a, 08 |
 | L7 | Volunteer clearances with expiry; crewing blocked when missing (PA-ready), only if SCC wants clearance records in the site | P1 ★ | S | 20 |
 | 27 | Admin MFA (TOTP) required for every admin account | P1 ★ | S | — |
 | 28 | Family data-deletion requests: parent asks in-app, admin approves, anonymize RPC (logged) | P1 | S | 5, L4 |

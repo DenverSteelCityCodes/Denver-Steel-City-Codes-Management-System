@@ -46,12 +46,13 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [16](16-wizard-resilience.md) | #85 | Wizard: URL steps, drafts, back guard, live fill, a11y | P0 | M | — | B |
 | ⬜ | [17](17-fewer-round-trips.md) | #86 | Shared query cache, `register_camper()` RPC, volunteer home RPC | P1 | M | 16 | B |
 | ⬜ | [18](18-admin-paging.md) | #87 | Server-side paging + search for admin lists | P0 | S | — | B |
-| ⬜ | [19](19-load-test-runbook-dry-run.md) | #88 | Load test, restore drill, PITR, runbooks, dry run | P0 | M | 01–18, L1–L3, L5 | B |
+| ⬜ | [19](19-load-test-runbook-dry-run.md) | #88 | Load test, restore drill, PITR, runbooks, dry run | P0 | M | 01–18, L1–L3, L5, L6a | B |
 | ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
 | ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |
 | ⬜ | [L4](L4-retention.md) | #92 | Retention policy + nightly anonymize job | P0 policy / P1 job | S | 05 | Legal |
 | ⬜ | [L5](L5-breach-runbook.md) | #93 | Site security-incident runbook + access review | P0 | S | — | Legal |
+| ⬜ | [L6a](L6a-accessibility-registration.md) | #111 | Accessibility pass on the registration flow (WCAG 2.1 AA) | P0 | S | 03, 10–12, 16, L1, L2 | Legal |
 | ⬜ | [20](20-chapters.md) | #94 | Chapters + chapter-scoped admin RLS | P1 ★ | L | 05, 08 | C |
 | ⬜ | [21](21-national-dashboard.md) | #95 | National dashboard | P1 ★ | M | 20 | C |
 | ⬜ | [22](22-n-week-seasons.md) | #96 | Seasons with any number of weeks | P1 ★ | L | 20 | C |
@@ -61,7 +62,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [26](26-docs-and-admin-guide.md) | #100 | Admin guide, architecture doc, new-chapter legal checklist | P1 ★ | M | 20–23 | C |
 | ⬜ | [27](27-admin-mfa.md) | #101 | Admin MFA | P1 ★ | S | — | C |
 | ⬜ | [28](28-data-deletion-requests.md) | #102 | Family data-deletion requests | P1 | S | 05, L4 | C |
-| ⬜ | [L6](L6-accessibility.md) | #103 | WCAG 2.1 AA audit + fixes + statement | P1 | M | — | C |
+| ⬜ | [L6](L6-accessibility.md) | #103 | Full accessibility audit, axe in CI, statement | P1 | M | L6a, 08 | C |
 | ⬜ | [L7](L7-volunteer-clearances.md) | #104 | Volunteer clearances with expiry | P1 ★ | S | 20 | C |
 | ⬜ | [P2](backlog-p2.md) | — | P2 backlog (9 mini-specs + decided-against list) | P2 | — | — | later |
 
