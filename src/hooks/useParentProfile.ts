@@ -37,7 +37,8 @@ export function useParentProfile() {
     if (!user) throw new Error('Not authenticated')
     const { data, error } = await supabase
       .from('parent_profiles')
-      .upsert({ id: user.id, ...payload, updated_at: new Date().toISOString() })
+      // updated_at is stamped by the database (migration_edit_conflicts.sql).
+      .upsert({ id: user.id, ...payload })
       .select()
       .single()
     if (error) throw new Error(error.message)

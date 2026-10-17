@@ -46,6 +46,8 @@ export interface Student {
   guardian_signature?: string | null
   waiver_signed_at?: string | null
   registration_year?: number | null
+  // Stamped by the database on every change (migration_edit_conflicts.sql); saves check it.
+  updated_at?: string
 }
 
 // The subset of onboarding fields a parent reviews/edits when re-confirming a camper for a new
@@ -72,6 +74,7 @@ export interface Class {
   id: string
   name: string
   description: string | null
+  updated_at?: string
   created_at: string
 }
 
@@ -93,6 +96,8 @@ export interface Section {
   // registrations (as cancelled) and are hidden from parents.
   cancelled_at?: string | null
   cancel_reason?: string | null
+  // Stamped by the database on every change (migration_edit_conflicts.sql); saves check it.
+  updated_at?: string
   created_at: string
 }
 

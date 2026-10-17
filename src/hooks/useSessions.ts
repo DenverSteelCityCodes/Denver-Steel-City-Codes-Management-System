@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { guardedUpdate, EditConflictError } from '../lib/editConflict'
 
 export interface Session {
   id: string
@@ -8,6 +9,7 @@ export interface Session {
   start_date: string
   end_date: string
   is_active: boolean
+  updated_at?: string
   created_at: string
 }
 
@@ -37,8 +39,18 @@ export function useSessions() {
   }
 
   async function updateSession(id: string, payload: Partial<Omit<Session, 'id' | 'created_at'>>) {
-    const { error } = await supabase.from('sessions').update(payload).eq('id', id)
-    if (error) throw new Error(error.message)
+    const original = sessions.find(s => s.id === id)
+    try {
+      if (original) await guardedUpdate('sessions', original as unknown as { id: string } & Record<string, unknown>, payload)
+      else {
+        const { error } = await supabase.from('sessions').update(payload).eq('id', id)
+        if (error) throw new Error(error.message)
+      }
+    } catch (e) {
+      // Reload so the form's next save is checked against the version that won.
+      if (e instanceof EditConflictError) await fetchSessions()
+      throw e
+    }
     await fetchSessions()
   }
 

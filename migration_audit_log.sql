@@ -57,8 +57,9 @@ DECLARE
 BEGIN
   IF TG_OP <> 'INSERT' THEN o := to_jsonb(OLD); END IF;
   IF TG_OP <> 'DELETE' THEN n := to_jsonb(NEW); END IF;
-  -- An UPDATE that changed nothing isn't worth a row.
-  IF TG_OP = 'UPDATE' AND o = n THEN RETURN NULL; END IF;
+  -- An UPDATE that changed nothing (or only the updated_at stamp, migration_edit_conflicts.sql)
+  -- isn't worth a row.
+  IF TG_OP = 'UPDATE' AND (o - 'updated_at') = (n - 'updated_at') THEN RETURN NULL; END IF;
 
   SELECT string_agg(coalesce(n, o) ->> trim(k), ':' ORDER BY ord)
     INTO rid
