@@ -35,4 +35,5 @@ Registration opens when an admin flips a switch (`form_configs.student_registrat
 - The actual opening date and time ❓ (tracker non-code task).
 
 ## Notes for the builder
+- Built 2026-10-17. Times are entered and shown in Denver time whatever the viewer's device clock (`src/lib/denverTime.ts`). The class browser disables Register until opening, the wizard refuses step 4, and the countdown flips to open without a reload. The demo has no settings row (registration open). `private.season_settings_for(year)` gives later RPCs the settings with defaults.
 - Store `timestamptz`; display in the chapter's time zone (America/Denver until spec 20).

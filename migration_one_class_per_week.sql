@@ -17,7 +17,7 @@
 -- stops registrations from the class browser, not just the wizard.
 --
 -- Apply after migration_security_hardening.sql, and re-apply after migration_soft_cancel.sql
--- (the cancelled-section check reads sections.cancelled_at).
+-- (the cancelled-section check reads sections.cancelled_at) and after migration_season_settings.sql.
 
 -- ── 1. sections.session_id follows sections.week ──────────────
 
@@ -63,6 +63,7 @@ DECLARE
   stu_age SMALLINT;
   taken   INT;
   clash   TEXT;
+  opens   TIMESTAMPTZ;
 BEGIN
   -- Row lock serializes concurrent sign-ups for the same section so capacity can't be overrun.
   SELECT * INTO sec FROM sections WHERE id = NEW.section_id FOR UPDATE;
@@ -84,6 +85,17 @@ BEGIN
   -- A cancelled section takes no new sign-ups (migration_soft_cancel.sql adds the column).
   IF sec.cancelled_at IS NOT NULL THEN
     RAISE EXCEPTION 'That class was cancelled. Please pick another one.' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Scheduled opening (migration_season_settings.sql, spec 13): nobody gets in early, even by
+  -- calling the API directly. Shown in Denver time.
+  IF to_regclass('public.season_settings') IS NOT NULL THEN
+    SELECT registration_opens_at INTO opens FROM season_settings WHERE year = NEW.year;
+    IF opens IS NOT NULL AND opens > now() THEN
+      RAISE EXCEPTION 'Registration opens %',
+        trim(to_char(opens AT TIME ZONE 'America/Denver', 'FMDay, FMMonth FMDD "at" FMHH12:MI am')) || ' (Denver time)'
+        USING ERRCODE = 'P0001';
+    END IF;
   END IF;
 
   IF (SELECT (config->>'enabled')::boolean FROM form_configs WHERE form_key = 'student_registration') IS FALSE THEN

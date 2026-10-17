@@ -11,6 +11,9 @@ import { useUpdates } from '../hooks/useUpdates'
 import UpdatesFeed from '../components/UpdatesFeed'
 import { Megaphone } from 'lucide-react'
 import { localDateISO } from '../lib/campDay'
+import { useSessions, activeCampYear } from '../hooks/useSessions'
+import { useSeasonSettings } from '../hooks/useSeasonSettings'
+import RegistrationCountdown from '../components/RegistrationCountdown'
 import type { Student } from '../types/database'
 
 // Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
@@ -52,6 +55,8 @@ export default function ParentDashboard() {
   const { registrations } = useRegistrations()
   const todayMarks = useMyRollCalls(localDateISO())
   const { updates: posts, loading: postsLoading } = useUpdates(20)
+  const { sessions } = useSessions()
+  const { settings: season } = useSeasonSettings(sessions.length > 0 ? activeCampYear(sessions) : null)
 
   const subhead = buildSubhead(students, registrations)
 
@@ -85,6 +90,8 @@ export default function ParentDashboard() {
             </Link>
           </div>
         </div>
+
+        <RegistrationCountdown opensAt={season?.registration_opens_at} />
 
         <ThisWeekCard
           students={students}

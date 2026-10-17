@@ -5,6 +5,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useSessions, activeCampYear, campSessions as activeSessions, formatSessionDates } from '../hooks/useSessions'
+import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
+import RegistrationCountdown from '../components/RegistrationCountdown'
+import { formatCampDateTime } from '../lib/denverTime'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useFormConfig } from '../hooks/useFormConfig'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
@@ -127,6 +130,7 @@ export default function ParentRegistrationPage() {
   // completed the full form is considered confirmed for this summer and isn't immediately
   // re-prompted by the per-summer onboarding gate (#42).
   const campYear = activeCampYear(sessions)
+  const { settings: season, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
   const campSessions = activeSessions(sessions)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>({ ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: '' })
@@ -287,6 +291,7 @@ export default function ParentRegistrationPage() {
     }
     if (step === 4) {
       if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet — no camp sessions are scheduled"
+      if (!registrationIsOpen(season)) return `Registration opens ${formatCampDateTime(season!.registration_opens_at!)} (Denver time). You can finish the other steps now and submit once it opens.`
       if (!form.session1 && !form.session2) return 'Please select at least one session'
       if (form.session1 && !isSelectable(1, form.class_week1)) return `Please select a class for ${campSessions[0]?.name ?? 'Session 1'}`
       if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
@@ -714,6 +719,7 @@ export default function ParentRegistrationPage() {
           {step === 4 && (
             <div className="space-y-6">
               <h2 className="font-sans font-bold text-lg text-ink">Session &amp; class selection</h2>
+              <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
               <p className="font-sans text-sm text-ink-muted">Camp is held at Cherry Creek High School, 8:00 AM – 4:00 PM each day.</p>
 
               {sessionsLoading || classesLoading ? (
