@@ -1,6 +1,6 @@
 # 11: Parent cancels a spot before the deadline; change requests; contact card
 
-**Status:** ⬜ not started · **Issue:** #80 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #126](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/126) · **Issue:** #80 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** 06, 09, 13 (10 for refilling) · **Unblocks:** 12
 **Plan reference:** Plan flow P5, §2.1 rules table, §6 decision Q-W1
 
@@ -37,4 +37,5 @@ Parents have no UPDATE or DELETE on registrations, and no in-app way to reach th
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17. The deadline is midnight (Denver) at the start of `session start − change_deadline_days`, so with 14 days and a June 7 session, the last online-cancel day is May 23; the card says so. A both-weeks section uses the year's earliest session. In the demo both weeks start within 14 days, so seats show "Request a change". Leaving a waitlist is always allowed. Resolving a request emails the family (template `change_request_resolved`). The contact card edits `parent_profiles`; each camper keeps its own emergency contact too.
 - Read the deadline from the spec 13 settings, not a constant.

@@ -16,6 +16,8 @@ import { useSessions, activeCampYear } from '../hooks/useSessions'
 import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import RegistrationCountdown from '../components/RegistrationCountdown'
 import { listDrafts, clearDraft } from '../lib/registrationDraft'
+import { useMyChanges } from '../hooks/useMyChanges'
+import ContactDetailsCard from '../components/ContactDetailsCard'
 import type { Student } from '../types/database'
 
 // Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
@@ -54,7 +56,12 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
 export default function ParentDashboard() {
   const { profile, user } = useAuth()
   const { students, loading, updateStudent } = useStudents()
-  const { registrations } = useRegistrations()
+  const { registrations, refetch: refetchRegistrations } = useRegistrations()
+  const myChanges = useMyChanges(students.length > 0)
+  const changes = {
+    ...myChanges,
+    cancelSpot: async (id: string) => { await myChanges.cancelSpot(id); await refetchRegistrations() },
+  }
   const todayMarks = useMyRollCalls(localDateISO())
   const { updates: posts, loading: postsLoading } = useUpdates(20)
   const { sessions } = useSessions()
@@ -162,10 +169,15 @@ export default function ParentDashboard() {
                 student={student}
                 registrations={registrations.filter(r => r.student_id === student.id)}
                 onSave={async (id, patch) => { await updateStudent(id, patch) }}
+                changes={changes}
               />
             ))}
           </div>
         )}
+
+        <div className="mt-8">
+          <ContactDetailsCard />
+        </div>
     </div>
   )
 }

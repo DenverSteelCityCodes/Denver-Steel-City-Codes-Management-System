@@ -3,6 +3,7 @@ import { useSearchParams, useLocation } from 'react-router-dom'
 import { Search, Download, AlertCircle, UserCheck, ChevronDown } from 'lucide-react'
 import InlineConfirm from '../components/InlineConfirm'
 import HistoryStrip from '../components/HistoryStrip'
+import AdminChangeRequests from '../components/AdminChangeRequests'
 import { supabase } from '../lib/supabase'
 import { realNote } from '../lib/campers'
 import { toCsv, downloadCsv } from '../lib/csv'
@@ -393,6 +394,7 @@ export default function AdminStudents() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 space-y-5">
+        <AdminChangeRequests onResolved={() => { void refetchStudents() }} />
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-sans font-bold text-2xl text-ink">Students</h1>
           <button

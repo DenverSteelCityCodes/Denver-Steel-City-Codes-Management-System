@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy, MailWarning } from 'lucide-react'
+import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy, MailWarning, MessageSquare } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
 import { useAdminStudents } from './useAdminStudents'
@@ -53,6 +53,8 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
   const [dupes, setDupes] = useState<DuplicatePair[] | null>(null)
   // Emails that failed for good (3 attempts) — spec 09.
   const [failedEmails, setFailedEmails] = useState(0)
+  // Parents' open change requests (spec 11).
+  const [openRequests, setOpenRequests] = useState(0)
   useEffect(() => {
     let alive = true
     supabase.rpc('possible_duplicate_campers').then(({ data, error }) => {
@@ -60,6 +62,8 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
     })
     supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3)
       .then(({ count }) => { if (alive) setFailedEmails(count ?? 0) })
+    supabase.from('change_requests').select('id', { count: 'exact', head: true }).eq('status', 'open')
+      .then(({ count }) => { if (alive) setOpenRequests(count ?? 0) })
     return () => { alive = false }
   }, [])
 
@@ -198,6 +202,23 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       detail: `${first.a_name} (${first.a_parent ?? 'one account'}) and ${first.b_name} (${first.b_parent ?? 'another account'}): ${first.reason}`,
       ctaLabel: 'Review campers',
       to: `/admin/students?q=${encodeURIComponent(first.a_name)}`,
+      wide: false,
+    })
+  }
+
+  // ── 1c2. Change requests from families (spec 11) ─────────────────────────
+  if (openRequests > 0) {
+    items.push({
+      key: 'change-requests',
+      icon: MessageSquare,
+      iconWrap: 'bg-warning-soft text-warning',
+      cardCls: '',
+      badge: null,
+      badgeCls: null,
+      title: `${openRequests} change ${plural(openRequests, 'request', 'requests')} from families`,
+      detail: 'Online changes have closed for these spots, so the family asked the camp.',
+      ctaLabel: 'Review requests',
+      to: '/admin/students#requests',
       wide: false,
     })
   }
