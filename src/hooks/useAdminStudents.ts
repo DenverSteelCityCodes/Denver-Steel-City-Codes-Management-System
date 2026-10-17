@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { fetchAll } from '../lib/fetchAll'
 import type { RegistrationStatus } from '../types/database'
 
 export interface StudentRegistration {
@@ -67,9 +68,14 @@ export function useAdminStudents() {
 
   async function fetchStudents() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('students')
-      .select(`
+    // Paged: the API caps a response at 1,000 rows (spec 18). Ordered by name, then id, so pages
+    // never overlap or skip.
+    let data: unknown[] | null = null
+    let error: { message: string } | null = null
+    try {
+      data = await fetchAll(async (from, to) => supabase
+        .from('students')
+        .select(`
         id, full_name, age, medical_info, created_at, parent_id,
         grade, school_name, allergies, medical_conditions, parent_phone,
         emergency_contact_name, emergency_contact_phone, emergency_contact_relation, registration_year,
@@ -82,7 +88,12 @@ export function useAdminStudents() {
           )
         )
       `)
-      .order('full_name', { ascending: true })
+        .order('full_name', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to))
+    } catch (e) {
+      error = { message: e instanceof Error ? e.message : 'unknown error' }
+    }
 
     if (error) {
       setError(error.message)

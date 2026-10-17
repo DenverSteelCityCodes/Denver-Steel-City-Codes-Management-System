@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { fetchAll } from '../lib/fetchAll'
 import type { VolunteerApplication, ExperienceLevel } from '../types/database'
 
 export function useVolunteerApplications() {
@@ -8,13 +9,17 @@ export function useVolunteerApplications() {
 
   useEffect(() => {
     let cancelled = false
-    supabase
+    // Paged past the API's 1,000-row cap (spec 18).
+    fetchAll<VolunteerApplication>(async (from, to) => supabase
       .from('volunteer_applications')
       .select('*')
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
+      .order('id', { ascending: true })
+      .range(from, to))
+      .catch(() => [] as VolunteerApplication[])
+      .then(data => {
         if (cancelled) return
-        setApplications((data as VolunteerApplication[]) ?? [])
+        setApplications(data)
         setLoading(false)
       })
     return () => { cancelled = true }
