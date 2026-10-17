@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CircleCheck, List, CircleX, Pencil, GraduationCap, Check, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -6,6 +6,7 @@ import { GRADES, gradeToAge, realNote } from '../lib/campers'
 import { formatTimeRange } from '../lib/campDay'
 import type { Student, RegistrationStatus } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
+import type { SwapOption } from '../hooks/useMyChanges'
 import MedicalFlag from './MedicalFlag'
 import InlineConfirm from './InlineConfirm'
 
@@ -59,12 +60,14 @@ interface Props {
     requestChange: (registrationId: string, message: string) => Promise<void>
     acceptOffer: (registrationId: string) => Promise<void>
     declineOffer: (registrationId: string) => Promise<void>
+    swapOptions: (registrationId: string) => Promise<SwapOption[]>
+    swapSpot: (registrationId: string, sectionId: string) => Promise<void>
   }
 }
 
 // Cancel / leave waitlist before the change deadline; "Request a change" after it (spec 11).
 function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSection; camper: string; changes: NonNullable<Props['changes']> }) {
-  const [mode, setMode] = useState<'idle' | 'confirm' | 'request'>('idle')
+  const [mode, setMode] = useState<'idle' | 'confirm' | 'request' | 'switch'>('idle')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -133,6 +136,11 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
     <div className="mt-1.5 ml-1">
       {mode === 'idle' && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {open && holdsSeat && (
+            <button type="button" onClick={() => setMode('switch')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-ink underline-offset-2 hover:underline">
+              Switch class
+            </button>
+          )}
           {open ? (
             <button type="button" onClick={() => setMode('confirm')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-danger underline-offset-2 hover:underline">
               {holdsSeat ? 'Cancel this spot' : 'Leave the waitlist'}
@@ -144,7 +152,7 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
           )}
           {holdsSeat && lastDay && (
             <span className="text-xs font-sans text-ink-faint">
-              {open ? `You can cancel online until ${lastDay}.` : `Online changes closed after ${lastDay}.`}
+              {open ? `You can switch or cancel online until ${lastDay}.` : `Online changes closed after ${lastDay}.`}
             </span>
           )}
         </div>
@@ -163,6 +171,9 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
           />
         </div>
       )}
+      {mode === 'switch' && (
+        <SwitchClass reg={reg} camper={camper} changes={changes} onDone={() => setMode('idle')} />
+      )}
       {mode === 'request' && (
         <form
           onSubmit={e => { e.preventDefault(); void run(() => changes.requestChange(reg.id, message), () => { setSent(true); setMode('idle') }) }}
@@ -178,6 +189,91 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
         </form>
       )}
       {err && <p role="alert" className="mt-1 text-xs font-sans text-danger">{err}</p>}
+    </div>
+  )
+}
+
+// Switch a held seat to another class the same week (spec 12). Only classes with a free seat
+// can be picked: a camper holding a seat can't join another waitlist that week (Q-W4).
+function SwitchClass({ reg, camper, changes, onDone }: {
+  reg: RegistrationWithSection; camper: string; changes: NonNullable<Props['changes']>; onDone: () => void
+}) {
+  const [options, setOptions] = useState<SwapOption[] | null>(null)
+  const [loadErr, setLoadErr] = useState<string | null>(null)
+  const [picked, setPicked] = useState<SwapOption | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const current = `${reg.sections?.classes?.name ?? 'this class'}${reg.sections?.label ? ` ${reg.sections.label}` : ''}`
+
+  // Load once when the panel opens; spots are counted fresh from the server each time.
+  useEffect(() => {
+    let alive = true
+    changes.swapOptions(reg.id)
+      .then(o => { if (alive) setOptions(o) })
+      .catch(e => { if (alive) setLoadErr(e instanceof Error ? e.message : 'Something went wrong') })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per opening
+  }, [reg.id])
+
+  async function confirm() {
+    if (!picked) return
+    setBusy(true); setErr(null)
+    try { await changes.swapSpot(reg.id, picked.section_id); onDone() }
+    catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong'); setPicked(null) }
+    finally { setBusy(false) }
+  }
+
+  const name = (o: SwapOption) => `${o.class_name} ${o.label}`
+  return (
+    <div className="mt-1 rounded-[10px] border border-border bg-surface px-3 py-2.5">
+      <p className="text-xs font-sans font-semibold text-ink-muted mb-2">Switch {camper} from {current} to another class{reg.sections?.week ? ` in Week ${reg.sections.week}` : ''}:</p>
+      {loadErr && <p role="alert" className="text-xs font-sans text-danger">{loadErr}</p>}
+      {!options && !loadErr && <div className="h-10 bg-surface-sunken rounded-[8px] animate-pulse" />}
+      {options && options.length === 0 && (
+        <p className="text-sm font-sans text-ink-muted">No other class that week fits {camper}'s age and grade.</p>
+      )}
+      {options && options.length > 0 && !picked && (
+        <ul className="space-y-1.5">
+          {options.map(o => {
+            const when = [o.days, formatTimeRange(o.start_time, o.end_time), o.room].filter(Boolean).join(' · ')
+            return (
+              <li key={o.section_id}>
+                {o.spots_left > 0 ? (
+                  <button type="button" onClick={() => { setPicked(o); setErr(null) }}
+                    className="w-full text-left rounded-[8px] border border-border-strong px-3 py-2 hover:bg-surface-sunken transition">
+                    <span className="block text-sm font-sans font-semibold text-ink">{name(o)}</span>
+                    <span className="block text-xs font-sans text-ink-muted">{when}{when ? ' · ' : ''}{o.spots_left} {o.spots_left === 1 ? 'spot' : 'spots'} left</span>
+                  </button>
+                ) : (
+                  <div className="rounded-[8px] border border-border px-3 py-2 bg-surface-sunken">
+                    <span className="block text-sm font-sans font-semibold text-ink-muted">{name(o)} · Full</span>
+                    <span className="block text-xs font-sans text-ink-faint">To join its waitlist you'd need to cancel {camper}'s spot in {current} first.</span>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {picked && (
+        <div className="rounded-[10px] overflow-hidden border border-border">
+          <InlineConfirm
+            tone="neutral"
+            message={`Move ${camper} from ${current} to ${name(picked)}? The old seat goes to the next family on that waitlist.`}
+            confirmLabel={busy ? 'Switching…' : 'Switch class'}
+            cancelLabel="Back"
+            busy={busy}
+            onConfirm={() => { void confirm() }}
+            onCancel={() => setPicked(null)}
+          />
+        </div>
+      )}
+      {err && <p role="alert" className="mt-1 text-xs font-sans text-danger">{err}</p>}
+      {!picked && (
+        <div className="mt-2 flex justify-end">
+          <button type="button" onClick={onDone} className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Keep {current}</button>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+// A same-week class a held seat could switch to (spec 12), with live spots left.
+export interface SwapOption {
+  section_id: string
+  class_name: string
+  label: string
+  week: number | null
+  days: string | null
+  start_time: string | null
+  end_time: string | null
+  room: string | null
+  spots_left: number
+}
+
 // Parent self-service changes (spec 11): each registration's change deadline, cancelling a spot,
 // and asking the camp for a change once online changes have closed.
 export function useMyChanges(enabled: boolean) {
@@ -56,5 +69,17 @@ export function useMyChanges(enabled: boolean) {
     await refresh()
   }
 
-  return { deadlines, openRequests, cancelSpot, requestChange, acceptOffer, declineOffer }
+  // Switching class within the same week (spec 12).
+  async function swapOptions(registrationId: string): Promise<SwapOption[]> {
+    const { data, error } = await supabase.rpc('my_swap_options', { p_registration_id: registrationId })
+    if (error) throw new Error(error.message)
+    return (data ?? []) as SwapOption[]
+  }
+  async function swapSpot(registrationId: string, sectionId: string) {
+    const { error } = await supabase.rpc('swap_my_registration', { p_registration_id: registrationId, p_target_section_id: sectionId })
+    if (error) throw new Error(error.message)
+    await refresh()
+  }
+
+  return { deadlines, openRequests, cancelSpot, requestChange, acceptOffer, declineOffer, swapOptions, swapSpot }
 }
