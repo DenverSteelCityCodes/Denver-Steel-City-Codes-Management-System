@@ -52,9 +52,9 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
   return (
     <section id="requests" aria-labelledby="requests-heading" className="bg-surface border border-brand/40 rounded-xl shadow-sm px-4 sm:px-5 py-4 mb-6">
       <h2 id="requests-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5 mb-1">
-        <MessageSquare size={13} /> Change requests from families
+        <MessageSquare size={13} /> Change requests
       </h2>
-      <p className="font-sans text-sm text-ink-muted mb-3">Make the change below (move, cancel, edit), then mark it done. The family gets an email either way.</p>
+      <p className="font-sans text-sm text-ink-muted mb-3">Make the change (move, cancel, reassign), then mark it done. The person who asked gets an email either way.</p>
       {error && <p role="alert" className="font-sans text-sm text-danger mb-2">{error}</p>}
       {!rows ? <div className="h-16 bg-surface-sunken rounded-[10px] animate-pulse" /> : (
         <ul className="divide-y divide-border">
@@ -63,14 +63,14 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
             return (
               <li key={r.id} className="py-3 space-y-2">
                 <p className="font-sans text-sm text-ink">
-                  <span className="font-semibold">{r.student?.full_name ?? 'A camper'}</span>
+                  <span className="font-semibold">{r.kind === 'crew_switch' ? 'Volunteer section switch' : r.student?.full_name ?? 'A camper'}</span>
                   {sec ? ` · ${sec.classes?.name ?? ''} ${sec.label}${sec.week ? ` (Week ${sec.week})` : ''}` : ''}
                   <span className="text-ink-muted"> · from {r.requester?.display_name ?? 'a parent'}, {new Date(r.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                 </p>
                 <p className="font-sans text-sm text-ink bg-surface-sunken rounded-[8px] px-3 py-2">“{r.message}”</p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <label htmlFor={`note-${r.id}`} className="sr-only">Reply to the family (optional)</label>
-                  <input id={`note-${r.id}`} placeholder="Reply to the family (optional)" value={notes[r.id] ?? ''}
+                  <label htmlFor={`note-${r.id}`} className="sr-only">Reply (optional)</label>
+                  <input id={`note-${r.id}`} placeholder="Reply (optional)" value={notes[r.id] ?? ''}
                     onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))}
                     className="flex-1 h-9 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
                   <div className="flex gap-2">

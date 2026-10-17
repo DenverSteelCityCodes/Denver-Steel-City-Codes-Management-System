@@ -29,4 +29,13 @@ After acceptance, volunteers can't change anything about themselves (self-update
 - Q-V2 whether a junior can cover as lead.
 
 ## Notes for the builder
-- None.
+- Built 2026-10-17 (`migration_volunteer_self_service.sql`, `VolunteerSelfService.tsx`):
+  - **Preferences:** `update_my_volunteer_prefs()` sets week availability on `volunteers` and the course choices on the volunteer's application, which is where the matcher reads them. At least one week is required. Volunteers still have no UPDATE on `volunteers`, so the experience level stays admin-only.
+  - **Switch requests:** `request_change(NULL, 'crew_switch', …)`. The admin queue on the Students page now covers both families and volunteers.
+  - **Absences:** `crew_absences` holds today-or-later dates and is audited. `admin_crew_absences()` lists each absence against the sections the volunteer crews in those dates, with up to 5 suggested seniors: available that week, not crewing that week, and not absent themselves. The admin dashboard shows it as an attention item.
+  - **`new_lead` email:** sent only when an admin **replaces** a lead, so first assignments, seeding and resets send nothing. One email per family with held seats in the section.
+  - **Course names:** volunteers can read only their own section's class through RLS, so the choice lists come from `course_names()`. Class names are public on the apply form anyway.
+- The demo reset now clears `change_requests`, a gap left by spec 11.
+- Q-V2 (can a junior cover as lead?) is still open. Suggestions list seniors only until it's decided.
+- Spec 22 (any number of weeks) will need per-session availability instead of `availability_week_1/2`.
+

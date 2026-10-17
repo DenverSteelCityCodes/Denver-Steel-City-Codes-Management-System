@@ -138,6 +138,13 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
           ], claim)
     }
 
+    case 'new_lead':
+      // Spec 25: the section's lead was replaced (a volunteer couldn't make it, or a crew change).
+      return build(`${p.camper ?? 'Your camper'}'s lead for ${p.class ?? 'camp'} has changed`, 'A new lead for your class', [
+        `<strong>${camper}</strong>'s lead in ${esc(p.class)}${p.section ? ` · ${esc(p.section)}` : ''}${p.week ? `, Week ${esc(p.week)}` : ''} is now <strong>${esc(p.lead)}</strong>.`,
+        'Nothing changes for drop-off, pickup or the room. Updates from the class keep coming to your dashboard.',
+      ], dashboard)
+
     case 'change_request_resolved': {
       const done = p.status === 'done'
       return build(done ? 'Your change request is done' : 'About your change request', done ? 'Your change request is done' : 'About your change request', [

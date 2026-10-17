@@ -114,6 +114,7 @@ BEGIN
   camp_year := extract(year FROM w1_start)::int;
   -- ── 1. Wipe camp data (keeps duty types, demo accounts and owner logins) ──
   DELETE FROM roll_call_marks; DELETE FROM updates; DELETE FROM schedule_items;
+  DELETE FROM change_requests;   -- specs 11 and 25 (crew_absences go with volunteers)
   DELETE FROM attendance_logs; DELETE FROM registrations; DELETE FROM students;
   DELETE FROM duty_assignments; DELETE FROM duty_slots;
   DELETE FROM interview_bookings; DELETE FROM interview_slots; DELETE FROM volunteer_applications;
