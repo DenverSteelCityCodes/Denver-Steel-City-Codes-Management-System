@@ -31,6 +31,12 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
       : 'No sign-ups yet — browse classes to find a fit for your campers.'
   }
 
+  // A waitlist offer needs the parent first (spec 10).
+  const offered = active.find(r => r.status === 'offered')
+  if (offered) {
+    const who = students.find(s => s.id === offered.student_id)
+    return `A spot opened up for ${who ? (who.first_name ?? who.full_name.split(' ')[0]) : 'your camper'}! Claim it below before the offer ends.`
+  }
   // Registrations auto-confirm (spec 14); a legacy 'pending' row counts as confirmed.
   const waitlisted = active.filter(r => r.status === 'waitlisted').length
   const confirmedIds = new Set(active.filter(r => r.status === 'confirmed' || r.status === 'pending').map(r => r.student_id))
@@ -61,6 +67,8 @@ export default function ParentDashboard() {
   const changes = {
     ...myChanges,
     cancelSpot: async (id: string) => { await myChanges.cancelSpot(id); await refetchRegistrations() },
+    acceptOffer: async (id: string) => { await myChanges.acceptOffer(id); await refetchRegistrations() },
+    declineOffer: async (id: string) => { await myChanges.declineOffer(id); await refetchRegistrations() },
   }
   const todayMarks = useMyRollCalls(localDateISO())
   const { updates: posts, loading: postsLoading } = useUpdates(20)

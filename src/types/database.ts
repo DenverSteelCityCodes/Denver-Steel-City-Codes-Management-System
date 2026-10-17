@@ -1,6 +1,7 @@
 export type UserRole = 'admin' | 'volunteer' | 'parent'
 export type ExperienceLevel = 'junior' | 'senior'
-export type RegistrationStatus = 'pending' | 'confirmed' | 'waitlisted' | 'cancelled'
+// 'offered' (spec 10): a freed seat held for a waitlisted camper until they claim it or it expires.
+export type RegistrationStatus = 'pending' | 'confirmed' | 'waitlisted' | 'cancelled' | 'offered'
 
 export interface Profile {
   id: string
@@ -159,6 +160,9 @@ export interface Registration {
   cancel_reason?: string | null
   cancelled_by?: string | null
   displaced_from_section?: string | null
+  // Waitlist offer window (migration_waitlist_offers.sql).
+  offered_at?: string | null
+  offer_expires_at?: string | null
   created_at: string
 }
 

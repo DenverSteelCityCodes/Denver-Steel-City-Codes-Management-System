@@ -12,6 +12,7 @@ import { useAdminClasses } from '../hooks/useAdminClasses'
 import type { RegistrationStatus } from '../types/database'
 
 const STATUS_BADGE: Record<RegistrationStatus, string> = {
+  offered:    'bg-brand-soft text-warning',
   confirmed:  'bg-success-soft text-success',
   pending:    'bg-warning-soft text-warning',
   waitlisted: 'bg-info-soft text-info',
@@ -35,7 +36,8 @@ interface SectionOption {
   registered_count: number   // confirmed + pending
 }
 
-const holdsSeat = (st: RegistrationStatus) => st === 'confirmed' || st === 'pending'
+// An open waitlist offer holds its seat too (spec 10).
+const holdsSeat = (st: RegistrationStatus) => st === 'confirmed' || st === 'pending' || st === 'offered'
 
 // "PY-B is full (12/12): …" — null when the section has room. Unknown counts are said plainly.
 function overfillNote(sec: SectionOption | undefined, fillKnown: boolean, verb: string): string | null {
@@ -205,7 +207,7 @@ function StudentDetail({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs text-ink-muted">Set status:</span>
-                  {(['confirmed', 'pending', 'waitlisted', 'cancelled'] as RegistrationStatus[])
+                  {(['confirmed', 'offered', 'waitlisted', 'cancelled'] as RegistrationStatus[])
                     .filter(st => st !== reg.status)
                     .map(st => (
                       <button
@@ -418,7 +420,7 @@ export default function AdminStudents() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {(['all', 'confirmed', 'pending', 'waitlisted', 'cancelled', 'unregistered'] as StatusFilter[]).map(f => (
+          {(['all', 'confirmed', 'offered', 'waitlisted', 'cancelled', 'unregistered'] as StatusFilter[]).map(f => (
             <button
               key={f}
               onClick={() => setStatusFilter(f)}

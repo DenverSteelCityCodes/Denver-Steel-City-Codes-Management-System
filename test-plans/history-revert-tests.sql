@@ -37,7 +37,11 @@ begin
   execute 'set local role authenticated';
 
   -- Registration: cancel then revert restores the seat; when the section is full, refused.
-  select r.id, r.section_id into reg, sec from registrations r where r.status='confirmed' limit 1;
+  -- A section with no waitlist: otherwise the freed seat is offered on at once (spec 10) and can't be restored.
+  select r.id, r.section_id into reg, sec from registrations r
+   where r.status='confirmed'
+     and not exists (select 1 from registrations w where w.section_id = r.section_id and w.status = 'waitlisted')
+   limit 1;
   update registrations set status = 'cancelled' where id = reg;
   execute 'reset role';
   select id into a1 from audit.log where table_name='registrations' and row_id=reg::text order by id desc limit 1;
