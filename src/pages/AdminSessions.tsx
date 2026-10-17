@@ -261,7 +261,7 @@ export default function AdminSessions() {
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="font-sans font-bold text-2xl text-ink mb-1">Sessions</h1>
-          <p className="font-sans text-sm text-ink-muted">Each session is one camp week. The first and second active sessions of the year are Week 1 and Week 2.</p>
+          <p className="font-sans text-sm text-ink-muted">Each session is one camp week. The year's first and second sessions by date are Week 1 and Week 2, shown or hidden.</p>
         </div>
         {editing !== 'new' && (
           <button

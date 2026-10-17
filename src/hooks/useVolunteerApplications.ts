@@ -34,6 +34,19 @@ export function useVolunteerApplications() {
         )
       }
       userId = data as string
+
+      // The email on an application isn't verified (anyone can type any address), so matching by
+      // email must never change what an existing parent or admin account can do.
+      const { data: existing, error: profError } = await supabase
+        .from('profiles').select('role').eq('id', userId).maybeSingle()
+      if (profError) throw new Error(profError.message)
+      if (!existing) throw new Error(`The account for ${app.email} has no profile yet. Ask them to sign in once, then accept again.`)
+      if (existing.role !== 'volunteer') {
+        throw new Error(
+          `${app.email} already belongs to ${existing.role === 'admin' ? 'an admin' : `a ${existing.role}`} account. ` +
+          'Accepting would replace that role. If this person should become a volunteer, change their role under Users first.'
+        )
+      }
     }
 
     // Grant access first; only mark the application accepted once that has worked, so the

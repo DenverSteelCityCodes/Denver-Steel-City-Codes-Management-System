@@ -9,6 +9,7 @@ import CapacityMeter from '../components/CapacityMeter'
 import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useAuth } from '../context/AuthContext'
+import { useFormConfig } from '../hooks/useFormConfig'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import type { RegistrationStatus, OnboardingConfirmation } from '../types/database'
 
@@ -115,6 +116,8 @@ export default function ClassBrowser() {
   const { sessions } = useSessions()
   const { profile } = useAuth()
   const { profile: parentProfile } = useParentProfile()
+  // "Close form" in the admin form editor closes registration here too (the database enforces it).
+  const { enabled: registrationOpen } = useFormConfig('student_registration')
 
   // Pre-select the camper when deep-linked from a StudentCard ("Register for another class").
   const [selectedStudentId, setSelectedStudentId] = useState<string>(searchParams.get('camper') ?? '')
@@ -147,6 +150,7 @@ export default function ClassBrowser() {
   // it first. Otherwise register immediately.
   function handleRegister(section: SectionWithCount) {
     if (!selectedStudentId) return
+    if (!registrationOpen) { showToast('Camper registration is closed right now.', 'info'); return }
     if (needsConfirmation(selectedStudent)) {
       setPendingSection(section)
       return
@@ -201,6 +205,12 @@ export default function ClassBrowser() {
         >
           <ArrowLeft size={16} /> Back to dashboard
         </button>
+
+        {!registrationOpen && (
+          <p role="status" className="font-sans text-sm text-ink bg-surface-sunken border border-border rounded-[10px] px-4 py-3">
+            Camper registration is closed right now. Existing registrations are unchanged.
+          </p>
+        )}
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -330,7 +340,9 @@ export default function ClassBrowser() {
                             r.section_id !== sec.id &&
                             (r.status === 'pending' || r.status === 'confirmed') &&
                             r.year === campYear &&
-                            r.sections?.week != null && r.sections.week === sec.week,
+                            // a both-weeks section (week = null) clashes with every week
+                            !!r.sections &&
+                            (r.sections.week == null || sec.week == null || r.sections.week === sec.week),
                           )?.sections?.classes?.name ?? null
                         : null
 

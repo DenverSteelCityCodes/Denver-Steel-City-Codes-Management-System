@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Settings2, Lock, ExternalLink } from 'lucide-react'
 import { useFormConfigs } from '../hooks/useFormConfigs'
 import { useAppSettings } from '../hooks/useAppSettings'
@@ -36,8 +36,12 @@ function FieldRow({
   const resolved = resolveField(formKey, def.key, overrides)
   const [draft, setDraft] = useState(resolved.label)
 
+  // Escape blurs the field too; this tells that blur to discard instead of save.
+  const discard = useRef(false)
+
   // Save the label when the admin leaves the field (not on every keystroke).
   function commitLabel() {
+    if (discard.current) { discard.current = false; setDraft(resolved.label); return }
     const next = draft.trim()
     if (!next) { setDraft(resolved.label); return }
     if (next !== resolved.label) onUpdate({ label: next === def.label ? undefined : next })
@@ -63,7 +67,7 @@ function FieldRow({
           onBlur={commitLabel}
           onKeyDown={e => {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-            if (e.key === 'Escape') { setDraft(resolved.label); (e.target as HTMLInputElement).blur() }
+            if (e.key === 'Escape') { discard.current = true; (e.target as HTMLInputElement).blur() }
           }}
           disabled={!resolved.show}
           className="w-full font-sans text-sm text-ink bg-transparent border-b border-dashed border-border-strong/60 hover:border-border-strong focus:border-brand focus:border-solid focus:outline-none transition py-0.5 disabled:cursor-not-allowed"

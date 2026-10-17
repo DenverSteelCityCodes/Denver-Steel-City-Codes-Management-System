@@ -97,6 +97,13 @@ DECLARE
   w1_end DATE; w2_start DATE; w2_end DATE; camp_year INT;
   reg RECORD; rc TEXT; absent BOOLEAN; author UUID;
 BEGIN
+  -- Refuse to run anywhere that hasn't been set up as a demo. This function deletes every
+  -- camper, registration and login it wasn't told to keep, and it is scheduled nightly below;
+  -- applied by mistake to a real camp database, both lists are empty and nothing is touched.
+  IF NOT EXISTS (SELECT 1 FROM private.demo_accounts) OR NOT EXISTS (SELECT 1 FROM private.demo_keep_users) THEN
+    RAISE EXCEPTION 'reset_demo() refused: fill private.demo_accounts and private.demo_keep_users first (see the header of migration_demo_environment.sql)';
+  END IF;
+
   w1_end := w1_start + 4; w2_start := w1_start + 7; w2_end := w1_start + 11;
   camp_year := extract(year FROM w1_start)::int;
   -- ── 1. Wipe camp data (keeps duty types, demo accounts and owner logins) ──
@@ -342,6 +349,8 @@ BEGIN
         -- not already booked anywhere in Week 1 (a camper can't be in two rooms at once)
         AND NOT EXISTS (SELECT 1 FROM registrations r JOIN sections s4 ON s4.id = r.section_id
                         WHERE r.student_id = st2.id AND s4.week = 1 AND r.status <> 'cancelled')
+        -- and no row in this section at all: a cancelled one would trip the unique key
+        AND NOT EXISTS (SELECT 1 FROM registrations r5 WHERE r5.student_id = st2.id AND r5.section_id = sec.id)
       ORDER BY st2.id LIMIT 1;
       EXIT WHEN student_id IS NULL;
       INSERT INTO registrations (student_id, section_id, status)
@@ -447,6 +456,49 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION private.reset_demo() FROM PUBLIC, anon, authenticated;
+
+-- ── Kept accounts are off-limits to demo visitors ─────────────
+-- The public demo admin is a real admin, so it could otherwise demote or delete the owner's own
+-- logins (private.demo_keep_users) and read their real email on Users & roles. Kept accounts
+-- can still manage themselves and each other.
+
+CREATE OR REPLACE FUNCTION private.guard_demo_keep_profile()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
+BEGIN
+  IF auth.uid() IS NOT NULL
+     AND EXISTS (SELECT 1 FROM private.demo_keep_users WHERE id = OLD.id)
+     AND NOT EXISTS (SELECT 1 FROM private.demo_keep_users WHERE id = auth.uid()) THEN
+    RAISE EXCEPTION 'This account is protected in the demo and can''t be changed' USING ERRCODE = '42501';
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$;
+REVOKE ALL ON FUNCTION private.guard_demo_keep_profile() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS profiles_guard_demo_keep ON profiles;
+CREATE TRIGGER profiles_guard_demo_keep BEFORE UPDATE OR DELETE ON profiles
+    FOR EACH ROW EXECUTE FUNCTION private.guard_demo_keep_profile();
+
+-- Replaces the version in migration_security_hardening.sql (apply this file after it): same
+-- admin-only list, with kept accounts' email and last sign-in blanked for everyone else.
+CREATE OR REPLACE FUNCTION public.admin_user_emails()
+RETURNS TABLE (id UUID, email TEXT, last_sign_in_at TIMESTAMPTZ)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
+DECLARE
+  caller_kept BOOLEAN := EXISTS (SELECT 1 FROM private.demo_keep_users k WHERE k.id = auth.uid());
+BEGIN
+  IF private.auth_user_role() IS DISTINCT FROM 'admin' THEN
+    RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
+  END IF;
+  RETURN QUERY
+    SELECT u.id,
+           CASE WHEN k.id IS NULL OR caller_kept THEN u.email::text END,
+           CASE WHEN k.id IS NULL OR caller_kept THEN u.last_sign_in_at END
+    FROM auth.users u LEFT JOIN private.demo_keep_users k ON k.id = u.id;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.admin_user_emails() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_user_emails() TO authenticated;
 REVOKE ALL ON FUNCTION private.demo_user(TEXT, TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
 
 -- Nightly at 03:00 Denver (09:00 UTC).

@@ -8,6 +8,7 @@ export function useFormConfig(formKey: FormKey) {
   const [overrides, setOverrides] = useState<Record<string, FieldConfig> | undefined>(undefined)
   const [enabled, setEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -16,8 +17,11 @@ export function useFormConfig(formKey: FormKey) {
       .select('config')
       .eq('form_key', formKey)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return
+        // Couldn't read the switch: don't present the form as open. (The database also refuses
+        // registrations while the form is closed.)
+        if (error) { setOverrides({}); setEnabled(false); setLoadError(error.message); setLoading(false); return }
         const config = data?.config as { enabled?: boolean; fields?: Record<string, FieldConfig> } | undefined
         setOverrides(config?.fields ?? {})
         setEnabled(config?.enabled !== false)
@@ -30,5 +34,5 @@ export function useFormConfig(formKey: FormKey) {
     return resolveField(formKey, key, overrides)
   }
 
-  return { field, enabled, loading }
+  return { field, enabled, loading, loadError }
 }

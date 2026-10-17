@@ -121,7 +121,7 @@ export default function ParentRegistrationPage() {
   const { sessions, loading: sessionsLoading } = useSessions()
   const { profile: parentProfile, saveProfile } = useParentProfile()
   // Labels / visibility / required-ness come from the admin Form editor; `enabled` opens/closes it.
-  const { field: q, enabled: registrationOpen, loading: formConfigLoading } = useFormConfig('student_registration')
+  const { field: q, enabled: registrationOpen, loading: formConfigLoading, loadError: formConfigError } = useFormConfig('student_registration')
 
   // Stamp the record with the active camp year (not the calendar year) so a camper who just
   // completed the full form is considered confirmed for this summer and isn't immediately
@@ -272,6 +272,12 @@ export default function ParentRegistrationPage() {
       if (!form.session1 && !form.session2) return 'Please select at least one session'
       if (form.session1 && !isSelectable(1, form.class_week1)) return `Please select a class for ${campSessions[0]?.name ?? 'Session 1'}`
       if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
+      // A class whose section runs both weeks fills both weeks: it can't be paired with another.
+      if (form.session1 && form.session2 && form.class_week1 !== form.class_week2) {
+        const both = classes.find(c => c.sections.some(s =>
+          s.week === null && (s.id === form.class_week1 || s.id === form.class_week2)))
+        if (both) return `${both.name} runs both weeks, so it can't be combined with a different class. Pick it for both sessions, or choose another class.`
+      }
     }
     if (step === 5) {
       if (!form.waiver_signature.trim()) return `${q('waiver_signature').label} is required`
@@ -432,9 +438,11 @@ export default function ParentRegistrationPage() {
   if (!formConfigLoading && !registrationOpen) {
     return (
       <div className="max-w-lg mx-auto px-4 pt-16 pb-16 text-center">
-        <h1 className="font-sans font-bold text-2xl text-ink mb-2">Registration is closed</h1>
+        <h1 className="font-sans font-bold text-2xl text-ink mb-2">{formConfigError ? "Couldn't load the form" : 'Registration is closed'}</h1>
         <p className="font-sans text-sm text-ink-muted mb-6">
-          Camper registration isn't open right now. Your existing campers and registrations are unchanged.
+          {formConfigError
+            ? 'Check your connection and reload the page to try again.'
+            : "Camper registration isn't open right now. Your existing campers and registrations are unchanged."}
         </p>
         <button
           onClick={() => navigate('/parent')}
