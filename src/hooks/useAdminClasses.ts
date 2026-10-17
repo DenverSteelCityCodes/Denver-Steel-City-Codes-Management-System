@@ -33,16 +33,25 @@ export interface ClassWithSections extends Class {
   total_capacity: number
 }
 
+// Registrations of every status in the given sections — what a delete would cascade away.
+export interface RegistrationTally { active: number; waitlisted: number; cancelled: number }
+
 export function useAdminClasses() {
   const [classes, setClasses] = useState<ClassWithSections[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Set when the seat counts couldn't be loaded: registered_count/waitlist_count then read 0,
+  // so callers must not present them as real numbers.
+  const [fillError, setFillError] = useState<string | null>(null)
 
   useEffect(() => { fetchClasses() }, [])
 
   async function fetchClasses() {
     setLoading(true)
-    const fillPromise = fetchSectionFill().catch(() => new Map())
+    const fillPromise = fetchSectionFill().then(
+      fill => { setFillError(null); return fill },
+      (e: unknown) => { setFillError(e instanceof Error ? e.message : 'unknown error'); return null },
+    )
     const { data, error } = await supabase
       .from('classes')
       .select(`
@@ -59,6 +68,7 @@ export function useAdminClasses() {
       .order('name', { ascending: true })
 
     if (error) { setError(error.message); setLoading(false); return }
+    setError(null)
     const fill = await fillPromise
 
     const rows = (data ?? []) as unknown as (Class & { sections: RawSection[] | null })[]
@@ -70,8 +80,8 @@ export function useAdminClasses() {
           id: ss.volunteer_id,
           display_name: ss.volunteer?.profile?.display_name ?? '',
         })),
-        registered_count: fill.get(s.id)?.active ?? 0,
-        waitlist_count: fill.get(s.id)?.waitlist ?? 0,
+        registered_count: fill?.get(s.id)?.active ?? 0,
+        waitlist_count: fill?.get(s.id)?.waitlist ?? 0,
       }))
       return {
         ...c,
@@ -108,10 +118,12 @@ export function useAdminClasses() {
     setClasses(prev => prev.filter(c => c.id !== id))
   }
 
+  // Returns a warning (instead of throwing) when the section was created but its supports
+  // weren't, so the caller closes the form rather than letting a retry create a duplicate.
   async function createSection(
     payload: SectionInput,
     supportIds: string[] = [],
-  ) {
+  ): Promise<{ warning: string | null }> {
     const { data: section, error } = await supabase
       .from('sections')
       .insert(payload)
@@ -123,10 +135,17 @@ export function useAdminClasses() {
       const { error: ssErr } = await supabase.from('section_supports').insert(
         supportIds.map(vid => ({ section_id: section.id, volunteer_id: vid }))
       )
-      if (ssErr) throw new Error(ssErr.message)
+      if (ssErr) {
+        // Undo the half-made section; it's brand new, so nothing else hangs off it yet.
+        const { error: undoErr } = await supabase.from('sections').delete().eq('id', section.id)
+        if (!undoErr) throw new Error(`Couldn't save the supports, so the section wasn't created: ${ssErr.message}`)
+        await fetchClasses()
+        return { warning: `${section.label} was created, but its supports couldn't be saved (${ssErr.message}). Edit the section to add them.` }
+      }
     }
 
     await fetchClasses()
+    return { warning: null }
   }
 
   async function updateSection(
@@ -138,17 +157,46 @@ export function useAdminClasses() {
     if (error) throw new Error(error.message)
 
     if (supportIds !== undefined) {
+      // Supports are replaced wholesale; keep the old set so a failed insert can put it back.
+      const { data: prev, error: prevErr } = await supabase
+        .from('section_supports').select('volunteer_id').eq('section_id', id)
+      if (prevErr) throw new Error(prevErr.message)
       const { error: delErr } = await supabase.from('section_supports').delete().eq('section_id', id)
       if (delErr) throw new Error(delErr.message)
       if (supportIds.length > 0) {
         const { error: ssErr } = await supabase.from('section_supports').insert(
           supportIds.map(vid => ({ section_id: id, volunteer_id: vid }))
         )
-        if (ssErr) throw new Error(ssErr.message)
+        if (ssErr) {
+          const { error: restoreErr } = (prev ?? []).length > 0
+            ? await supabase.from('section_supports').insert(
+                (prev ?? []).map(p => ({ section_id: id, volunteer_id: p.volunteer_id }))
+              )
+            : { error: null }
+          await fetchClasses()
+          throw new Error(restoreErr
+            ? `Couldn't save the supports (${ssErr.message}), and the previous supports couldn't be restored (${restoreErr.message}). Re-add them before leaving.`
+            : `Couldn't save the supports (${ssErr.message}); the previous supports were kept.`)
+        }
       }
     }
 
     await fetchClasses()
+  }
+
+  // Exact counts straight from registrations (admin RLS sees every row), including cancelled
+  // ones, which section_fill_counts() doesn't report but a delete cascades away all the same.
+  async function countRegistrations(sectionIds: string[]): Promise<RegistrationTally> {
+    const tally: RegistrationTally = { active: 0, waitlisted: 0, cancelled: 0 }
+    if (sectionIds.length === 0) return tally
+    const { data, error } = await supabase.from('registrations').select('status').in('section_id', sectionIds)
+    if (error) throw new Error(error.message)
+    for (const r of data ?? []) {
+      if (r.status === 'waitlisted') tally.waitlisted++
+      else if (r.status === 'cancelled') tally.cancelled++
+      else tally.active++
+    }
+    return tally
   }
 
   async function deleteSection(id: string) {
@@ -158,7 +206,8 @@ export function useAdminClasses() {
   }
 
   return {
-    classes, loading, error,
+    classes, loading, error, fillError,
+    countRegistrations,
     createClass, updateClass, deleteClass,
     createSection, updateSection, deleteSection,
     refetch: fetchClasses,

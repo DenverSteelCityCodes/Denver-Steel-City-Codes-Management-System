@@ -132,10 +132,13 @@ export function useAdminStudents() {
     await fetchStudents()
   }
 
-  async function moveStudentToSection(registrationId: string, newSectionId: string) {
+  // The caller picks the status: a confirmed seat stays confirmed instead of being downgraded.
+  // The insert trigger's capacity/age/week checks don't run on update, so the admin page warns
+  // about those before calling this.
+  async function moveStudentToSection(registrationId: string, newSectionId: string, status: RegistrationStatus) {
     const { error } = await supabase
       .from('registrations')
-      .update({ section_id: newSectionId, status: 'pending' })
+      .update({ section_id: newSectionId, status })
       .eq('id', registrationId)
 
     if (error) throw new Error(error.message)

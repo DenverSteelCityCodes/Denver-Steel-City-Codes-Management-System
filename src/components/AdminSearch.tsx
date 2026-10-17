@@ -13,7 +13,10 @@ interface Result {
 }
 
 // Jump-to search in the admin top bar (⌘K / Ctrl+K focuses it). Results drop down under the
-// input — no modal. The index (classes, campers, applicants) loads on first focus.
+// input — no modal. The index (classes, campers, applicants) loads on focus, and reloads on a
+// later focus once it's over a minute old so new campers/applicants show up.
+const INDEX_MAX_AGE_MS = 60_000
+
 export default function AdminSearch({ pages }: { pages: { label: string; to: string; icon: LucideIcon }[] }) {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -22,6 +25,9 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const [index, setIndex] = useState<Result[] | null>(null)
+  const [indexError, setIndexError] = useState<string | null>(null)
+  const indexLoadedAt = useRef(0)
+  const indexLoading = useRef(false)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -41,13 +47,20 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
     }
   }, [])
 
-  function loadIndex() {
-    if (index) return
+  function loadIndex(force = false) {
+    if (indexLoading.current) return
+    if (!force && index && Date.now() - indexLoadedAt.current < INDEX_MAX_AGE_MS) return
+    indexLoading.current = true
+    setIndexError(null)
     Promise.all([
       supabase.from('classes').select('id, name'),
       supabase.from('students').select('id, full_name'),
       supabase.from('volunteer_applications').select('id, first_name, last_name, status'),
     ]).then(([classes, students, apps]) => {
+      const err = classes.error ?? students.error ?? apps.error
+      // Keep any older index on failure; the dropdown shows the error with a Retry.
+      if (err) { setIndexError(err.message); return }
+      indexLoadedAt.current = Date.now()
       setIndex([
         ...(classes.data ?? []).map(c => ({
           key: `c-${c.id}`, label: c.name, hint: 'Class', icon: LayoutGrid, to: `/admin/classes?open=${c.id}`,
@@ -61,7 +74,9 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
           to: '/admin/volunteers?tab=applications',
         })),
       ])
-    })
+    }, (e: unknown) => {
+      setIndexError(e instanceof Error ? e.message : 'unknown error')
+    }).finally(() => { indexLoading.current = false })
   }
 
   const q = query.trim().toLowerCase()
@@ -108,10 +123,18 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
           role="listbox"
           className="absolute left-0 right-0 mt-2 bg-surface-raised border border-border rounded-[12px] shadow-lg p-1.5 z-50"
         >
-          {results.length === 0 ? (
-            <li className="px-3 py-2.5 font-sans text-sm text-ink-muted">
-              {index ? `No matches for “${query}”` : 'Searching…'}
+          {indexError && (
+            <li role="alert" className="flex items-center justify-between gap-3 px-3 py-2.5 font-sans text-sm text-danger">
+              <span>Couldn't load campers and classes: {indexError}</span>
+              <button type="button" onClick={() => { loadIndex(true); inputRef.current?.focus() }} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
             </li>
+          )}
+          {results.length === 0 ? (
+            !indexError && (
+              <li className="px-3 py-2.5 font-sans text-sm text-ink-muted">
+                {index ? `No matches for “${query}”` : 'Searching…'}
+              </li>
+            )
           ) : results.map((r, i) => {
             const Icon = r.icon
             return (

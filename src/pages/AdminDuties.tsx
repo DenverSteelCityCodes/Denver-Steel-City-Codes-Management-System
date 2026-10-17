@@ -9,9 +9,9 @@ type PendingDelete = { kind: 'slot'; id: string } | { kind: 'type'; id: string }
 
 export default function AdminDuties() {
   const { sessions } = useSessions()
-  const { types, createType, deleteType } = useDutyTypes()
+  const { types, error: typesError, createType, deleteType, refetch: refetchTypes } = useDutyTypes()
   const [selectedSession, setSelectedSession] = useState<string>('')
-  const { slots, loading, createSlot, deleteSlot, refetch } = useDutySlots(selectedSession || undefined)
+  const { slots, loading, error: slotsError, createSlot, deleteSlot, refetch } = useDutySlots(selectedSession || undefined)
 
   const [newTypeName, setNewTypeName] = useState('')
   const [addingType, setAddingType] = useState(false)
@@ -20,6 +20,7 @@ export default function AdminDuties() {
   const [slotForm, setSlotForm] = useState({ duty_type_id: '', slot_date: '', capacity: '2' })
   const [addingSlot, setAddingSlot] = useState(false)
   const [slotErr, setSlotErr] = useState<string | null>(null)
+  const [slotNote, setSlotNote] = useState<string | null>(null)
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null)
   const [deleting, setDeleting] = useState(false)
@@ -41,16 +42,24 @@ export default function AdminDuties() {
     // Link the slot to the camp week its date falls in, so it follows that session (and is
     // cleaned up with it) regardless of which filter is showing.
     const session = sessions.find(s => slotForm.slot_date >= s.start_date && slotForm.slot_date <= s.end_date)
+    const sessionId = session?.id ?? (selectedSession || null)
     setAddingSlot(true)
     setSlotErr(null)
+    setSlotNote(null)
     try {
       await createSlot({
         duty_type_id: slotForm.duty_type_id,
-        session_id: session?.id ?? (selectedSession || null),
+        session_id: sessionId,
         slot_date: slotForm.slot_date,
         capacity: Number(slotForm.capacity) || 2,
       })
       setSlotForm(f => ({ ...f, slot_date: '' }))
+      // A slot in another week than the filter shows would save but vanish from the list, inviting
+      // a duplicate — switch the filter to where it landed and say so.
+      if (selectedSession && sessionId !== selectedSession) {
+        setSelectedSession(sessionId ?? '')
+        setSlotNote(`Added to ${session ? `${session.name} ${session.year}` : 'another week'} — now showing it.`)
+      }
     } catch (e) {
       setSlotErr(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -120,7 +129,12 @@ export default function AdminDuties() {
                 )}
               </li>
             ))}
-            {types.length === 0 && <li className="px-4 py-3 text-sm text-ink-muted font-sans">No duty types yet.</li>}
+            {typesError ? (
+              <li role="alert" className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-danger font-sans">
+                <span>Couldn't load duty types: {typesError}</span>
+                <button type="button" onClick={() => void refetchTypes()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
+              </li>
+            ) : types.length === 0 && <li className="px-4 py-3 text-sm text-ink-muted font-sans">No duty types yet.</li>}
           </ul>
           <form onSubmit={handleAddType} className="flex gap-2">
             <label htmlFor="new-duty-type" className="sr-only">New duty type</label>
@@ -145,7 +159,7 @@ export default function AdminDuties() {
             <select
               id="duty-session-filter"
               value={selectedSession}
-              onChange={e => setSelectedSession(e.target.value)}
+              onChange={e => { setSelectedSession(e.target.value); setSlotNote(null) }}
               className="h-9 pl-2.5 pr-7 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand"
             >
               <option value="">All sessions</option>
@@ -181,11 +195,17 @@ export default function AdminDuties() {
               </button>
             </div>
             {slotErr && <p role="alert" className="text-danger text-sm font-sans">{slotErr}</p>}
+            {slotNote && <p role="status" className="text-ink-muted text-sm font-sans">{slotNote}</p>}
           </form>
 
           {loading ? (
             <div className="space-y-2">
               {[1, 2, 3].map(i => <div key={i} className="h-14 bg-surface border border-border rounded-[14px] animate-pulse" />)}
+            </div>
+          ) : slotsError ? (
+            <div role="alert" className="flex items-center justify-between gap-3 px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">
+              <span>Couldn't load duty slots: {slotsError}</span>
+              <button type="button" onClick={() => void refetch()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
             </div>
           ) : Object.keys(grouped).length === 0 ? (
             <div className="bg-surface border border-border rounded-[14px] p-10 text-center">

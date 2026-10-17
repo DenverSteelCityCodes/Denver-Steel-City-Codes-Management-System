@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import { Search, Download, AlertCircle, UserCheck, ChevronDown } from 'lucide-react'
 import InlineConfirm from '../components/InlineConfirm'
 import { realNote } from '../lib/campers'
-import { useAdminStudents, type AdminStudent } from '../hooks/useAdminStudents'
+import { toCsv, downloadCsv } from '../lib/csv'
+import { useAdminStudents, type AdminStudent, type StudentRegistration } from '../hooks/useAdminStudents'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import type { RegistrationStatus } from '../types/database'
 
@@ -14,20 +15,47 @@ const STATUS_BADGE: Record<RegistrationStatus, string> = {
   cancelled:  'bg-danger-soft text-danger',
 }
 
-type RegAction = { kind: 'remove'; regId: string } | null
+type RegAction =
+  | { kind: 'remove'; regId: string }
+  | { kind: 'status'; regId: string; status: RegistrationStatus }
+  | { kind: 'move'; regId: string; sectionId: string }
+  | null
+
+interface SectionOption {
+  id: string
+  label: string
+  class_name: string
+  week: 1 | 2 | null
+  age_min: number
+  age_max: number
+  capacity: number
+  registered_count: number   // confirmed + pending
+}
+
+const holdsSeat = (st: RegistrationStatus) => st === 'confirmed' || st === 'pending'
+
+// "PY-B is full (12/12): …" — null when the section has room. Unknown counts are said plainly.
+function overfillNote(sec: SectionOption | undefined, fillKnown: boolean, verb: string): string | null {
+  if (!sec) return null
+  if (!fillKnown) return `Seat counts couldn't be loaded, so ${sec.label} may already be full.`
+  if (sec.registered_count < sec.capacity) return null
+  return `${sec.label} is full (${sec.registered_count}/${sec.capacity}): ${verb} will over-fill it to ${sec.registered_count + 1}/${sec.capacity}.`
+}
 
 // Inline detail panel shown under an expanded student row.
 function StudentDetail({
   student,
   allSections,
+  fillKnown,
   onStatusChange,
   onMoveSection,
   onRemoveReg,
 }: {
   student: AdminStudent
-  allSections: { id: string; label: string; class_name: string; week: 1 | 2 | null }[]
+  allSections: SectionOption[]
+  fillKnown: boolean
   onStatusChange: (regId: string, status: RegistrationStatus) => Promise<void>
-  onMoveSection: (regId: string, sectionId: string) => Promise<void>
+  onMoveSection: (regId: string, sectionId: string, status: RegistrationStatus) => Promise<void>
   onRemoveReg: (regId: string) => Promise<void>
 }) {
   const [busy, setBusy] = useState<string | null>(null)
@@ -40,6 +68,79 @@ function StudentDetail({
     try { await fn(); setPending(null) }
     catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong') }
     finally { setBusy(null) }
+  }
+
+  const sectionById = (id: string) => allSections.find(sec => sec.id === id)
+
+  // Routine status changes apply at once; cancelling a confirmed seat, or giving a seat in a
+  // full section, asks first.
+  function requestStatus(reg: StudentRegistration, st: RegistrationStatus) {
+    const cancelsSeat = reg.status === 'confirmed' && st === 'cancelled'
+    const takesSeat = holdsSeat(st) && !holdsSeat(reg.status)
+    if (cancelsSeat || (takesSeat && overfillNote(sectionById(reg.section_id), fillKnown, ''))) {
+      setErr(null)
+      setPending({ kind: 'status', regId: reg.id, status: st })
+    } else {
+      void run(`status-${reg.id}-${st}`, () => onStatusChange(reg.id, st))
+    }
+  }
+
+  // A move keeps a confirmed/pending seat as it is; a waitlisted or cancelled registration
+  // becomes pending in the new section (it takes a seat there).
+  const moveStatus = (reg: StudentRegistration): RegistrationStatus => holdsSeat(reg.status) ? reg.status : 'pending'
+
+  function confirmProps(reg: StudentRegistration, action: NonNullable<RegAction>) {
+    const where = `${reg.class_name} · ${reg.section_label}`
+    if (action.kind === 'remove') {
+      // attendance_logs / roll_call_marks reference the student and section, not the registration.
+      return {
+        message: `Remove ${student.full_name} from ${where}? The registration is deleted and its seat freed. Attendance already taken for this section stays on file.`,
+        confirmLabel: 'Remove',
+        tone: 'danger' as const,
+      }
+    }
+    if (action.kind === 'status') {
+      const over = holdsSeat(action.status) && !holdsSeat(reg.status)
+        ? overfillNote(sectionById(reg.section_id), fillKnown, `making ${student.full_name} ${action.status}`)
+        : null
+      if (over) {
+        return { message: over, confirmLabel: `Set ${action.status} anyway`, tone: 'danger' as const }
+      }
+      if (reg.status === 'confirmed' && action.status === 'cancelled') {
+        return {
+          message: `Cancel ${student.full_name}'s confirmed seat in ${where}? The seat is freed for someone else; the registration stays on file as cancelled.`,
+          confirmLabel: 'Cancel seat',
+          cancelLabel: 'Keep seat',
+          tone: 'danger' as const,
+        }
+      }
+      return { message: `Set ${student.full_name} to ${action.status} in ${where}?`, confirmLabel: 'Set status', tone: 'neutral' as const }
+    }
+    const target = sectionById(action.sectionId)
+    const targetName = target ? `${target.class_name} · ${target.label}` : 'that section'
+    const newStatus = moveStatus(reg)
+    const over = overfillNote(target, fillKnown, 'the move')
+    const notes = [
+      over ?? (target ? `${target.label} has ${target.registered_count}/${target.capacity} seats filled.` : null),
+      newStatus === reg.status ? `Status stays ${reg.status}.` : `They become pending (now ${reg.status}).`,
+      target && (student.age < target.age_min || student.age > target.age_max)
+        ? `${target.label} is for ages ${target.age_min}–${target.age_max}; ${student.full_name} is ${student.age}.`
+        : null,
+      target?.week && student.registrations.some(r => r.id !== reg.id && r.section_week === target.week && holdsSeat(r.status))
+        ? `They already have another Week ${target.week} class.`
+        : null,
+    ].filter(Boolean)
+    return {
+      message: `Move ${student.full_name} from ${where} to ${targetName}? ${notes.join(' ')}`,
+      confirmLabel: over && fillKnown ? 'Move and over-fill' : 'Move',
+      tone: over ? 'danger' as const : 'neutral' as const,
+    }
+  }
+
+  function confirmAction(reg: StudentRegistration, action: NonNullable<RegAction>) {
+    if (action.kind === 'remove') return run(`remove-${reg.id}`, () => onRemoveReg(reg.id))
+    if (action.kind === 'status') return run(`status-${reg.id}-${action.status}`, () => onStatusChange(reg.id, action.status))
+    return run(`move-${reg.id}`, () => onMoveSection(reg.id, action.sectionId, moveStatus(reg)))
   }
 
   const allergies = realNote(student.allergies)
@@ -100,7 +201,7 @@ function StudentDetail({
                     .map(st => (
                       <button
                         key={st}
-                        onClick={() => run(`status-${reg.id}-${st}`, () => onStatusChange(reg.id, st))}
+                        onClick={() => requestStatus(reg, st)}
                         disabled={!!busy}
                         className="h-8 px-3 rounded-full text-xs font-semibold border transition capitalize bg-surface border-border-strong text-ink hover:bg-surface-sunken disabled:opacity-40"
                       >
@@ -119,7 +220,7 @@ function StudentDetail({
                     disabled={!!busy}
                     onChange={e => {
                       const target = e.target.value
-                      if (target) void run(`move-${reg.id}`, () => onMoveSection(reg.id, target))
+                      if (target) { setErr(null); setPending({ kind: 'move', regId: reg.id, sectionId: target }) }
                     }}
                   >
                     <option value="">Choose a section…</option>
@@ -142,10 +243,9 @@ function StudentDetail({
               </div>
               {pending?.regId === reg.id && (
                 <InlineConfirm
-                  message={`Remove ${student.full_name} from ${reg.class_name} · ${reg.section_label}? Their attendance for this section is deleted too.`}
-                  confirmLabel="Remove"
-                  busy={busy === `remove-${reg.id}`}
-                  onConfirm={() => run(`remove-${reg.id}`, () => onRemoveReg(reg.id))}
+                  {...confirmProps(reg, pending)}
+                  busy={!!busy}
+                  onConfirm={() => void confirmAction(reg, pending)}
                   onCancel={() => setPending(null)}
                 />
               )}
@@ -164,65 +264,63 @@ function StudentDetail({
 }
 
 function exportStudentCSV(students: AdminStudent[]) {
-  const headers = ['Student Name', 'Age', 'Medical Info', 'Parent Name', 'Class', 'Section', 'Week', 'Status']
-  const rows: string[][] = []
+  // Allergies is its own required field; medical conditions replaced the older medical_info.
+  const headers = ['Student Name', 'Age', 'Allergies', 'Medical Conditions', 'Parent Name', 'Class', 'Section', 'Week', 'Status']
+  const rows: (string | number)[][] = []
 
   for (const s of students) {
+    const health = [s.allergies ?? '', s.medical_conditions || s.medical_info || '']
     if (s.registrations.length === 0) {
-      rows.push([s.full_name, String(s.age), s.medical_info ?? '', s.parent_name, '', '', '', 'unregistered'])
+      rows.push([s.full_name, s.age, ...health, s.parent_name, '', '', '', 'unregistered'])
     } else {
       for (const r of s.registrations) {
         rows.push([
           s.full_name,
-          String(s.age),
-          s.medical_info ?? '',
+          s.age,
+          ...health,
           s.parent_name,
           r.class_name,
           r.section_label,
-          r.section_week ? String(r.section_week) : '',
+          r.section_week ?? '',
           r.status,
         ])
       }
     }
   }
 
-  const csv = [headers, ...rows]
-    .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `student-roster-${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  downloadCsv(`student-roster-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(headers, rows))
 }
 
 type StatusFilter = 'all' | RegistrationStatus | 'unregistered'
 
 export default function AdminStudents() {
   const { students, loading, error, updateRegistrationStatus, moveStudentToSection, removeRegistration } = useAdminStudents()
-  const { classes } = useAdminClasses()
+  const { classes, fillError, refetch: refetchClasses } = useAdminClasses()
 
-  // ?q= comes from the top-bar search; re-applied if it changes while the page is open.
+  // ?q= comes from the top-bar search; re-applied on every navigation (keyed on the location
+  // key, not the query), so picking the same camper again after editing the box still works.
   const [params] = useSearchParams()
+  const location = useLocation()
   const urlQuery = params.get('q') ?? ''
-  const [appliedQuery, setAppliedQuery] = useState(urlQuery)
+  const [applied, setApplied] = useState({ key: location.key, q: urlQuery })
   const [search, setSearch] = useState(urlQuery)
-  if (urlQuery !== appliedQuery) {
-    setAppliedQuery(urlQuery)
-    setSearch(urlQuery)
+  if (location.key !== applied.key) {
+    setApplied({ key: location.key, q: urlQuery })
+    if (urlQuery || applied.q) setSearch(urlQuery)
   }
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const allSections = useMemo(() =>
+  const allSections = useMemo<SectionOption[]>(() =>
     classes.flatMap(c => c.sections.map(s => ({
       id: s.id,
       label: s.label,
       class_name: c.name,
       week: s.week,
+      age_min: s.age_min,
+      age_max: s.age_max,
+      capacity: s.capacity,
+      registered_count: s.registered_count,
     }))),
     [classes]
   )
@@ -242,12 +340,13 @@ export default function AdminStudents() {
     })
   }, [students, search, statusFilter])
 
+  // Counts students (each once per status they have), matching what the filter lists.
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: students.length, unregistered: 0 }
     for (const s of students) {
       if (s.registrations.length === 0) counts.unregistered++
-      for (const r of s.registrations) {
-        counts[r.status] = (counts[r.status] ?? 0) + 1
+      for (const st of new Set(s.registrations.map(r => r.status))) {
+        counts[st] = (counts[st] ?? 0) + 1
       }
     }
     return counts
@@ -354,9 +453,11 @@ export default function AdminStudents() {
                       <StudentDetail
                         student={s}
                         allSections={allSections}
-                        onStatusChange={(id, status) => updateRegistrationStatus(id, status)}
-                        onMoveSection={(regId, sectionId) => moveStudentToSection(regId, sectionId)}
-                        onRemoveReg={regId => removeRegistration(regId)}
+                        fillKnown={!fillError}
+                        // Seat counts drive the over-fill warnings, so refresh them after each change.
+                        onStatusChange={async (id, status) => { await updateRegistrationStatus(id, status); void refetchClasses() }}
+                        onMoveSection={async (regId, sectionId, status) => { await moveStudentToSection(regId, sectionId, status); void refetchClasses() }}
+                        onRemoveReg={async regId => { await removeRegistration(regId); void refetchClasses() }}
                       />
                     )}
                   </li>

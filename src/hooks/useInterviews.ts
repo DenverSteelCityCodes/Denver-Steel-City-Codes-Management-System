@@ -26,13 +26,15 @@ export interface InterviewBooking {
 
 export function useInterviews() {
   const [slots, setSlots] = useState<InterviewSlot[]>([])
+  // True only until the first load finishes: refetches (after adding or booking a slot) keep the
+  // list mounted, so an open notes editor or half-filled booking isn't thrown away.
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => { fetchSlots() }, [])
 
   async function fetchSlots() {
-    setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('interview_slots')
       .select(`
         *,
@@ -43,6 +45,8 @@ export function useInterviews() {
       `)
       .order('slot_datetime', { ascending: true })
 
+    setError(error?.message ?? null)
+    if (error) { setLoading(false); return }
     setSlots(
       ((data ?? []) as unknown as (Omit<InterviewSlot, 'booking'> & { booking: InterviewBooking | InterviewBooking[] | null })[]).map(s => ({
         ...s,
@@ -99,5 +103,5 @@ export function useInterviews() {
     await fetchSlots()
   }
 
-  return { slots, loading, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, refetch: fetchSlots }
+  return { slots, loading, error, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, refetch: fetchSlots }
 }
