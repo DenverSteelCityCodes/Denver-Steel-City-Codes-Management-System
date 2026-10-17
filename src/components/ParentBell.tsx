@@ -89,7 +89,7 @@ export default function ParentBell() {
         to: '/parent', needsAction: false,
       })),
     ...registrations
-      .filter(r => r.status === 'confirmed')
+      .filter(r => r.status === 'confirmed' || r.status === 'pending')
       .map(r => ({
         key: `ok-${r.id}`, icon: CircleCheck, tone: 'bg-success-soft text-success',
         text: `${nameOf(r.student_id)}'s spot in ${r.sections?.classes?.name ?? 'a class'} is confirmed`,

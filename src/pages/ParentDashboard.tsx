@@ -24,9 +24,9 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
       : 'No sign-ups yet — browse classes to find a fit for your campers.'
   }
 
-  const pending = active.filter(r => r.status === 'pending').length
+  // Registrations auto-confirm (spec 14); a legacy 'pending' row counts as confirmed.
   const waitlisted = active.filter(r => r.status === 'waitlisted').length
-  const confirmedIds = new Set(active.filter(r => r.status === 'confirmed').map(r => r.student_id))
+  const confirmedIds = new Set(active.filter(r => r.status === 'confirmed' || r.status === 'pending').map(r => r.student_id))
   const unenrolled = students.filter(s => !active.some(r => r.student_id === s.id))
   const firstName = (s: Student) => s.first_name ?? s.full_name.split(' ')[0]
 
@@ -36,10 +36,6 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
     : unenrolled.length === 1 ? ` ${firstName(unenrolled[0])} isn't signed up yet.`
     : ` ${unenrolled.length} campers aren't signed up yet.`
 
-  if (pending > 0) {
-    const spots = pending === 1 ? 'one spot still to confirm' : `${pending} spots still to confirm`
-    return `${subject} signed up — ${spots}.${waitNote}${unenrolledNote}`
-  }
   if (confirmedIds.size === 0) return `${subject} on a waitlist — we'll reach out if a spot opens.${unenrolledNote}`
   // Only say "all set" for the campers who actually have a confirmed spot.
   const lead = confirmedIds.size === students.length

@@ -1,11 +1,17 @@
-import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
 import { useAdminStudents } from './useAdminStudents'
 import { useVolunteerApplications } from './useVolunteerApplications'
 import { useInterviews } from './useInterviews'
 import { useAttendanceBoard } from './useAttendanceBoard'
-import { rollCallLabel } from '../lib/campDay'
+import { rollCallLabel, localDateISO } from '../lib/campDay'
+import { useSessions } from './useSessions'
+import { supabase } from '../lib/supabase'
+
+// One pair from possible_duplicate_campers() (spec 14b).
+interface DuplicatePair { a_id: string; a_name: string; a_parent: string | null; b_id: string; b_name: string; b_parent: string | null; reason: string }
 
 // A single row in the "Needs attention" work queue. The hook hands the component fully-resolved
 // presentation data (classes + copy + CTA) so AdminDashboard stays a declarative renderer (§2).
@@ -42,8 +48,19 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
   const { applications, loading: appsLoading } = useVolunteerApplications()
   const { slots, loading: interviewsLoading } = useInterviews()
   const { sections: boardSections, session: todaySession, loading: boardLoading } = useAttendanceBoard()
+  const { sessions, loading: sessionsLoading } = useSessions()
+  // Possible duplicate campers (same name, different accounts); an error just hides the item.
+  const [dupes, setDupes] = useState<DuplicatePair[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    supabase.rpc('possible_duplicate_campers').then(({ data, error }) => {
+      if (alive) setDupes(error ? [] : ((data ?? []) as DuplicatePair[]))
+    })
+    return () => { alive = false }
+  }, [])
 
   const loading = classesLoading || studentsLoading || appsLoading || interviewsLoading || boardLoading
+    || sessionsLoading || dupes === null
 
   const items: AttentionItem[] = []
   if (loading) return { items, loading }
@@ -135,6 +152,49 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       ctaLabel: 'Review classes',
       to: '/admin/classes',
       wide: anyFull,
+    })
+  }
+
+  // ── 1b. Sections with no lead in a session that hasn't ended (spec 14) ───
+  const today = localDateISO()
+  const liveSessionIds = new Set(sessions.filter(se => se.is_active && se.end_date >= today).map(se => se.id))
+  const noLead = classes.flatMap(c => c.sections
+    .filter(sec => !sec.cancelled_at && !sec.lead_id
+      // A both-weeks section (no session) counts while any session is still to come.
+      && (sec.session_id ? liveSessionIds.has(sec.session_id) : liveSessionIds.size > 0))
+    .map(sec => ({ className: c.name, label: sec.label, week: sec.week })))
+  if (noLead.length > 0) {
+    const first = noLead[0]
+    items.push({
+      key: 'no-lead',
+      icon: UserX,
+      iconWrap: 'bg-danger-soft text-danger',
+      cardCls: '',
+      badge: null,
+      badgeCls: null,
+      title: `${noLead.length} ${plural(noLead.length, 'section has', 'sections have')} no lead`,
+      detail: `${first.className} · ${first.label}${first.week ? ` (Week ${first.week})` : ''}${noLead.length > 1 ? ` · ${noLead.length - 1} more` : ''}`,
+      ctaLabel: 'Assign a lead',
+      to: '/admin/classes',
+      wide: false,
+    })
+  }
+
+  // ── 1c. Possible duplicate campers (spec 14b) ────────────────────────────
+  if (dupes && dupes.length > 0) {
+    const first = dupes[0]
+    items.push({
+      key: 'duplicates',
+      icon: Copy,
+      iconWrap: 'bg-warning-soft text-warning',
+      cardCls: '',
+      badge: null,
+      badgeCls: null,
+      title: `${dupes.length} possible duplicate ${plural(dupes.length, 'camper', 'campers')}`,
+      detail: `${first.a_name} (${first.a_parent ?? 'one account'}) and ${first.b_name} (${first.b_parent ?? 'another account'}): ${first.reason}`,
+      ctaLabel: 'Review campers',
+      to: `/admin/students?q=${encodeURIComponent(first.a_name)}`,
+      wide: false,
     })
   }
 

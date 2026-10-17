@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Search, Lock, CheckCircle, Clock, List, ShieldCheck, Info } from 'lucide-react'
+import { ArrowLeft, Search, Lock, CheckCircle, List, ShieldCheck, Info } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
@@ -81,7 +81,7 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
       {registrationStatus ? (
         <div className="flex items-center gap-2 text-sm font-sans font-semibold">
           {registrationStatus === 'confirmed' && <><CheckCircle size={16} className="text-success" /><span className="text-success">Confirmed</span></>}
-          {registrationStatus === 'pending' && <><Clock size={16} className="text-warning" /><span className="text-warning">Pending</span></>}
+          {registrationStatus === 'pending' && <><CheckCircle size={16} className="text-success" /><span className="text-success">Confirmed</span></>}
           {registrationStatus === 'waitlisted' && <><List size={16} className="text-info" /><span className="text-info">Waitlisted</span></>}
           {registrationStatus === 'cancelled' && <span className="text-ink-muted">Cancelled</span>}
           {studentName && <span className="text-ink-muted font-normal">· {studentName}</span>}
@@ -170,7 +170,7 @@ export default function ClassBrowser() {
       const reg = await registerStudent(selectedStudentId, section.id, section.registered_count, section.capacity)
       const msg = reg.status === 'waitlisted'
         ? `${selectedStudent?.full_name} added to the waitlist.`
-        : `${selectedStudent?.full_name} registered! Pending confirmation.`
+        : `${selectedStudent?.full_name} is in! Their spot is confirmed.`
       showToast(msg, reg.status === 'waitlisted' ? 'info' : 'success')
       void refetchClasses()   // fill meters now include this camper
     } catch (err) {
