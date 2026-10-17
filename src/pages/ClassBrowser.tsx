@@ -86,8 +86,9 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
           {registrationStatus === 'cancelled' && <span className="text-ink-muted">Cancelled</span>}
           {studentName && <span className="text-ink-muted font-normal">· {studentName}</span>}
         </div>
-      ) : weekClash && !isFull ? (
-        // Campers take one class per week; the waitlist of a full class stays open as a backup.
+      ) : weekClash ? (
+        // One class per camper per week, and no same-week waitlist backups (spec 10a): offers skip
+        // campers who already hold a spot that week, so a backup could never become a spot.
         <p className="flex items-start gap-1.5 font-sans text-sm text-ink-muted">
           <Info size={15} className="shrink-0 mt-0.5" />
           Already in {weekClash} this week

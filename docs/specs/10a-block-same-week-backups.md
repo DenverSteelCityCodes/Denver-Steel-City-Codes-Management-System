@@ -1,6 +1,6 @@
 # 10a: Block same-week waitlist backups
 
-**Status:** ⬜ not started · **Issue:** #78 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #119](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/119) · **Issue:** #78 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** 10
 **Plan reference:** Plan §6 decision Q-W4
 
@@ -32,4 +32,5 @@ Today a camper who holds a seat in Week 1 can also join a full Week 1 class's wa
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17. The wizard doesn't load the camper's other registrations, so it relies on the server's message ("…Cancel it first to join this waitlist."), which the wizard already shows on the booking step. The demo had 0 existing same-week backups.
 - Edit the canonical definition in `migration_one_class_per_week.sql` (or its `supabase/migrations/` successor). It's the only definition of that function.

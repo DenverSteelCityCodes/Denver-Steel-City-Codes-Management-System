@@ -5,7 +5,7 @@
 -- run at the same time. The rule is enforced here so it can't be bypassed from the client:
 --   * a camper who already holds a spot (pending/confirmed) in a week can't take a second
 --     open seat that same week;
---   * joining the WAITLIST of a full class as a backup is still allowed;
+--   * nor join the WAITLIST of another class that week (changed 2026-10-17, spec 10a / Q-W4);
 --   * admins keep their override (they return early, as before).
 --
 -- "Same week" is decided by sections.week, the column the admin UI edits and the wizard reads:
@@ -101,8 +101,10 @@ BEGIN
   NEW.status := CASE WHEN taken >= sec.capacity THEN 'waitlisted'::registration_status
                      ELSE 'pending'::registration_status END;
 
-  -- Same-week clash: only when this insert would HOLD a seat (waitlisting as a backup is fine).
-  IF NEW.status = 'pending' THEN
+  -- Same-week clash. A camper holds one class per week, and (decided 2026-10-16, Q-W4) can't
+  -- join another class's waitlist that week as a backup either: waitlist offers skip campers who
+  -- already hold a seat that week, so such a backup could never turn into a spot.
+  IF NEW.status IN ('pending', 'waitlisted') THEN
     -- One camper at a time: two simultaneous sign-ups for different sections lock different
     -- section rows, so without this neither would see the other's seat.
     PERFORM pg_advisory_xact_lock(hashtextextended(NEW.student_id::text, 0));
@@ -117,6 +119,9 @@ BEGIN
       AND (s.week IS NULL OR sec.week IS NULL OR s.week = sec.week)
     LIMIT 1;
     IF clash IS NOT NULL THEN
+      IF NEW.status = 'waitlisted' THEN
+        RAISE EXCEPTION 'This camper already has a spot in % that week. Cancel it first to join this waitlist.', clash USING ERRCODE = 'P0001';
+      END IF;
       RAISE EXCEPTION 'This camper already has a spot in % that week', clash USING ERRCODE = 'P0001';
     END IF;
   END IF;
