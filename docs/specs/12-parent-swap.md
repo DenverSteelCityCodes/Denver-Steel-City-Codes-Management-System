@@ -34,3 +34,6 @@ Switching classes needs an admin today. A self-swap before the deadline saves ad
 - Built 2026-10-17 (`migration_parent_swap.sql`). `my_swap_options()` lists the other same-week classes the camper fits (age band, the Microcontrollers grade rule matched by class name like `courseConstraints.ts`, no clash with a seat in the other week for a both-weeks section) with live spots left. Full ones are listed too, so the card can explain why they can't be picked. `swap_my_registration()` re-checks everything under the locks (the camper's advisory lock, then both sections in id order). It checks the earlier of the two classes' deadlines and moves the same row (audit reason `parent_swap`). The spec 10 trigger offers the freed seat; the spec 09 trigger sends one `registration_moved` email.
 - Concurrency was verified with two real connections: see `test-plans/parent-swap-concurrency.md`.
 - The admin move (`moveStudentToSection`) bypasses these checks on purpose. Leave it, but log it (spec 05).
+
+## From the inbox findings (2026-10-17)
+- Families often wanted to change **both weeks together** (for example Intro → Intermediate in week 2, with week 1 adjusted). Add a two-week swap RPC that commits both moves or neither. A staff mistake while doing this by hand once forced a class over its cap. See [findings](../research/inbox-findings.md) §1 row 3.

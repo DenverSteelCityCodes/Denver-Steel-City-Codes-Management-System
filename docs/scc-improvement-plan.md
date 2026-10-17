@@ -645,6 +645,12 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | 17 | Fewer round trips: shared query cache (TanStack Query) across parent components; `register_camper()` transactional RPC; volunteer dashboard single RPC | P1 (do it if time) | M | 16 |
 | 18 | Server-side paging + search on admin Students and Users | P0 | S | — |
 | 19 | k6 load test against a staging copy (500 parents/15 min); backup restore drill; PITR on; registration-day runbook + breach runbook (L5); **full dry run with 5 real parents** | P0 | M | 1–18, L1–L3, L5, L6a |
+| 29 | Laptop loans per camper-week: inventory cap, laptop waitlist, roster column (top inbox pain point) | P0 | M | 9, 13 |
+| 30 | "Notify me" interest list + public season status | P1 | S | 9, 13 |
+| 31 | Registration guardrails: rising-grade rule, prerequisites, repeat-course warning, "place with" request | P0 | M | 16 |
+| 32 | Admin register-on-behalf (late, walk-in, recovery), logged | P1 | S | 5, 13 |
+| 33 | Structured allergies/diet/accommodations, lunch roster; teachers see only their own campers | P0 | M | 4, L2 |
+| 34 | Urgent broadcast to a week's guardians + incident log | P1 | M | 5, 9 |
 | **Legal track (runs alongside Phases A–B; SCC provides the waiver and privacy text)** |||||
 | L1 | `/privacy` + `/terms` pages, footer links, signup "18+ parent/guardian" attestation, contact `denver@steelcitycodes.org` | P0 | S | SCC review of Claude's drafts |
 | L2 | Versioned `waivers` + `consents` tables; wizard renders the active waiver; separate opt-in consents (photo default off); signature record; emailed receipt; demographic questions marked optional with purpose; remove or relabel camper email | P0 | M | 9, SCC's waiver text |
@@ -665,6 +671,7 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | L7 | Volunteer clearances with expiry; crewing blocked when missing (PA-ready), only if SCC wants clearance records in the site | P1 ★ | S | 20 |
 | 27 | Admin MFA (TOTP) required for every admin account | P1 ★ | S | — |
 | 28 | Family data-deletion requests: parent asks in-app, admin approves, anonymize RPC (logged) | P1 | S | 5, L4 |
+| 35 | Volunteer onboarding: per-slot interview links + reminders, checklist with deadlines, bios, legal name; B2 hours certificate and B6 authorized pickups promoted to P1 | P1 | M | 9 |
 | — | P2 backlog (each with a mini-spec in `docs/specs/backlog-p2.md`): SMS reminders, volunteer hours certificate, self-hosted fonts, server-side bell "seen" state, duty reminders and swaps, authorized-pickup list, magic-link sign-in, first-login lands in the wizard | P2 | — | — |
 
 **Critical path to February:** 1 → 2 → 9 → 10 → 12 → 19, with **L2** (needs SCC's official waiver text by early January) joining at 9. If time runs short, cut **17** first and then **15** (the log still records everything; undo can be manual SQL for a season). Never cut 1–4, 9, 10, 19, L1 or L2. **This month:** ask SCC for its official waiver text, and have Claude draft the website privacy policy and terms for SCC to review. These are the only non-code inputs February needs.
@@ -723,6 +730,12 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 - Q-L5. Is the camper email field used for anything? If not, remove it.
 - Q-L9. Does SCC want volunteer clearances recorded in the site (spec L7), or kept only in SCC's own records?
 - Q-L6. Any school-district partnerships that share student data with us?
+
+**From the inbox findings (2026-10-17, [docs/research/inbox-findings.md](research/inbox-findings.md))**
+- Q-F1. Confirm **rising grade** ("grade this fall") as the single eligibility rule (narrows Q-P2). Should prerequisites be hard blocks for parents, with an admin override? (Spec 31.)
+- Q-F2. How many loaner laptops in 2027, and will the host school lend them again? (Spec 29.)
+- Q-F3. Should the site record authorized pickups and walk-home consent (B6 promoted), or keep it to phone + ID check?
+- Q-F4. How long are incident records kept? (Spec 34, L4.)
 
 **Flows I'm least sure about (walk these first):** N1 national view (Q-N2, Q-N3). Done: P5 cancel/swap rules, P6 offer rules and order, V3 volunteer class picking, Q-P4, opening day, cancelled sections. **Legal:** settled. SCC handles org-level compliance. The site uses SCC's official waiver text and gets its own privacy policy, terms and accessibility statement (Claude drafts, SCC reviews).
 

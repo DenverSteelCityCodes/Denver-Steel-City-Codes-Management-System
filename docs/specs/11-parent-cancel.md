@@ -39,3 +39,6 @@ Parents have no UPDATE or DELETE on registrations, and no in-app way to reach th
 ## Notes for the builder
 - Built 2026-10-17. The deadline is midnight (Denver) at the start of `session start − change_deadline_days`, so with 14 days and a June 7 session, the last online-cancel day is May 23; the card says so. A both-weeks section uses the year's earliest session. In the demo both weeks start within 14 days, so seats show "Request a change". Leaving a waitlist is always allowed. Resolving a request emails the family (template `change_request_resolved`). The contact card edits `parent_profiles`; each camper keeps its own emergency contact too.
 - Read the deadline from the spec 13 settings, not a constant.
+
+## From the inbox findings (2026-10-17)
+- About half of past cancellations dropped **one week of two**. Cancel works per registration (per week), with a "Which camper, which week?" choice. A cancellation must free the seat for the waitlist (10) and release any laptop (29). See [findings](../research/inbox-findings.md) §1 row 2.

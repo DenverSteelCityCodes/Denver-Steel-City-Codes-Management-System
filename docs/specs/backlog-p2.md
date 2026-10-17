@@ -7,7 +7,7 @@
 - **Build:** opt-in checkbox with TCPA consent wording (from SCC); `parent_profiles.sms_opt_in_at`; an SMS channel in the spec 09 outbox (Twilio or similar) for three templates only: offer made, offer expiring, camp starts tomorrow. Quiet hours 9 pm–8 am Denver. STOP handling.
 - **Done when:** opted-in parents get those three texts; nobody else does; STOP works.
 
-## B2. Volunteer hours certificate
+## B2. Volunteer hours certificate (→ promoted to P1, 2026-10-17: ~49 hand-written letters a year; uses `volunteers.legal_name` from spec 35)
 - **For:** teen volunteers (school service hours).
 - **Build:** hours = crewed days × section hours (from `sections.start_time/end_time` and roll-call days), plus duty slots; a "My hours" card and a printable or PDF certificate signed by the chapter; admin can adjust (logged).
 - **Done when:** a volunteer downloads a certificate matching the admin's records.
@@ -26,7 +26,7 @@
 - **For:** volunteers. **Build:** a reminder email the day before a claimed duty slot (outbox); "Offer my slot" lets another volunteer claim it, and capacity is still enforced by the existing trigger.
 - **Done when:** reminders go out; a swap completes without an admin.
 
-## B6. Authorized-pickup list
+## B6. Authorized-pickup list (→ promoted to P1, 2026-10-17: pickup and walk-home threads every year; add a dated "may leave alone" consent)
 - **Context:** deliberately left to phone + ID check in the camp-week audit. Revisit with national's safety policy ([CampMinder example](https://help.campminder.com/en/articles/7238589-get-to-know-paperless-attendance)).
 - **Build (if approved):** `authorized_pickups(student_id, name, relation, phone)` edited by parents; shown on the dismissal roll call; the volunteer ticks which adult picked up (recorded on the mark).
 - **Done when:** dismissal records who picked each camper up.

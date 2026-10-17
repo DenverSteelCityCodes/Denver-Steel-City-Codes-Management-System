@@ -32,3 +32,6 @@ The school district list is four Denver-metro districts in code. The waiver is p
 
 ## Notes for the builder
 - None.
+
+## From the inbox findings (2026-10-17)
+- Builds on 31: grade range, prerequisite and next-course rules become per chapter. One wording everywhere: **rising grade** ("grade this fall"). Chapters can also restrict to one school ("students at <school> only") and set a minimum enrollment to run.

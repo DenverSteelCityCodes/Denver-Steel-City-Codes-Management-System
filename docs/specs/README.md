@@ -48,6 +48,14 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [17](17-fewer-round-trips.md) | #86 | Shared query cache, `register_camper()` RPC, volunteer home RPC | P1 | M | 16 | B |
 | ✅ | [18](18-admin-paging.md) | #87 | Server-side paging + search for admin lists | P0 | S | — | B |
 | ⬜ | [19](19-load-test-runbook-dry-run.md) | #88 | Load test, restore drill, PITR, runbooks, dry run | P0 | M | 01–18, L1–L3, L5, L6a | B |
+| ⬜ | [29](29-laptop-loans.md) | ❓ | Laptop loans per camper-week, inventory cap, laptop waitlist | P0 | M | 09, 13 | B |
+| ⬜ | [30](30-interest-list.md) | ❓ | "Notify me" interest list + public season status | P1 | S | 09, 13 | B |
+| ⬜ | [31](31-registration-guardrails.md) | ❓ | Prerequisites, rising-grade rule, repeat-course warning, "place with" | P0 | M | 16 | B |
+| ⬜ | [32](32-admin-register-on-behalf.md) | ❓ | Admin register-on-behalf (late, walk-in, recovery) | P1 | S | 05, 13 | B |
+| ⬜ | [33](33-health-and-accommodations.md) | ❓ | Structured allergies, diet, accommodations, lunch roster | P0 | M | 04, L2 | B |
+| ⬜ | [34](34-urgent-broadcast-and-incidents.md) | ❓ | Urgent broadcast + incident log | P1 | M | 05, 09 | B |
+| ⬜ | [35](35-volunteer-onboarding.md) | ❓ | Interview links/reminders, onboarding checklist, bios, legal name | P1 | M | 09 | C |
+| ⬜ | [B2/B6](backlog-p2.md) | — | Hours certificate + authorized pickups (promoted from P2) | P1 | S each | 35 / — | C |
 | ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
 | ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |
@@ -69,6 +77,8 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 
 **Target dates:** Phase A merged by **Nov 30**, Phase B + legal by **Jan 31**, dry run in the first week of February, registration opens on the date set in spec 13 (❓ not chosen yet). **Critical path:** 01 → 02 → 09 → 10 → 12 → 19, with L2 joining at 09.
 
+Specs 29–35 come from the [Denver inbox and Drive findings](../research/inbox-findings.md) (2026-10-17). Issues not created yet.
+
 ## Non-code tasks (people, not PRs; these block specs)
 
 Org-level compliance (insurance, licensing, counsel, volunteer screening) is **handled by SCC outside the site** and isn't tracked here. These are only the inputs the site needs. The website's own documents (privacy policy, terms, accessibility statement, data protection assessment, retention policy, incident runbook) **are** in scope: see plan §4.2.
@@ -85,6 +95,7 @@ Org-level compliance (insurance, licensing, counsel, volunteer screening) is **h
 | ⬜ | Does SCC want volunteer clearances recorded in the site? (Q-L9) | SCC national | Mar | L7 |
 | ⬜ | SCC's retention policy, or sign-off on plan §4.3 | SCC national | Jan 15 | L4 |
 | ⬜ | Peak 2027 numbers (Q-H4) and the registration opening date/time | Regional Director | Dec 1 | 13, 19 |
+| ⬜ | 2027 laptop loaner count, and whether the host school lends them again (spec 29) | Regional Director | Jan 5 | 29 |
 | ⬜ | Recruit 5 real parents for the February dry run | Regional Director | Jan 20 | 19 |
 
 ## Still-open questions
