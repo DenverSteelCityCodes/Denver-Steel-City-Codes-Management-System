@@ -16,6 +16,7 @@ import { useSessions } from '../hooks/useSessions'
 import { useScheduleItems } from '../hooks/useScheduleItems'
 import DailySchedule, { ScheduleHeading } from '../components/DailySchedule'
 import { localDateISO, sessionOnDay } from '../lib/campDay'
+import VolunteerSelfService from '../components/VolunteerSelfService'
 
 // Updates visible to this volunteer, plus a composer for each section they lead.
 function UpdatesPanel({ leadSections, userId }: { leadSections: AssignedSection[]; userId: string }) {
@@ -339,6 +340,7 @@ export default function VolunteerDashboard() {
               <h2 className="font-sans font-semibold text-xl text-ink mb-2">No section assigned yet</h2>
               <p className="font-sans text-ink-muted text-base">An admin will assign you to a section before camp starts.</p>
             </div>
+            <VolunteerSelfService userId={user!.id} />
             <div className="space-y-3">
               <h2 className="font-sans font-bold text-xl text-ink">Duty schedule</h2>
               <DutyPanel userId={user!.id} />
@@ -357,6 +359,7 @@ export default function VolunteerDashboard() {
             </div>
             <UpdatesPanel leadSections={assignedSections.filter(sec => sec.is_lead)} userId={user!.id} />
             <TodaySchedulePanel />
+            <VolunteerSelfService userId={user!.id} />
             <div className="space-y-3">
               <h2 className="font-sans font-bold text-xl text-ink">Duty schedule</h2>
               <DutyPanel userId={user!.id} />

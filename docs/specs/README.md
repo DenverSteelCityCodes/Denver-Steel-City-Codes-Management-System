@@ -59,7 +59,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [22](22-n-week-seasons.md) | #96 | Seasons with any number of weeks | P1 ★ | L | 20 | C |
 | ⬜ | [23](23-per-chapter-forms.md) | #97 | Per-chapter districts, waivers, DB-enforced grade rules | P1 ★ | M | 20, L2 | C |
 | ⬜ | [24](24-households.md) | #98 | Households, guardian invites, admin merge | P1 | M | 05 | C |
-| ⬜ | [25](25-volunteer-self-service.md) | #99 | Volunteer prefs, switch requests, "can't make it" | P1 | M | 14 | C |
+| ✅ | [25](25-volunteer-self-service.md) | #99 | Volunteer prefs, switch requests, "can't make it" | P1 | M | 14 | C |
 | ⬜ | [26](26-docs-and-admin-guide.md) | #100 | Admin guide, architecture doc, new-chapter legal checklist | P1 ★ | M | 20–23 | C |
 | 🟨 | [27](27-admin-mfa.md) | #101 | Admin MFA | P1 ★ | S | — | C |
 | ⬜ | [28](28-data-deletion-requests.md) | #102 | Family data-deletion requests | P1 | S | 05, L4 | C |

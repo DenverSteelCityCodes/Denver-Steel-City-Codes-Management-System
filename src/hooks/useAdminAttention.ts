@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy, MailWarning, MessageSquare } from 'lucide-react'
+import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy, MailWarning, MessageSquare, CalendarX } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
 import { useAdminStudents } from './useAdminStudents'
@@ -12,6 +12,9 @@ import { supabase } from '../lib/supabase'
 
 // One pair from possible_duplicate_campers() (spec 14b).
 interface DuplicatePair { a_id: string; a_name: string; a_parent: string | null; b_id: string; b_name: string; b_parent: string | null; reason: string }
+
+// A crew member's upcoming absence and a section it leaves short (spec 25).
+interface CrewAbsence { absence_id: string; volunteer_name: string; from_date: string; to_date: string; class_name: string; section_label: string; week: number | null; is_lead: boolean; suggestions: string[] }
 
 // A single row in the "Needs attention" work queue. The hook hands the component fully-resolved
 // presentation data (classes + copy + CTA) so AdminDashboard stays a declarative renderer (§2).
@@ -53,10 +56,15 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
   const [dupes, setDupes] = useState<DuplicatePair[] | null>(null)
   // Emails that failed for good (3 attempts) — spec 09.
   const [failedEmails, setFailedEmails] = useState(0)
-  // Parents' open change requests (spec 11).
+  // Open change requests: parents (spec 11) and volunteer switches (spec 25).
   const [openRequests, setOpenRequests] = useState(0)
+  // Volunteers who can't make it (spec 25).
+  const [absences, setAbsences] = useState<CrewAbsence[]>([])
   useEffect(() => {
     let alive = true
+    supabase.rpc('admin_crew_absences').then(({ data, error }) => {
+      if (alive && !error) setAbsences((data ?? []) as CrewAbsence[])
+    })
     supabase.rpc('possible_duplicate_campers').then(({ data, error }) => {
       if (alive) setDupes(error ? [] : ((data ?? []) as DuplicatePair[]))
     })
@@ -188,6 +196,30 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
     })
   }
 
+  // ── 1b2. Crew absences coming up (spec 25): a missing lead first ─────────
+  if (absences.length > 0) {
+    const first = absences[0]
+    const day = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const when = first.from_date === first.to_date ? day(first.from_date) : `${day(first.from_date)}–${day(first.to_date)}`
+    const anyLead = absences.some(a => a.is_lead)
+    items.push({
+      key: 'crew-absence',
+      icon: CalendarX,
+      iconWrap: anyLead ? 'bg-danger-soft text-danger' : 'bg-warning-soft text-warning',
+      cardCls: '',
+      badge: null,
+      badgeCls: null,
+      title: absences.length === 1
+        ? `${first.volunteer_name} can't make it ${when}`
+        : `${absences.length} crew absences coming up`,
+      detail: `${first.is_lead ? 'Lead' : 'Crew'} of ${first.class_name} · ${first.section_label}${first.week ? ` (Week ${first.week})` : ''}`
+        + (first.suggestions.length > 0 ? ` · could cover: ${first.suggestions.slice(0, 3).join(', ')}` : ' · no free senior that week'),
+      ctaLabel: 'Find cover',
+      to: '/admin/classes',
+      wide: false,
+    })
+  }
+
   // ── 1c. Possible duplicate campers (spec 14b) ────────────────────────────
   if (dupes && dupes.length > 0) {
     const first = dupes[0]
@@ -206,7 +238,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
     })
   }
 
-  // ── 1c2. Change requests from families (spec 11) ─────────────────────────
+  // ── 1c2. Change requests from families (spec 11) and volunteers (spec 25) ─
   if (openRequests > 0) {
     items.push({
       key: 'change-requests',
@@ -215,8 +247,8 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       cardCls: '',
       badge: null,
       badgeCls: null,
-      title: `${openRequests} change ${plural(openRequests, 'request', 'requests')} from families`,
-      detail: 'Online changes have closed for these spots, so the family asked the camp.',
+      title: `${openRequests} open change ${plural(openRequests, 'request', 'requests')}`,
+      detail: 'Families past the online deadline, or volunteers asking to switch sections.',
       ctaLabel: 'Review requests',
       to: '/admin/students#requests',
       wide: false,
