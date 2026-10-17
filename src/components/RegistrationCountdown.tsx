@@ -24,14 +24,17 @@ export default function RegistrationCountdown({ opensAt, onOpen }: { opensAt: st
 
   if (open || !opensAt) return null
   return (
-    <div role="status" aria-live="polite" className="bg-brand-soft border border-brand/30 rounded-xl px-4 sm:px-5 py-4 mb-6 flex items-start gap-3">
-      <span className="w-9 h-9 rounded-full bg-brand text-brand-on flex items-center justify-center shrink-0">
+    <div role="status" aria-live="polite" aria-atomic="true" className="bg-brand-soft border border-brand/30 rounded-xl px-4 sm:px-5 py-4 mb-6 flex items-start gap-3">
+      <span aria-hidden="true" className="w-9 h-9 rounded-full bg-brand text-brand-on flex items-center justify-center shrink-0">
         <CalendarClock size={18} />
       </span>
       <div className="min-w-0">
         <p className="font-sans font-semibold text-ink">Registration opens {formatCampDateTime(opensAt)} (Denver time)</p>
         <p className="font-sans text-sm text-ink-muted">
-          In {timeUntil(target - now)}. Spots are first come, first served. You can add your campers now so you're ready.
+          {/* Screen readers hear the time once a minute, not every tick (L6a). */}
+          <span aria-hidden="true">In {timeUntil(target - now)}.</span>
+          <span className="sr-only">In {timeUntil(Math.ceil((target - now) / 60_000) * 60_000)}.</span>
+          {' '}Spots are first come, first served. You can add your campers now so you're ready.
         </p>
       </div>
     </div>

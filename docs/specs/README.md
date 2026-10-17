@@ -53,7 +53,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |
 | ⬜ | [L4](L4-retention.md) | #92 | Retention policy + nightly anonymize job | P0 policy / P1 job | S | 05 | Legal |
 | ⬜ | [L5](L5-breach-runbook.md) | #93 | Site security-incident runbook + access review | P0 | S | — | Legal |
-| ⬜ | [L6a](L6a-accessibility-registration.md) | #111 | Accessibility pass on the registration flow (WCAG 2.1 AA) | P0 | S | 03, 10–12, 16, L1, L2 | Legal |
+| 🟨 | [L6a](L6a-accessibility-registration.md) | #111 | Accessibility pass on the registration flow (WCAG 2.1 AA) | P0 | S | 03, 10–12, 16, L1, L2 | Legal |
 | ⬜ | [20](20-chapters.md) | #94 | Chapters + chapter-scoped admin RLS | P1 ★ | L | 05, 08 | C |
 | ⬜ | [21](21-national-dashboard.md) | #95 | National dashboard | P1 ★ | M | 20 | C |
 | ⬜ | [22](22-n-week-seasons.md) | #96 | Seasons with any number of weeks | P1 ★ | L | 20 | C |

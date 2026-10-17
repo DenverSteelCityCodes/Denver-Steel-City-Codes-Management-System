@@ -4,6 +4,7 @@ import { KeyRound, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { BrandBar } from '../components/Wordmark'
+import { focusOnMount } from '../lib/focus'
 
 // The recovery link lands here as /reset#access_token=…&type=recovery (or #error=… when it has
 // expired). supabase-js reads and clears the hash while the client initializes, so capture it at
@@ -56,7 +57,7 @@ export default function ResetPasswordPage() {
         <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 size={20} className="text-success" />
         </div>
-        <h1 className="font-sans font-bold text-xl text-ink mb-2">Password updated</h1>
+        <h1 ref={focusOnMount} tabIndex={-1} className="font-sans font-bold text-xl text-ink mb-2 focus:outline-none">Password updated</h1>
         <p role="status" className="font-sans text-ink-muted text-sm">You're signed in with your new password.</p>
         <button
           type="button"

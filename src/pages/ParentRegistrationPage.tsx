@@ -107,6 +107,18 @@ const INITIAL: FormData = {
 
 const STEP_NAMES = ['Camper', 'Parent and emergency contact', 'Health and details', 'Session and class', 'Waiver and consent']
 
+// Form key → the control (or button group label) a validation error points at.
+const FIELD_IDS: Record<string, string> = {
+  first_name: 'reg-first', last_name: 'reg-last', email: 'reg-email', school_district: 'reg-district',
+  school_name: 'reg-school', grade: 'reg-grade', shirt_size: 'reg-shirt', laptop_available: 'reg-laptop',
+  ethnic_background: 'reg-ethnic', gender: 'reg-gender', parent_name: 'reg-parent-name',
+  parent_email: 'reg-parent-email', parent_phone: 'reg-parent-phone', emergency_name: 'reg-emergency-name',
+  emergency_phone: 'reg-emergency-phone', emergency_relation: 'reg-emergency-relation',
+  allergies: 'reg-allergies', medical_conditions: 'reg-medical', other_info: 'reg-other',
+  free_reduced_lunch: 'reg-lunch', how_heard: 'reg-how-heard', previous_program: 'reg-previous',
+  candy_consent: 'reg-candy', waiver_signature: 'reg-waiver-sig', guardian_signature: 'reg-guardian-sig',
+}
+
 function StepDots({ current, total }: { current: number; total: number }) {
   return (
     <div aria-hidden="true" className="flex items-center gap-2 justify-center mb-3">
@@ -162,12 +174,13 @@ export default function ParentRegistrationPage() {
       return p
     }, { replace })
     if (n === 4) void refetchClasses()   // seat counts can change while a parent fills steps 1–3
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   }
   // When re-registering an existing camper (?studentId=…), we update that student row for the
   // new camp year instead of inserting a duplicate. null = brand-new camper.
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [errorField, setErrorField] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [waitlistedCount, setWaitlistedCount] = useState(0)
@@ -294,7 +307,23 @@ export default function ParentRegistrationPage() {
   }, [])
 
   // Errors are announced and focused, so screen-reader users hear them (spec 16).
-  useEffect(() => { if (error) errorRef.current?.focus() }, [error])
+  // A known field gets the focus (marked invalid and described by the message); otherwise the message.
+  useEffect(() => {
+    if (!error) return
+    const el = errorField ? document.getElementById(errorField) : null
+    const target = el && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)
+      ? el
+      : errorField ? document.querySelector<HTMLElement>(`[aria-labelledby="${errorField}"] button, [aria-labelledby="${errorField}"] input`) : null
+    ;(target ?? errorRef.current)?.focus()
+  }, [error, errorField])
+
+  // A new step is announced: focus moves to its "Step N of 5" line (not on first load).
+  const stepRef = useRef<HTMLParagraphElement>(null)
+  const firstStep = useRef(true)
+  useEffect(() => {
+    if (firstStep.current) { firstStep.current = false; return }
+    stepRef.current?.focus({ preventScroll: true })
+  }, [step])
 
   function startOver() {
     if (myDraftKey) clearDraft(myDraftKey)
@@ -318,36 +347,41 @@ export default function ParentRegistrationPage() {
     }))
   }
 
+  // The field each validation error is about, so it can be focused and marked invalid (L6a).
+  const failedField = useRef<string | null>(null)
+  const fail = (key: string, message: string) => { failedField.current = FIELD_IDS[key] ?? null; return message }
+
   function validate(s: number = step): string | null {
     const stepNow = s
+    failedField.current = null
     if (stepNow === 1) {
-      if (!form.first_name.trim()) return `${q('first_name').label} is required`
-      if (!form.last_name.trim()) return `${q('last_name').label} is required`
-      if (q('email').required && !form.email.trim()) return `${q('email').label} is required`
-      if (q('school_district').required && !form.school_district) return `${q('school_district').label} is required`
-      if (q('school_name').required && !form.school_name.trim()) return `${q('school_name').label} is required`
-      if (!form.grade) return `${q('grade').label} is required`
-      if (q('shirt_size').required && !form.shirt_size) return `${q('shirt_size').label} is required`
-      if (q('laptop_available').required && form.laptop_available === null) return `Please answer: ${q('laptop_available').label}`
-      if (q('ethnic_background').required && form.ethnic_background.length === 0) return `Please answer: ${q('ethnic_background').label}`
-      if (q('gender').required && !form.gender.trim()) return `${q('gender').label} is required`
+      if (!form.first_name.trim()) return fail('first_name', `${q('first_name').label} is required`)
+      if (!form.last_name.trim()) return fail('last_name', `${q('last_name').label} is required`)
+      if (q('email').required && !form.email.trim()) return fail('email', `${q('email').label} is required`)
+      if (q('school_district').required && !form.school_district) return fail('school_district', `${q('school_district').label} is required`)
+      if (q('school_name').required && !form.school_name.trim()) return fail('school_name', `${q('school_name').label} is required`)
+      if (!form.grade) return fail('grade', `${q('grade').label} is required`)
+      if (q('shirt_size').required && !form.shirt_size) return fail('shirt_size', `${q('shirt_size').label} is required`)
+      if (q('laptop_available').required && form.laptop_available === null) return fail('laptop_available', `Please answer: ${q('laptop_available').label}`)
+      if (q('ethnic_background').required && form.ethnic_background.length === 0) return fail('ethnic_background', `Please answer: ${q('ethnic_background').label}`)
+      if (q('gender').required && !form.gender.trim()) return fail('gender', `${q('gender').label} is required`)
     }
     if (stepNow === 2) {
-      if (!form.parent_name.trim()) return `${q('parent_name').label} is required`
-      if (!form.parent_email.trim()) return `${q('parent_email').label} is required`
-      if (!form.parent_phone.trim()) return `${q('parent_phone').label} is required`
-      if (!form.emergency_name.trim()) return `${q('emergency_name').label} is required`
-      if (!form.emergency_phone.trim()) return `${q('emergency_phone').label} is required`
-      if (!form.emergency_relation.trim()) return `${q('emergency_relation').label} is required`
+      if (!form.parent_name.trim()) return fail('parent_name', `${q('parent_name').label} is required`)
+      if (!form.parent_email.trim()) return fail('parent_email', `${q('parent_email').label} is required`)
+      if (!form.parent_phone.trim()) return fail('parent_phone', `${q('parent_phone').label} is required`)
+      if (!form.emergency_name.trim()) return fail('emergency_name', `${q('emergency_name').label} is required`)
+      if (!form.emergency_phone.trim()) return fail('emergency_phone', `${q('emergency_phone').label} is required`)
+      if (!form.emergency_relation.trim()) return fail('emergency_relation', `${q('emergency_relation').label} is required`)
     }
     if (stepNow === 3) {
-      if (!form.allergies.trim()) return `${q('allergies').label}: enter "None" if not applicable`
-      if (!form.medical_conditions.trim()) return `${q('medical_conditions').label}: enter "None" if not applicable`
-      if (q('other_info').required && !form.other_info.trim()) return `Please answer: ${q('other_info').label}`
-      if (q('free_reduced_lunch').required && form.free_reduced_lunch === null) return `Please answer: ${q('free_reduced_lunch').label}`
-      if (q('how_heard').required && !form.how_heard) return `Please answer: ${q('how_heard').label}`
-      if (q('previous_program').required && form.previous_program === null) return `Please answer: ${q('previous_program').label}`
-      if (q('candy_consent').required && !form.candy_consent) return `Please confirm: ${q('candy_consent').label}`
+      if (!form.allergies.trim()) return fail('allergies', `${q('allergies').label}: enter "None" if not applicable`)
+      if (!form.medical_conditions.trim()) return fail('medical_conditions', `${q('medical_conditions').label}: enter "None" if not applicable`)
+      if (q('other_info').required && !form.other_info.trim()) return fail('other_info', `Please answer: ${q('other_info').label}`)
+      if (q('free_reduced_lunch').required && form.free_reduced_lunch === null) return fail('free_reduced_lunch', `Please answer: ${q('free_reduced_lunch').label}`)
+      if (q('how_heard').required && !form.how_heard) return fail('how_heard', `Please answer: ${q('how_heard').label}`)
+      if (q('previous_program').required && form.previous_program === null) return fail('previous_program', `Please answer: ${q('previous_program').label}`)
+      if (q('candy_consent').required && !form.candy_consent) return fail('candy_consent', `Please confirm: ${q('candy_consent').label}`)
     }
     if (stepNow === 4) {
       if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet — no camp sessions are scheduled"
@@ -363,21 +397,21 @@ export default function ParentRegistrationPage() {
       }
     }
     if (stepNow === 5) {
-      if (!form.waiver_signature.trim()) return `${q('waiver_signature').label} is required`
-      if (!form.guardian_signature.trim()) return `${q('guardian_signature').label} is required`
+      if (!form.waiver_signature.trim()) return fail('waiver_signature', `${q('waiver_signature').label} is required`)
+      if (!form.guardian_signature.trim()) return fail('guardian_signature', `${q('guardian_signature').label} is required`)
     }
     return null
   }
 
   function handleNext() {
     const err = validate()
-    if (err) { setError(err); return }
-    setError(null)
+    if (err) { setError(err); setErrorField(failedField.current); return }
+    setError(null); setErrorField(null)
     goToStep(step + 1)
   }
 
   function handleBack() {
-    setError(null)
+    setError(null); setErrorField(null)
     goToStep(step - 1, true)
   }
 
@@ -386,9 +420,9 @@ export default function ParentRegistrationPage() {
     // Every step, not just this one: a reload or a link can land on step 5 directly.
     for (let s2 = 1; s2 <= 5; s2++) {
       const err = validate(s2)
-      if (err) { setError(err); if (s2 !== step) goToStep(s2); return }
+      if (err) { setError(err); setErrorField(failedField.current); if (s2 !== step) goToStep(s2); return }
     }
-    setError(null)
+    setError(null); setErrorField(null)
     setSubmitting(true)
 
     // Seats change while a parent fills the form: say so if a chosen class just filled.
@@ -533,6 +567,9 @@ export default function ParentRegistrationPage() {
     </>
   )
   const textareaCls = 'w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition resize-none'
+  const invalidProps = (id: string) => error && errorField === id
+    ? { 'aria-invalid': true as const, 'aria-describedby': 'reg-error' }
+    : {}
   const yesNoCls = (val: boolean | null, target: boolean) =>
     `flex-1 h-11 rounded-[10px] font-sans font-semibold text-sm border transition ${
       val === target ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
@@ -624,7 +661,7 @@ export default function ParentRegistrationPage() {
           <ArrowLeft size={16} /> Back to dashboard
         </button>
         <StepDots current={step} total={5} />
-        <p className="text-center font-sans text-xs font-semibold text-ink-muted mb-6">Step {step} of 5: {STEP_NAMES[step - 1]}</p>
+        <p ref={stepRef} tabIndex={-1} className="text-center font-sans text-xs font-semibold text-ink-muted mb-6 focus:outline-none">Step {step} of 5: {STEP_NAMES[step - 1]}</p>
         {restoredDraft && (
           <p role="status" className="mb-6 font-sans text-sm text-ink-muted bg-surface-sunken border border-border rounded-[10px] px-3 py-2">
             Picked up where you left off (saved {new Date(restoredDraft.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}).{' '}
@@ -642,43 +679,43 @@ export default function ParentRegistrationPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="reg-first" className={labelCls}>{labelText('first_name')}</label>
-                  <input id="reg-first" type="text" className={inputCls} placeholder="Jane"
+                  <input id="reg-first" {...invalidProps('reg-first')} type="text" className={inputCls} placeholder="Jane"
                     value={form.first_name} onChange={e => set('first_name', e.target.value)} />
                 </div>
                 <div>
                   <label htmlFor="reg-last" className={labelCls}>{labelText('last_name')}</label>
-                  <input id="reg-last" type="text" className={inputCls} placeholder="Smith"
+                  <input id="reg-last" {...invalidProps('reg-last')} type="text" className={inputCls} placeholder="Smith"
                     value={form.last_name} onChange={e => set('last_name', e.target.value)} />
                 </div>
               </div>
               {q('email').show && <div>
                 <label htmlFor="reg-email" className={labelCls}>{labelText('email')}</label>
-                <input id="reg-email" type="email" className={inputCls} placeholder="student@example.com"
+                <input id="reg-email" {...invalidProps('reg-email')} type="email" className={inputCls} placeholder="student@example.com"
                   value={form.email} onChange={e => set('email', e.target.value)} />
               </div>}
               {q('school_district').show && <div>
                 <label htmlFor="reg-district" className={labelCls}>{labelText('school_district')}</label>
-                <select id="reg-district" className={inputCls} value={form.school_district} onChange={e => set('school_district', e.target.value)}>
+                <select id="reg-district" {...invalidProps('reg-district')} className={inputCls} value={form.school_district} onChange={e => set('school_district', e.target.value)}>
                   <option value="">Select…</option>
                   {SCHOOL_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>}
               {q('school_name').show && <div>
                 <label htmlFor="reg-school" className={labelCls}>{labelText('school_name')}</label>
-                <input id="reg-school" type="text" className={inputCls} placeholder="e.g. Campus Middle School"
+                <input id="reg-school" {...invalidProps('reg-school')} type="text" className={inputCls} placeholder="e.g. Campus Middle School"
                   value={form.school_name} onChange={e => set('school_name', e.target.value)} />
               </div>}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="reg-grade" className={labelCls}>{labelText('grade')}</label>
-                  <select id="reg-grade" className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
+                  <select id="reg-grade" {...invalidProps('reg-grade')} className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
                     <option value="">Select…</option>
                     {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 {q('shirt_size').show && <div>
                   <label htmlFor="reg-shirt" className={labelCls}>{labelText('shirt_size')}</label>
-                  <select id="reg-shirt" className={inputCls} value={form.shirt_size} onChange={e => set('shirt_size', e.target.value)}>
+                  <select id="reg-shirt" {...invalidProps('reg-shirt')} className={inputCls} value={form.shirt_size} onChange={e => set('shirt_size', e.target.value)}>
                     <option value="">Select…</option>
                     {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -686,16 +723,16 @@ export default function ParentRegistrationPage() {
               </div>
               {q('laptop_available').show && <div>
                 <p id="reg-laptop" className={labelCls}>{labelText('laptop_available')}</p>
-                <div role="group" aria-labelledby="reg-laptop" className="flex gap-3">
-                  <button type="button" onClick={() => set('laptop_available', true)} className={yesNoCls(form.laptop_available, true)}>Yes</button>
-                  <button type="button" onClick={() => set('laptop_available', false)} className={yesNoCls(form.laptop_available, false)}>No</button>
+                <div role="group" aria-labelledby="reg-laptop" {...invalidProps('reg-laptop')} className="flex gap-3">
+                  <button type="button" aria-pressed={form.laptop_available === true} onClick={() => set('laptop_available', true)} className={yesNoCls(form.laptop_available, true)}>Yes</button>
+                  <button type="button" aria-pressed={form.laptop_available === false} onClick={() => set('laptop_available', false)} className={yesNoCls(form.laptop_available, false)}>No</button>
                 </div>
               </div>}
               {q('ethnic_background').show && <div>
                 <p id="reg-ethnic" className={labelCls}>{labelText('ethnic_background', 'for grant reporting only')}</p>
-                <div role="group" aria-labelledby="reg-ethnic" className="flex flex-wrap gap-2">
+                <div role="group" aria-labelledby="reg-ethnic" {...invalidProps('reg-ethnic')} className="flex flex-wrap gap-2">
                   {ETHNIC_OPTIONS.map(opt => (
-                    <button key={opt} type="button" onClick={() => toggleEthnic(opt)}
+                    <button key={opt} type="button" aria-pressed={form.ethnic_background.includes(opt)} onClick={() => toggleEthnic(opt)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
                         form.ethnic_background.includes(opt) ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
                       }`}>
@@ -706,7 +743,7 @@ export default function ParentRegistrationPage() {
               </div>}
               {q('gender').show && <div>
                 <label htmlFor="reg-gender" className={labelCls}>{labelText('gender')}</label>
-                <input id="reg-gender" type="text" className={inputCls} placeholder="e.g. Female, Male, Non-binary, Prefer not to say"
+                <input id="reg-gender" {...invalidProps('reg-gender')} type="text" className={inputCls} placeholder="e.g. Female, Male, Non-binary, Prefer not to say"
                   value={form.gender} onChange={e => set('gender', e.target.value)} />
               </div>}
             </div>
@@ -718,32 +755,32 @@ export default function ParentRegistrationPage() {
               <h2 className="font-sans font-bold text-lg text-ink">Parent &amp; emergency contact</h2>
               <div>
                 <label htmlFor="reg-parent-name" className={labelCls}>{labelText('parent_name')}</label>
-                <input id="reg-parent-name" type="text" autoComplete="name" className={inputCls} value={form.parent_name} onChange={e => set('parent_name', e.target.value)} />
+                <input id="reg-parent-name" {...invalidProps('reg-parent-name')} type="text" autoComplete="name" className={inputCls} value={form.parent_name} onChange={e => set('parent_name', e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="reg-parent-email" className={labelCls}>{labelText('parent_email')}</label>
-                  <input id="reg-parent-email" type="email" autoComplete="email" className={inputCls} value={form.parent_email} onChange={e => set('parent_email', e.target.value)} />
+                  <input id="reg-parent-email" {...invalidProps('reg-parent-email')} type="email" autoComplete="email" className={inputCls} value={form.parent_email} onChange={e => set('parent_email', e.target.value)} />
                 </div>
                 <div>
                   <label htmlFor="reg-parent-phone" className={labelCls}>{labelText('parent_phone')}</label>
-                  <input id="reg-parent-phone" type="tel" autoComplete="tel" className={inputCls} placeholder="303-555-0100" value={form.parent_phone} onChange={e => set('parent_phone', e.target.value)} />
+                  <input id="reg-parent-phone" {...invalidProps('reg-parent-phone')} type="tel" autoComplete="tel" className={inputCls} placeholder="303-555-0100" value={form.parent_phone} onChange={e => set('parent_phone', e.target.value)} />
                 </div>
               </div>
               <hr className="border-border" />
               <h3 className="font-sans font-semibold text-base text-ink">Emergency contact</h3>
               <div>
                 <label htmlFor="reg-emergency-name" className={labelCls}>{labelText('emergency_name')}</label>
-                <input id="reg-emergency-name" type="text" className={inputCls} value={form.emergency_name} onChange={e => set('emergency_name', e.target.value)} />
+                <input id="reg-emergency-name" {...invalidProps('reg-emergency-name')} type="text" className={inputCls} value={form.emergency_name} onChange={e => set('emergency_name', e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="reg-emergency-phone" className={labelCls}>{labelText('emergency_phone')}</label>
-                  <input id="reg-emergency-phone" type="tel" className={inputCls} value={form.emergency_phone} onChange={e => set('emergency_phone', e.target.value)} />
+                  <input id="reg-emergency-phone" {...invalidProps('reg-emergency-phone')} type="tel" className={inputCls} value={form.emergency_phone} onChange={e => set('emergency_phone', e.target.value)} />
                 </div>
                 <div>
                   <label htmlFor="reg-emergency-relation" className={labelCls}>{labelText('emergency_relation')}</label>
-                  <input id="reg-emergency-relation" type="text" className={inputCls} placeholder="e.g. Aunt, Grandparent" value={form.emergency_relation} onChange={e => set('emergency_relation', e.target.value)} />
+                  <input id="reg-emergency-relation" {...invalidProps('reg-emergency-relation')} type="text" className={inputCls} placeholder="e.g. Aunt, Grandparent" value={form.emergency_relation} onChange={e => set('emergency_relation', e.target.value)} />
                 </div>
               </div>
             </div>
@@ -755,21 +792,21 @@ export default function ParentRegistrationPage() {
               <h2 className="font-sans font-bold text-lg text-ink">Medical &amp; miscellaneous</h2>
               <div>
                 <label htmlFor="reg-allergies" className={labelCls}>{labelText('allergies', 'enter "None" if not applicable')}</label>
-                <textarea id="reg-allergies" className={textareaCls} rows={2} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
+                <textarea id="reg-allergies" {...invalidProps('reg-allergies')} className={textareaCls} rows={2} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
               </div>
               <div>
                 <label htmlFor="reg-medical" className={labelCls}>{labelText('medical_conditions', 'enter "None" if not applicable')}</label>
-                <textarea id="reg-medical" className={textareaCls} rows={3} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
+                <textarea id="reg-medical" {...invalidProps('reg-medical')} className={textareaCls} rows={3} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
               </div>
               {q('other_info').show && <div>
                 <label htmlFor="reg-other" className={labelCls}>{labelText('other_info')}</label>
-                <textarea id="reg-other" className={textareaCls} rows={2} value={form.other_info} onChange={e => set('other_info', e.target.value)} />
+                <textarea id="reg-other" {...invalidProps('reg-other')} className={textareaCls} rows={2} value={form.other_info} onChange={e => set('other_info', e.target.value)} />
               </div>}
               {q('free_reduced_lunch').show && <div>
                 <p id="reg-lunch" className={labelCls}>{labelText('free_reduced_lunch')}</p>
-                <div role="group" aria-labelledby="reg-lunch" className="flex gap-3">
-                  <button type="button" onClick={() => set('free_reduced_lunch', true)} className={yesNoCls(form.free_reduced_lunch, true)}>Yes</button>
-                  <button type="button" onClick={() => set('free_reduced_lunch', false)} className={yesNoCls(form.free_reduced_lunch, false)}>No</button>
+                <div role="group" aria-labelledby="reg-lunch" {...invalidProps('reg-lunch')} className="flex gap-3">
+                  <button type="button" aria-pressed={form.free_reduced_lunch === true} onClick={() => set('free_reduced_lunch', true)} className={yesNoCls(form.free_reduced_lunch, true)}>Yes</button>
+                  <button type="button" aria-pressed={form.free_reduced_lunch === false} onClick={() => set('free_reduced_lunch', false)} className={yesNoCls(form.free_reduced_lunch, false)}>No</button>
                 </div>
               </div>}
               {form.free_reduced_lunch && q('lunch_provision').show && (
@@ -781,22 +818,22 @@ export default function ParentRegistrationPage() {
               )}
               {q('how_heard').show && <div>
                 <label htmlFor="reg-how-heard" className={labelCls}>{labelText('how_heard')}</label>
-                <select id="reg-how-heard" className={inputCls} value={form.how_heard} onChange={e => set('how_heard', e.target.value)}>
+                <select id="reg-how-heard" {...invalidProps('reg-how-heard')} className={inputCls} value={form.how_heard} onChange={e => set('how_heard', e.target.value)}>
                   <option value="">Select…</option>
                   {HOW_HEARD.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
               </div>}
               {q('previous_program').show && <div>
                 <p id="reg-previous" className={labelCls}>{labelText('previous_program')}</p>
-                <div role="group" aria-labelledby="reg-previous" className="flex gap-3">
-                  <button type="button" onClick={() => set('previous_program', true)} className={yesNoCls(form.previous_program, true)}>Yes</button>
-                  <button type="button" onClick={() => set('previous_program', false)} className={yesNoCls(form.previous_program, false)}>No</button>
+                <div role="group" aria-labelledby="reg-previous" {...invalidProps('reg-previous')} className="flex gap-3">
+                  <button type="button" aria-pressed={form.previous_program === true} onClick={() => set('previous_program', true)} className={yesNoCls(form.previous_program, true)}>Yes</button>
+                  <button type="button" aria-pressed={form.previous_program === false} onClick={() => set('previous_program', false)} className={yesNoCls(form.previous_program, false)}>No</button>
                 </div>
               </div>}
               {form.previous_program === true && q('previous_program').show && (
                 <div>
                   <label htmlFor="reg-previous-program" className={labelCls}>Which program did they take?</label>
-                  <select id="reg-previous-program" className={inputCls} value={form.program_last_year} onChange={e => set('program_last_year', e.target.value)}>
+                  <select id="reg-previous-program" {...invalidProps('reg-previous-program')} className={inputCls} value={form.program_last_year} onChange={e => set('program_last_year', e.target.value)}>
                     <option value="">Select…</option>
                     {PREVIOUS_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
@@ -804,7 +841,7 @@ export default function ParentRegistrationPage() {
               )}
               {q('candy_consent').show && (
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-brand" checked={form.candy_consent}
+                  <input id="reg-candy" {...invalidProps('reg-candy')} type="checkbox" className="w-4 h-4 accent-brand" checked={form.candy_consent}
                     onChange={e => set('candy_consent', e.target.checked)} />
                   <span className="font-sans text-sm text-ink">{q('candy_consent').label}{q('candy_consent').required && ' *'}</span>
                 </label>
@@ -850,7 +887,7 @@ export default function ParentRegistrationPage() {
                               const spotsLeft = o.section ? o.section.capacity - o.section.registered_count : 0
                               return (
                                 <label key={o.classId} className={`flex items-center gap-3 p-2.5 rounded-[10px] border transition ${
-                                  !o.section ? 'border-border bg-surface-sunken opacity-70 cursor-not-allowed'
+                                  !o.section ? 'border-dashed border-border-strong bg-surface-sunken cursor-not-allowed'
                                     : selected ? 'border-brand bg-surface cursor-pointer'
                                     : 'border-border-strong bg-surface hover:bg-surface-sunken cursor-pointer'
                                 }`}>
@@ -882,7 +919,7 @@ export default function ParentRegistrationPage() {
             <div className="space-y-6">
               <h2 className="font-sans font-bold text-lg text-ink">Waiver &amp; consent</h2>
 
-              <div className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
+              <div tabIndex={0} role="region" aria-label="Waiver and consent text" className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-brand space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
                 <p className="font-semibold text-ink text-sm">Steel City Codes {campYear} Participant Waiver</p>
                 <p>This Release and Waiver of Liability releases Steel City Codes ("Nonprofit"), its directors, officers, employees, and agents from any liability arising from your student's participation in the Denver Summer Camp program.</p>
                 <p><strong className="text-ink">ASSUMPTION OF RISK:</strong> I acknowledge that participation in the Steel City Codes program involves physical and other risks. I voluntarily assume all risks associated with my student's participation.</p>
@@ -896,21 +933,21 @@ export default function ParentRegistrationPage() {
               <div>
                 <label htmlFor="reg-waiver-sig" className={labelCls}>{labelText('waiver_signature')}</label>
                 <p className="font-sans text-xs text-ink-muted mb-2">Type the student's full legal name as an electronic signature.</p>
-                <input id="reg-waiver-sig" type="text" className={inputCls} placeholder={studentFullName || 'Student full name'}
+                <input id="reg-waiver-sig" {...invalidProps('reg-waiver-sig')} type="text" className={inputCls} placeholder={studentFullName || 'Student full name'}
                   value={form.waiver_signature} onChange={e => set('waiver_signature', e.target.value)} />
               </div>
 
               <div>
                 <label htmlFor="reg-guardian-sig" className={labelCls}>{labelText('guardian_signature')}</label>
                 <p className="font-sans text-xs text-ink-muted mb-2">Type your full legal name to confirm your consent on behalf of your student.</p>
-                <input id="reg-guardian-sig" type="text" className={inputCls} placeholder={form.parent_name || 'Parent/guardian full name'}
+                <input id="reg-guardian-sig" {...invalidProps('reg-guardian-sig')} type="text" className={inputCls} placeholder={form.parent_name || 'Parent/guardian full name'}
                   value={form.guardian_signature} onChange={e => set('guardian_signature', e.target.value)} />
               </div>
             </div>
           )}
 
           {error && (
-            <p ref={errorRef} role="alert" tabIndex={-1} className="mt-4 text-danger text-sm font-sans focus:outline-none">
+            <p id="reg-error" ref={errorRef} role="alert" tabIndex={-1} className="mt-4 text-danger text-sm font-sans focus:outline-none">
               ⚠ {error}
               {authExpired && <> <Link to="/login" className="font-semibold underline">Sign in again</Link></>}
             </p>

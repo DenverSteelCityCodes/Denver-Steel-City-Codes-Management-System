@@ -9,8 +9,8 @@
   --surface-raised: #FFFFFF;
   /* text */
   --ink: #262019;
-  --ink-muted: #7A6E60;
-  --ink-faint: #9C8F7E;
+  --ink-muted: #665A4C;   /* AA on every light surface (L6a, 2026-10-17; was #7A6E60) */
+  --ink-faint: #766959;   /* AA on every light surface (was #9C8F7E) */
   --border: #E6DFD3;
   --border-strong: #CFC6B8;
   /* brand */
@@ -20,14 +20,14 @@
   --on-brand: #1A1613;
   --ring: #E7B62C;
   /* status */
-  --success-soft: #C2E6C9; --success: #1E7A3E;
-  --warning-soft: #FAE1A1; --warning: #8A6D12;
+  --success-soft: #C2E6C9; --success: #17652F;   /* AA on success-soft (was #1E7A3E) */
+  --warning-soft: #FAE1A1; --warning: #715709;   /* AA on warning-soft (was #8A6D12) */
   --danger-soft:  #F6D5D2; --danger:  #B42318;
   --info-soft:    #CEDDE8; --info:    #2D5E83;
   /* roles */
-  --role-admin-soft: #FCEFC4;     --role-admin: #8A6D12;
+  --role-admin-soft: #FCEFC4;     --role-admin: #715709;
   --role-volunteer-soft: #CEDDE8; --role-volunteer: #2D5E83;
-  --role-parent-soft: #DBBFDD;    --role-parent: #6B4B72;
+  --role-parent-soft: #DBBFDD;    --role-parent: #5F4266;   /* AA on parent-soft (was #6B4B72) */
   /* ink ramp */
   --ink-950: #1A1613; --ink-900: #262019; --ink-700: #4A4138; --ink-500: #7A6E60;
   --ink-400: #9C8F7E; --ink-300: #CFC6B8; --ink-200: #E6DFD3; --ink-100: #F2ECE2; --ink-50: #FAF6EF;
@@ -46,7 +46,7 @@
   --surface-raised: #2C251D;
   --ink: #F5EFE4;
   --ink-muted: #B9AD9C;
-  --ink-faint: #8A7E6E;
+  --ink-faint: #9C907F;   /* AA on surface and raised (was #8A7E6E) */
   --border: rgba(57,48,38,.6);
   --border-strong: #4A3F33;
   --brand: #F1C446;
@@ -129,4 +129,14 @@ body {
 
 #root {
   min-height: 100svh;
+}
+
+/* Respect "reduce motion" (L6a): no pulsing skeletons, spinners or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

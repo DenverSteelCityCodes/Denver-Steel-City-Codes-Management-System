@@ -39,6 +39,7 @@
 - None.
 
 ## Notes for the builder
+- 2026-10-17: the Regional Director expects classes will **probably never be cancelled**. The cancel-section/class tools stay as a safety net; don't spend more time on that path (Q-N1b).
 - Built 2026-10-17. **Incident while building:** `displaced_from_section` was first added as a foreign key to `sections`. That made every `registrations → sections` embed ambiguous (HTTP 300), so parents saw "Not enrolled" on the demo for about 30 minutes, until the FK was dropped. Browsers that cached the 300 needed a refresh. The rule is now in the specs README.
 - The parent bell also shows "<camper>'s class was cancelled. Pick another class" until the camper holds another spot that week.
 - Update `useAdminStudents.removeRegistration` and the AdminStudents confirm copy ("The registration is kept as cancelled…").

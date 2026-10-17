@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CircleCheck, List, CircleX, Pencil, GraduationCap, Check, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -9,6 +9,7 @@ import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import type { SwapOption } from '../hooks/useMyChanges'
 import MedicalFlag from './MedicalFlag'
 import InlineConfirm from './InlineConfirm'
+import { focusOnMount } from '../lib/focus'
 
 // Human-friendly status copy (DS §7.5 Deep-on-Soft chips, §10 warm voice).
 // note: an optional reassuring sub-line shown beneath the chip.
@@ -72,6 +73,13 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
+  // Closing a panel puts focus back on the row's first action instead of dropping it (L6a).
+  const idleRef = useRef<HTMLDivElement>(null)
+  const prevMode = useRef(mode)
+  useEffect(() => {
+    if (mode === 'idle' && prevMode.current !== 'idle') idleRef.current?.querySelector('button')?.focus()
+    prevMode.current = mode
+  }, [mode])
   if (reg.status === 'cancelled') return null
 
   const where = `${reg.sections?.classes?.name ?? 'this class'}${reg.sections?.week ? `, Week ${reg.sections.week}` : ''}`
@@ -135,7 +143,7 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
   return (
     <div className="mt-1.5 ml-1">
       {mode === 'idle' && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div ref={idleRef} className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {open && holdsSeat && (
             <button type="button" onClick={() => setMode('switch')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-ink underline-offset-2 hover:underline">
               Switch class
@@ -201,6 +209,13 @@ function SwitchClass({ reg, camper, changes, onDone }: {
   const [options, setOptions] = useState<SwapOption[] | null>(null)
   const [loadErr, setLoadErr] = useState<string | null>(null)
   const [picked, setPicked] = useState<SwapOption | null>(null)
+  // "Back" from the confirm returns focus to the class that was picked.
+  const listRef = useRef<HTMLUListElement>(null)
+  const lastPicked = useRef<string | null>(null)
+  useEffect(() => {
+    if (picked) { lastPicked.current = picked.section_id; return }
+    if (lastPicked.current) listRef.current?.querySelector<HTMLElement>(`[data-section="${lastPicked.current}"]`)?.focus()
+  }, [picked])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const current = `${reg.sections?.classes?.name ?? 'this class'}${reg.sections?.label ? ` ${reg.sections.label}` : ''}`
@@ -226,20 +241,20 @@ function SwitchClass({ reg, camper, changes, onDone }: {
   const name = (o: SwapOption) => `${o.class_name} ${o.label}`
   return (
     <div className="mt-1 rounded-[10px] border border-border bg-surface px-3 py-2.5">
-      <p className="text-xs font-sans font-semibold text-ink-muted mb-2">Switch {camper} from {current} to another class{reg.sections?.week ? ` in Week ${reg.sections.week}` : ''}:</p>
+      <p ref={focusOnMount} tabIndex={-1} className="text-xs font-sans font-semibold text-ink-muted mb-2 focus:outline-none">Switch {camper} from {current} to another class{reg.sections?.week ? ` in Week ${reg.sections.week}` : ''}:</p>
       {loadErr && <p role="alert" className="text-xs font-sans text-danger">{loadErr}</p>}
       {!options && !loadErr && <div className="h-10 bg-surface-sunken rounded-[8px] animate-pulse" />}
       {options && options.length === 0 && (
         <p className="text-sm font-sans text-ink-muted">No other class that week fits {camper}'s age and grade.</p>
       )}
       {options && options.length > 0 && !picked && (
-        <ul className="space-y-1.5">
+        <ul ref={listRef} className="space-y-1.5">
           {options.map(o => {
             const when = [o.days, formatTimeRange(o.start_time, o.end_time), o.room].filter(Boolean).join(' · ')
             return (
               <li key={o.section_id}>
                 {o.spots_left > 0 ? (
-                  <button type="button" onClick={() => { setPicked(o); setErr(null) }}
+                  <button type="button" data-section={o.section_id} onClick={() => { setPicked(o); setErr(null) }}
                     className="w-full text-left rounded-[8px] border border-border-strong px-3 py-2 hover:bg-surface-sunken transition">
                     <span className="block text-sm font-sans font-semibold text-ink">{name(o)}</span>
                     <span className="block text-xs font-sans text-ink-muted">{when}{when ? ' · ' : ''}{o.spots_left} {o.spots_left === 1 ? 'spot' : 'spots'} left</span>
