@@ -1,3 +1,5 @@
+> **Historical.** This is the original plan from June 2026, kept for reference. The current plan is [docs/scc-improvement-plan.md](docs/scc-improvement-plan.md), and per-feature specs live in [docs/specs/](docs/specs/README.md).
+
 Steel City Codes Registration System
 1. Overview
 A web-based platform to manage student/volunteer registration, class scheduling, and daily operations (attendance/checkout).
