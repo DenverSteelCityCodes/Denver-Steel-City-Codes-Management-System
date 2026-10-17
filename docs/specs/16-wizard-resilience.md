@@ -1,6 +1,6 @@
 # 16: Registration wizard: survives back, reload and expired sessions
 
-**Status:** ⬜ not started · **Issue:** #85 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** ✅ [PR #124](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/124) · **Issue:** #85 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** none · **Unblocks:** 17
 **Plan reference:** Plan flow P2 friction table, §2.2 half-finished forms / back button / expired session
 
