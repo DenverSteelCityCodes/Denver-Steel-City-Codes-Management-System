@@ -8,7 +8,7 @@
 Pennsylvania requires three clearances for adult volunteers responsible for children (State Police criminal check, DHS child-abuse clearance, FBI fingerprint check; the FBI check is waived for unpaid PA residents of 10+ years who sign an affirmation), renewed every 60 months 🔎. National's own policy may go further (Q-L7). We store no clearance data.
 
 ## Decided rules
-- Requirements are a **per-chapter setting**; Denver may require none or fewer (❓ Q-L7).
+- Screening itself is **SCC's policy, handled outside the site**. Build this only if SCC wants clearances recorded in the site (Q-L9). Requirements are then a **per-chapter setting**.
 
 ## Scope: what to build
 - `chapter_clearance_requirements(chapter_id, kind, applies_to check in (adult, minor, all), renewal_months)`.
@@ -28,7 +28,7 @@ Pennsylvania requires three clearances for adult volunteers responsible for chil
 - SQL: guard, override, expiry.
 
 ## Open questions
-- Q-L7 national's screening policy; whether teen volunteers need any clearance.
+- Q-L9 whether SCC wants this in the site at all. If yes: which clearances SCC requires per state, and whether teen volunteers need any.
 
 ## Notes for the builder
 - None.

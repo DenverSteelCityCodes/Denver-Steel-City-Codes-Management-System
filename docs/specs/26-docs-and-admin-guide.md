@@ -13,7 +13,7 @@ The national team has to run, extend and hand this to new chapters without the p
 ## Scope: what to build
 - `docs/admin-guide.md`: season setup checklist (sessions → classes → sections → schedule → forms → waivers → opening time), registration day (links the runbook), camp week (roll calls, updates, attendance board, print rosters), wrap-up (exports, retention). With screenshots.
 - `docs/architecture.md`: diagram, data model, where each rule is enforced (trigger/RLS/RPC), the email pipeline, environments, deploys.
-- `docs/legal/new-chapter-checklist.md`: state law to check (waiver law for minors, child-care licensing, volunteer clearances, breach law, privacy laws), the documents to localize, who signs off.
+- `docs/legal/new-chapter-checklist.md`: the site settings a new chapter fills in from SCC's own policies (waiver text, privacy notice, clearance requirements if used, time zone, contact email), and the state rules that affect the site (breach-notice timing, minors' privacy). Org-level compliance stays with SCC.
 - `docs/specs/` kept current: move done specs to an `archive/` subfolder with their PR links.
 
 ## Out of scope

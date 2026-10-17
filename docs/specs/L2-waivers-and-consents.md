@@ -1,14 +1,14 @@
 # L2: Versioned waiver, separate consents, signature record, emailed copy
 
-**Status:** ⬜ not started · **Issue:** #90 · **Priority:** P0 · **Effort:** M (+ counsel text) · **Phase:** Legal
-**Depends on:** 09, counsel-approved waiver text (by Jan 5) · **Unblocks:** L3, 23
+**Status:** ⬜ not started · **Issue:** #90 · **Priority:** P0 · **Effort:** M (+ SCC's text) · **Phase:** Legal
+**Depends on:** 09, SCC's official waiver and consent text (by Jan 5) · **Unblocks:** L3, 23
 **Plan reference:** Plan §4.1 rows: parent waiver, e-signatures, photo release; §1 flow P2
 
 ## Why
 The waiver is hardcoded in `ParentRegistrationPage.tsx`. It says "Denver Summer Camp", bundles five consents, mentions refunds, and isn't stored by version: we can't show what a parent agreed to. Colorado allows a parent to waive a child's future negligence claims only if the decision is "voluntary and informed" ([C.R.S. 13-22-107](https://colorado.public.law/statutes/crs_13-22-107)) 🔎.
 
 ## Decided rules
-- Waiver and consents are in **national's** name (Q-L1).
+- Waiver and consents are **SCC's official text**, in national's name (Q-L1). The site doesn't write its own legal wording.
 - Photo/media consent is a **separate opt-in, default off**, changeable later by the parent.
 
 ## Scope: what to build
@@ -29,14 +29,14 @@ The waiver is hardcoded in `ParentRegistrationPage.tsx`. It says "Denver Summer 
 - [ ] Every signature can be reproduced exactly: version, hash, who, when.
 - [ ] Photo consent defaults to unanswered and must be chosen; it's changeable later.
 - [ ] The parent receives an email copy.
-- [ ] Counsel's sign-off on the text is noted in the PR.
+- [ ] The published text matches SCC's official waiver (source and version noted in the PR).
 
 ## Tests and verification
 - SQL: consents are insert-only for parents; hashes match bodies.
 - Browser: wizard and yearly check at 375 px; receipt email on a phone.
 
 ## Open questions
-- Q-L4 refunds (the current text mentions them). Q-L5 camper email. Q-L8 insurer wording.
+- Q-L5 camper email. Refund and other wording come from SCC's official text.
 
 ## Notes for the builder
 - Keep `students.waiver_signature/guardian_signature/waiver_signed_at` populated for now, for older screens, but treat `consents` as the record.
