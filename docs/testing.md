@@ -26,7 +26,7 @@ npm run build
 
 ## 3. Concurrency
 
-- **Seat race:** `test-plans/seat-race.sh`. 20 parents, each on their own connection, take a 5-seat section at the same moment. It passes only with exactly 5 seats held and 15 waitlisted, 20 runs in a row. Last run 2026-10-17 on the demo: 20/20 passed.
+- **Seat race:** `test-plans/seat-race.sh`. 20 parents, each on their own connection, take a 5-seat section at the same moment. It passes only with exactly 5 seats held and 15 waitlisted, 20 runs in a row. Last run 2026-10-17 on the demo: 20/20 passed. With an API runner, watch for rate limits: the script now fails on them instead of leaving data behind.
   ```bash
   DATABASE_URL=postgres://… test-plans/seat-race.sh
   ```

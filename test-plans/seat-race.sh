@@ -73,17 +73,21 @@ begin
 end \$\$;
 SQL
 
-fail() { echo "$1"; $RUN_SQL "$TMP/cleanup.sql" >/dev/null 2>&1 || true; exit 1; }
+# Any error from the runner counts: psql prints ERROR, an API runner may print an exception
+# (e.g. a rate limit). A cleanup that fails is a failure too, so nothing is left behind silently.
+bad() { echo "$1" | grep -qE "FAIL|ERROR|Exception"; }
+cleanup() { local out; out=$($RUN_SQL "$TMP/cleanup.sql" 2>&1) || true; bad "$out" && { echo "cleanup failed: $out"; return 1; }; return 0; }
+fail() { echo "$1"; cleanup || true; exit 1; }
 for run in $(seq 1 "$RUNS"); do
   out=$($RUN_SQL "$TMP/setup.sql" 2>&1) || true
-  echo "$out" | grep -q "FAIL\|ERROR" && fail "run $run setup: $out"
+  bad "$out" && fail "run $run setup: $out"
   for i in $(seq 1 "$PARENTS"); do $RUN_SQL "$TMP/take_$i.sql" > "$TMP/out_$i" 2>&1 & done
   wait
-  bad=$(grep -l "ERROR" "$TMP"/out_* 2>/dev/null || true)
-  [ -n "$bad" ] && fail "run $run: an insert failed: $(cat $bad | head -c 400)"
+  failed=$(grep -lE "ERROR|Exception" "$TMP"/out_* 2>/dev/null || true)
+  [ -n "$failed" ] && fail "run $run: an insert failed: $(cat $failed | head -c 400)"
   out=$($RUN_SQL "$TMP/check.sql" 2>&1) || true
-  echo "$out" | grep -q "FAIL\|ERROR" && fail "run $run: $out"
-  $RUN_SQL "$TMP/cleanup.sql" >/dev/null 2>&1
+  bad "$out" && fail "run $run: $out"
+  cleanup || exit 1
   echo "run $run: $CAPACITY seats, $((PARENTS - CAPACITY)) waitlisted — ok"
 done
 echo "SEAT RACE PASS ($RUNS runs)"
