@@ -1,6 +1,6 @@
 # 16: Registration wizard: survives back, reload and expired sessions
 
-**Status:** ⬜ not started · **Issue:** #85 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** ✅ [PR #124](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/124) · **Issue:** #85 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** none · **Unblocks:** 17
 **Plan reference:** Plan flow P2 friction table, §2.2 half-finished forms / back button / expired session
 
@@ -37,4 +37,5 @@ The 5-step wizard keeps everything in memory. The phone back button, a reload, o
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17, **changed from the spec**: no "Leave without finishing?" prompt. react-router's `useBlocker` only works with a data router, and the app uses `<BrowserRouter>`. Since every answer is saved as a draft on the device, leaving loses nothing; switching routers can come later if wanted. Submit now re-validates **all** steps, because a link or reload can land on step 5 directly. Drafts are cleared on submit and on sign-out (they can hold health details). The "just filled up" check and the expired-sign-in message are code-reviewed but weren't triggered live (both need a second actor or an expired token).
 - localStorage can throw in private mode. Wrap every access, as `AdminLayout` already does.

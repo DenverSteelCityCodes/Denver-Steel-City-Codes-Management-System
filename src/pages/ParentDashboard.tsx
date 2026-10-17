@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, GraduationCap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -14,6 +15,7 @@ import { localDateISO } from '../lib/campDay'
 import { useSessions, activeCampYear } from '../hooks/useSessions'
 import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import RegistrationCountdown from '../components/RegistrationCountdown'
+import { listDrafts, clearDraft } from '../lib/registrationDraft'
 import type { Student } from '../types/database'
 
 // Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
@@ -50,7 +52,7 @@ function buildSubhead(students: Student[], registrations: RegistrationWithSectio
 }
 
 export default function ParentDashboard() {
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
   const { students, loading, updateStudent } = useStudents()
   const { registrations } = useRegistrations()
   const todayMarks = useMyRollCalls(localDateISO())
@@ -59,6 +61,8 @@ export default function ParentDashboard() {
   const { settings: season } = useSeasonSettings(sessions.length > 0 ? activeCampYear(sessions) : null)
 
   const subhead = buildSubhead(students, registrations)
+  // Unfinished registrations saved on this device (spec 16).
+  const [drafts, setDrafts] = useState(() => (user ? listDrafts(user.id) : []))
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-10">
@@ -92,6 +96,30 @@ export default function ParentDashboard() {
         </div>
 
         <RegistrationCountdown opensAt={season?.registration_opens_at} />
+
+        {drafts.map(({ key, studentId, draft }) => (
+          <div key={key} className="bg-surface border border-brand/40 rounded-xl shadow-sm px-4 sm:px-5 py-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="flex-1 font-sans text-sm text-ink">
+              <span className="font-semibold">Finish registering {draft.name || 'your new camper'}.</span>{' '}
+              <span className="text-ink-muted">You're on step {draft.step} of 5. Your answers are saved on this device.</span>
+            </p>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => { clearDraft(key); setDrafts(d => d.filter(x => x.key !== key)) }}
+                className="h-10 px-3 rounded-[10px] font-sans font-semibold text-sm text-ink-muted hover:text-ink hover:bg-surface-sunken transition"
+              >
+                Discard
+              </button>
+              <Link
+                to={`/parent/register?${studentId ? `studentId=${studentId}&` : ''}step=${draft.step}`}
+                className="h-10 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center transition shadow-sm"
+              >
+                Continue
+              </Link>
+            </div>
+          </div>
+        ))}
 
         <ThisWeekCard
           students={students}

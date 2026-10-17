@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Class, Section } from '../types/database'
 import { fetchSectionFill } from '../lib/sectionFill'
@@ -17,12 +17,16 @@ export function useClasses() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Only the first load shows a spinner; refreshes (step 4 of the wizard, the class browser's 30 s
+  // poll) update seat counts in place.
+  const loadedOnce = useRef(false)
+
   useEffect(() => {
     fetchClasses()
   }, [])
 
   async function fetchClasses() {
-    setLoading(true)
+    if (!loadedOnce.current) setLoading(true)
 
     const [{ data, error }, fill] = await Promise.all([
       supabase.from('classes').select(`*, sections(*)`).order('name', { ascending: true }),
@@ -47,6 +51,7 @@ export function useClasses() {
     }))
 
     setClasses(shaped)
+    loadedOnce.current = true
     setLoading(false)
   }
 

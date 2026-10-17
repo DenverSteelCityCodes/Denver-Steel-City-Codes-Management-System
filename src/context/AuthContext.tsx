@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { clearAllDrafts } from '../lib/registrationDraft'
 import type { Profile, UserRole } from '../types/database'
 
 interface AuthState {
@@ -100,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadProfile])
 
   const signOut = useCallback(async () => {
+    // Unfinished registration drafts can hold a child's health details (spec 16).
+    clearAllDrafts()
     await supabase.auth.signOut()
   }, [])
 

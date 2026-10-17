@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, ChevronLeft, CheckCircle2, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -12,6 +12,8 @@ import { useParentProfile } from '../hooks/useParentProfile'
 import { useFormConfig } from '../hooks/useFormConfig'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import { GRADES, gradeToAge } from '../lib/campers'
+import { draftKey, readDraft, writeDraft, clearDraft } from '../lib/registrationDraft'
+import { fetchSectionFill } from '../lib/sectionFill'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -103,9 +105,11 @@ const INITIAL: FormData = {
   waiver_signature: '', guardian_signature: '',
 }
 
+const STEP_NAMES = ['Camper', 'Parent and emergency contact', 'Health and details', 'Session and class', 'Waiver and consent']
+
 function StepDots({ current, total }: { current: number; total: number }) {
   return (
-    <div className="flex items-center gap-2 justify-center mb-8">
+    <div aria-hidden="true" className="flex items-center gap-2 justify-center mb-3">
       {Array.from({ length: total }, (_, i) => (
         <div key={i} className={`h-2 rounded-full transition-all ${
           i + 1 === current ? 'w-6 bg-brand' : i + 1 < current ? 'w-2 bg-brand/40' : 'w-2 bg-border-strong'
@@ -120,7 +124,7 @@ export default function ParentRegistrationPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const studentId = searchParams.get('studentId')
   const { profile, user } = useAuth()
-  const { classes, loading: classesLoading } = useClasses()
+  const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
   const { sessions, loading: sessionsLoading } = useSessions()
   const { profile: parentProfile, saveProfile } = useParentProfile()
   // Labels / visibility / required-ness come from the admin Form editor; `enabled` opens/closes it.
@@ -132,8 +136,31 @@ export default function ParentRegistrationPage() {
   const campYear = activeCampYear(sessions)
   const { settings: season, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
   const campSessions = activeSessions(sessions)
-  const [step, setStep] = useState(1)
-  const [form, setForm] = useState<FormData>({ ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: '' })
+  // The step lives in the URL (?step=3), so the browser's back button and a reload keep the
+  // parent where they were (spec 16). Answers are kept as a draft on this device.
+  const step = Math.min(5, Math.max(1, Number(searchParams.get('step')) || 1))
+  const myDraftKey = user ? draftKey(user.id, studentId) : null
+  const [restoredDraft] = useState(() => (myDraftKey ? readDraft(myDraftKey) : null))
+  const [form, setForm] = useState<FormData>(() => ({
+    ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: '',
+    // A new camper's draft restores right away; a re-registration's restores over the prefill below.
+    ...(!studentId && restoredDraft ? (restoredDraft.form as Partial<FormData>) : {}),
+  }))
+  // Set when a chosen class filled up after the parent picked it; the next submit goes ahead.
+  const [fullAcknowledged, setFullAcknowledged] = useState(false)
+  const [authExpired, setAuthExpired] = useState(false)
+  const errorRef = useRef<HTMLParagraphElement>(null)
+
+  function goToStep(n: number, replace = false) {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev)
+      if (n <= 1) p.delete('step')
+      else p.set('step', String(n))
+      return p
+    }, { replace })
+    if (n === 4) void refetchClasses()   // seat counts can change while a parent fills steps 1–3
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
   // When re-registering an existing camper (?studentId=…), we update that student row for the
   // new camp year instead of inserting a duplicate. null = brand-new camper.
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -241,12 +268,40 @@ export default function ParentRegistrationPage() {
         previous_program: data.previous_program ?? null,
         program_last_year: data.program_last_year ?? '',
         candy_consent: data.candy_consent ?? false,
+        // Unfinished answers from this device win over what's on file.
+        ...(restoredDraft ? (restoredDraft.form as Partial<FormData>) : {}),
       }))
     })()
     return () => { cancelled = true }
-  }, [studentId, prefillAttempt])
+  }, [studentId, prefillAttempt, restoredDraft])
+
+  // Draft: saved (debounced) once the parent has typed something or moved past step 1.
+  const dirty = useRef(!!restoredDraft)
+  useEffect(() => {
+    if (!myDraftKey || submitted || !(dirty.current || step > 1)) return
+    const t = window.setTimeout(() => writeDraft(myDraftKey, form as unknown as Record<string, unknown>, step), 400)
+    return () => window.clearTimeout(t)
+  }, [form, step, myDraftKey, submitted])
+
+  // A link or reload that lands past step 1 with nothing filled in starts at step 1 instead.
+  useEffect(() => {
+    if (step > 1 && !restoredDraft && !studentId) goToStep(1, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, [])
+
+  // Errors are announced and focused, so screen-reader users hear them (spec 16).
+  useEffect(() => { if (error) errorRef.current?.focus() }, [error])
+
+  function startOver() {
+    if (myDraftKey) clearDraft(myDraftKey)
+    dirty.current = false
+    setForm({ ...INITIAL, parent_name: profile?.display_name ?? '', parent_email: parentProfile?.email || user?.email || '' })
+    setError(null)
+    goToStep(1, true)
+  }
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
+    dirty.current = true
     setForm(f => ({ ...f, [key]: value }))
   }
 
@@ -259,8 +314,9 @@ export default function ParentRegistrationPage() {
     }))
   }
 
-  function validate(): string | null {
-    if (step === 1) {
+  function validate(s: number = step): string | null {
+    const stepNow = s
+    if (stepNow === 1) {
       if (!form.first_name.trim()) return `${q('first_name').label} is required`
       if (!form.last_name.trim()) return `${q('last_name').label} is required`
       if (q('email').required && !form.email.trim()) return `${q('email').label} is required`
@@ -272,7 +328,7 @@ export default function ParentRegistrationPage() {
       if (q('ethnic_background').required && form.ethnic_background.length === 0) return `Please answer: ${q('ethnic_background').label}`
       if (q('gender').required && !form.gender.trim()) return `${q('gender').label} is required`
     }
-    if (step === 2) {
+    if (stepNow === 2) {
       if (!form.parent_name.trim()) return `${q('parent_name').label} is required`
       if (!form.parent_email.trim()) return `${q('parent_email').label} is required`
       if (!form.parent_phone.trim()) return `${q('parent_phone').label} is required`
@@ -280,7 +336,7 @@ export default function ParentRegistrationPage() {
       if (!form.emergency_phone.trim()) return `${q('emergency_phone').label} is required`
       if (!form.emergency_relation.trim()) return `${q('emergency_relation').label} is required`
     }
-    if (step === 3) {
+    if (stepNow === 3) {
       if (!form.allergies.trim()) return `${q('allergies').label}: enter "None" if not applicable`
       if (!form.medical_conditions.trim()) return `${q('medical_conditions').label}: enter "None" if not applicable`
       if (q('other_info').required && !form.other_info.trim()) return `Please answer: ${q('other_info').label}`
@@ -289,7 +345,7 @@ export default function ParentRegistrationPage() {
       if (q('previous_program').required && form.previous_program === null) return `Please answer: ${q('previous_program').label}`
       if (q('candy_consent').required && !form.candy_consent) return `Please confirm: ${q('candy_consent').label}`
     }
-    if (step === 4) {
+    if (stepNow === 4) {
       if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet — no camp sessions are scheduled"
       if (!registrationIsOpen(season)) return `Registration opens ${formatCampDateTime(season!.registration_opens_at!)} (Denver time). You can finish the other steps now and submit once it opens.`
       if (!form.session1 && !form.session2) return 'Please select at least one session'
@@ -302,7 +358,7 @@ export default function ParentRegistrationPage() {
         if (both) return `${both.name} runs both weeks, so it can't be combined with a different class. Pick it for both sessions, or choose another class.`
       }
     }
-    if (step === 5) {
+    if (stepNow === 5) {
       if (!form.waiver_signature.trim()) return `${q('waiver_signature').label} is required`
       if (!form.guardian_signature.trim()) return `${q('guardian_signature').label} is required`
     }
@@ -313,25 +369,49 @@ export default function ParentRegistrationPage() {
     const err = validate()
     if (err) { setError(err); return }
     setError(null)
-    setStep(s => s + 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    goToStep(step + 1)
   }
 
   function handleBack() {
     setError(null)
-    setStep(s => s - 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    goToStep(step - 1, true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const err = validate()
-    if (err) { setError(err); return }
+    // Every step, not just this one: a reload or a link can land on step 5 directly.
+    for (let s2 = 1; s2 <= 5; s2++) {
+      const err = validate(s2)
+      if (err) { setError(err); if (s2 !== step) goToStep(s2); return }
+    }
     setError(null)
     setSubmitting(true)
 
+    // Seats change while a parent fills the form: say so if a chosen class just filled.
+    if (!fullAcknowledged) {
+      const fill = await fetchSectionFill().catch(() => null)
+      const chosen = [form.session1 && form.class_week1, form.session2 && form.class_week2].filter(Boolean) as string[]
+      const nowFull = chosen
+        .map(id => classes.flatMap(c => c.sections.map(sec => ({ c, sec }))).find(x => x.sec.id === id))
+        .filter((x): x is { c: (typeof classes)[number]; sec: SectionWithCount } => !!x)
+        .filter(x => x.sec.registered_count < x.sec.capacity && (fill?.get(x.sec.id)?.active ?? 0) >= x.sec.capacity)
+      if (nowFull.length > 0) {
+        setFullAcknowledged(true)
+        setSubmitting(false)
+        void refetchClasses()
+        setError(`${nowFull.map(x => x.c.name).join(' and ')} just filled up. Submit again to join the waitlist, or go back to step 4 to pick another class.`)
+        return
+      }
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError('Not authenticated'); setSubmitting(false); return }
+    if (!user) {
+      // The answers are already saved as a draft on this device.
+      setAuthExpired(true)
+      setError('Your sign-in expired. Your answers are saved on this device: sign in again and you can pick up where you left off.')
+      setSubmitting(false)
+      return
+    }
     // Re-registering a camper whose details never loaded must not fall through to an insert.
     if (studentId && !editingId) { setError("Your camper's details haven't loaded yet."); setSubmitting(false); return }
 
@@ -387,7 +467,11 @@ export default function ParentRegistrationPage() {
     setEditingId(student.id)
     if (!studentId) {
       setCamperPrefill({ key: `${student.id}:${prefillAttempt}`, error: null })
-      setSearchParams({ studentId: student.id }, { replace: true })
+      setSearchParams(prev => {
+        const p = new URLSearchParams(prev)
+        p.set('studentId', student.id)
+        return p
+      }, { replace: true })
     }
 
     // Remember the parent's contact details for next time (#52, #54). Not fatal if it fails —
@@ -430,6 +514,8 @@ export default function ParentRegistrationPage() {
         .eq('id', student.id)
     }
 
+    // Done: the draft (under the new camper's key or the original one) is no longer needed.
+    if (user) { clearDraft(draftKey(user.id, null)); clearDraft(draftKey(user.id, student.id)) }
     setSubmitted(true)
   }
 
@@ -534,6 +620,13 @@ export default function ParentRegistrationPage() {
           <ArrowLeft size={16} /> Back to dashboard
         </button>
         <StepDots current={step} total={5} />
+        <p className="text-center font-sans text-xs font-semibold text-ink-muted mb-6">Step {step} of 5: {STEP_NAMES[step - 1]}</p>
+        {restoredDraft && (
+          <p role="status" className="mb-6 font-sans text-sm text-ink-muted bg-surface-sunken border border-border rounded-[10px] px-3 py-2">
+            Picked up where you left off (saved {new Date(restoredDraft.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}).{' '}
+            <button type="button" onClick={startOver} className="font-semibold text-ink hover:underline">Start over</button>
+          </p>
+        )}
 
         <form onSubmit={handleSubmit}>
 
@@ -813,7 +906,10 @@ export default function ParentRegistrationPage() {
           )}
 
           {error && (
-            <p className="mt-4 text-danger text-sm font-sans flex items-center gap-1.5">⚠ {error}</p>
+            <p ref={errorRef} role="alert" tabIndex={-1} className="mt-4 text-danger text-sm font-sans focus:outline-none">
+              ⚠ {error}
+              {authExpired && <> <Link to="/login" className="font-semibold underline">Sign in again</Link></>}
+            </p>
           )}
 
           <div className={`mt-8 flex gap-3 ${step > 1 ? 'justify-between' : 'justify-end'}`}>
