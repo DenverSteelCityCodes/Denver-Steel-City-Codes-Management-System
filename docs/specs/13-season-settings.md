@@ -1,6 +1,6 @@
 # 13: Registration opening time, deadlines and offer windows
 
-**Status:** ⬜ not started · **Issue:** #82 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #121](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/121) · **Issue:** #82 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** 10, 11, 12
 **Plan reference:** Plan flow A1, §6 decisions Q-R1, Q-W1, Q-W2
 
