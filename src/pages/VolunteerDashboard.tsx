@@ -11,6 +11,31 @@ import { useOpenInterviewSlots, formatSlot } from '../hooks/useOpenInterviewSlot
 import { useMyInterview } from '../hooks/useMyInterview'
 import type { AssignedSection } from '../hooks/useAssignedClass'
 import type { AttendanceAction } from '../types/database'
+import { useSessions } from '../hooks/useSessions'
+import { useScheduleItems } from '../hooks/useScheduleItems'
+import DailySchedule, { ScheduleHeading } from '../components/DailySchedule'
+import { localDateISO, sessionOnDay, formatTimeRange } from '../lib/campDay'
+
+// The day's plan for whichever session is running today (or the next one).
+function TodaySchedulePanel() {
+  const { sessions } = useSessions()
+  const { items, loading } = useScheduleItems()
+  const today = localDateISO()
+  const session = sessionOnDay(sessions, today)
+    ?? sessions.filter(s => s.is_active && s.end_date >= today).sort((a, b) => a.start_date.localeCompare(b.start_date))[0]
+  if (!session || loading) return null
+  const list = items.filter(i => i.session_id === session.id)
+  return (
+    <section aria-labelledby="today-schedule-heading" className="bg-surface border border-border rounded-xl shadow-sm p-4 sm:p-5">
+      <div id="today-schedule-heading">
+        <ScheduleHeading>{session.start_date <= today ? "Today's schedule" : `Daily schedule · ${session.name}`}</ScheduleHeading>
+      </div>
+      <div className="mt-2">
+        <DailySchedule items={list} />
+      </div>
+    </section>
+  )
+}
 
 function DutyPanel({ userId }: { userId: string }) {
   const { slots, loading, claimSlot, unclaimSlot } = useDutySlots()
@@ -231,6 +256,11 @@ function SectionPanel({ section }: { section: AssignedSection }) {
           <p className="font-sans text-sm text-ink-muted mt-0.5">
             {section.label}{section.week ? ` · Week ${section.week}` : ''}
           </p>
+          {(section.start_time || section.room) && (
+            <p className="font-sans text-xs text-ink-muted mt-0.5">
+              {[section.start_time && `${section.days} · ${formatTimeRange(section.start_time, section.end_time)}`, section.room].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
         {!attendanceLoading && (
           <div className="text-right">
@@ -366,6 +396,7 @@ export default function VolunteerDashboard() {
                 <SectionPanel key={sec.id} section={sec} />
               ))}
             </div>
+            <TodaySchedulePanel />
             <div className="space-y-3">
               <h2 className="font-sans font-bold text-xl text-ink">Duty schedule</h2>
               <DutyPanel userId={user!.id} />

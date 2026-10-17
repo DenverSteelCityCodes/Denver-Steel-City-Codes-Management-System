@@ -3,6 +3,7 @@ import { CircleCheck, Clock, List, CircleX, Pencil, GraduationCap, Check } from 
 import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { GRADES, gradeToAge, realNote } from '../lib/campers'
+import { formatTimeRange } from '../lib/campDay'
 import type { Student, RegistrationStatus } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import MedicalFlag from './MedicalFlag'
@@ -195,9 +196,12 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
                           {week ? ` · Week ${week}` : ''}
                         </span>
                       </div>
-                      {/* SCHEDULE LINE PLACEHOLDER — render days · times · lead volunteer here once the
-                          `sections` table gains start_time / end_time / weekdays columns. Times are
-                          deferred (no such columns exist yet); do not fabricate them. */}
+                      {(reg.sections?.start_time || reg.sections?.room) && (
+                        <p className="mt-0.5 ml-1 text-xs font-sans text-ink-muted">
+                          {[reg.sections.start_time && `${reg.sections.days} · ${formatTimeRange(reg.sections.start_time, reg.sections.end_time)}`, reg.sections.room]
+                            .filter(Boolean).join(' · ')}
+                        </p>
+                      )}
                       {cfg.note && (
                         <p className="mt-0.5 ml-1 text-xs font-sans text-ink-faint">{cfg.note}</p>
                       )}

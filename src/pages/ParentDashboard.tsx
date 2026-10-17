@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations, type RegistrationWithSection } from '../hooks/useRegistrations'
 import StudentCard from '../components/StudentCard'
-import SessionStrip from '../components/SessionStrip'
+import ThisWeekCard from '../components/ThisWeekCard'
 import type { Student } from '../types/database'
 
 // Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
@@ -82,7 +82,7 @@ export default function ParentDashboard() {
           </div>
         </div>
 
-        <SessionStrip />
+        <ThisWeekCard students={students} registrations={registrations} />
 
         {loading ? (
           <div className="space-y-3">

@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Check, Calendar } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, Calendar, Copy } from 'lucide-react'
 import { useSessions, formatSessionDates, type Session } from '../hooks/useSessions'
+import { useScheduleItems } from '../hooks/useScheduleItems'
+import { formatTimeRange } from '../lib/campDay'
+import type { ScheduleItem } from '../types/database'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
 
@@ -101,12 +104,142 @@ function SessionForm({
   )
 }
 
+interface ItemFormState {
+  start_time: string
+  end_time: string
+  title: string
+  location: string
+}
+
+type ItemPayload = Omit<ScheduleItem, 'id' | 'created_at' | 'session_id'>
+
+// Inline add/edit form for one daily-schedule time block.
+function ScheduleItemForm({
+  idPrefix,
+  initial,
+  submitLabel,
+  onSave,
+  onCancel,
+}: {
+  idPrefix: string
+  initial: ItemFormState
+  submitLabel: string
+  onSave: (payload: ItemPayload) => Promise<void>
+  onCancel: () => void
+}) {
+  const [form, setForm] = useState<ItemFormState>(initial)
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.start_time) { setErr('Start time is required'); return }
+    if (form.end_time && form.end_time <= form.start_time) { setErr('End time must be after the start'); return }
+    if (!form.title.trim()) { setErr('Describe what happens in this block'); return }
+    setSaving(true)
+    setErr(null)
+    try {
+      await onSave({
+        start_time: form.start_time,
+        end_time: form.end_time || null,
+        title: form.title.trim(),
+        location: form.location.trim() || null,
+      })
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Something went wrong')
+      setSaving(false)
+    }
+  }
+
+  const input = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
+  const label = 'block font-sans font-semibold text-sm text-ink mb-1.5'
+
+  return (
+    <form
+      noValidate
+      onSubmit={handleSubmit}
+      onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+      className="bg-surface border border-brand rounded-[12px] p-3 sm:p-4 space-y-3"
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={label} htmlFor={`${idPrefix}-start`}>Starts <span className="text-danger">*</span></label>
+          <input id={`${idPrefix}-start`} type="time" autoFocus value={form.start_time}
+            onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} className={input} />
+        </div>
+        <div>
+          <label className={label} htmlFor={`${idPrefix}-end`}>Ends <span className="font-normal text-ink-muted">(optional)</span></label>
+          <input id={`${idPrefix}-end`} type="time" value={form.end_time}
+            onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} className={input} />
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className={label} htmlFor={`${idPrefix}-title`}>What <span className="text-danger">*</span></label>
+          <input id={`${idPrefix}-title`} maxLength={120} value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="e.g. Drop-off" className={input} />
+        </div>
+        <div>
+          <label className={label} htmlFor={`${idPrefix}-where`}>Where <span className="font-normal text-ink-muted">(optional)</span></label>
+          <input id={`${idPrefix}-where`} value={form.location}
+            onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+            placeholder="e.g. Front lobby" className={input} />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={onCancel}
+          className="h-10 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition">
+          Cancel
+        </button>
+        <button type="submit" disabled={saving}
+          className="h-10 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50">
+          {saving ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Check size={16} />}
+          {saving ? 'Saving…' : submitLabel}
+        </button>
+      </div>
+      {err && <p role="alert" className="text-danger text-sm font-sans">{err}</p>}
+    </form>
+  )
+}
+
 export default function AdminSessions() {
   const { sessions, loading, error, createSession, updateSession, deleteSession } = useSessions()
   const [editing, setEditing] = useState<'new' | string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const { items, loading: itemsLoading, createItem, updateItem, deleteItem, copyTo } = useScheduleItems()
+  const [editingItem, setEditingItem] = useState<{ sessionId: string; itemId: string | 'new' } | null>(null)
+  const [pendingItemDelete, setPendingItemDelete] = useState<string | null>(null)
+  const [itemBusy, setItemBusy] = useState(false)
+
+  const sortItems = (list: ScheduleItem[]) => [...list].sort((a, b) => a.start_time.localeCompare(b.start_time))
+
+  async function confirmItemDelete(item: ScheduleItem) {
+    setItemBusy(true)
+    setActionError(null)
+    try {
+      await deleteItem(item.id)
+      setPendingItemDelete(null)
+    } catch (e) {
+      setActionError(`Couldn't remove ${item.title}: ${e instanceof Error ? e.message : 'unknown error'}`)
+    } finally {
+      setItemBusy(false)
+    }
+  }
+
+  async function handleCopy(fromId: string, toId: string) {
+    setItemBusy(true)
+    setActionError(null)
+    try {
+      await copyTo(fromId, toId)
+    } catch (e) {
+      setActionError(`Couldn't copy the schedule: ${e instanceof Error ? e.message : 'unknown error'}`)
+    } finally {
+      setItemBusy(false)
+    }
+  }
 
   const BLANK: SessionFormState = { name: '', year: '', start_date: '', end_date: '', is_active: true }
 
@@ -164,7 +297,10 @@ export default function AdminSessions() {
         </div>
       ) : (
         <div className="space-y-3">
-          {sessions.map(s => editing === s.id ? (
+          {sessions.map(s => {
+            const sessionItems = sortItems(items.filter(i => i.session_id === s.id))
+            const copySource = sessions.find(o => o.id !== s.id && items.some(i => i.session_id === o.id))
+            return editing === s.id ? (
             <SessionForm
               key={s.id}
               initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, is_active: s.is_active }}
@@ -211,6 +347,106 @@ export default function AdminSessions() {
                   </button>
                 </div>
               </div>
+              <div className="px-4 sm:px-5 pb-4 pt-3 border-t border-border space-y-2">
+                <p className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Daily schedule</p>
+                {itemsLoading ? (
+                  <div className="h-10 bg-surface-sunken rounded-[10px] animate-pulse" />
+                ) : (
+                  <>
+                    {sessionItems.length === 0 && editingItem?.sessionId !== s.id && (
+                      copySource ? (
+                        <div className="flex flex-wrap items-center gap-3">
+                          <p className="font-sans text-sm text-ink-muted">No daily schedule yet.</p>
+                          <button
+                            type="button"
+                            disabled={itemBusy}
+                            onClick={() => handleCopy(copySource.id, s.id)}
+                            className="h-10 px-3.5 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition flex items-center gap-2 disabled:opacity-50"
+                          >
+                            <Copy size={14} /> Copy from {copySource.name}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="font-sans text-sm text-ink-muted">No daily schedule yet — add drop-off, sessions, lunch and pickup so families know the plan.</p>
+                      )
+                    )}
+                    {sessionItems.length > 0 && (
+                      <ul className="divide-y divide-border">
+                        {sessionItems.map(item => editingItem?.sessionId === s.id && editingItem.itemId === item.id ? (
+                          <li key={item.id} className="py-2">
+                            <ScheduleItemForm
+                              idPrefix={`item-${item.id}`}
+                              initial={{ start_time: item.start_time.slice(0, 5), end_time: item.end_time?.slice(0, 5) ?? '', title: item.title, location: item.location ?? '' }}
+                              submitLabel="Save"
+                              onCancel={() => setEditingItem(null)}
+                              onSave={async payload => { await updateItem(item.id, payload); setEditingItem(null) }}
+                            />
+                          </li>
+                        ) : (
+                          <li key={item.id}>
+                            <div className="flex items-center justify-between gap-2 py-1.5">
+                              <p className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-sans text-sm">
+                                <span className="tabular-nums text-ink-muted">{formatTimeRange(item.start_time, item.end_time)}</span>
+                                <span className="font-semibold text-ink">{item.title}</span>
+                                {item.location && <span className="text-ink-muted">· {item.location}</span>}
+                              </p>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: item.id }) }}
+                                  aria-label={`Edit ${item.title}`}
+                                  title="Edit time block"
+                                  className="p-2 text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-[8px] transition"
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingItem(null); setPendingItemDelete(item.id) }}
+                                  aria-label={`Remove ${item.title}`}
+                                  title="Remove time block"
+                                  className="p-2 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[8px] transition"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </div>
+                            {pendingItemDelete === item.id && (
+                              <div className="mb-2 rounded-[10px] overflow-hidden border border-danger/30">
+                                <InlineConfirm
+                                  message={`Remove ${item.title} from ${s.name}'s schedule?`}
+                                  confirmLabel="Remove"
+                                  tone="danger"
+                                  busy={itemBusy}
+                                  onConfirm={() => confirmItemDelete(item)}
+                                  onCancel={() => setPendingItemDelete(null)}
+                                />
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {editingItem?.sessionId === s.id && editingItem.itemId === 'new' ? (
+                      <ScheduleItemForm
+                        idPrefix={`item-new-${s.id}`}
+                        initial={{ start_time: '', end_time: '', title: '', location: '' }}
+                        submitLabel="Add block"
+                        onCancel={() => setEditingItem(null)}
+                        onSave={async payload => { await createItem({ session_id: s.id, ...payload }); setEditingItem(null) }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: 'new' }) }}
+                        className="w-full h-10 border-2 border-dashed border-border-strong text-ink-muted hover:border-brand hover:text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center justify-center gap-2 transition"
+                      >
+                        <Plus size={15} /> Add a time block
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
               {pendingDelete === s.id && (
                 <InlineConfirm
                   message={`Delete ${s.name} (${s.year})? Its duty slots and sign-ups are deleted too, and sections linked to it become unscheduled. This can't be undone.`}
@@ -221,7 +457,7 @@ export default function AdminSessions() {
                 />
               )}
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>

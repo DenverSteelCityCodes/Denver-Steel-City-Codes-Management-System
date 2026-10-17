@@ -7,6 +7,7 @@ import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type Sec
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
 import { supabase } from '../lib/supabase'
+import { formatTimeRange } from '../lib/campDay'
 
 // Everything on this page edits in place — no modals. Forms open where the thing lives
 // (top of the list, the class header, the section row) and Esc cancels.
@@ -106,6 +107,10 @@ interface SectionFormState {
   age_max: string
   capacity: string
   week: '' | '1' | '2'
+  days: string
+  start_time: string
+  end_time: string
+  room: string
   lead_id: string
   support_ids: string[]
 }
@@ -129,6 +134,10 @@ function SectionForm({
     age_max: section ? String(section.age_max) : '',
     capacity: section ? String(section.capacity) : '',
     week: section?.week ? (String(section.week) as '1' | '2') : '',
+    days: section?.days ?? 'Mon–Fri',
+    start_time: section?.start_time?.slice(0, 5) ?? '',
+    end_time: section?.end_time?.slice(0, 5) ?? '',
+    room: section?.room ?? '',
     lead_id: section?.lead_id ?? '',
     support_ids: section?.supports.map(s => s.id) ?? [],
   })
@@ -146,6 +155,7 @@ function SectionForm({
     if (!e.age_min && !e.age_max && max < min) e.age_max = 'Max must be ≥ min'
     const cap = Number(form.capacity)
     if (!form.capacity || isNaN(cap) || cap < 1) e.capacity = 'Capacity must be at least 1'
+    if (form.start_time && form.end_time && form.end_time <= form.start_time) e.end_time = 'End time must be after the start'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -164,6 +174,10 @@ function SectionForm({
           age_max: Number(form.age_max),
           capacity: Number(form.capacity),
           week: form.week ? (Number(form.week) as 1 | 2) : null,
+          days: form.days.trim() || 'Mon–Fri',
+          start_time: form.start_time || null,
+          end_time: form.end_time || null,
+          room: form.room.trim() || null,
           lead_id: form.lead_id || null,
         },
         form.support_ids,
@@ -254,6 +268,36 @@ function SectionForm({
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <label className={labelCls} htmlFor="sec-days">Days</label>
+          <input id="sec-days" value={form.days}
+            onChange={e => setForm(f => ({ ...f, days: e.target.value }))}
+            placeholder="Mon–Fri" className={inputCls} />
+        </div>
+
+        <div>
+          <label className={labelCls} htmlFor="sec-room">Room <span className="font-normal text-ink-muted">(optional)</span></label>
+          <input id="sec-room" value={form.room}
+            onChange={e => setForm(f => ({ ...f, room: e.target.value }))}
+            placeholder="e.g. Room 101" className={inputCls} />
+        </div>
+
+        <div className="md:col-span-2">
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
+            <div>
+              <label className={labelCls} htmlFor="sec-start">Starts <span className="font-normal text-ink-muted">(optional)</span></label>
+              <input id="sec-start" type="time" value={form.start_time}
+                onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls} htmlFor="sec-end">Ends <span className="font-normal text-ink-muted">(optional)</span></label>
+              <input id="sec-end" type="time" value={form.end_time}
+                onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} className={inputCls} />
+            </div>
+          </div>
+          {fieldErr('end_time')}
         </div>
 
         <div>
@@ -709,15 +753,24 @@ function SectionRow({
     ...section.supports.map(s => ({ person: s, isSenior: false })),
   ].filter(c => c.person !== null) as { person: { display_name: string }; isSenior: boolean }[]
 
+  const scheduleLine = (section.start_time || section.room)
+    ? [section.days, formatTimeRange(section.start_time, section.end_time), section.room].filter(Boolean).join(' · ')
+    : ''
+
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:grid md:grid-cols-[1fr_auto_auto_auto_auto] md:gap-4 px-4 sm:px-5 py-3.5">
       {/* Label + week badge (own line on phones) */}
-      <div className="flex items-center gap-2 min-w-0 w-full md:w-auto">
+      <div className="min-w-0 w-full md:w-auto">
+        <div className="flex items-center gap-2 min-w-0">
         <span className="font-sans font-semibold text-sm text-ink truncate">{section.label}</span>
         {section.week && (
           <span className="shrink-0 px-2 py-0.5 rounded-full bg-brand-soft text-warning text-xs font-semibold border border-brand/20">
             W{section.week}
           </span>
+        )}
+        </div>
+        {scheduleLine && (
+          <p className="mt-0.5 font-sans text-xs text-ink-muted">{scheduleLine}</p>
         )}
       </div>
 
