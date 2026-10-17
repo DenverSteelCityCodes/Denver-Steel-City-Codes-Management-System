@@ -4,7 +4,13 @@
 // Most mail clients and browsers truncate mailto: links somewhere above 2,000 characters.
 const MAILTO_LIMIT = 1800
 
-export type MailResult = { kind: 'opened' } | { kind: 'copied'; count: number } | { kind: 'none' }
+export type MailResult =
+  | { kind: 'opened' }
+  | { kind: 'copied'; count: number }
+  // Too long for a link and the clipboard was blocked: a draft opened with no recipients, so the
+  // caller must show these addresses for the user to copy by hand.
+  | { kind: 'draft_without_recipients'; emails: string[] }
+  | { kind: 'none' }
 
 export function buildMailto(emails: string[], subject: string, body: string): string {
   const q = new URLSearchParams()
@@ -36,7 +42,7 @@ export async function openMailOrCopy(emails: string[], subject: string, body: st
   if (!ok) {
     // Clipboard blocked: fall back to a recipient-less draft so the user still gets the text.
     window.location.href = buildMailto([], subject, body)
-    return { kind: 'opened' }
+    return { kind: 'draft_without_recipients', emails }
   }
   return { kind: 'copied', count: emails.length }
 }

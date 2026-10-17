@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -7,7 +7,7 @@ import { BrandBar } from '../components/Wordmark'
 import { DEMO_ACCOUNTS, type DemoAccount } from '../lib/demo'
 
 export default function LoginPage() {
-  const { role } = useAuth()
+  const { session, role, profileError, loading: authLoading, signOut } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +25,20 @@ export default function LoginPage() {
     }
     // AuthContext resolves the role and the redirect above takes over.
   }
+
+  // Signed in but no usable profile: without this the button spins forever (role never arrives).
+  // Sign back out and say why, so the page is usable again.
+  useEffect(() => {
+    if (!session || authLoading || role) return
+    const message = profileError
+      ? "Signed in, but your account couldn't be loaded. Check your connection and try again."
+      : "Your account isn't set up yet — contact the camp."
+    void signOut().then(() => {
+      setError(message)
+      setLoading(false)
+      setDemoBusy(null)
+    })
+  }, [session, authLoading, role, profileError, signOut])
 
   // Already signed in (or just signed in — AuthContext resolves the role) → go to that area.
   if (role) return <Navigate to={`/${role}`} replace />

@@ -2,13 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, CircleCheck, List, ShieldCheck, CheckCircle2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear } from '../hooks/useSessions'
 import { useUpdates, audienceLabel } from '../hooks/useUpdates'
 import { timeAgo } from '../lib/campDay'
 
+// Per user (suffixed with the user id) so parents sharing a device don't mark each other's posts read.
 const SEEN_KEY = 'scc-updates-seen'
+// Posts fetched for the dropdown; unread is counted within these, so a full page reads as "N+".
+const POST_LIMIT = 5
 
 interface Update {
   key: string
@@ -25,20 +29,26 @@ export default function ParentBell() {
   const { students, loading: sLoading } = useStudents()
   const { registrations, loading: rLoading } = useRegistrations()
   const { sessions } = useSessions()
-  const { updates: posts } = useUpdates(5)
+  const { user } = useAuth()
+  const { updates: posts } = useUpdates(POST_LIMIT)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const campYear = activeCampYear(sessions)
 
-  // Unread posts: anything newer than when the bell was last opened (per device).
-  const [seenAt, setSeenAt] = useState<string>(() => { try { return localStorage.getItem(SEEN_KEY) ?? '' } catch { return '' } })
-  const unread = posts.filter(p => p.created_at > seenAt).length
+  // Unread posts: anything newer than when the bell was last opened (per user, per device).
+  const seenKey = `${SEEN_KEY}:${user?.id ?? ''}`
+  const readSeen = () => { try { return localStorage.getItem(seenKey) ?? '' } catch { return '' } }
+  const [seen, setSeen] = useState(() => ({ key: seenKey, at: readSeen() }))
+  if (seen.key !== seenKey) setSeen({ key: seenKey, at: readSeen() })
+  const unread = posts.filter(p => p.created_at > seen.at).length
+  // Every fetched post is unread, so there may be more beyond the page.
+  const unreadMore = unread === POST_LIMIT
   function toggle() {
     setOpen(o => !o)
     if (!open && posts[0]) {
       const latest = posts[0].created_at
-      try { localStorage.setItem(SEEN_KEY, latest) } catch { /* private mode */ }
-      setSeenAt(latest)
+      try { localStorage.setItem(seenKey, latest) } catch { /* private mode */ }
+      setSeen({ key: seenKey, at: latest })
     }
   }
 
@@ -83,7 +93,7 @@ export default function ParentBell() {
       <button
         onClick={toggle}
         aria-expanded={open}
-        aria-label={actionCount > 0 ? `Updates: ${actionCount} new` : 'Updates'}
+        aria-label={actionCount > 0 ? `Updates: ${actionCount}${unreadMore ? '+' : ''} new` : 'Updates'}
         className="relative text-white/70 hover:text-white p-2 rounded-[10px] hover:bg-white/10 transition"
       >
         <Bell size={18} />

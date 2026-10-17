@@ -22,13 +22,15 @@ interface SectionCardProps {
   registrationStatus?: RegistrationStatus
   onRegister?: () => void
   registering?: boolean
+  // Disables Register without the spinner (e.g. while the camp year is still loading).
+  disabled?: boolean
   // Course-level grade restriction (#44), e.g. Microcontrollers is rising 7–9 only.
   gradeBlock?: string | null
   // Name of the class this camper already holds a spot in for the same week (one class per week).
   weekClash?: string | null
 }
 
-function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, gradeBlock, weekClash }: SectionCardProps) {
+function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, disabled, gradeBlock, weekClash }: SectionCardProps) {
   const ageEligible = studentAge !== undefined
     ? studentAge >= section.age_min && studentAge <= section.age_max
     : true
@@ -93,7 +95,7 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
       ) : onRegister ? (
         <button
           onClick={onRegister}
-          disabled={registering}
+          disabled={registering || disabled}
           className="w-full h-10 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {registering
@@ -113,7 +115,7 @@ export default function ClassBrowser() {
   const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
   const { students, confirmOnboarding } = useStudents()
   const { registrations, registerStudent, isRegistered, getRegistration } = useRegistrations()
-  const { sessions } = useSessions()
+  const { sessions, loading: sessionsLoading } = useSessions()
   const { profile } = useAuth()
   const { profile: parentProfile } = useParentProfile()
   // "Close form" in the admin form editor closes registration here too (the database enforces it).
@@ -132,6 +134,8 @@ export default function ClassBrowser() {
 
   // Active camp year: the year of the open session(s). Campers must have confirmed their
   // onboarding for THIS year before they can register — they re-confirm every summer (#42).
+  // It falls back to the calendar year until sessions load, so Register stays disabled until
+  // then; otherwise a quick click could skip the confirmation gate.
   const campYear = activeCampYear(sessions)
   const needsConfirmation = (student?: typeof selectedStudent) =>
     !!student && student.registration_year !== campYear
@@ -149,7 +153,7 @@ export default function ClassBrowser() {
   // Gate: a camper whose onboarding isn't confirmed for the active year must review & confirm
   // it first. Otherwise register immediately.
   function handleRegister(section: SectionWithCount) {
-    if (!selectedStudentId) return
+    if (!selectedStudentId || sessionsLoading) return
     if (!registrationOpen) { showToast('Camper registration is closed right now.', 'info'); return }
     if (needsConfirmation(selectedStudent)) {
       setPendingSection(section)
@@ -360,6 +364,7 @@ export default function ClassBrowser() {
                               : undefined
                           }
                           registering={registeringSectionId === sec.id}
+                          disabled={sessionsLoading}
                           gradeBlock={gradeBlock}
                         />
                       )

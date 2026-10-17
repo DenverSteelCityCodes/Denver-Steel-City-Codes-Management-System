@@ -260,7 +260,7 @@ function InterviewCard() {
 
 export default function VolunteerDashboard() {
   const { profile, signOut, user } = useAuth()
-  const { assignedSections, isAccepted, applicationStatus, loading } = useAssignedClass()
+  const { assignedSections, isAccepted, applicationStatus, loading, error, refetch } = useAssignedClass()
   const { sessions } = useSessions()
   const sessionOf = (sessionId: string | null) => sessions.find(s => s.id === sessionId) ?? null
 
@@ -296,6 +296,17 @@ export default function VolunteerDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        ) : error ? (
+          <div role="alert" className="bg-surface border border-danger rounded-xl shadow-sm p-10 text-center">
+            <h2 className="font-sans font-semibold text-xl text-ink mb-2">Couldn't load your sections</h2>
+            <p className="font-sans text-ink-muted text-sm mb-6">{error}</p>
+            <button
+              onClick={() => { void refetch() }}
+              className="h-10 px-5 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition"
+            >
+              Retry
+            </button>
           </div>
         ) : !isAccepted && applicationStatus === 'rejected' ? (
           <div className="bg-surface border border-border rounded-xl shadow-sm p-10 text-center">

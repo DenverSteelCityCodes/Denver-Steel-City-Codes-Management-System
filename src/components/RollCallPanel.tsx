@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import type { AssignedSection } from '../hooks/useAssignedClass'
 import { useRollCalls } from '../hooks/useRollCalls'
 import RollCallRow from './RollCallRow'
-import { ROLL_CALLS, formatTimeRange, formatTime, localDateISO } from '../lib/campDay'
+import { ROLL_CALLS, rollCallForTime, formatTimeRange, formatTime, localDateISO } from '../lib/campDay'
 import type { RollCallKind, Session } from '../types/database'
 
 interface Props {
@@ -23,10 +23,9 @@ export default function RollCallPanel({ section, session }: Props) {
   const [err, setErr] = useState<string | null>(null)
   const [chosen, setChosen] = useState<RollCallKind | null>(null)
 
-  // Default to the first roll call not yet taken, else the last one taken.
-  const current: RollCallKind = chosen
-    ?? ROLL_CALLS.find(r => !taken(r.key))?.key
-    ?? ROLL_CALLS[ROLL_CALLS.length - 1].key
+  // Default to the roll call for the time of day — not "first untaken", which at 9:30 after
+  // arrival is done lands on After lunch, where one stray tap marks everyone else unmarked.
+  const current: RollCallKind = chosen ?? rollCallForTime()
 
   const ids = section.students.map(s => s.id)
   const presentCount = ids.filter(id => getMark(id, current)?.present).length
@@ -35,7 +34,7 @@ export default function RollCallPanel({ section, session }: Props) {
   const latestMark = marks.filter(m => m.roll_call === current).sort((a, b) => b.marked_at.localeCompare(a.marked_at))[0]
 
   async function run(fn: () => Promise<void>) {
-    // Pin the tab the volunteer is working on; the "first untaken" default only applies on load.
+    // Pin the tab the volunteer is working on; the time-of-day default only applies until then.
     setChosen(current)
     setBusy(true)
     setErr(null)
