@@ -32,7 +32,8 @@ begin
   exception when others then res := res || E'\nparent calls admin_history: blocked ok'; end;
   execute 'reset role';
 
-  select count(*) into n from audit.log where table_name='students' and row_id=maya::text;
+  -- Only this test's rows (they all share the transaction's now()); the nightly reset logs too.
+  select count(*) into n from audit.log where table_name='students' and row_id=maya::text and at = now();
   res := res || E'\nparent edit + no-op logged ' || n || ' row(s) ' || case when n=1 then 'ok' else '(BAD: want 1)' end;
   select * into r from audit.log where table_name='students' and row_id=maya::text order by id desc limit 1;
   res := res || E'\nactor is the parent, role parent: ' || case when r.actor_id=v_parent and r.actor_role='parent' then 'ok' else 'BAD (' || coalesce(r.actor_id::text,'null') || '/' || coalesce(r.actor_role,'null') || ')' end;
@@ -53,7 +54,7 @@ begin
   perform set_config('app.reason', 'audit_test_reason', true);   -- what private.set_reason() does inside an RPC
   update students set allergies = 'None (audit test)' where id = maya;
   perform set_config('app.reason', '', true);
-  select count(*) into n from public.admin_history('students', maya::text);
+  select count(*) into n from public.admin_history('students', maya::text) h where h.at = now();
   res := res || E'\nadmin_history returns both edits: ' || case when n=2 then 'ok' else 'BAD (' || n || ')' end;
   select * into r from public.admin_history('students', maya::text) limit 1;
   res := res || E'\nnewest entry: admin + reason + name: ' || case when r.actor_id=admin_id and r.reason='audit_test_reason' and r.actor_name='Jordan Rivera' then 'ok' else 'BAD' end;

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CircleCheck, List, CircleX, Pencil, GraduationCap, Check } from 'lucide-react'
+import { CircleCheck, List, CircleX, Pencil, GraduationCap, Check, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { GRADES, gradeToAge, realNote } from '../lib/campers'
@@ -20,6 +20,8 @@ const STATUS_CONFIG: Record<
   pending: { label: 'Confirmed', className: 'bg-success-soft text-success', Icon: CircleCheck, note: null },
   waitlisted: { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List, note: null },
   cancelled: { label: 'Cancelled', className: 'bg-danger-soft text-danger', Icon: CircleX, note: null },
+  // A freed seat held for this camper (spec 10); the actions below say how long it's held.
+  offered: { label: 'Spot offered', className: 'bg-brand-soft text-warning', Icon: Sparkles, note: null },
 }
 
 // Rollup status badge (DS §7.5) that summarizes all of a camper's registrations
@@ -30,6 +32,9 @@ function rollupStatus(
   const active = registrations.filter(r => r.status !== 'cancelled')
   if (active.length === 0) {
     return { label: 'Not enrolled', className: 'bg-surface-sunken text-ink-muted', Icon: null }
+  }
+  if (active.some(r => r.status === 'offered')) {
+    return { label: 'Spot offered', className: 'bg-brand-soft text-warning', Icon: Sparkles }
   }
   if (active.every(r => r.status === 'waitlisted')) {
     return { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List }
@@ -52,6 +57,8 @@ interface Props {
     openRequests: Set<string>
     cancelSpot: (registrationId: string) => Promise<void>
     requestChange: (registrationId: string, message: string) => Promise<void>
+    acceptOffer: (registrationId: string) => Promise<void>
+    declineOffer: (registrationId: string) => Promise<void>
   }
 }
 
@@ -78,6 +85,44 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
     setBusy(true); setErr(null)
     try { await fn(); after() } catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong') }
     finally { setBusy(false) }
+  }
+
+  // A waitlist offer: claim it (confirms at once) or decline it (passes it on). Spec 10.
+  if (reg.status === 'offered') {
+    const until = reg.offer_expires_at
+      ? new Date(reg.offer_expires_at).toLocaleString('en-US', { timeZone: 'America/Denver', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : null
+    return (
+      <div className="mt-1.5 ml-1 rounded-[10px] border border-brand/40 bg-brand-soft/40 px-3 py-2">
+        <p className="text-sm font-sans text-ink">
+          <span className="font-semibold">A spot opened up for {camper}!</span>{until ? ` Claim it by ${until} (Denver time), or it goes to the next family.` : ''}
+        </p>
+        {mode === 'confirm' ? (
+          <div className="mt-2 rounded-[10px] overflow-hidden border border-border">
+            <InlineConfirm
+              message={`Decline the spot in ${where}? It goes to the next family, and ${camper} leaves this waitlist.`}
+              confirmLabel="Decline spot"
+              cancelLabel="Keep the offer"
+              busy={busy}
+              onConfirm={() => { void run(() => changes.declineOffer(reg.id), () => setMode('idle')) }}
+              onCancel={() => { setMode('idle'); setErr(null) }}
+            />
+          </div>
+        ) : (
+          <div className="mt-2 flex gap-2">
+            <button type="button" disabled={busy} onClick={() => { void run(() => changes.acceptOffer(reg.id), () => setMode('idle')) }}
+              className="h-10 px-4 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">
+              {busy ? 'Claiming…' : 'Claim the spot'}
+            </button>
+            <button type="button" disabled={busy} onClick={() => setMode('confirm')}
+              className="h-10 px-4 rounded-[8px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition">
+              Decline
+            </button>
+          </div>
+        )}
+        {err && <p role="alert" className="mt-1 text-xs font-sans text-danger">{err}</p>}
+      </div>
+    )
   }
 
   if (sent || changes.openRequests.has(reg.id)) {

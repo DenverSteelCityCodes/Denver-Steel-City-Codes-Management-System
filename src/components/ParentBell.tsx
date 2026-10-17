@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, CircleCheck, List, ShieldCheck, CheckCircle2, CircleX } from 'lucide-react'
+import { Bell, CircleCheck, List, ShieldCheck, CheckCircle2, CircleX, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
@@ -69,6 +69,14 @@ export default function ParentBell() {
         key: `confirm-${s.id}`, icon: ShieldCheck, tone: 'bg-info-soft text-info',
         text: `Confirm ${s.full_name}'s details for ${campYear} before registering`,
         to: `/parent/classes?camper=${s.id}`, needsAction: true,
+      })),
+    // A waitlist offer to claim (spec 10).
+    ...registrations
+      .filter(r => r.status === 'offered')
+      .map(r => ({
+        key: `offer-${r.id}`, icon: Sparkles, tone: 'bg-brand-soft text-warning',
+        text: `A spot opened for ${nameOf(r.student_id)} in ${r.sections?.classes?.name ?? 'a class'}. Claim it before the offer ends`,
+        to: '/parent', needsAction: true,
       })),
     // A class the camp cancelled, with no other spot that week yet: the family should pick again.
     ...registrations

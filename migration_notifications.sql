@@ -90,7 +90,8 @@ BEGIN
   ELSIF NEW.status IS DISTINCT FROM OLD.status THEN
     tmpl := CASE NEW.status::text WHEN 'cancelled'  THEN 'registration_cancelled'
                                   WHEN 'confirmed'  THEN 'registration_confirmed'
-                                  WHEN 'waitlisted' THEN 'registration_waitlisted' END;
+                                  WHEN 'waitlisted' THEN 'registration_waitlisted'
+                                  WHEN 'offered'    THEN 'waitlist_offer' END;   -- spec 10
   END IF;
   IF tmpl IS NULL THEN RETURN NULL; END IF;
 
@@ -102,6 +103,7 @@ BEGIN
            'session', se.name, 'start_date', se.start_date, 'end_date', se.end_date,
            'days', s.days, 'start_time', s.start_time, 'end_time', s.end_time, 'room', s.room,
            'status', NEW.status, 'cancel_reason', NEW.cancel_reason,
+           'offer_expires_at', to_jsonb(NEW) -> 'offer_expires_at',
            'from_class', (SELECT c2.name || ' · ' || s2.label FROM sections s2 JOIN classes c2 ON c2.id = s2.class_id
                           WHERE TG_OP = 'UPDATE' AND s2.id = OLD.section_id AND OLD.section_id IS DISTINCT FROM NEW.section_id),
            'student_id', st.id)

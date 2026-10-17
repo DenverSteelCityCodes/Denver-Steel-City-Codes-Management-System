@@ -121,6 +121,23 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       ], dashboard)
     }
 
+    case 'waitlist_offer':
+    case 'offer_expiring': {
+      const until = typeof p.offer_expires_at === 'string'
+        ? new Date(p.offer_expires_at).toLocaleString('en-US', { timeZone: 'America/Denver', weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+        : 'soon'
+      const claim = { label: 'Claim the spot', url: `${appUrl}/parent` }
+      return template === 'waitlist_offer'
+        ? build(`A spot opened for ${p.camper ?? 'your camper'} in ${p.class ?? 'a class'}`, 'A spot opened up!', [
+            `A seat opened in ${line}, and <strong>${camper}</strong> is next on the waitlist.`,
+            `<strong>Claim it by ${esc(until)} (Denver time)</strong> from your dashboard. If you don't, it goes to the next family. Not interested? Decline it there, and the next family gets it sooner.`,
+          ], claim)
+        : build(`Reminder: claim ${p.camper ?? 'your camper'}'s spot by ${until}`, 'Your offer ends soon', [
+            `The spot for <strong>${camper}</strong> in ${line} is held until <strong>${esc(until)} (Denver time)</strong>.`,
+            'Claim or decline it on your dashboard.',
+          ], claim)
+    }
+
     case 'change_request_resolved': {
       const done = p.status === 'done'
       return build(done ? 'Your change request is done' : 'About your change request', done ? 'Your change request is done' : 'About your change request', [

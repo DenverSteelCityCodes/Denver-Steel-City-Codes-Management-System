@@ -108,7 +108,8 @@ CREATE OR REPLACE FUNCTION section_fill_counts()
 RETURNS TABLE (section_id UUID, active_count INT, waitlist_count INT)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT s.id,
-         (COUNT(r.id) FILTER (WHERE r.status IN ('confirmed', 'pending')))::int,
+         -- 'offered' (spec 10) holds its seat until accepted, declined or expired.
+         (COUNT(r.id) FILTER (WHERE r.status IN ('confirmed', 'pending', 'offered')))::int,
          (COUNT(r.id) FILTER (WHERE r.status = 'waitlisted'))::int
   FROM sections s
   LEFT JOIN registrations r ON r.section_id = s.id

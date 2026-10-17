@@ -44,5 +44,17 @@ export function useMyChanges(enabled: boolean) {
     await refresh()
   }
 
-  return { deadlines, openRequests, cancelSpot, requestChange }
+  // Waitlist offers (spec 10).
+  async function acceptOffer(registrationId: string) {
+    const { error } = await supabase.rpc('accept_offer', { p_registration_id: registrationId })
+    if (error) throw new Error(error.message)
+    await refresh()
+  }
+  async function declineOffer(registrationId: string) {
+    const { error } = await supabase.rpc('decline_offer', { p_registration_id: registrationId })
+    if (error) throw new Error(error.message)
+    await refresh()
+  }
+
+  return { deadlines, openRequests, cancelSpot, requestChange, acceptOffer, declineOffer }
 }

@@ -1,6 +1,6 @@
 # 10: Waitlist offers with a 48-hour claim window
 
-**Status:** ⬜ not started · **Issue:** #79 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** ✅ [PR #128](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/128) · **Issue:** #79 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 05, 06, 09, 10a · **Unblocks:** 11, 12
 **Plan reference:** Plan flow P6, §2.2 'full → waitlist → seat opens', §6 decisions Q-W2, Q-W2b, Q-W3, Q-N1
 
@@ -41,5 +41,7 @@ When a seat frees today, an admin sees "Waitlist spots opened up", picks someone
 - What happens on expiry: removed from the waitlist (default, as above) or moved to the back of the line? ❓ Confirm; the default is in the spec.
 
 ## Notes for the builder
+- Built 2026-10-17. Expiry uses the spec's default: the camper is **removed** from the waitlist (`offer_expired`) and told they can rejoin. A seat is also offered when a section's capacity goes up or a cancelled section is restored. Any new seat (offer accepted, or a direct sign-up) withdraws the camper's other waitlist places and offers that week (`took_other_seat`), which made the "skip seat-holders" rule a safety net. Two cron jobs: `sweep-waitlist-offers` (every 10 min: 6-hour reminder + expiry). The admin "Offer" status button gives a manual offer its window automatically.
+- Re-running the older suites found that the history-revert test assumed a freed seat stays free. With offers, it doesn't (correct), so the test now uses a section without a waitlist.
 - Adding an enum value can't be used in the same transaction that adds it. Split the migration.
 - Remember `ParentBell`, `StudentCard` STATUS_CONFIG, `buildSubhead` and the admin status filters need an `offered` entry.

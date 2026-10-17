@@ -94,7 +94,7 @@ BEGIN
   JOIN sections s ON s.id = r.section_id
   JOIN classes  c ON c.id = s.class_id
   WHERE r.student_id = NEW.id
-    AND r.status IN ('pending', 'confirmed', 'waitlisted')
+    AND r.status IN ('pending', 'confirmed', 'waitlisted', 'offered')
     AND r.year >= coalesce((SELECT max(year) FROM sessions WHERE is_active), extract(year FROM now())::int)
     AND (NEW.age IS NULL OR NEW.age < s.age_min OR NEW.age > s.age_max)
   LIMIT 1;

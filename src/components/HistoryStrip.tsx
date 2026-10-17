@@ -20,7 +20,7 @@ export interface HistoryEntry {
 
 const REVERTIBLE = new Set(['students', 'registrations', 'sections'])
 // Stamped by the database; never shown as a change.
-const HIDDEN = new Set(['updated_at', 'cancelled_at', 'cancelled_by', 'created_at', 'medical_info', 'full_name', 'displaced_from_section', 'session_id', 'cancel_reason'])
+const HIDDEN = new Set(['updated_at', 'cancelled_at', 'cancelled_by', 'created_at', 'medical_info', 'full_name', 'displaced_from_section', 'session_id', 'cancel_reason', 'offered_at', 'offer_expires_at'])
 const EXTRA_LABELS: Record<string, string> = {
   status: 'status', section_id: 'section', cancel_reason: 'reason', registration_year: 'confirmed for',
   waiver_signed_at: 'waiver signed', cancelled: 'cancelled',
@@ -28,7 +28,7 @@ const EXTRA_LABELS: Record<string, string> = {
 const REASONS: Record<string, string> = {
   admin_removed: 'Removed by an admin', parent_cancel: 'Parent cancelled', section_cancelled: 'Class cancelled',
   declined_offer: 'Offer declined', offer_expired: 'Offer expired', took_other_seat: 'Took another spot',
-  auto_confirm: 'Auto-confirmed', merged: 'Merged duplicate',
+  auto_confirm: 'Auto-confirmed', merged: 'Merged duplicate', waitlist_offer: 'Waitlist offer', offer_accepted: 'Offer accepted',
 }
 
 function show(v: unknown): string {

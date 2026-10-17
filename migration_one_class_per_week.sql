@@ -108,7 +108,8 @@ BEGIN
   END IF;
 
   SELECT COUNT(*) INTO taken FROM registrations
-  WHERE section_id = sec.id AND status IN ('confirmed', 'pending');
+  -- An open waitlist offer (spec 10) holds its seat until it's accepted, declined or expires.
+  WHERE section_id = sec.id AND status IN ('confirmed', 'pending', 'offered');
 
   -- Auto-confirm (decided 2026-10-16, Q-P4; spec 14): a free seat is confirmed at once. Nothing
   -- was checked between "pending" and "confirmed", so the extra step only added admin clicks.
