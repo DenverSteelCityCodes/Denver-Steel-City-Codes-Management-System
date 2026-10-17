@@ -1,6 +1,6 @@
 # 04: Tighten volunteer access to camper data
 
-**Status:** ⬜ not started · **Issue:** #72 · **Priority:** P0 · **Effort:** S · **Phase:** A
+**Status:** ✅ [PR #110](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/110) · **Issue:** #72 · **Priority:** P0 · **Effort:** S · **Phase:** A
 **Depends on:** none · **Unblocks:** L3
 **Plan reference:** Plan §0 Risk 4, §2.2 'volunteer sees only what's needed', §2.4 who-sees-what
 
@@ -8,7 +8,8 @@
 A review on 2026-10-16 found that volunteer access to camper records is broader than the roster needs. The specifics are kept off this public repo until this spec merges; the Regional Director has them. Many volunteers are 14–17, so crew access should be the minimum a roster needs. Only fictional demo data is involved today; this must land before any real family registers.
 
 ## Decided rules
-- Crew may see, for campers **holding a seat** in **their own section** (status `confirmed`, plus legacy `pending`; not `offered`, since an offered camper isn't attending yet): name, age, allergies, medical conditions, emergency contact name/phone/relation, parent phone. Nothing else.
+- Crew may see, for campers **holding a seat** in **their own section** (status `confirmed`, plus legacy `pending`; not `offered`, since an offered camper isn't attending yet): name, age, allergies, medical conditions, emergency contact name/phone/relation, parent name and phone. Nothing else.
+- *Changed while building (PR for #72):* parent **name** was added to the list. The print roster has always shown it next to the parent phone, and it is no more sensitive than the emergency contact's name; without it the crew roster would have changed.
 
 ## Scope: what to build
 - New `public.section_roster(p_section_id uuid)` RPC, SECURITY DEFINER: returns exactly the fields above. Caller must be admin or `private.auth_volunteer_has_section(p_section_id)`, else raise 42501. Status filter `pending, confirmed`.

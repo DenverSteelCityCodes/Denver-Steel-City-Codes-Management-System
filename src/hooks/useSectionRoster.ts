@@ -17,7 +17,6 @@ export interface RosterStudent {
   id: string
   full_name: string
   age: number | null
-  grade: string | null
   allergies: string | null
   medical_conditions: string | null
   medical_info: string | null
@@ -26,7 +25,6 @@ export interface RosterStudent {
   emergency_contact_name: string | null
   emergency_contact_phone: string | null
   emergency_contact_relation: string | null
-  email: string | null
 }
 
 interface SectionRow {
@@ -39,9 +37,6 @@ interface SectionRow {
   room: string | null
   classes: { name: string } | null
 }
-
-const STUDENT_COLS =
-  'id, full_name, age, grade, allergies, medical_conditions, medical_info, parent_name, parent_phone, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, email'
 
 interface State {
   forId: string | undefined
@@ -67,12 +62,10 @@ export function useSectionRoster(sectionId: string | undefined) {
       if (!sec) { setState({ forId: sectionId, section: null, students: [], error: null }); return }
       const row = sec as unknown as SectionRow
 
-      const [regRes, leadRes] = await Promise.all([
-        supabase
-          .from('registrations')
-          .select(`students ( ${STUDENT_COLS} )`)
-          .eq('section_id', sectionId)
-          .in('status', ['confirmed', 'pending']),
+      const [rosterRes, leadRes] = await Promise.all([
+        // Crew can't read students directly; section_roster returns only roster fields, only for
+        // campers holding a seat, sorted by name. Admins use it too.
+        supabase.rpc('section_roster', { p_section_id: sectionId }),
         // Admin-only join (volunteers can't read other volunteers' profiles); errors are ignored.
         supabase
           .from('sections')
@@ -81,11 +74,8 @@ export function useSectionRoster(sectionId: string | undefined) {
           .maybeSingle(),
       ])
       if (cancelled) return
-      if (regRes.error) { setState({ forId: sectionId, section: null, students: [], error: regRes.error.message }); return }
-
-      const students = ((regRes.data ?? []) as unknown as { students: RosterStudent | RosterStudent[] | null }[])
-        .flatMap(r => (Array.isArray(r.students) ? r.students : r.students ? [r.students] : []))
-        .sort((a, b) => a.full_name.localeCompare(b.full_name))
+      if (rosterRes.error) { setState({ forId: sectionId, section: null, students: [], error: rosterRes.error.message }); return }
+      const students = (rosterRes.data ?? []) as RosterStudent[]
 
       let leadName: string | null = null
       if (!leadRes.error && leadRes.data) {
