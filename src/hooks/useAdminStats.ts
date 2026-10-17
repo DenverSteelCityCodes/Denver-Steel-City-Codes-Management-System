@@ -22,7 +22,8 @@ export function useAdminStats() {
     const [students, classes, volunteers, confirmed, waitlisted, registrations] = await Promise.all([
       supabase.from('students').select('id', { count: 'exact', head: true }),
       supabase.from('classes').select('id', { count: 'exact', head: true }),
-      supabase.from('volunteers').select('id', { count: 'exact', head: true }),
+      // Current volunteers only: the volunteers row outlives a role change (#143).
+      supabase.from('volunteers').select('id, profiles!inner(role)', { count: 'exact', head: true }).eq('profiles.role', 'volunteer'),
       supabase.from('registrations').select('id', { count: 'exact', head: true }).eq('status', 'confirmed'),
       supabase.from('registrations').select('id', { count: 'exact', head: true }).eq('status', 'waitlisted'),
       supabase.from('registrations').select('id', { count: 'exact', head: true }),
