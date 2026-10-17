@@ -150,8 +150,11 @@ export default function ParentRegistrationPage() {
   const [fullAcknowledged, setFullAcknowledged] = useState(false)
   const [authExpired, setAuthExpired] = useState(false)
   const errorRef = useRef<HTMLParagraphElement>(null)
+  // True once the parent typed or moved between steps in this visit (or a draft was restored).
+  const dirty = useRef(!!restoredDraft)
 
   function goToStep(n: number, replace = false) {
+    dirty.current = true
     setSearchParams(prev => {
       const p = new URLSearchParams(prev)
       if (n <= 1) p.delete('step')
@@ -275,17 +278,18 @@ export default function ParentRegistrationPage() {
     return () => { cancelled = true }
   }, [studentId, prefillAttempt, restoredDraft])
 
-  // Draft: saved (debounced) once the parent has typed something or moved past step 1.
-  const dirty = useRef(!!restoredDraft)
+  // Draft: saved (debounced) only once the parent has typed something or moved between steps in
+  // this visit. Landing on ?step=5 alone (a reload after submitting, a remount) must not save an
+  // empty draft.
   useEffect(() => {
-    if (!myDraftKey || submitted || !(dirty.current || step > 1)) return
+    if (!myDraftKey || submitted || !dirty.current) return
     const t = window.setTimeout(() => writeDraft(myDraftKey, form as unknown as Record<string, unknown>, step), 400)
     return () => window.clearTimeout(t)
   }, [form, step, myDraftKey, submitted])
 
   // A link or reload that lands past step 1 with nothing filled in starts at step 1 instead.
   useEffect(() => {
-    if (step > 1 && !restoredDraft && !studentId) goToStep(1, true)
+    if (step > 1 && !restoredDraft && !studentId) { goToStep(1, true); dirty.current = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, [])
 
