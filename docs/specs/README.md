@@ -15,6 +15,7 @@ A Claude session can be started on any spec with: *"Build `docs/specs/<file>` fo
 
 - **The database enforces every rule.** Trigger, RLS policy or SECURITY DEFINER RPC. The UI only explains it. Parents and volunteers never get direct UPDATE/DELETE on registrations.
 - **New tables:** RLS on, policies written, explicit `GRANT`s. Supabase stops auto-exposing new tables to the API from 2026-10-30, per the note in `supabase/config.toml`. After PR 5, add the table to the audit trigger. After PR 20, give it a `chapter_id`.
+- **Never add a second foreign key between two tables the app joins without a `!hint`** (e.g. registrations → sections). PostgREST then answers every such embed with HTTP 300 "more than one relationship", and browsers may cache that error. Use a plain column, or add `!fk_name` hints to every embed in the same PR. (Learned the hard way in spec 06.)
 - **New SECURITY DEFINER functions:** `SET search_path`, `REVOKE ALL … FROM PUBLIC, anon`, grant only to `authenticated`. Helpers go in the `private` schema.
 - **Every state change a family or volunteer cares about** sends a notification through the outbox (after PR 9). Reply-to is `denver@steelcitycodes.org` (per chapter after PR 20).
 - **Design:** v1.0 style guide via semantic tokens (`design_system.md`; never raw hex); Josefin Sans/Slab; role colors; **no modals**: inline editing and `InlineConfirm`. Check at 375 px and in dark mode. Every input has a linked label; errors use `role="alert"` and get focus.
@@ -32,7 +33,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ✅ | [03](03-password-reset.md) | #71 | Forgot password, reset page, resend confirmation | P0 | S | 02 | A |
 | ✅ | [04](04-volunteer-pii-lockdown.md) | #72 | Tighten volunteer access to camper data | P0 | S | — | A |
 | ✅ | [05](05-audit-log.md) | #73 | Audit log table + trigger | P0 | M | — | A |
-| ⬜ | [06](06-soft-cancel.md) | #74 | Soft-cancel registrations, cancel-section RPC, RESTRICT deletes | P0 | M | 05 | A |
+| ✅ | [06](06-soft-cancel.md) | #74 | Soft-cancel registrations, cancel-section RPC, RESTRICT deletes | P0 | M | 05 | A |
 | ⬜ | [07](07-edit-conflicts.md) | #75 | `updated_at` + conflict-checked saves | P0 | S | — | A |
 | ⬜ | [08](08-tests-and-ci.md) | #76 | Vitest, SQL/RLS tests, seat-race test, GitHub Actions | P0 | M | 01 | A |
 | ⬜ | [09](09-email-outbox.md) | #77 | Notifications outbox + sender + templates | P0 | M | 02 | B |

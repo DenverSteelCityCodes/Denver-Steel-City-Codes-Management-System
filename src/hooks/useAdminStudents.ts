@@ -145,10 +145,11 @@ export function useAdminStudents() {
     await fetchStudents()
   }
 
+  // "Remove" cancels the registration (kept with who/when/why for history and undo), never deletes.
   async function removeRegistration(registrationId: string) {
     const { error } = await supabase
       .from('registrations')
-      .delete()
+      .update({ status: 'cancelled', cancel_reason: 'admin_removed' })
       .eq('id', registrationId)
 
     if (error) throw new Error(error.message)

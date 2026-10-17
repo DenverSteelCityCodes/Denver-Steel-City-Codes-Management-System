@@ -38,7 +38,8 @@ export function useClasses() {
     const rows = (data ?? []) as (Class & { sections: Section[] | null })[]
     const shaped: ClassWithSections[] = rows.map(c => ({
       ...c,
-      sections: (c.sections ?? []).map(s => ({
+      // Cancelled sections take no sign-ups, so parents never see them.
+      sections: (c.sections ?? []).filter(s => !s.cancelled_at).map(s => ({
         ...s,
         registered_count: fill.get(s.id)?.active ?? 0,
         waitlist_count: fill.get(s.id)?.waitlist ?? 0,

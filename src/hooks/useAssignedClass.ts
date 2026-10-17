@@ -76,7 +76,8 @@ export function useAssignedClass() {
       supabase
         .from('sections')
         .select(SECTION_COLS)
-        .eq('lead_id', user!.id),
+        .eq('lead_id', user!.id)
+        .is('cancelled_at', null),
       // Section IDs where volunteer is a support
       supabase
         .from('section_supports')
@@ -109,6 +110,7 @@ export function useAssignedClass() {
         .from('sections')
         .select(SECTION_COLS)
         .in('id', supportSectionIds)
+        .is('cancelled_at', null)
       if (error) { setError(error.message); setLoading(false); return }
       supportSections = (data ?? []) as unknown as RawSection[]
     }

@@ -199,6 +199,22 @@ export function useAdminClasses() {
     return tally
   }
 
+  // Cancelling keeps the section and its registrations (as cancelled); families keep their history
+  // and get first pick of that week's waitlists. Returns how many registrations were cancelled.
+  async function cancelSection(id: string, reason?: string): Promise<number> {
+    const { data, error } = await supabase.rpc('cancel_section', { p_section_id: id, p_reason: reason ?? null })
+    if (error) throw new Error(error.message)
+    await fetchClasses()
+    return (data as number | null) ?? 0
+  }
+
+  async function cancelClass(id: string, reason?: string): Promise<number> {
+    const { data, error } = await supabase.rpc('cancel_class', { p_class_id: id, p_reason: reason ?? null })
+    if (error) throw new Error(error.message)
+    await fetchClasses()
+    return (data as number | null) ?? 0
+  }
+
   async function deleteSection(id: string) {
     const { error } = await supabase.from('sections').delete().eq('id', id)
     if (error) throw new Error(error.message)
@@ -209,7 +225,7 @@ export function useAdminClasses() {
     classes, loading, error, fillError,
     countRegistrations,
     createClass, updateClass, deleteClass,
-    createSection, updateSection, deleteSection,
+    createSection, updateSection, deleteSection, cancelSection, cancelClass,
     refetch: fetchClasses,
   }
 }

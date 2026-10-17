@@ -89,6 +89,10 @@ export interface Section {
   start_time: string | null
   end_time: string | null
   room: string | null
+  // Set when an admin cancels the section (migration_soft_cancel.sql). Cancelled sections keep their
+  // registrations (as cancelled) and are hidden from parents.
+  cancelled_at?: string | null
+  cancel_reason?: string | null
   created_at: string
 }
 
@@ -141,6 +145,13 @@ export interface Registration {
   status: RegistrationStatus
   // Camp year, stamped by the database from the section's session.
   year: number
+  // Cancel details, stamped by the database (migration_soft_cancel.sql). cancel_reason is one of
+  // admin_removed, parent_cancel, section_cancelled, declined_offer, offer_expired,
+  // took_other_seat, merged.
+  cancelled_at?: string | null
+  cancel_reason?: string | null
+  cancelled_by?: string | null
+  displaced_from_section?: string | null
   created_at: string
 }
 
