@@ -34,7 +34,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ✅ | [04](04-volunteer-pii-lockdown.md) | #72 | Tighten volunteer access to camper data | P0 | S | — | A |
 | ✅ | [05](05-audit-log.md) | #73 | Audit log table + trigger | P0 | M | — | A |
 | ✅ | [06](06-soft-cancel.md) | #74 | Soft-cancel registrations, cancel-section RPC, RESTRICT deletes | P0 | M | 05 | A |
-| ⬜ | [07](07-edit-conflicts.md) | #75 | `updated_at` + conflict-checked saves | P0 | S | — | A |
+| ✅ | [07](07-edit-conflicts.md) | #75 | `updated_at` + conflict-checked saves | P0 | S | — | A |
 | ⬜ | [08](08-tests-and-ci.md) | #76 | Vitest, SQL/RLS tests, seat-race test, GitHub Actions | P0 | M | 01 | A |
 | ⬜ | [09](09-email-outbox.md) | #77 | Notifications outbox + sender + templates | P0 | M | 02 | B |
 | ⬜ | [10a](10a-block-same-week-backups.md) | #78 | Block same-week waitlist backups | P0 | S | — | B |

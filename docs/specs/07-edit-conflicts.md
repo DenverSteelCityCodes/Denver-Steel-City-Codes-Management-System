@@ -1,6 +1,6 @@
 # 07: No silent overwrites when two people edit the same record
 
-**Status:** ⬜ not started · **Issue:** #75 · **Priority:** P0 · **Effort:** S · **Phase:** A
+**Status:** ✅ [PR #118](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/118) · **Issue:** #75 · **Priority:** P0 · **Effort:** S · **Phase:** A
 **Depends on:** none (nicer with 05) · **Unblocks:** —
 **Plan reference:** Plan §2.2 'two people editing the same record'
 
@@ -31,4 +31,5 @@ Saves are last-write-wins. An admin fixing a camper's allergy and the parent edi
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17. The trigger only moves `updated_at` on a real change (a no-op save keeps it), and the audit trigger now ignores updated_at-only changes. The conflict message names each changed field with its new value (e.g. `allergies (now "Peanuts, tree nuts")`). After a conflict the hook reloads, so saving again deliberately replaces the other version. The admin student page has no camper editor, so the parent camper editor, the yearly check, class, section and session saves are the covered forms.
 - Parent-profile upsert (`useParentProfile.saveProfile`) currently writes `updated_at` from the client clock. Let the trigger own it.

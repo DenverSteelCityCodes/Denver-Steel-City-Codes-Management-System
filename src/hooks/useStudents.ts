@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Student, OnboardingConfirmation } from '../types/database'
 import { gradeToAge } from '../lib/campers'
+import { guardedUpdate, EditConflictError } from '../lib/editConflict'
 
 // The confirmation panel edits a single full-name field, but CamperEditor rebuilds full_name from
 // first_name/last_name — so a corrected name must update those too or the next edit reverts it.
@@ -43,41 +44,43 @@ export function useStudents() {
   }
 
 
-  async function updateStudent(id: string, payload: Partial<Omit<Student, 'id' | 'parent_id' | 'created_at'>>) {
-    const { data, error } = await supabase
-      .from('students')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single()
+  // Refuses to overwrite a change someone else (e.g. an admin) saved since this list loaded. On a
+  // conflict the latest version replaces ours in state, so saving again deliberately replaces it.
+  async function save(id: string, payload: Record<string, unknown>): Promise<Student> {
+    const original = students.find(s => s.id === id)
+    try {
+      const data = original
+        ? await guardedUpdate<Student & Record<string, unknown>>('students', original as unknown as { id: string } & Record<string, unknown>, payload)
+        : await supabase.from('students').update(payload).eq('id', id).select().single()
+            .then(({ data, error }) => { if (error) throw new Error(error.message); return data as Student & Record<string, unknown> })
+      setStudents(prev => prev.map(s => (s.id === id ? data : s)))
+      return data
+    } catch (e) {
+      if (e instanceof EditConflictError && e.latest) {
+        const latest = e.latest as unknown as Student
+        setStudents(prev => prev.map(s => (s.id === id ? latest : s)))
+      }
+      throw e
+    }
+  }
 
-    if (error) throw new Error(error.message)
-    setStudents(prev => prev.map(s => (s.id === id ? data : s)))
-    return data
+  async function updateStudent(id: string, payload: Partial<Omit<Student, 'id' | 'parent_id' | 'created_at'>>) {
+    return save(id, payload as Record<string, unknown>)
   }
 
   // Per-summer re-confirmation (#42): persist the reviewed/edited onboarding fields, re-sign the
   // waiver, and stamp registration_year to the active camp year — which is what unlocks session
   // registration for that year. Also mirrors medical_conditions into the legacy medical_info column.
   async function confirmOnboarding(id: string, fields: OnboardingConfirmation, campYear: number) {
-    const { data, error } = await supabase
-      .from('students')
-      .update({
-        ...fields,
-        ...(fields.full_name ? splitName(fields.full_name, students.find(s => s.id === id)) : {}),
-        // Grade moves up each summer; age drives section eligibility, so keep them in step.
-        ...(gradeToAge(fields.grade) ? { age: gradeToAge(fields.grade) } : {}),
-        medical_info: fields.medical_conditions ?? null,
-        registration_year: campYear,
-        waiver_signed_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw new Error(error.message)
-    setStudents(prev => prev.map(s => (s.id === id ? data : s)))
-    return data as Student
+    return save(id, {
+      ...fields,
+      ...(fields.full_name ? splitName(fields.full_name, students.find(s => s.id === id)) : {}),
+      // Grade moves up each summer; age drives section eligibility, so keep them in step.
+      ...(gradeToAge(fields.grade) ? { age: gradeToAge(fields.grade) } : {}),
+      medical_info: fields.medical_conditions ?? null,
+      registration_year: campYear,
+      waiver_signed_at: new Date().toISOString(),
+    })
   }
 
   return { students, loading, error, updateStudent, confirmOnboarding, refetch: fetchStudents }

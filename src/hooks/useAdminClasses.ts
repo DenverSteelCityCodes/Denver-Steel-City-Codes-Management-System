@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Class, Section } from '../types/database'
 import { fetchSectionFill } from '../lib/sectionFill'
+import { guardedUpdate, EditConflictError } from '../lib/editConflict'
 
 // Row shape of the nested classes → sections → crew select below.
 type ProfileName = { profile: { display_name: string } | null } | null
@@ -107,8 +108,18 @@ export function useAdminClasses() {
   }
 
   async function updateClass(id: string, payload: Partial<Pick<Class, 'name' | 'description'>>) {
-    const { error } = await supabase.from('classes').update(payload).eq('id', id)
-    if (error) throw new Error(error.message)
+    const original = classes.find(c => c.id === id)
+    try {
+      if (original) await guardedUpdate('classes', { id, updated_at: original.updated_at, name: original.name, description: original.description }, payload)
+      else {
+        const { error } = await supabase.from('classes').update(payload).eq('id', id)
+        if (error) throw new Error(error.message)
+      }
+    } catch (e) {
+      // Reload so the form's next save is checked against the version that won.
+      if (e instanceof EditConflictError) await fetchClasses()
+      throw e
+    }
     await fetchClasses()
   }
 
@@ -153,8 +164,19 @@ export function useAdminClasses() {
     payload: Partial<Omit<SectionInput, 'class_id'>>,
     supportIds?: string[],
   ) {
-    const { error } = await supabase.from('sections').update(payload).eq('id', id)
-    if (error) throw new Error(error.message)
+    const original = classes.flatMap(c => c.sections).find(s => s.id === id)
+    try {
+      if (original) {
+        const { lead: _lead, supports: _supports, registered_count: _r, waitlist_count: _w, ...row } = original  // eslint-disable-line @typescript-eslint/no-unused-vars
+        await guardedUpdate('sections', row as unknown as { id: string } & Record<string, unknown>, payload)
+      } else {
+        const { error } = await supabase.from('sections').update(payload).eq('id', id)
+        if (error) throw new Error(error.message)
+      }
+    } catch (e) {
+      if (e instanceof EditConflictError) await fetchClasses()
+      throw e
+    }
 
     if (supportIds !== undefined) {
       // Supports are replaced wholesale; keep the old set so a failed insert can put it back.
