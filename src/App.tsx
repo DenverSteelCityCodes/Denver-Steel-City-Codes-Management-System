@@ -5,6 +5,8 @@ import AdminLayout from './components/AdminLayout'
 import ParentLayout from './components/ParentLayout'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminClasses from './pages/AdminClasses'
 import AdminVolunteers from './pages/AdminVolunteers'
@@ -43,6 +45,8 @@ function App() {
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot" element={<ForgotPasswordPage />} />
+          <Route path="/reset" element={<ResetPasswordPage />} />
           <Route path="/apply" element={<VolunteerApplyPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 

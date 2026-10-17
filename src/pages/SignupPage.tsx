@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -11,6 +11,26 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Resend cooldown in seconds (0 = the button is available).
+  const [resendIn, setResendIn] = useState(0)
+  const [resendNote, setResendNote] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const t = window.setTimeout(() => setResendIn(s => s - 1), 1000)
+    return () => window.clearTimeout(t)
+  }, [resendIn])
+
+  async function resend() {
+    setResendNote(null)
+    setResendIn(60)
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    })
+    setResendNote(error ? "We couldn't resend it just now. Try again in a minute." : 'Sent again. Check your inbox and spam folder.')
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -21,7 +41,7 @@ export default function SignupPage() {
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName, role: 'parent' } },
+      options: { data: { display_name: displayName, role: 'parent' }, emailRedirectTo: `${window.location.origin}/login` },
     })
 
     if (signUpError) {
@@ -31,6 +51,7 @@ export default function SignupPage() {
     }
 
     setSuccess(true)
+    setResendIn(60)
     setLoading(false)
   }
 
@@ -47,6 +68,18 @@ export default function SignupPage() {
           <p className="font-sans text-ink-muted text-sm">
             We sent a confirmation link to <strong className="text-ink">{email}</strong>. Click it to activate your account.
           </p>
+          <p className="mt-4 font-sans text-ink-muted text-xs">
+            Didn't get it?{' '}
+            <button
+              type="button"
+              onClick={() => { void resend() }}
+              disabled={resendIn > 0}
+              className="text-ink font-semibold hover:underline disabled:text-ink-faint disabled:no-underline disabled:cursor-not-allowed"
+            >
+              {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend the email'}
+            </button>
+          </p>
+          {resendNote && <p role="status" className="mt-2 font-sans text-xs text-ink-muted">{resendNote}</p>}
           <Link
             to="/login"
             className="mt-6 inline-block font-sans font-semibold text-sm text-ink hover:underline"
