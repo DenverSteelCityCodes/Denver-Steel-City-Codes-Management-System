@@ -1,27 +1,28 @@
-# L6: WCAG 2.1 AA audit, fixes and accessibility statement
+# L6: Full accessibility audit, axe in CI, and accessibility statement
 
 **Status:** ⬜ not started · **Issue:** #103 · **Priority:** P1 · **Effort:** M · **Phase:** C: Handoff
-**Depends on:** none · **Unblocks:** —
+**Depends on:** L6a, 08 · **Unblocks:** —
 **Plan reference:** Plan §4.1 accessibility row; §1 cross-cutting accessibility
 
 ## Why
-Inputs have linked labels and alerts use `role=alert` (done in QA), but there's never been a full audit. 🔎 ADA Title III likely applies to a public program; WCAG 2.1 AA is the usual benchmark, and parents are mostly on phones.
+L6a covers the registration flow before February. This spec finishes the rest of the site for the handoff. 🔎 ADA Title III likely applies to a public program; WCAG 2.1 AA is the usual benchmark.
 
 ## Decided rules
-- None.
+- Split decided 2026-10-17: the registration flow is L6a (P0); everything else is here (P1).
 
 ## Scope: what to build
-- Automated pass with axe-core (dev dependency) on every route for each role and the public pages, run in CI after spec 08.
-- Manual pass: keyboard only, and VoiceOver on iPhone, through signup, wizard, class browser, camper card actions (cancel, swap, offers), volunteer roll call, and admin Students.
+- axe-core in CI (after spec 08) on **every** route for each role, including the L6a screens, so they don't regress.
+- Manual pass (keyboard only, VoiceOver on iPhone) on the screens L6a didn't cover: volunteer apply, volunteer dashboard and roll call, print roster, admin dashboard, Students, Classes, Sessions, Updates and Attendance.
 - Fix everything at AA: contrast in both themes against the cream/gold palette, focus visibility, target sizes ≥ 24 px, no color-only status, live-region announcements for toasts.
 - `/accessibility` statement: standard targeted, known issues, contact `denver@steelcitycodes.org`, response time.
 
 ## Out of scope
-- None.
+- The registration-flow screens' manual pass (done in L6a).
 
 ## Done when
-- [ ] axe reports 0 serious/critical issues on every route.
-- [ ] Manual pass findings fixed or listed in the statement.
+- [ ] axe in CI reports 0 serious/critical issues on every route and blocks regressions.
+- [ ] Manual pass findings fixed or listed in the statement (including any left from L6a).
+- [ ] `/accessibility` statement published and linked from every footer.
 
 ## Tests and verification
 - axe in CI; manual checklist in the PR.
