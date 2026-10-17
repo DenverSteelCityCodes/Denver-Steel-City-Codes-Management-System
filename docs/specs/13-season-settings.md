@@ -1,6 +1,6 @@
 # 13: Registration opening time, deadlines and offer windows
 
-**Status:** ⬜ not started · **Issue:** #82 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #121](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/121) · **Issue:** #82 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** 10, 11, 12
 **Plan reference:** Plan flow A1, §6 decisions Q-R1, Q-W1, Q-W2
 
@@ -35,4 +35,5 @@ Registration opens when an admin flips a switch (`form_configs.student_registrat
 - The actual opening date and time ❓ (tracker non-code task).
 
 ## Notes for the builder
+- Built 2026-10-17. Times are entered and shown in Denver time whatever the viewer's device clock (`src/lib/denverTime.ts`). The class browser disables Register until opening, the wizard refuses step 4, and the countdown flips to open without a reload. The demo has no settings row (registration open). `private.season_settings_for(year)` gives later RPCs the settings with defaults.
 - Store `timestamptz`; display in the chapter's time zone (America/Denver until spec 20).

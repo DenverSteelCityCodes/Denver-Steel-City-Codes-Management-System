@@ -15,6 +15,7 @@ The school district list is four Denver-metro districts in code. The waiver is p
 - `waivers.chapter_id`: each chapter publishes its own versions (L2 tables).
 - `sections.grades_allowed text[]` (null = any), edited in the section form, enforced in `registrations_before_insert()` and in swaps. Remove `courseConstraints.ts` name matching; keep the requirement note as `classes.requirement_note`.
 - Grade list (4th–9th) and the grade→age map per chapter in settings, defaulting to Denver's.
+- The wizard's hardcoded venue line ("Camp is held at Cherry Creek High School, 8:00 AM – 4:00 PM each day", step 4) becomes per-chapter (or per-session) text. Found while building spec 13.
 
 ## Out of scope
 - None.

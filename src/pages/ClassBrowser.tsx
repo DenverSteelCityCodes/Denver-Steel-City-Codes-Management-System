@@ -5,6 +5,8 @@ import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear } from '../hooks/useSessions'
+import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
+import RegistrationCountdown from '../components/RegistrationCountdown'
 import CapacityMeter from '../components/CapacityMeter'
 import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
 import { useParentProfile } from '../hooks/useParentProfile'
@@ -138,6 +140,8 @@ export default function ClassBrowser() {
   // It falls back to the calendar year until sessions load, so Register stays disabled until
   // then; otherwise a quick click could skip the confirmation gate.
   const campYear = activeCampYear(sessions)
+  const { settings: season, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
+  const isOpen = registrationIsOpen(season)
   const needsConfirmation = (student?: typeof selectedStudent) =>
     !!student && student.registration_year !== campYear
 
@@ -254,6 +258,8 @@ export default function ClassBrowser() {
         )}
 
         {/* Per-summer confirmation notice (#42): registering prompts a quick review first. */}
+        <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
+
         {selectedStudent && needsConfirmation(selectedStudent) && (
           <div className="flex items-start gap-2.5 px-4 py-3 bg-info-soft text-info border border-info/20 rounded-[10px] font-sans text-sm">
             <ShieldCheck size={16} className="shrink-0 mt-0.5" />
@@ -365,7 +371,7 @@ export default function ClassBrowser() {
                               : undefined
                           }
                           registering={registeringSectionId === sec.id}
-                          disabled={sessionsLoading}
+                          disabled={sessionsLoading || !isOpen}
                           gradeBlock={gradeBlock}
                         />
                       )

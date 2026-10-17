@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, Check, Calendar, Copy } from 'lucide-react'
-import { useSessions, formatSessionDates, type Session } from '../hooks/useSessions'
+import { useSessions, formatSessionDates, activeCampYear, type Session } from '../hooks/useSessions'
+import SeasonSettingsCard from '../components/SeasonSettingsCard'
 import { useScheduleItems } from '../hooks/useScheduleItems'
 import { formatTimeRange } from '../lib/campDay'
 import type { ScheduleItem } from '../types/database'
@@ -274,6 +275,7 @@ export default function AdminSessions() {
       </div>
 
       <ActionError message={actionError} onDismiss={() => setActionError(null)} />
+      {!loading && sessions.length > 0 && <SeasonSettingsCard year={activeCampYear(sessions)} />}
       {error && <div className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">⚠ {error}</div>}
 
       {editing === 'new' && (
