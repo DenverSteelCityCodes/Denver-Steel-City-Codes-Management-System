@@ -1,6 +1,6 @@
 # 25: Volunteer preferences, switch requests and "I can't make it"
 
-**Status:** ⬜ not started · **Issue:** #99 · **Priority:** P1 · **Effort:** M · **Phase:** C
+**Status:** ✅ [PR #133](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/133) · **Issue:** #99 · **Priority:** P1 · **Effort:** M · **Phase:** C
 **Depends on:** 14 · **Unblocks:** 14 (no-lead alert extension)
 **Plan reference:** Plan flows V3 and V6, §6 decision Q-V1
 
