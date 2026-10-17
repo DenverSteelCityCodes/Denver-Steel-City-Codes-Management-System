@@ -1,6 +1,6 @@
 # 06: Soft-cancel registrations; cancel a section without deleting history
 
-**Status:** ⬜ not started · **Issue:** #74 · **Priority:** P0 · **Effort:** M · **Phase:** A
+**Status:** ✅ [PR #117](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/117) · **Issue:** #74 · **Priority:** P0 · **Effort:** M · **Phase:** A
 **Depends on:** 05 · **Unblocks:** 10, 11, 15
 **Plan reference:** Plan §1.3 A4, §2.2 'admin cancels a class with people in it'
 
