@@ -1,6 +1,6 @@
 # 14: Auto-confirm, "section has no lead" alert, duplicate-camper report
 
-**Status:** ⬜ not started · **Issue:** #83 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #120](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/120) · **Issue:** #83 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** —
 **Plan reference:** Plan §0 win 5, §2.2 'volunteer drops last-minute' and 'duplicate accounts', §6 decision Q-P4
 

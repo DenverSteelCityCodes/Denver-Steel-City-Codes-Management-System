@@ -42,7 +42,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [11](11-parent-cancel.md) | #80 | Parent cancel before deadline, change requests, contact card | P0 | S | 06, 09, 13 | B |
 | ⬜ | [12](12-parent-swap.md) | #81 | Parent swap class (same week, free seat only) | P0 | M | 10, 11 | B |
 | ⬜ | [13](13-season-settings.md) | #82 | Opening time, deadlines, offer windows, countdown | P0 | S | — | B |
-| ⬜ | [14](14-auto-confirm-and-alerts.md) | #83 | Auto-confirm, "no lead" alert, duplicate-camper report | P0 | S | — | B |
+| ✅ | [14](14-auto-confirm-and-alerts.md) | #83 | Auto-confirm, "no lead" alert, duplicate-camper report | P0 | S | — | B |
 | ⬜ | [15](15-history-and-undo.md) | #84 | Admin history strip + revert | P0 | M | 05, 06 | B |
 | ⬜ | [16](16-wizard-resilience.md) | #85 | Wizard: URL steps, drafts, back guard, live fill, a11y | P0 | M | — | B |
 | ⬜ | [17](17-fewer-round-trips.md) | #86 | Shared query cache, `register_camper()` RPC, volunteer home RPC | P1 | M | 16 | B |
