@@ -7,6 +7,9 @@ import StudentCard from '../components/StudentCard'
 import ThisWeekCard from '../components/ThisWeekCard'
 import RollCallStatus from '../components/RollCallStatus'
 import { useMyRollCalls } from '../hooks/useMyRollCalls'
+import { useUpdates } from '../hooks/useUpdates'
+import UpdatesFeed from '../components/UpdatesFeed'
+import { Megaphone } from 'lucide-react'
 import { localDateISO } from '../lib/campDay'
 import type { Student } from '../types/database'
 
@@ -52,6 +55,7 @@ export default function ParentDashboard() {
   const { students, loading, updateStudent } = useStudents()
   const { registrations } = useRegistrations()
   const todayMarks = useMyRollCalls(localDateISO())
+  const { updates: posts, loading: postsLoading } = useUpdates(20)
 
   const subhead = buildSubhead(students, registrations)
 
@@ -91,6 +95,13 @@ export default function ParentDashboard() {
           registrations={registrations}
           renderStatus={(st, reg) => <RollCallStatus marks={todayMarks.filter(m => m.student_id === st.id && m.section_id === reg.section_id)} />}
         />
+
+        <section id="updates" aria-labelledby="updates-heading" className="bg-surface border border-border rounded-xl shadow-sm px-4 sm:px-5 py-4 mb-8">
+          <h2 id="updates-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5 mb-1">
+            <Megaphone size={13} /> Updates from camp
+          </h2>
+          <UpdatesFeed updates={posts} loading={postsLoading} compact emptyText="Nothing from camp yet — updates from the admin and your camper's lead will show here." />
+        </section>
 
         {loading ? (
           <div className="space-y-3">

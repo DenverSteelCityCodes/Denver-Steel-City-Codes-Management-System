@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, CheckCircle2 } from 'lucide-react'
 import { useAdminAttention } from '../hooks/useAdminAttention'
+import { useUpdates, audienceLabel } from '../hooks/useUpdates'
+import { timeAgo } from '../lib/campDay'
 
 // Top-bar bell: a dropdown of the same "Needs attention" queue as the dashboard. The dot only
 // shows when something is actually waiting. Remounted on navigation (keyed by path) so it's fresh.
 export default function AttentionBell() {
   const { items, loading } = useAdminAttention()
+  const { updates } = useUpdates(3)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -39,7 +42,7 @@ export default function AttentionBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] bg-surface-raised border border-border rounded-[12px] shadow-lg z-50 overflow-hidden">
+        <div className="fixed left-4 right-4 top-[4.25rem] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[22rem] bg-surface-raised border border-border rounded-[12px] shadow-lg z-50 overflow-hidden">
           <p className="px-4 pt-3 pb-2 font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Needs attention</p>
           {loading ? (
             <div className="px-4 pb-4 space-y-2">
@@ -72,6 +75,21 @@ export default function AttentionBell() {
                 )
               })}
             </ul>
+          )}
+          {updates.length > 0 && (
+            <div className="border-t border-border">
+              <p className="px-4 pt-3 pb-1 font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Recent updates</p>
+              <ul className="pb-1.5">
+                {updates.map(u => (
+                  <li key={u.id}>
+                    <Link to="/admin/updates" onClick={() => setOpen(false)} className="block px-4 py-2 hover:bg-surface-sunken transition">
+                      <span className="block font-sans text-xs text-ink-muted">{u.author_name} → {audienceLabel(u)} · {timeAgo(u.created_at)}</span>
+                      <span className="block font-sans text-sm text-ink line-clamp-2">{u.body}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       )}

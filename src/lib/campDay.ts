@@ -64,3 +64,16 @@ export function sessionDays(session: Pick<Session, 'start_date' | 'end_date'>): 
 export function firstName(full: string | null | undefined): string {
   return (full ?? '').trim().split(/\s+/)[0] ?? ''
 }
+
+// 'just now' · '12 min ago' · '3 h ago' · 'Mon 3:20 PM' · 'Sep 26'
+export function timeAgo(iso: string, now: Date = new Date()): string {
+  const then = new Date(iso)
+  const mins = Math.round((now.getTime() - then.getTime()) / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 24 && then.getDate() === now.getDate()) return `${hours} h ago`
+  const days = Math.round((now.getTime() - then.getTime()) / 86_400_000)
+  if (days < 7) return then.toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+  return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}

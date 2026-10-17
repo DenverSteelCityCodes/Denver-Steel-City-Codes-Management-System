@@ -1,9 +1,13 @@
 import { useState } from 'react'
-import { Users, Clock, CalendarDays } from 'lucide-react'
+import { Users, Clock, CalendarDays, Megaphone } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAssignedClass } from '../hooks/useAssignedClass'
 import { useDutySlots } from '../hooks/useDutyRoles'
 import RollCallPanel from '../components/RollCallPanel'
+import UpdateComposer from '../components/UpdateComposer'
+import UpdatesFeed from '../components/UpdatesFeed'
+import { useUpdates } from '../hooks/useUpdates'
+import type { AssignedSection } from '../hooks/useAssignedClass'
 import { BrandBar } from '../components/Wordmark'
 import InterviewSlotPicker from '../components/InterviewSlotPicker'
 import { useOpenInterviewSlots, formatSlot } from '../hooks/useOpenInterviewSlots'
@@ -12,6 +16,48 @@ import { useSessions } from '../hooks/useSessions'
 import { useScheduleItems } from '../hooks/useScheduleItems'
 import DailySchedule, { ScheduleHeading } from '../components/DailySchedule'
 import { localDateISO, sessionOnDay } from '../lib/campDay'
+
+// Updates visible to this volunteer, plus a composer for each section they lead.
+function UpdatesPanel({ leadSections, userId }: { leadSections: AssignedSection[]; userId: string }) {
+  const { updates, loading, postUpdate, deleteUpdate } = useUpdates(30)
+  const [composing, setComposing] = useState<string | null>(null)
+  return (
+    <section aria-labelledby="updates-heading" className="bg-surface border border-border rounded-xl shadow-sm p-4 sm:p-5 space-y-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 id="updates-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5">
+          <Megaphone size={13} /> Updates
+        </h2>
+        {composing === null && leadSections.map(sec => (
+          <button key={sec.id} type="button" onClick={() => setComposing(sec.id)}
+            className="h-10 px-3.5 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm shadow-sm transition">
+            Post to {sec.class_name} {sec.label}{sec.week ? ` · Week ${sec.week}` : ''} families
+          </button>
+        ))}
+      </div>
+      {composing && (() => {
+        const sec = leadSections.find(s => s.id === composing)!
+        return (
+          <div className="border border-brand rounded-[12px] p-3 sm:p-4">
+            <UpdateComposer
+              mode={{ kind: 'lead', section: { id: sec.id, label: `${sec.class_name} ${sec.label}${sec.week ? ` · Week ${sec.week}` : ''}` } }}
+              onPost={async input => { await postUpdate(input) }}
+              onCancel={() => setComposing(null)}
+            />
+          </div>
+        )
+      })()}
+      <UpdatesFeed
+        updates={updates}
+        loading={loading}
+        compact
+        canDelete={u => u.author_id === userId}
+        onDelete={deleteUpdate}
+        canCopyEmails={u => u.audience === 'section' && leadSections.some(s => s.id === u.section_id)}
+        emptyText="No updates yet."
+      />
+    </section>
+  )
+}
 
 // The day's plan for whichever session is running today (or the next one).
 function TodaySchedulePanel() {
@@ -298,6 +344,7 @@ export default function VolunteerDashboard() {
                 <RollCallPanel key={sec.id} section={sec} session={sessionOf(sec.session_id)} />
               ))}
             </div>
+            <UpdatesPanel leadSections={assignedSections.filter(sec => sec.is_lead)} userId={user!.id} />
             <TodaySchedulePanel />
             <div className="space-y-3">
               <h2 className="font-sans font-bold text-xl text-ink">Duty schedule</h2>
