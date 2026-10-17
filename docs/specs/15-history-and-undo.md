@@ -33,4 +33,5 @@ With spec 05 every change is recorded, but admins need to see it where they work
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17. `admin_camper_history(student)` returns the camper's own changes plus all their registrations' changes. `admin_revert(id)` covers UPDATEs on students, registrations and sections. It never writes back `updated_at`, `cancelled_at` or `cancelled_by` (the database owns those). It refuses when any reverted field changed again since, or when restoring a seat would overfill (or land in a cancelled) section. Admin Students no longer flashes a loading skeleton on refresh, so an open History panel stays open after Revert.
 - If time runs short before February, this is the second thing to cut (after 17). The log still records everything.

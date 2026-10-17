@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { fetchAll } from '../lib/fetchAll'
 import type { RegistrationStatus } from '../types/database'
@@ -64,10 +64,13 @@ export function useAdminStudents() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const loadedOnce = useRef(false)
   useEffect(() => { fetchStudents() }, [])
 
   async function fetchStudents() {
-    setLoading(true)
+    // Only the first load shows the skeleton; a refresh after an action keeps the list (and any
+    // expanded row) on screen.
+    if (!loadedOnce.current) setLoading(true)
     // Paged: the API caps a response at 1,000 rows (spec 18). Ordered by name, then id, so pages
     // never overlap or skip.
     let data: unknown[] | null = null
@@ -130,6 +133,7 @@ export function useAdminStudents() {
     }))
 
     setStudents(shaped)
+    loadedOnce.current = true
     setLoading(false)
   }
 

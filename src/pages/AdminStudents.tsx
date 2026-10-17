@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { Search, Download, AlertCircle, UserCheck, ChevronDown } from 'lucide-react'
 import InlineConfirm from '../components/InlineConfirm'
+import HistoryStrip from '../components/HistoryStrip'
+import { supabase } from '../lib/supabase'
 import { realNote } from '../lib/campers'
 import { toCsv, downloadCsv } from '../lib/csv'
 import { useAdminStudents, type AdminStudent, type StudentRegistration } from '../hooks/useAdminStudents'
@@ -50,10 +52,14 @@ function StudentDetail({
   onStatusChange,
   onMoveSection,
   onRemoveReg,
+  sectionName,
+  onReverted,
 }: {
   student: AdminStudent
   allSections: SectionOption[]
   fillKnown: boolean
+  sectionName: (id: string) => string
+  onReverted: () => Promise<void>
   onStatusChange: (regId: string, status: RegistrationStatus) => Promise<void>
   onMoveSection: (regId: string, sectionId: string, status: RegistrationStatus) => Promise<void>
   onRemoveReg: (regId: string) => Promise<void>
@@ -61,6 +67,7 @@ function StudentDetail({
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [pending, setPending] = useState<RegAction>(null)
+  const [showHistory, setShowHistory] = useState(false)
 
   async function run(key: string, fn: () => Promise<void>) {
     setBusy(key)
@@ -262,6 +269,23 @@ function StudentDetail({
           <AlertCircle size={14} /> {err}
         </div>
       )}
+
+      {/* Spec 15: who changed this camper or their registrations, with Revert. */}
+      <button
+        type="button"
+        onClick={() => setShowHistory(v => !v)}
+        aria-expanded={showHistory}
+        className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface text-xs font-semibold text-ink hover:bg-surface-sunken transition"
+      >
+        {showHistory ? 'Hide history' : 'Show history'}
+      </button>
+      {showHistory && (
+        <HistoryStrip
+          load={() => supabase.rpc('admin_camper_history', { p_student_id: student.id })}
+          sectionName={sectionName}
+          onReverted={onReverted}
+        />
+      )}
     </div>
   )
 }
@@ -297,7 +321,7 @@ function exportStudentCSV(students: AdminStudent[]) {
 type StatusFilter = 'all' | RegistrationStatus | 'unregistered'
 
 export default function AdminStudents() {
-  const { students, loading, error, updateRegistrationStatus, moveStudentToSection, removeRegistration } = useAdminStudents()
+  const { students, loading, error, updateRegistrationStatus, moveStudentToSection, removeRegistration, refetch: refetchStudents } = useAdminStudents()
   const { classes, fillError, refetch: refetchClasses } = useAdminClasses()
 
   // ?q= comes from the top-bar search; re-applied on every navigation (keyed on the location
@@ -318,6 +342,12 @@ export default function AdminStudents() {
   const [limit, setLimit] = useState({ key: filterKey, n: PAGE })
   const shown = limit.key === filterKey ? limit.n : PAGE
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Every section (cancelled ones too) by id, for the History strip's "Moved: A → B" lines.
+  const sectionName = useMemo(() => {
+    const byId = new Map(classes.flatMap(c => c.sections.map(s => [s.id, `${c.name} · ${s.label}${s.week ? ` (W${s.week})` : ''}`] as const)))
+    return (id: string) => byId.get(id) ?? 'a removed section'
+  }, [classes])
 
   const allSections = useMemo<SectionOption[]>(() =>
     // Cancelled sections take no one, so they're never a move target.
@@ -467,6 +497,8 @@ export default function AdminStudents() {
                         onStatusChange={async (id, status) => { await updateRegistrationStatus(id, status); void refetchClasses() }}
                         onMoveSection={async (regId, sectionId, status) => { await moveStudentToSection(regId, sectionId, status); void refetchClasses() }}
                         onRemoveReg={async regId => { await removeRegistration(regId); void refetchClasses() }}
+                        sectionName={sectionName}
+                        onReverted={async () => { await refetchStudents(); void refetchClasses() }}
                       />
                     )}
                   </li>
