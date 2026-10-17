@@ -450,14 +450,14 @@ export default function ParentRegistrationPage() {
           <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={28} className="text-success" />
           </div>
-          <h1 className="font-sans font-bold text-2xl text-ink mb-2">{waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : 'Registration submitted!'}</h1>
+          <h1 className="font-sans font-bold text-2xl text-ink mb-2">{waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}</h1>
           <p className="font-sans text-ink-muted text-sm mb-6">
             {waitlistedCount === 0 ? (
-              <><strong className="text-ink">{studentFullName}</strong>'s spot is held. Our team will confirm it soon.</>
+              <><strong className="text-ink">{studentFullName}</strong>'s spot is confirmed. You'll find the class, time and room on your dashboard.</>
             ) : waitlistedCount === registeredCount ? (
               <>That class is full, so <strong className="text-ink">{studentFullName}</strong> is on the waitlist. We'll reach out if a spot opens.</>
             ) : (
-              <><strong className="text-ink">{studentFullName}</strong>'s spot is held in one class. The other was full, so they're on its waitlist — we'll reach out if a spot opens.</>
+              <><strong className="text-ink">{studentFullName}</strong>'s spot is confirmed in one class. The other was full, so they're on its waitlist. We'll reach out if a spot opens.</>
             )}
           </p>
           <button

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CircleCheck, Clock, List, CircleX, Pencil, GraduationCap, Check } from 'lucide-react'
+import { CircleCheck, List, CircleX, Pencil, GraduationCap, Check } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { GRADES, gradeToAge, realNote } from '../lib/campers'
@@ -15,7 +15,8 @@ const STATUS_CONFIG: Record<
   { label: string; className: string; Icon: LucideIcon; note: string | null }
 > = {
   confirmed: { label: 'Confirmed', className: 'bg-success-soft text-success', Icon: CircleCheck, note: null },
-  pending: { label: 'Spot held', className: 'bg-warning-soft text-warning', Icon: Clock, note: "We'll confirm soon" },
+  // Registrations auto-confirm (spec 14); a legacy 'pending' row reads as confirmed.
+  pending: { label: 'Confirmed', className: 'bg-success-soft text-success', Icon: CircleCheck, note: null },
   waitlisted: { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List, note: null },
   cancelled: { label: 'Cancelled', className: 'bg-danger-soft text-danger', Icon: CircleX, note: null },
 }
@@ -28,10 +29,6 @@ function rollupStatus(
   const active = registrations.filter(r => r.status !== 'cancelled')
   if (active.length === 0) {
     return { label: 'Not enrolled', className: 'bg-surface-sunken text-ink-muted', Icon: null }
-  }
-  // Nothing here needs the parent to act — say what we're waiting on instead of "action pending".
-  if (active.some(r => r.status === 'pending')) {
-    return { label: 'Awaiting confirmation', className: 'bg-warning-soft text-warning', Icon: Clock }
   }
   if (active.every(r => r.status === 'waitlisted')) {
     return { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List }
@@ -164,7 +161,7 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
                 <span className="text-xs font-sans text-ink-muted shrink-0">Age {student.age}</span>
                 {medicalNote && <MedicalFlag info={medicalNote} />}
               </div>
-              {/* Rollup status badge: all confirmed → All set, pending → Awaiting confirmation, waitlisted → On waitlist, none → Not enrolled */}
+              {/* Rollup status badge: confirmed → All set, waitlisted → On waitlist, none → Not enrolled */}
               <span
                 className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${rollup.className}`}
               >

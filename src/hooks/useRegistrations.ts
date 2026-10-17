@@ -46,7 +46,8 @@ export function useRegistrations() {
   }
 
   async function registerStudent(studentId: string, sectionId: string, currentCount: number, capacity: number) {
-    const status: RegistrationStatus = currentCount >= capacity ? 'waitlisted' : 'pending'
+    // The database decides the status (confirmed, or waitlisted when full); this is only a hint.
+    const status: RegistrationStatus = currentCount >= capacity ? 'waitlisted' : 'confirmed'
 
     const { data, error } = await supabase
       .from('registrations')

@@ -1,6 +1,6 @@
 # 14: Auto-confirm, "section has no lead" alert, duplicate-camper report
 
-**Status:** ⬜ not started · **Issue:** #83 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #120](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/120) · **Issue:** #83 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** —
 **Plan reference:** Plan §0 win 5, §2.2 'volunteer drops last-minute' and 'duplicate accounts', §6 decision Q-P4
 
@@ -34,4 +34,5 @@ Every new seat sits as `pending` ("Spot held · We'll confirm soon") until an ad
 - None.
 
 ## Notes for the builder
+- Built 2026-10-17. The demo seed no longer creates `pending` registrations (the reset function was re-applied from `migration_demo_environment.sql`). The seed has one section with no lead (MC-1, Week 2), so the demo admin dashboard now shows the no-lead alert by default, which is accurate. The duplicate report finds 0 pairs in the seed.
 - The demo login blurb in `lib/demo.ts` mentions campers in different states. Keep it accurate after the seed change.

@@ -336,8 +336,7 @@ BEGIN
         SELECT count(*) INTO taken FROM registrations WHERE section_id = s_id AND status IN ('confirmed','pending');
         st := CASE WHEN taken >= cap THEN 'waitlisted'
                    WHEN kid % 17 = 0 THEN 'cancelled'
-                   WHEN kid % 4 = 0 THEN 'pending'
-                   ELSE 'confirmed' END;
+                   ELSE 'confirmed' END;   -- no 'pending': registrations auto-confirm (spec 14)
         INSERT INTO registrations (student_id, section_id, status, created_at)
         VALUES (student_id, s_id, st, now() - ((60 - kid) || ' days')::interval);
       END LOOP;

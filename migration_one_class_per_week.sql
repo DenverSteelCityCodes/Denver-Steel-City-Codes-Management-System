@@ -98,13 +98,15 @@ BEGIN
   SELECT COUNT(*) INTO taken FROM registrations
   WHERE section_id = sec.id AND status IN ('confirmed', 'pending');
 
+  -- Auto-confirm (decided 2026-10-16, Q-P4; spec 14): a free seat is confirmed at once. Nothing
+  -- was checked between "pending" and "confirmed", so the extra step only added admin clicks.
   NEW.status := CASE WHEN taken >= sec.capacity THEN 'waitlisted'::registration_status
-                     ELSE 'pending'::registration_status END;
+                     ELSE 'confirmed'::registration_status END;
 
   -- Same-week clash. A camper holds one class per week, and (decided 2026-10-16, Q-W4) can't
   -- join another class's waitlist that week as a backup either: waitlist offers skip campers who
   -- already hold a seat that week, so such a backup could never turn into a spot.
-  IF NEW.status IN ('pending', 'waitlisted') THEN
+  IF NEW.status IN ('confirmed', 'pending', 'waitlisted') THEN
     -- One camper at a time: two simultaneous sign-ups for different sections lock different
     -- section rows, so without this neither would see the other's seat.
     PERFORM pg_advisory_xact_lock(hashtextextended(NEW.student_id::text, 0));

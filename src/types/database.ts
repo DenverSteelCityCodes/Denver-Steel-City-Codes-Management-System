@@ -86,6 +86,8 @@ export interface Section {
   age_max: number
   capacity: number
   week: 1 | 2 | null
+  // Derived from week by the sections_sync_session trigger (null = runs both weeks).
+  session_id?: string | null
   lead_id: string | null
   // Schedule (migration_camp_week_ops.sql): free-text days, HH:MM:SS times, room name.
   days: string
