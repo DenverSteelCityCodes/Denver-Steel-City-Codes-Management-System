@@ -7,6 +7,7 @@ import { formatTimeRange } from '../lib/campDay'
 import type { Student, RegistrationStatus } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import MedicalFlag from './MedicalFlag'
+import InlineConfirm from './InlineConfirm'
 
 // Human-friendly status copy (DS §7.5 Deep-on-Soft chips, §10 warm voice).
 // note: an optional reassuring sub-line shown beneath the chip.
@@ -45,6 +46,95 @@ interface Props {
   student: Student
   registrations: RegistrationWithSection[]
   onSave?: (id: string, patch: CamperPatch) => Promise<void>
+  // Self-service changes (spec 11). Without these, the card is read-only.
+  changes?: {
+    deadlines: Map<string, string>
+    openRequests: Set<string>
+    cancelSpot: (registrationId: string) => Promise<void>
+    requestChange: (registrationId: string, message: string) => Promise<void>
+  }
+}
+
+// Cancel / leave waitlist before the change deadline; "Request a change" after it (spec 11).
+function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSection; camper: string; changes: NonNullable<Props['changes']> }) {
+  const [mode, setMode] = useState<'idle' | 'confirm' | 'request'>('idle')
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [sent, setSent] = useState(false)
+  if (reg.status === 'cancelled') return null
+
+  const where = `${reg.sections?.classes?.name ?? 'this class'}${reg.sections?.week ? `, Week ${reg.sections.week}` : ''}`
+  const deadline = changes.deadlines.get(reg.id)
+  const holdsSeat = reg.status === 'confirmed' || reg.status === 'pending'
+  // A seat can be cancelled online until the deadline; a waitlist place can always be left.
+  // eslint-disable-next-line react-hooks/purity -- a render-time clock read is fine for a deadline label
+  const open = !holdsSeat || !deadline || Date.now() < new Date(deadline).getTime()
+  const lastDay = deadline
+    ? new Date(new Date(deadline).getTime() - 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/Denver' })
+    : null
+
+  async function run(fn: () => Promise<void>, after: () => void) {
+    setBusy(true); setErr(null)
+    try { await fn(); after() } catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong') }
+    finally { setBusy(false) }
+  }
+
+  if (sent || changes.openRequests.has(reg.id)) {
+    return <p role="status" className="mt-1 ml-1 text-xs font-sans text-ink-muted">Change request sent. The camp will email you.</p>
+  }
+
+  return (
+    <div className="mt-1.5 ml-1">
+      {mode === 'idle' && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {open ? (
+            <button type="button" onClick={() => setMode('confirm')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-danger underline-offset-2 hover:underline">
+              {holdsSeat ? 'Cancel this spot' : 'Leave the waitlist'}
+            </button>
+          ) : (
+            <button type="button" onClick={() => setMode('request')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-ink underline-offset-2 hover:underline">
+              Request a change
+            </button>
+          )}
+          {holdsSeat && lastDay && (
+            <span className="text-xs font-sans text-ink-faint">
+              {open ? `You can cancel online until ${lastDay}.` : `Online changes closed after ${lastDay}.`}
+            </span>
+          )}
+        </div>
+      )}
+      {mode === 'confirm' && (
+        <div className="mt-1 rounded-[10px] overflow-hidden border border-border">
+          <InlineConfirm
+            message={holdsSeat
+              ? `Cancel ${camper}'s spot in ${where}? The seat goes to the next family on the waitlist. You can sign up again later if spots are left.`
+              : `Take ${camper} off the waitlist for ${where}?`}
+            confirmLabel={holdsSeat ? 'Cancel spot' : 'Leave waitlist'}
+            cancelLabel={holdsSeat ? 'Keep spot' : 'Stay on it'}
+            busy={busy}
+            onConfirm={() => { void run(() => changes.cancelSpot(reg.id), () => setMode('idle')) }}
+            onCancel={() => { setMode('idle'); setErr(null) }}
+          />
+        </div>
+      )}
+      {mode === 'request' && (
+        <form
+          onSubmit={e => { e.preventDefault(); void run(() => changes.requestChange(reg.id, message), () => { setSent(true); setMode('idle') }) }}
+          className="mt-1 space-y-2"
+        >
+          <label htmlFor={`req-${reg.id}`} className="block text-xs font-sans font-semibold text-ink-muted">What would you like to change about {where}?</label>
+          <textarea id={`req-${reg.id}`} rows={2} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
+            className="w-full px-3 py-2 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={() => setMode('idle')} className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Cancel</button>
+            <button type="submit" disabled={busy || !message.trim()} className="h-9 px-3 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">{busy ? 'Sending…' : 'Send to the camp'}</button>
+          </div>
+        </form>
+      )}
+      {err && <p role="alert" className="mt-1 text-xs font-sans text-danger">{err}</p>}
+    </div>
+  )
 }
 
 // Inline editor for the details parents actually change mid-year (name, grade, health, emergency
@@ -130,7 +220,7 @@ function CamperEditor({ student, onSave, onDone }: { student: Student; onSave: P
   )
 }
 
-export default function StudentCard({ student, registrations, onSave }: Props) {
+export default function StudentCard({ student, registrations, onSave, changes }: Props) {
   const [editing, setEditing] = useState(false)
   const medicalNote = [
     realNote(student.allergies) && `Allergies: ${realNote(student.allergies)}`,
@@ -204,6 +294,7 @@ export default function StudentCard({ student, registrations, onSave }: Props) {
                       {cfg.note && (
                         <p className="mt-0.5 ml-1 text-xs font-sans text-ink-faint">{cfg.note}</p>
                       )}
+                      {changes && <RegistrationActions reg={reg} camper={student.first_name ?? student.full_name.split(' ')[0]} changes={changes} />}
                       {byCamp && (
                         <p className="mt-0.5 ml-1 text-xs font-sans text-ink-muted">
                           Sorry, this class was cancelled.{' '}

@@ -118,6 +118,12 @@ export default function ParentLayout() {
       <main className="min-w-0">
         <Outlet />
       </main>
+
+      {/* Every parent page shows how to reach the camp (spec 11). */}
+      <footer className="max-w-[1200px] mx-auto px-4 sm:px-6 pb-10 font-sans text-sm text-ink-muted">
+        Questions or changes? Email the camp at{' '}
+        <a href="mailto:denver@steelcitycodes.org" className="font-semibold text-ink hover:underline">denver@steelcitycodes.org</a>.
+      </footer>
     </div>
   )
 }

@@ -121,6 +121,14 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       ], dashboard)
     }
 
+    case 'change_request_resolved': {
+      const done = p.status === 'done'
+      return build(done ? 'Your change request is done' : 'About your change request', done ? 'Your change request is done' : 'About your change request', [
+        `You asked: "${esc(p.message)}"`,
+        p.note ? `The camp's reply: ${esc(p.note)}` : (done ? 'The camp has made the change.' : 'The camp couldn\'t make this change. Reply to this email if you\'d like to talk it through.'),
+      ], dashboard)
+    }
+
     default:
       return null
   }
