@@ -2,8 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Profile, UserRole } from '../types/database'
 
+export interface AdminUser extends Profile {
+  email: string | null
+  last_sign_in_at: string | null
+}
+
 export function useAdminUsers() {
-  const [users, setUsers] = useState<Profile[]>([])
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -11,13 +16,20 @@ export function useAdminUsers() {
 
   async function fetchUsers() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const [{ data, error }, emails] = await Promise.all([
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      // Admin-only RPC: profiles has no email, and display names alone can't tell accounts apart.
+      supabase.rpc('admin_user_emails'),
+    ])
+    const byId = new Map(((emails.data ?? []) as { id: string; email: string; last_sign_in_at: string | null }[])
+      .map(e => [e.id, e]))
 
     if (error) setError(error.message)
-    else setUsers(data ?? [])
+    else setUsers((data ?? []).map(p => ({
+      ...p,
+      email: byId.get(p.id)?.email ?? null,
+      last_sign_in_at: byId.get(p.id)?.last_sign_in_at ?? null,
+    })))
     setLoading(false)
   }
 
@@ -35,7 +47,7 @@ export function useAdminUsers() {
       .update({ role: newRole })
       .eq('id', userId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchUsers()
   }
 

@@ -19,7 +19,8 @@ export default function ProtectedRoute({ allowedRoles }: Props) {
 
   if (!session) return <Navigate to="/login" replace />
 
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
+  // A session with no profile/role (e.g. a pre-trigger account) must not slip through every gate.
+  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
     return <Navigate to="/unauthorized" replace />
   }
 

@@ -15,26 +15,24 @@ export function useAttendance(sectionId: string | undefined) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!sectionId) { setLoading(false); return }
-    fetchLogs()
-  }, [sectionId])
-
-  async function fetchLogs() {
-    setLoading(true)
-
+    if (!sectionId) return
+    let cancelled = false
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
-    const { data } = await supabase
+    supabase
       .from('attendance_logs')
       .select('*')
-      .eq('section_id', sectionId!)
+      .eq('section_id', sectionId)
       .gte('timestamp', todayStart.toISOString())
       .order('timestamp', { ascending: false })
-
-    setLogs((data ?? []) as AttendanceLog[])
-    setLoading(false)
-  }
+      .then(({ data }) => {
+        if (cancelled) return
+        setLogs((data ?? []) as AttendanceLog[])
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [sectionId])
 
   function getStatus(studentId: string): AttendanceAction | null {
     return logs.find(l => l.student_id === studentId)?.action ?? null
@@ -60,5 +58,5 @@ export function useAttendance(sectionId: string | undefined) {
     }
   }
 
-  return { logs, loading, getStatus, logAction }
+  return { logs, loading: sectionId ? loading : false, getStatus, logAction }
 }

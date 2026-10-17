@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom'
+import { BrandBar } from '../components/Wordmark'
 
 export default function UnauthorizedPage() {
   return (
-    <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 text-center">
+    <div className="min-h-screen bg-bg flex flex-col">
+      <BrandBar />
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10 text-center">
       <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center mb-4">
         <span className="text-danger text-2xl">✕</span>
       </div>
@@ -16,6 +19,7 @@ export default function UnauthorizedPage() {
       >
         Back to sign in
       </Link>
+      </main>
     </div>
   )
 }

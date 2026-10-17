@@ -5,6 +5,10 @@ import { useAssignedClass } from '../hooks/useAssignedClass'
 import { useAttendance } from '../hooks/useAttendance'
 import { useDutySlots } from '../hooks/useDutyRoles'
 import AttendanceRow from '../components/AttendanceRow'
+import { BrandBar } from '../components/Wordmark'
+import InterviewSlotPicker from '../components/InterviewSlotPicker'
+import { useOpenInterviewSlots, formatSlot } from '../hooks/useOpenInterviewSlots'
+import { useMyInterview } from '../hooks/useMyInterview'
 import type { AssignedSection } from '../hooks/useAssignedClass'
 import type { AttendanceAction } from '../types/database'
 
@@ -12,7 +16,9 @@ function DutyPanel({ userId }: { userId: string }) {
   const { slots, loading, claimSlot, unclaimSlot } = useDutySlots()
   const [busySlotId, setBusySlotId] = useState<string | null>(null)
 
-  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const [claimError, setClaimError] = useState<string | null>(null)
   const upcoming = slots.filter(s => s.slot_date >= today)
 
   const grouped = upcoming.reduce<Record<string, typeof slots>>((acc, s) => {
@@ -23,12 +29,18 @@ function DutyPanel({ userId }: { userId: string }) {
 
   async function handleClaim(slotId: string) {
     setBusySlotId(slotId)
-    try { await claimSlot(slotId, userId) } finally { setBusySlotId(null) }
+    setClaimError(null)
+    try { await claimSlot(slotId, userId) }
+    catch (e) { setClaimError(e instanceof Error ? e.message : "Couldn't sign up for that slot") }
+    finally { setBusySlotId(null) }
   }
 
   async function handleUnclaim(slotId: string) {
     setBusySlotId(slotId)
-    try { await unclaimSlot(slotId, userId) } finally { setBusySlotId(null) }
+    setClaimError(null)
+    try { await unclaimSlot(slotId, userId) }
+    catch (e) { setClaimError(e instanceof Error ? e.message : "Couldn't cancel that sign-up") }
+    finally { setBusySlotId(null) }
   }
 
   if (loading) return (
@@ -46,6 +58,7 @@ function DutyPanel({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-4">
+      {claimError && <p role="alert" className="font-sans text-sm text-danger">{claimError}</p>}
       {Object.entries(grouped)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, daySlots]) => (
@@ -55,7 +68,7 @@ function DutyPanel({ userId }: { userId: string }) {
             </p>
             <div className="bg-surface border border-border rounded-xl overflow-hidden">
               {daySlots.map((slot, idx) => {
-                const myClaim = slot.assignments?.find((a: any) => a.volunteer_id === userId)
+                const myClaim = slot.assignments?.find(a => a.volunteer_id === userId)
                 const isFull = slot.assigned_count >= slot.capacity && !myClaim
                 return (
                   <div
@@ -98,6 +111,82 @@ function DutyPanel({ userId }: { userId: string }) {
           </div>
         ))}
     </div>
+  )
+}
+
+// Pending applicants see their interview time and can pick or change it (SignUpGenius-style).
+function InterviewCard() {
+  const { interview, loading, book } = useMyInterview()
+  const { slots, refetch } = useOpenInterviewSlots()
+  const [choosing, setChoosing] = useState(false)
+  const [picked, setPicked] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function save() {
+    if (!picked) { setErr('Pick a time first'); return }
+    setSaving(true)
+    setErr(null)
+    try {
+      await book(picked)
+      setChoosing(false)
+      setPicked('')
+      refetch()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Something went wrong')
+      refetch()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="h-24 bg-surface border border-border rounded-xl animate-pulse" />
+  const showPicker = choosing || !interview
+
+  return (
+    <section aria-labelledby="interview-heading" className="bg-surface border border-border rounded-xl shadow-sm p-5 sm:p-6 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 id="interview-heading" className="font-sans font-semibold text-lg text-ink flex items-center gap-2">
+            <CalendarDays size={18} className="text-warning" /> Your interview
+          </h2>
+          <p className="font-sans text-sm text-ink-muted mt-0.5">
+            {interview
+              ? <>Booked for <strong className="text-ink">{formatSlot(interview.slot_datetime)}</strong> · {interview.duration_minutes} min, online.</>
+              : 'Pick a time for your short online interview.'}
+          </p>
+        </div>
+        {interview && !choosing && (
+          <button
+            onClick={() => setChoosing(true)}
+            className="h-10 px-4 shrink-0 rounded-[10px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition"
+          >
+            Change time
+          </button>
+        )}
+      </div>
+
+      {showPicker && slots && (
+        <div className="space-y-3">
+          <InterviewSlotPicker slots={slots} value={picked} onChange={setPicked} labelledBy="interview-heading" />
+          {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
+          {slots.length > 0 && (
+            <div className="flex justify-end gap-2">
+              {interview && (
+                <button onClick={() => { setChoosing(false); setPicked(''); setErr(null) }}
+                  className="h-10 px-4 rounded-[10px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">
+                  Keep my time
+                </button>
+              )}
+              <button onClick={save} disabled={saving || !picked}
+                className="h-10 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">
+                {saving ? 'Booking…' : interview ? 'Move my interview' : 'Book this time'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -195,21 +284,15 @@ function SectionPanel({ section }: { section: AssignedSection }) {
 
 export default function VolunteerDashboard() {
   const { profile, signOut, user } = useAuth()
-  const { assignedSections, isAccepted, loading } = useAssignedClass()
+  const { assignedSections, isAccepted, applicationStatus, loading } = useAssignedClass()
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
     <div className="min-h-screen bg-bg">
       {/* Top bar */}
-      <header className="h-16 bg-ink-900 flex items-center justify-between px-6 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center">
-            <span className="font-sans font-bold text-brand-on text-sm">S</span>
-          </div>
-          <span className="font-sans font-bold text-white text-base tracking-tight">Steel City Codes</span>
-        </div>
-        <div className="flex items-center gap-4">
+      <BrandBar>
+        <div className="flex items-center gap-3 sm:gap-4">
           <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-role-volunteer-soft text-role-volunteer">
             <Users size={12} /> Volunteer
           </span>
@@ -218,7 +301,7 @@ export default function VolunteerDashboard() {
             Sign out
           </button>
         </div>
-      </header>
+      </BrandBar>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         {loading ? (
@@ -236,8 +319,16 @@ export default function VolunteerDashboard() {
               ))}
             </div>
           </div>
+        ) : !isAccepted && applicationStatus === 'rejected' ? (
+          <div className="bg-surface border border-border rounded-xl shadow-sm p-10 text-center">
+            <h2 className="font-sans font-semibold text-xl text-ink mb-2">Application not accepted</h2>
+            <p className="font-sans text-ink-muted text-base">
+              Thank you for applying to volunteer with Steel City Codes. We weren't able to offer you a spot this year — we'd love for you to apply again next summer.
+            </p>
+          </div>
         ) : !isAccepted ? (
           /* Application pending — volunteer role set but no volunteers row yet */
+          <>
           <div className="bg-surface border border-border rounded-xl shadow-sm p-10 text-center">
             <div className="w-14 h-14 rounded-full bg-warning-soft flex items-center justify-center mx-auto mb-4">
               <Clock size={24} className="text-warning" />
@@ -247,6 +338,8 @@ export default function VolunteerDashboard() {
               Your application is being reviewed. You'll be notified once an admin accepts it and assigns you to a section.
             </p>
           </div>
+          <InterviewCard />
+          </>
         ) : assignedSections.length === 0 ? (
           /* Accepted but not yet assigned to any section */
           <>

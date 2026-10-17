@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
-import { Home, GraduationCap, Bell, Sun, Moon, Heart, LogOut, ChevronDown } from 'lucide-react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Home, GraduationCap, Sun, Moon, Heart, LogOut, ChevronDown } from 'lucide-react'
+import ParentBell from './ParentBell'
 import { useAuth } from '../context/AuthContext'
 import wordmark from '../../assets/sccdenver.png'
 
@@ -8,6 +9,7 @@ import wordmark from '../../assets/sccdenver.png'
 // a notifications bell, and a parent-tinted avatar menu with sign-out — but parents don't need
 // the admin sidebar, so a light inline nav (Home · Browse classes) is enough.
 export default function ParentLayout() {
+  const { pathname } = useLocation()
   const { profile, signOut } = useAuth()
 
   const [menuOpen, setMenuOpen] = useState(false)
@@ -77,13 +79,7 @@ export default function ParentLayout() {
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
-          <button
-            aria-label="Notifications"
-            className="relative text-white/70 hover:text-white p-2 rounded-[10px] hover:bg-white/10 transition"
-          >
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand ring-2 ring-ink-950" />
-          </button>
+          <ParentBell key={pathname} />
 
           {/* Avatar menu — parent-tinted, holds sign-out */}
           <div className="relative" ref={menuRef}>

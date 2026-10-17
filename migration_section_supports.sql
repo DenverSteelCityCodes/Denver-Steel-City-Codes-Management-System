@@ -1,4 +1,6 @@
 -- Migration: multiple supports per section (Issue #26)
+-- ⚠️ Superseded: this never applied on the live DB (dropping support_id failed on the
+-- section_fill view dependency). migration_security_hardening.sql performs it correctly.
 -- Apply in Supabase Dashboard > SQL Editor (after migration_sections.sql)
 
 -- ── 1. Create section_supports join table ─────────────────────

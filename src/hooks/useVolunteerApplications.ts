@@ -6,60 +6,67 @@ export function useVolunteerApplications() {
   const [applications, setApplications] = useState<VolunteerApplication[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function fetchApplications() {
-    const { data } = await supabase
+  useEffect(() => {
+    let cancelled = false
+    supabase
       .from('volunteer_applications')
       .select('*')
       .order('created_at', { ascending: false })
-    setApplications((data as VolunteerApplication[]) ?? [])
-    setLoading(false)
-  }
-
-  useEffect(() => { fetchApplications() }, [])
+      .then(({ data }) => {
+        if (cancelled) return
+        setApplications((data as VolunteerApplication[]) ?? [])
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   async function acceptApplication(app: VolunteerApplication, expLevel: ExperienceLevel) {
-    // Always mark the application accepted first
-    const { error: statusError } = await supabase
-      .from('volunteer_applications')
-      .update({ status: 'accepted' })
-      .eq('id', app.id)
-    if (statusError) throw new Error(statusError.message)
-
-    setApplications(prev =>
-      prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a)
-    )
-
-    if (!app.user_id) {
-      // Applicant's email may already have an account or they haven't confirmed yet.
-      // Application is marked accepted; their profile will carry role: 'volunteer' from
-      // signup metadata. The volunteers row will be created when they sign in.
-      throw new Error(
-        'Application accepted, but no linked account found. ' +
-        'Ask the applicant to confirm their email and sign in — then re-accept to create the volunteers row.'
-      )
+    // Resolve the applicant's account. Applications normally carry user_id from signup; if not
+    // (the email already had an account), look it up by email (admin-only RPC).
+    let userId = app.user_id
+    if (!userId) {
+      const { data, error } = await supabase.rpc('admin_user_id_for_email', { p_email: app.email })
+      if (error) throw new Error(error.message)
+      if (!data) {
+        throw new Error(
+          `No account exists for ${app.email} yet. Ask the applicant to sign up at /apply or /signup ` +
+          'with that email, then accept again.'
+        )
+      }
+      userId = data as string
     }
 
-    // Upgrade role to volunteer (handles pre-migration accounts that were auto-created as parent)
-    await supabase.from('profiles').upsert({
-      id: app.user_id,
-      display_name: `${app.first_name} ${app.last_name}`,
-      role: 'volunteer',
-    })
+    // Grant access first; only mark the application accepted once that has worked, so the
+    // admin never sees "accepted" for someone who can't actually use the volunteer area.
+    const { error: roleError } = await supabase
+      .from('profiles').update({ role: 'volunteer' }).eq('id', userId)
+    if (roleError) throw new Error(`Couldn't set the volunteer role: ${roleError.message}`)
 
-    await supabase.from('volunteers').insert({
-      id: app.user_id,
+    const { error: volError } = await supabase.from('volunteers').upsert({
+      id: userId,
       experience_level: expLevel,
       availability_week_1: app.availability_week_1,
       availability_week_2: app.availability_week_2,
     })
+    if (volError) throw new Error(`Couldn't create the volunteer record: ${volError.message}`)
+
+    const { error: statusError } = await supabase
+      .from('volunteer_applications')
+      .update({ status: 'accepted', user_id: userId })
+      .eq('id', app.id)
+    if (statusError) throw new Error(statusError.message)
+
+    setApplications(prev =>
+      prev.map(a => a.id === app.id ? { ...a, status: 'accepted', user_id: userId } : a)
+    )
   }
 
   async function rejectApplication(appId: string, notes?: string) {
-    await supabase
+    const { error } = await supabase
       .from('volunteer_applications')
       .update({ status: 'rejected', ...(notes ? { admin_notes: notes } : {}) })
       .eq('id', appId)
-
+    if (error) throw new Error(error.message)
     setApplications(prev =>
       prev.map(a => a.id === appId ? { ...a, status: 'rejected', admin_notes: notes ?? a.admin_notes } : a)
     )

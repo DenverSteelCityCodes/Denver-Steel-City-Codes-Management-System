@@ -12,11 +12,46 @@ export interface StudentRegistration {
   class_id: string
 }
 
+// Row shape of the students → parent profile / registrations → section → class select.
+interface RawStudent {
+  id: string
+  full_name: string
+  age: number
+  medical_info: string | null
+  grade: string | null
+  school_name: string | null
+  allergies: string | null
+  medical_conditions: string | null
+  parent_phone: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  emergency_contact_relation: string | null
+  registration_year: number | null
+  created_at: string
+  parent_id: string
+  profiles: { display_name: string } | null
+  registrations: {
+    id: string
+    status: RegistrationStatus
+    section_id: string
+    sections: { id: string; label: string; week: 1 | 2 | null; class_id: string; classes: { id: string; name: string } | null } | null
+  }[] | null
+}
+
 export interface AdminStudent {
   id: string
   full_name: string
   age: number
   medical_info: string | null
+  grade: string | null
+  school_name: string | null
+  allergies: string | null
+  medical_conditions: string | null
+  parent_phone: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  emergency_contact_relation: string | null
+  registration_year: number | null
   created_at: string
   parent_id: string
   parent_name: string
@@ -36,6 +71,8 @@ export function useAdminStudents() {
       .from('students')
       .select(`
         id, full_name, age, medical_info, created_at, parent_id,
+        grade, school_name, allergies, medical_conditions, parent_phone,
+        emergency_contact_name, emergency_contact_phone, emergency_contact_relation, registration_year,
         profiles:parent_id ( display_name ),
         registrations (
           id, status, section_id,
@@ -53,15 +90,24 @@ export function useAdminStudents() {
       return
     }
 
-    const shaped: AdminStudent[] = (data ?? []).map((s: any) => ({
+    const shaped: AdminStudent[] = ((data ?? []) as unknown as RawStudent[]).map(s => ({
       id: s.id,
       full_name: s.full_name,
       age: s.age,
       medical_info: s.medical_info,
+      grade: s.grade,
+      school_name: s.school_name,
+      allergies: s.allergies,
+      medical_conditions: s.medical_conditions,
+      parent_phone: s.parent_phone,
+      emergency_contact_name: s.emergency_contact_name,
+      emergency_contact_phone: s.emergency_contact_phone,
+      emergency_contact_relation: s.emergency_contact_relation,
+      registration_year: s.registration_year,
       created_at: s.created_at,
       parent_id: s.parent_id,
       parent_name: s.profiles?.display_name ?? 'Unknown',
-      registrations: (s.registrations ?? []).map((r: any) => ({
+      registrations: (s.registrations ?? []).map(r => ({
         id: r.id,
         status: r.status,
         section_id: r.section_id,
@@ -82,7 +128,7 @@ export function useAdminStudents() {
       .update({ status })
       .eq('id', registrationId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchStudents()
   }
 
@@ -92,7 +138,7 @@ export function useAdminStudents() {
       .update({ section_id: newSectionId, status: 'pending' })
       .eq('id', registrationId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchStudents()
   }
 
@@ -102,7 +148,7 @@ export function useAdminStudents() {
       .delete()
       .eq('id', registrationId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     await fetchStudents()
   }
 

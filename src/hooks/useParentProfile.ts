@@ -11,7 +11,6 @@ export function useParentProfile() {
 
   const fetchProfile = useCallback(async () => {
     if (!user) return
-    setLoading(true)
     const { data, error } = await supabase
       .from('parent_profiles')
       .select('*')
@@ -21,7 +20,18 @@ export function useParentProfile() {
     setLoading(false)
   }, [user])
 
-  useEffect(() => { fetchProfile() }, [fetchProfile])
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    supabase.from('parent_profiles').select('*').eq('id', user.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) setError(error.message)
+        else setProfile(data)
+        setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [user])
 
   async function saveProfile(payload: Omit<ParentProfile, 'id' | 'updated_at'>) {
     if (!user) throw new Error('Not authenticated')

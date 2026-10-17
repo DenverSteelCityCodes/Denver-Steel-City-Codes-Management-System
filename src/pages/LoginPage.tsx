@@ -1,21 +1,33 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { BrandBar } from '../components/Wordmark'
+import { DEMO_ACCOUNTS, type DemoAccount } from '../lib/demo'
 
 export default function LoginPage() {
-  const navigate = useNavigate()
   const { role } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [demoBusy, setDemoBusy] = useState<DemoAccount['key'] | null>(null)
 
-  // Already logged in — redirect
-  if (role === 'admin') { navigate('/admin', { replace: true }); return null }
-  if (role === 'volunteer') { navigate('/volunteer', { replace: true }); return null }
-  if (role === 'parent') { navigate('/parent', { replace: true }); return null }
+  // Demo mode: sign in as a prepared account with one click (no typing, no sign-up).
+  async function signInDemo(account: DemoAccount) {
+    setError(null)
+    setDemoBusy(account.key)
+    const { error } = await supabase.auth.signInWithPassword({ email: account.email, password: account.password })
+    if (error) {
+      setError("The demo account couldn't sign in. It may be mid-reset — try again in a minute.")
+      setDemoBusy(null)
+    }
+    // AuthContext resolves the role and the redirect above takes over.
+  }
+
+  // Already signed in (or just signed in — AuthContext resolves the role) → go to that area.
+  if (role) return <Navigate to={`/${role}`} replace />
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -33,14 +45,42 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4">
-      {/* Logo bar */}
-      <div className="mb-8 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center">
-          <span className="font-sans font-bold text-brand-on text-lg">S</span>
-        </div>
-        <span className="font-sans font-bold text-ink text-xl tracking-tight">Steel City Codes</span>
-      </div>
+    <div className="min-h-screen bg-bg flex flex-col">
+      <BrandBar />
+      <main className="flex-1 flex flex-col items-center justify-center gap-6 px-4 py-10">
+
+      {DEMO_ACCOUNTS.length > 0 && (
+        <section aria-labelledby="demo-heading" className="w-full max-w-sm bg-surface border border-brand rounded-xl shadow-sm p-6">
+          <h2 id="demo-heading" className="font-sans font-bold text-lg text-ink mb-1">Try the demo</h2>
+          <p className="font-sans text-ink-muted text-sm mb-4">
+            Explore a fictional summer camp from any seat. Nothing here is real, and the data resets every night.
+          </p>
+          <div className="space-y-2">
+            {DEMO_ACCOUNTS.map(account => {
+              const Icon = account.icon
+              return (
+                <button
+                  key={account.key}
+                  type="button"
+                  onClick={() => signInDemo(account)}
+                  disabled={demoBusy !== null || loading}
+                  className="w-full flex items-center gap-3 p-3 rounded-[10px] border border-border-strong bg-surface hover:bg-surface-sunken text-left transition disabled:opacity-60"
+                >
+                  <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${account.tone}`}>
+                    {demoBusy === account.key
+                      ? <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      : <Icon size={16} />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-sans font-semibold text-sm text-ink">{account.label}</span>
+                    <span className="block font-sans text-xs text-ink-muted">{account.blurb}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8">
         <h1 className="font-sans font-bold text-2xl text-ink mb-1">Welcome back</h1>
@@ -80,7 +120,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-danger text-sm font-sans flex items-center gap-1.5">
+            <p role="alert" className="text-danger text-sm font-sans flex items-center gap-1.5">
               <span>⚠</span> {error}
             </p>
           )}
@@ -105,7 +145,14 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+        <p className="mt-2 text-center text-sm font-sans text-ink-muted">
+          Want to volunteer?{' '}
+          <Link to="/apply" className="text-ink font-semibold hover:underline">
+            Apply here
+          </Link>
+        </p>
       </div>
+      </main>
     </div>
   )
 }

@@ -16,8 +16,9 @@ export interface AssignmentPair {
  *
  * Rules:
  * - Each section gets a lead (senior) and support (junior).
- * - Matching is done per week — a volunteer can only be assigned once per week.
- * - Sections with week=null are skipped when filtering by week; pass week=null to match all.
+ * - Matching is done per week — a volunteer can only be assigned once per week, and anyone
+ *   already crewing a section that runs that week (incl. week=null "both weeks" sections) is skipped.
+ * - Sections with week=null run both weeks, so they need someone available both weeks.
  * - Unmatched sections get null for missing roles.
  * - Sections that already have a lead skip lead matching; sections that already
  *   have one or more supports skip support matching.
@@ -29,37 +30,43 @@ export function matchVolunteers(
   })[],
   week: 1 | 2 | null
 ): AssignmentPair[] {
-  const availKey = week === 1 ? 'availability_week_1' : week === 2 ? 'availability_week_2' : null
-
-  const available = availKey
-    ? volunteers.filter(v => v[availKey as 'availability_week_1' | 'availability_week_2'])
-    : volunteers
-
-  const seniors = available.filter(v => v.experience_level === 'senior')
-  const juniors = available.filter(v => v.experience_level === 'junior')
-
-  const usedSenior = new Set<string>()
-  const usedJunior = new Set<string>()
-
   const targetSections = week !== null
     ? sections.filter(s => s.week === week || s.week === null)
     : sections
+
+  // Anyone already crewing a section that runs this week is busy — including sections with
+  // week = null, which run both weeks. Without this, running Week 1 then Week 2 could put the
+  // same person on a both-weeks section and a Week 2 section at once.
+  const busy = new Set<string>()
+  for (const sec of targetSections) {
+    if (sec.lead_id) busy.add(sec.lead_id)
+    for (const sup of sec.supports) busy.add(sup.id)
+  }
+
+  const availableFor = (v: VolunteerWithProfile, secWeek: 1 | 2 | null) => {
+    // A both-weeks section needs someone free both weeks.
+    if (secWeek === null) return v.availability_week_1 && v.availability_week_2
+    return secWeek === 1 ? v.availability_week_1 : v.availability_week_2
+  }
+
+  const usedSenior = new Set<string>(busy)
+  const usedJunior = new Set<string>(busy)
 
   return targetSections.map(sec => {
     const needsLead = !sec.lead_id
     const needsSupport = sec.supports.length === 0
 
     const lead = needsLead
-      ? seniors.find(s => !usedSenior.has(s.id)) ?? null
+      ? volunteers.find(v => v.experience_level === 'senior' && !usedSenior.has(v.id) && availableFor(v, sec.week)) ?? null
       : null
 
-    if (lead) usedSenior.add(lead.id)
+    if (lead) { usedSenior.add(lead.id); usedJunior.add(lead.id) }
 
     const support = needsSupport
-      ? juniors.find(j => !usedJunior.has(j.id)) ?? null
+      ? volunteers.find(v => v.experience_level === 'junior' && !usedJunior.has(v.id) && availableFor(v, sec.week)) ?? null
       : null
 
-    if (support) usedJunior.add(support.id)
+    if (support) { usedJunior.add(support.id); usedSenior.add(support.id) }
 
     return { sectionId: sec.id, sectionLabel: sec.label, classId: sec.class_id, week: sec.week, lead, support }
   })

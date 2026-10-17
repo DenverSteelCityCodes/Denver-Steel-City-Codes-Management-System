@@ -4,9 +4,11 @@ import { ArrowLeft, Search, Lock, CheckCircle, Clock, List, ShieldCheck, Info } 
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
-import { useSessions } from '../hooks/useSessions'
+import { useSessions, activeCampYear } from '../hooks/useSessions'
 import CapacityMeter from '../components/CapacityMeter'
-import ConfirmOnboardingModal from '../components/ConfirmOnboardingModal'
+import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
+import { useParentProfile } from '../hooks/useParentProfile'
+import { useAuth } from '../context/AuthContext'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import type { RegistrationStatus, OnboardingConfirmation } from '../types/database'
 
@@ -21,9 +23,11 @@ interface SectionCardProps {
   registering?: boolean
   // Course-level grade restriction (#44), e.g. Microcontrollers is rising 7–9 only.
   gradeBlock?: string | null
+  // Name of the class this camper already holds a spot in for the same week (one class per week).
+  weekClash?: string | null
 }
 
-function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, gradeBlock }: SectionCardProps) {
+function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, gradeBlock, weekClash }: SectionCardProps) {
   const ageEligible = studentAge !== undefined
     ? studentAge >= section.age_min && studentAge <= section.age_max
     : true
@@ -79,6 +83,12 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
           {registrationStatus === 'cancelled' && <span className="text-ink-muted">Cancelled</span>}
           {studentName && <span className="text-ink-muted font-normal">· {studentName}</span>}
         </div>
+      ) : weekClash && !isFull ? (
+        // Campers take one class per week; the waitlist of a full class stays open as a backup.
+        <p className="flex items-start gap-1.5 font-sans text-sm text-ink-muted">
+          <Info size={15} className="shrink-0 mt-0.5" />
+          Already in {weekClash} this week
+        </p>
       ) : onRegister ? (
         <button
           onClick={onRegister}
@@ -99,10 +109,12 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
 export default function ClassBrowser() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { classes, loading: classesLoading } = useClasses()
+  const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
   const { students, confirmOnboarding } = useStudents()
-  const { registerStudent, isRegistered, getRegistration } = useRegistrations()
+  const { registrations, registerStudent, isRegistered, getRegistration } = useRegistrations()
   const { sessions } = useSessions()
+  const { profile } = useAuth()
+  const { profile: parentProfile } = useParentProfile()
 
   // Pre-select the camper when deep-linked from a StudentCard ("Register for another class").
   const [selectedStudentId, setSelectedStudentId] = useState<string>(searchParams.get('camper') ?? '')
@@ -117,9 +129,7 @@ export default function ClassBrowser() {
 
   // Active camp year: the year of the open session(s). Campers must have confirmed their
   // onboarding for THIS year before they can register — they re-confirm every summer (#42).
-  const campYear =
-    sessions.filter(s => s.is_active).reduce((max, s) => Math.max(max, s.year), 0) ||
-    new Date().getFullYear()
+  const campYear = activeCampYear(sessions)
   const needsConfirmation = (student?: typeof selectedStudent) =>
     !!student && student.registration_year !== campYear
 
@@ -153,8 +163,13 @@ export default function ClassBrowser() {
         ? `${selectedStudent?.full_name} added to the waitlist.`
         : `${selectedStudent?.full_name} registered! Pending confirmation.`
       showToast(msg, reg.status === 'waitlisted' ? 'info' : 'success')
-    } catch {
-      showToast('Something went wrong. Please try again.', 'info')
+      void refetchClasses()   // fill meters now include this camper
+    } catch (err) {
+      // The server enforces age range and capacity; show its reason rather than a generic error.
+      const reason = err instanceof Error ? err.message : ''
+      showToast(reason.includes('duplicate key')
+        ? `${selectedStudent?.full_name} is already registered for that section.`
+        : reason || 'Something went wrong. Please try again.', 'info')
     } finally {
       setRegisteringSectionId(null)
     }
@@ -189,7 +204,9 @@ export default function ClassBrowser() {
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3">
+          <label htmlFor="browse-camper" className="sr-only">Camper</label>
           <select
+            id="browse-camper"
             value={selectedStudentId}
             onChange={e => setSelectedStudentId(e.target.value)}
             className="h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition sm:w-64"
@@ -202,7 +219,10 @@ export default function ClassBrowser() {
 
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
+            <label htmlFor="browse-search" className="sr-only">Search courses</label>
             <input
+              id="browse-search"
+              type="search"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search courses…"
@@ -227,6 +247,25 @@ export default function ClassBrowser() {
               details are up to date for the {campYear} camp — we'll ask you to review them when you register.
             </span>
           </div>
+        )}
+
+        {/* Per-summer onboarding confirmation gate — opens in place, above the classes */}
+        {pendingSection && selectedStudent && (
+          <ConfirmOnboardingPanel
+            key={`${selectedStudent.id}-${pendingSection.id}`}
+            student={selectedStudent}
+            parentDefaults={{
+              parent_name: profile?.display_name,
+              parent_phone: parentProfile?.phone,
+              emergency_contact_name: parentProfile?.emergency_contact_name,
+              emergency_contact_phone: parentProfile?.emergency_contact_phone,
+              emergency_contact_relation: parentProfile?.emergency_contact_relation,
+            }}
+            campYear={campYear}
+            submitting={confirming}
+            onConfirm={handleConfirmOnboarding}
+            onClose={() => setPendingSection(null)}
+          />
         )}
 
         {!selectedStudentId && (
@@ -284,9 +323,21 @@ export default function ClassBrowser() {
                         ? isRegistered(selectedStudentId, sec.id)
                         : false
 
+                      // One held spot per camper per week (also enforced by the database).
+                      const weekClash = selectedStudentId
+                        ? registrations.find(r =>
+                            r.student_id === selectedStudentId &&
+                            r.section_id !== sec.id &&
+                            (r.status === 'pending' || r.status === 'confirmed') &&
+                            r.year === campYear &&
+                            r.sections?.week != null && r.sections.week === sec.week,
+                          )?.sections?.classes?.name ?? null
+                        : null
+
                       return (
                         <SectionCard
                           key={sec.id}
+                          weekClash={weekClash}
                           section={sec}
                           studentName={selectedStudent?.full_name}
                           studentAge={selectedStudent?.age}
@@ -309,20 +360,9 @@ export default function ClassBrowser() {
           </div>
         )}
 
-      {/* Per-summer onboarding confirmation gate */}
-      {pendingSection && selectedStudent && (
-        <ConfirmOnboardingModal
-          student={selectedStudent}
-          campYear={campYear}
-          submitting={confirming}
-          onConfirm={handleConfirmOnboarding}
-          onClose={() => setPendingSection(null)}
-        />
-      )}
-
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 max-w-sm px-4 py-3 rounded-xl shadow-lg font-sans text-sm font-semibold border-l-4 ${
+        <div role="status" aria-live="polite" className={`fixed bottom-6 right-6 left-6 sm:left-auto max-w-sm px-4 py-3 rounded-xl shadow-lg font-sans text-sm font-semibold border-l-4 ${
           toast.type === 'success'
             ? 'bg-surface-raised border-success text-ink'
             : 'bg-surface-raised border-info text-ink'
