@@ -1,6 +1,6 @@
 # 18: Server-side paging and search for admin lists
 
-**Status:** ⬜ not started · **Issue:** #87 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #122](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/122) · **Issue:** #87 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** —
 **Plan reference:** Plan §2.3 'what breaks first' #4
 
