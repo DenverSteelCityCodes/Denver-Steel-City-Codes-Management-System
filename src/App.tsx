@@ -25,6 +25,8 @@ import ParentRegistrationPage from './pages/ParentRegistrationPage'
 import ClassBrowser from './pages/ClassBrowser'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import VolunteerApplyPage from './pages/VolunteerApplyPage'
+import MfaGate from './components/MfaGate'
+import MfaPage from './pages/MfaPage'
 
 function RoleRedirect() {
   const { role, loading } = useAuth()
@@ -51,7 +53,13 @@ function App() {
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           {/* Role-gated */}
+          {/* Two-step sign-in for admins (spec 27): any signed-in user can reach it. */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/mfa" element={<MfaPage />} />
+          </Route>
+
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route element={<MfaGate />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/classes" element={<AdminClasses />} />
@@ -65,6 +73,7 @@ function App() {
               <Route path="/admin/attendance" element={<AdminAttendance />} />
               <Route path="/admin/updates" element={<AdminUpdates />} />
             </Route>
+            </Route>
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['volunteer']} />}>
@@ -73,7 +82,9 @@ function App() {
 
           {/* Paper fallback: printable section roster for admins and the section's crew */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'volunteer']} />}>
-            <Route path="/print/roster/:sectionId" element={<PrintRoster />} />
+            <Route element={<MfaGate />}>
+              <Route path="/print/roster/:sectionId" element={<PrintRoster />} />
+            </Route>
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['parent']} />}>

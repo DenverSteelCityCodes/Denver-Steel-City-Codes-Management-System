@@ -127,6 +127,11 @@ BEGIN
   UPDATE form_configs SET config = jsonb_build_object('enabled', true, 'fields', '{}'::jsonb), updated_at = now();
   INSERT INTO app_settings (key, value, updated_at) VALUES ('volunteer_applications_open', 'true', now())
     ON CONFLICT (key) DO UPDATE SET value = 'true', updated_at = now();
+  -- The demo's one-click admin can't pass a TOTP step, so admin MFA (spec 27) is off here, and
+  -- any authenticator a visitor set up on a demo login is removed.
+  INSERT INTO app_settings (key, value, updated_at) VALUES ('admin_mfa_required', 'false', now())
+    ON CONFLICT (key) DO UPDATE SET value = 'false', updated_at = now();
+  DELETE FROM auth.mfa_factors;
 
   -- ── 2. Camp weeks and courses ──
   INSERT INTO sessions (name, year, start_date, end_date, is_active) VALUES ('Week 1', camp_year, w1_start, w1_end, true) RETURNING id INTO w1;
