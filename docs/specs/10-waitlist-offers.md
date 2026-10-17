@@ -1,6 +1,6 @@
 # 10: Waitlist offers with a 48-hour claim window
 
-**Status:** ⬜ not started · **Issue:** #79 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** ✅ [PR #128](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/128) · **Issue:** #79 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 05, 06, 09, 10a · **Unblocks:** 11, 12
 **Plan reference:** Plan flow P6, §2.2 'full → waitlist → seat opens', §6 decisions Q-W2, Q-W2b, Q-W3, Q-N1
 
