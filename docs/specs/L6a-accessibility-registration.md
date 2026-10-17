@@ -1,6 +1,6 @@
 # L6a: Accessibility pass on the registration flow (before February)
 
-**Status:** 🟨 automated pass done ([PR](#)); real-device checks open · **Issue:** #111 · **Priority:** P0 · **Effort:** S · **Phase:** Legal (before the dry run)
+**Status:** 🟨 automated pass done ([PR #130](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/130)); real-device checks open · **Issue:** #111 · **Priority:** P0 · **Effort:** S · **Phase:** Legal (before the dry run)
 **Depends on:** 03, 10, 11, 12, 16, L1, L2 (the screens must exist first) · **Unblocks:** 19
 **Plan reference:** Plan §4.1 accessibility (ADA) row; §1 cross-cutting accessibility
 
