@@ -1,6 +1,6 @@
 # 15: Admin history strip and revert
 
-**Status:** ⬜ not started · **Issue:** #84 · **Priority:** P0 (cut second if short on time) · **Effort:** M · **Phase:** B
+**Status:** ✅ [PR #123](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/123) · **Issue:** #84 · **Priority:** P0 (cut second if short on time) · **Effort:** M · **Phase:** B
 **Depends on:** 05, 06 · **Unblocks:** —
 **Plan reference:** Plan §2.1 'Undo', §0 win 4
 
