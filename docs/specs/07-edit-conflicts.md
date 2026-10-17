@@ -1,6 +1,6 @@
 # 07: No silent overwrites when two people edit the same record
 
-**Status:** ⬜ not started · **Issue:** #75 · **Priority:** P0 · **Effort:** S · **Phase:** A
+**Status:** ✅ [PR #118](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/118) · **Issue:** #75 · **Priority:** P0 · **Effort:** S · **Phase:** A
 **Depends on:** none (nicer with 05) · **Unblocks:** —
 **Plan reference:** Plan §2.2 'two people editing the same record'
 
