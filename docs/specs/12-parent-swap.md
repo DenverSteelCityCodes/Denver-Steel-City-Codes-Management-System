@@ -1,6 +1,6 @@
 # 12: Parent switches class within the same week
 
-**Status:** ⬜ not started · **Issue:** #81 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** ✅ [PR #129](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/129) · **Issue:** #81 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 10, 11 · **Unblocks:** —
 **Plan reference:** Plan flow P5, §6 decisions Q-W1 and Q-W4
 
