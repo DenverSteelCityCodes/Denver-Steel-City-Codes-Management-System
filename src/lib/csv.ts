@@ -4,7 +4,10 @@ type Cell = string | number | null | undefined
 
 function escapeCell(v: Cell): string {
   if (v === null || v === undefined) return ''
-  const s = String(v)
+  // A text cell that starts like a formula would run in Excel/Sheets; a leading apostrophe makes
+  // it plain text there. Numbers are left alone so negatives still sort as numbers.
+  const raw = String(v)
+  const s = typeof v === 'string' && /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 

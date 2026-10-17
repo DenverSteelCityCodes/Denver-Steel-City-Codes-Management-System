@@ -42,9 +42,10 @@ export function formatDayLong(iso: string): string {
   return parseLocalDate(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 }
 
-// The session whose dates include the given day, else null.
+// The session whose dates include the given day, else null. Deliberately ignores is_active:
+// a week that is running is running, whether or not it is still shown for sign-ups.
 export function sessionOnDay(sessions: Session[], dayISO: string): Session | null {
-  return sessions.find(s => s.is_active && s.start_date <= dayISO && s.end_date >= dayISO) ?? null
+  return sessions.find(s => s.start_date <= dayISO && s.end_date >= dayISO) ?? null
 }
 
 // Camp days (Mon–Fri) of a session as YYYY-MM-DD strings.

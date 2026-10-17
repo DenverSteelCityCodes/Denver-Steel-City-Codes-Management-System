@@ -21,7 +21,7 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
       .eq('day', day)
       .then(({ data, error }) => {
         if (error) setError(error.message)
-        else setMarks((data ?? []) as RollCallMark[])
+        else { setMarks((data ?? []) as RollCallMark[]); setError(null) }
         setLoading(false)
       })
   }, [sectionId, day])
@@ -38,7 +38,12 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
     return marks.some(m => m.roll_call === rollCall)
   }
 
-  async function setMarks_(rows: { student_id: string; roll_call: RollCallKind; present: boolean }[]) {
+  // keepExisting: never overwrite a mark that is already in the database, even one this screen
+  // has not loaded yet (a co-volunteer's "absent" from the last minute).
+  async function setMarks_(
+    rows: { student_id: string; roll_call: RollCallKind; present: boolean }[],
+    keepExisting = false,
+  ) {
     if (!sectionId || !user || rows.length === 0) return
     const payload = rows.map(r => ({
       section_id: sectionId, student_id: r.student_id, day, roll_call: r.roll_call,
@@ -51,7 +56,7 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
     })
     const { error } = await supabase
       .from('roll_call_marks')
-      .upsert(payload, { onConflict: 'section_id,student_id,day,roll_call' })
+      .upsert(payload, { onConflict: 'section_id,student_id,day,roll_call', ignoreDuplicates: keepExisting })
     if (error) {
       await fetchMarks()
       throw new Error(error.message)
@@ -65,9 +70,10 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
   }
 
   // "Mark all present": every camper not yet marked for this roll call becomes present.
+  // "Not yet marked" is decided by the database, not by this screen's copy of the marks.
   async function markAllPresent(studentIds: string[], rollCall: RollCallKind) {
     const missing = studentIds.filter(id => !getMark(id, rollCall))
-    await setMarks_(missing.map(id => ({ student_id: id, roll_call: rollCall, present: true })))
+    await setMarks_(missing.map(id => ({ student_id: id, roll_call: rollCall, present: true })), true)
   }
 
   return { marks, loading: sectionId ? loading : false, error, getMark, taken, setMark, markAllPresent, refetch: fetchMarks }
