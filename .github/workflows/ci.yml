@@ -1,0 +1,32 @@
+# CI (spec 08, #76): lint, unit tests and a production build on every pull request and every
+# push to main. The SQL/RLS suites in test-plans/ still run against the demo database by hand;
+# they move here (Supabase local stack + migrations) once spec 01 puts migrations in
+# supabase/migrations.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+        env:
+          TZ: Asia/Tokyo   # camp times must not depend on the machine's time zone
+      - run: npm run build

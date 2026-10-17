@@ -1,6 +1,6 @@
 # 08: Automated tests and CI
 
-**Status:** ⬜ not started · **Issue:** #76 · **Priority:** P0 · **Effort:** M · **Phase:** A
+**Status:** 🟨 part 1 built (CI, unit tests, seat race); SQL runner waits for 01 · **Issue:** #76 · **Priority:** P0 · **Effort:** M · **Phase:** A
 **Depends on:** 01 · **Unblocks:** every later spec (they add tests here)
 **Plan reference:** Plan §2.4 docs/setup table, §2.2 seat race
 
@@ -32,4 +32,11 @@ There's no test runner (`package.json` has no test script) and no CI (no `.githu
 - None.
 
 ## Notes for the builder
+- **Part 1 built 2026-10-17** (see `docs/testing.md`):
+  - Vitest (`npm test`, pinned 3.2.4) with 27 tests over the five libraries listed above, plus `denverTime` and `registrationDraft`.
+  - GitHub Actions `CI` runs lint, tests (with `TZ=Asia/Tokyo`) and build on every PR and every push to `main`.
+  - `test-plans/seat-race.sh` passed 20 runs in a row on the demo: 20 parallel connections, 5 seats held, 15 waitlisted every time.
+- **Still to do:**
+  - after spec 01: Supabase local stack + migrations + the `test-plans/*-tests.sql` suites and the seat race in CI; prove it with a deliberately broken policy;
+  - **branch protection** on `main` requiring the `CI` check. That's a repository setting, so the Regional Director turns it on in GitHub (Settings → Branches), or asks for it to be done.
 - Use the Supabase CLI version pinned in the workflow, so local and CI behave the same.
