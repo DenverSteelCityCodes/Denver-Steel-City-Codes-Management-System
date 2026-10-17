@@ -31,4 +31,8 @@ L6a covers the registration flow before February. This spec finishes the rest of
 - None.
 
 ## Notes for the builder
+- Known minor issues from the L6a pass (2026-10-17), for the statement and the full audit:
+  - The login page's first heading is the "Try the demo" box (demo mode only), so the page has no `h1` before it.
+  - After a camper-card action succeeds (cancel, claim, switch), focus returns to the page, not to the updated card. The status change is visible and the list re-renders, but nothing is announced.
+  - Server errors on sign-in and sign-up are announced (`role="alert"`) but not focused.
 - Contrast fixes must stay within the v1.0 style guide. Adjust token shades, not the palette's identity, and record any token change in `design_system.md`.

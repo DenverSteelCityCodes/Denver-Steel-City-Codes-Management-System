@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Mail } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { BrandBar } from '../components/Wordmark'
+import { focusOnMount } from '../lib/focus'
 
 // Step 1 of a password reset: email a recovery link that lands on /reset.
 // Always shows the same confirmation, so this page never reveals whether an email has an account.
@@ -39,7 +40,7 @@ export default function ForgotPasswordPage() {
               <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
                 <Mail size={20} className="text-success" />
               </div>
-              <h1 className="font-sans font-bold text-xl text-ink mb-2">Check your email</h1>
+              <h1 ref={focusOnMount} tabIndex={-1} className="font-sans font-bold text-xl text-ink mb-2 focus:outline-none">Check your email</h1>
               <p role="status" className="font-sans text-ink-muted text-sm">
                 If <strong className="text-ink">{email.trim()}</strong> has an account, we've sent a link to choose a new password. It works for one hour.
               </p>

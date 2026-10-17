@@ -1,6 +1,6 @@
 # L6a: Accessibility pass on the registration flow (before February)
 
-**Status:** ⬜ not started · **Issue:** #111 · **Priority:** P0 · **Effort:** S · **Phase:** Legal (before the dry run)
+**Status:** 🟨 automated pass done ([PR #130](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/130)); real-device checks open · **Issue:** #111 · **Priority:** P0 · **Effort:** S · **Phase:** Legal (before the dry run)
 **Depends on:** 03, 10, 11, 12, 16, L1, L2 (the screens must exist first) · **Unblocks:** 19
 **Plan reference:** Plan §4.1 accessibility (ADA) row; §1 cross-cutting accessibility
 
@@ -36,5 +36,21 @@ Parents register on their phones in February, and the registration flow is where
 - None.
 
 ## Notes for the builder
+- **Automated pass done 2026-10-17** (axe-core 4.10, WCAG 2.0/2.1 A+AA plus 2.2 AA target size). Covers every screen in scope except L1/L2's pages (not built yet), in light and dark mode, at 375 px and desktop; 320 px (= 200% zoom) checked for sideways scrolling. Result: 0 violations of any impact after the fixes below. Run it again with `axe.run` from `/node_modules/axe-core/axe.min.js` in the dev server (`axe-core` is a dev dependency); turn off CSS transitions first, because a background tab leaves colours mid-transition and gives false contrast failures.
+- Fixes made:
+  - token shades darkened to reach AA (see `design_system.md` §3.8);
+  - ineligible class cards no longer use `opacity-70`;
+  - wizard errors focus the field they're about, which gets `aria-invalid` and `aria-describedby`;
+  - each new step moves focus to "Step N of 5";
+  - yes/no and multi-select buttons expose `aria-pressed`;
+  - the waiver box is a focusable region;
+  - success screens (signup, forgot, reset) focus their heading;
+  - signup errors use `role="alert"`;
+  - the countdown speaks once a minute, not every second;
+  - `prefers-reduced-motion` turns off animations and smooth scrolling;
+  - switch-class and confirm panels keep keyboard focus when they open and close.
+- **Still to do here:**
+  - the keyboard, VoiceOver (iPhone) and TalkBack (Android) runs of a full registration, a waitlist accept and a cancel (needs a person and real phones);
+  - the L1/L2 pages once they exist.
 - Contrast fixes stay within the v1.0 style guide. Adjust token shades, not the palette's identity, and record any token change in `design_system.md`.
 - Several fixes overlap spec 16 (focused errors, step text). Whichever lands second checks the other's work rather than redoing it.

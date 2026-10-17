@@ -113,8 +113,8 @@ These map raw palette → meaning. Components reference *only* these. Light / Da
 | `--surface-sunken` | `#F2ECE2` | `#100D0A` | Wells, table stripes, code |
 | `--surface-raised` | `#FFFFFF` | `#2C251D` | Modals, popovers, dropdowns |
 | `--ink` | `#262019` | `#F5EFE4` | Primary text |
-| `--ink-muted` | `#7A6E60` | `#B9AD9C` | Secondary text |
-| `--ink-faint` | `#9C8F7E` | `#8A7E6E` | Placeholder, disabled |
+| `--ink-muted` | `#665A4C` | `#B9AD9C` | Secondary text |
+| `--ink-faint` | `#766959` | `#9C907F` | Placeholder, disabled |
 | `--border` | `#E6DFD3` | `#39302699` | Hairlines, dividers |
 | `--border-strong` | `#CFC6B8` | `#4A3F33` | Input borders, emphasis |
 
@@ -130,8 +130,8 @@ These map raw palette → meaning. Components reference *only* these. Light / Da
 #### Status (semantic states)
 | Token | Soft (bg) L / D | Deep (text) L / D | Used for |
 |---|---|---|---|
-| `--success` | `#C2E6C9` / `#16341F` | `#1E7A3E` / `#86E0A0` | Confirmed, checked-in, saved |
-| `--warning` | `#FAE1A1` / `#3A2F12` | `#8A6D12` / `#F1C446` | Pending, attention, capacity warn |
+| `--success` | `#C2E6C9` / `#16341F` | `#17652F` / `#86E0A0` | Confirmed, checked-in, saved |
+| `--warning` | `#FAE1A1` / `#3A2F12` | `#715709` / `#F1C446` | Pending, attention, capacity warn |
 | `--danger`  | `#F6D5D2` / `#3A1A1A` | `#B42318` / `#F0A19C` | Cancelled, errors, allergy/medical |
 | `--info`    | `#CEDDE8` / `#16293A` | `#2D5E83` / `#9CCBEC` | Waitlist hints, neutral info |
 
@@ -141,9 +141,9 @@ Each account tier owns a hue. Use for role badges, sidebar accents, avatar rings
 
 | Role | Soft | Deep | Rationale |
 |---|---|---|---|
-| **Admin** | `--brand-soft` `#FCEFC4` | `#8A6D12` | Gold = authority / the people who run it |
+| **Admin** | `--brand-soft` `#FCEFC4` | `#715709` | Gold = authority / the people who run it |
 | **Volunteer** | sky `#CEDDE8` | `#2D5E83` | Calm, dependable, "on duty" blue |
-| **Parent** | lavender `#DBBFDD` | `#6B4B72` | Soft, caring, family |
+| **Parent** | lavender `#DBBFDD` | `#5F4266` | Soft, caring, family |
 
 > **Class age-groups** can optionally use a rotating tint set: `peach → sky → lavender → green → butter`. Keep it consistent per group across the app.
 
@@ -158,8 +158,8 @@ Each account tier owns a hue. Use for role badges, sidebar accents, avatar rings
   --surface-raised: #FFFFFF;
   /* text */
   --ink: #262019;
-  --ink-muted: #7A6E60;
-  --ink-faint: #9C8F7E;
+  --ink-muted: #665A4C;
+  --ink-faint: #766959;
   --border: #E6DFD3;
   --border-strong: #CFC6B8;
   /* brand */
@@ -169,14 +169,14 @@ Each account tier owns a hue. Use for role badges, sidebar accents, avatar rings
   --on-brand: #1A1613;
   --ring: #E7B62C;
   /* status — soft (bg) */
-  --success-soft: #C2E6C9; --success: #1E7A3E;
-  --warning-soft: #FAE1A1; --warning: #8A6D12;
+  --success-soft: #C2E6C9; --success: #17652F;
+  --warning-soft: #FAE1A1; --warning: #715709;
   --danger-soft:  #F6D5D2; --danger:  #B42318;
   --info-soft:    #CEDDE8; --info:    #2D5E83;
   /* roles */
-  --role-admin-soft: #FCEFC4;     --role-admin: #8A6D12;
+  --role-admin-soft: #FCEFC4;     --role-admin: #715709;
   --role-volunteer-soft: #CEDDE8; --role-volunteer: #2D5E83;
-  --role-parent-soft: #DBBFDD;    --role-parent: #6B4B72;
+  --role-parent-soft: #DBBFDD;    --role-parent: #5F4266;
   /* radius / shadow / motion (see §5–6) */
   --radius: 0.625rem;            /* 10px — the default */
   --shadow-sm: 0 1px 2px rgba(38,32,25,.06), 0 1px 3px rgba(38,32,25,.05);
@@ -192,7 +192,7 @@ Each account tier owns a hue. Use for role badges, sidebar accents, avatar rings
   --surface-raised: #2C251D;
   --ink: #F5EFE4;
   --ink-muted: #B9AD9C;
-  --ink-faint: #8A7E6E;
+  --ink-faint: #9C907F;
   --border: rgba(57,48,38,.6);
   --border-strong: #4A3F33;
   --brand: #F1C446;
@@ -253,6 +253,7 @@ export default {
 ```
 
 ### 3.8 Contrast & accessibility rules
+- **Token shades darkened for WCAG 2.1 AA (L6a, 2026-10-17).** Small text on a soft chip or sunken surface failed 4.5:1, so the semantic tokens moved a step darker within the same hues: light `--ink-muted` #7A6E60→#665A4C, `--ink-faint` #9C8F7E→#766959, `--success` #1E7A3E→#17652F, `--warning`/`--role-admin` #8A6D12→#715709, `--role-parent` #6B4B72→#5F4266; dark `--ink-faint` #8A7E6E→#9C907F. The palette swatches above (ink ramp, chip pairs) stay as the brand's identity; components use the semantic tokens. Every text token now reaches ≥ 4.5:1 on `--bg`, `--surface`, `--surface-sunken` and its own soft chip, in both themes.
 - Body text uses `--ink` on `--surface`/`--bg` → ≥ 7:1 (AAA).
 - `--ink-muted` is for secondary text only, ≥ 4.5:1.
 - **Never** put `--ink-faint` text on `--brand`. On gold, always use `--on-brand`.

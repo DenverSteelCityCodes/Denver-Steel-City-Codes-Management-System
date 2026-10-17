@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { BrandBar } from '../components/Wordmark'
+import { focusOnMount } from '../lib/focus'
 
 export default function SignupPage() {
   const [displayName, setDisplayName] = useState('')
@@ -62,9 +63,9 @@ export default function SignupPage() {
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8 text-center">
           <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
-            <span className="text-success text-xl">✓</span>
+            <span aria-hidden="true" className="text-success text-xl">✓</span>
           </div>
-          <h1 className="font-sans font-bold text-xl text-ink mb-2">Check your email</h1>
+          <h1 ref={focusOnMount} tabIndex={-1} className="font-sans font-bold text-xl text-ink mb-2 focus:outline-none">Check your email</h1>
           <p className="font-sans text-ink-muted text-sm">
             We sent a confirmation link to <strong className="text-ink">{email}</strong>. Click it to activate your account.
           </p>
@@ -152,7 +153,7 @@ export default function SignupPage() {
           </div>
 
           {error && (
-            <p className="text-danger text-sm font-sans flex items-center gap-1.5">
+            <p role="alert" className="text-danger text-sm font-sans flex items-center gap-1.5">
               <span>⚠</span> {error}
             </p>
           )}

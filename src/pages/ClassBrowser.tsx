@@ -46,7 +46,7 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
 
   if (ineligibleReason) {
     return (
-      <div className="opacity-70 bg-surface-sunken border border-border rounded-xl p-4 flex flex-col gap-3">
+      <div className="bg-surface-sunken border border-dashed border-border-strong rounded-xl p-4 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <span className="font-sans font-semibold text-sm text-ink truncate">{section.label}</span>
           {section.week && (
@@ -57,7 +57,7 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
           <Lock size={11} /> {ineligibleReason}
         </span>
         {studentName && (
-          <p className="font-sans text-xs text-ink-faint">Not eligible for {studentName}</p>
+          <p className="font-sans text-xs text-ink-muted">Not eligible for {studentName}</p>
         )}
         <CapacityMeter registered={section.registered_count} capacity={section.capacity} />
       </div>
