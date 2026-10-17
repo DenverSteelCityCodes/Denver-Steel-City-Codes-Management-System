@@ -3,11 +3,10 @@ import { useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, Trash2, X, Check, ChevronDown, BookOpen, Users } from 'lucide-react'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
-import { useAdminClasses, type ClassWithSections, type SectionWithCrew } from '../hooks/useAdminClasses'
+import { useAdminClasses, type ClassWithSections, type SectionWithCrew, type SectionInput } from '../hooks/useAdminClasses'
 import { useVolunteers } from '../hooks/useVolunteers'
 import CapacityMeter from '../components/CapacityMeter'
 import { supabase } from '../lib/supabase'
-import type { Section } from '../types/database'
 
 // Everything on this page edits in place — no modals. Forms open where the thing lives
 // (top of the list, the class header, the section row) and Esc cancels.
@@ -121,7 +120,7 @@ function SectionForm({
   classId: string
   section?: SectionWithCrew
   volunteerOptions: { id: string; display_name: string }[]
-  onSave: (payload: Omit<Section, 'id' | 'created_at'>, supportIds: string[]) => Promise<void>
+  onSave: (payload: SectionInput, supportIds: string[]) => Promise<void>
   onCancel: () => void
 }) {
   const [form, setForm] = useState<SectionFormState>({

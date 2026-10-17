@@ -22,6 +22,11 @@ export interface SectionWithCrew extends Section {
   waitlist_count: number
 }
 
+// Schedule columns are optional on write so a section can be created before its times are known.
+export type SectionInput =
+  Omit<Section, 'id' | 'created_at' | 'days' | 'start_time' | 'end_time' | 'room'> &
+  Partial<Pick<Section, 'days' | 'start_time' | 'end_time' | 'room'>>
+
 export interface ClassWithSections extends Class {
   sections: SectionWithCrew[]
   enrolled: number
@@ -104,7 +109,7 @@ export function useAdminClasses() {
   }
 
   async function createSection(
-    payload: Omit<Section, 'id' | 'created_at'>,
+    payload: SectionInput,
     supportIds: string[] = [],
   ) {
     const { data: section, error } = await supabase
@@ -126,7 +131,7 @@ export function useAdminClasses() {
 
   async function updateSection(
     id: string,
-    payload: Partial<Omit<Section, 'id' | 'class_id' | 'created_at'>>,
+    payload: Partial<Omit<SectionInput, 'class_id'>>,
     supportIds?: string[],
   ) {
     const { error } = await supabase.from('sections').update(payload).eq('id', id)

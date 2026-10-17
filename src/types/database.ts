@@ -86,6 +86,48 @@ export interface Section {
   capacity: number
   week: 1 | 2 | null
   lead_id: string | null
+  // Schedule (migration_camp_week_ops.sql): free-text days, HH:MM:SS times, room name.
+  days: string
+  start_time: string | null
+  end_time: string | null
+  room: string | null
+  created_at: string
+}
+
+// The daily camp schedule, one list per session (same every day of that week).
+export interface ScheduleItem {
+  id: string
+  session_id: string
+  start_time: string
+  end_time: string | null
+  title: string
+  location: string | null
+  created_at: string
+}
+
+export type RollCallKind = 'arrival' | 'after_lunch' | 'dismissal'
+
+export interface RollCallMark {
+  id: string
+  section_id: string
+  student_id: string
+  day: string          // YYYY-MM-DD
+  roll_call: RollCallKind
+  present: boolean
+  note: string | null
+  marked_by: string | null
+  marked_at: string
+}
+
+export type UpdateAudience = 'everyone' | 'parents' | 'volunteers' | 'section'
+
+export interface Update {
+  id: string
+  author_id: string
+  author_name: string
+  audience: UpdateAudience
+  section_id: string | null
+  body: string
   created_at: string
 }
 
