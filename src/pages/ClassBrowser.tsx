@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Search, Lock, CheckCircle, List, ShieldCheck, Info } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
+import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear } from '../hooks/useSessions'
@@ -116,6 +117,8 @@ export default function ClassBrowser() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
+  // Keep "spots left" honest during the opening rush: refresh seat counts every 30 s and on focus (spec 16).
+  useRefetchOnFocus(refetchClasses, 30_000)
   const { students, confirmOnboarding } = useStudents()
   const { registrations, registerStudent, isRegistered, getRegistration } = useRegistrations()
   const { sessions, loading: sessionsLoading } = useSessions()
