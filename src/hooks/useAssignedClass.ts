@@ -11,6 +11,7 @@ export interface AssignedStudent {
   medical_conditions: string | null
   emergency_contact_name: string | null
   emergency_contact_phone: string | null
+  emergency_contact_relation: string | null
   parent_phone: string | null
 }
 
@@ -124,17 +125,11 @@ export function useAssignedClass() {
     let rosterErr: string | null = null
     const result: AssignedSection[] = await Promise.all(
       allSections.map(async sec => {
-        const { data: regs, error: regsErr } = await supabase
-          .from('registrations')
-          .select('students(id, full_name, age, medical_info, allergies, medical_conditions, emergency_contact_name, emergency_contact_phone, parent_phone)')
-          .eq('section_id', sec.id)
-          .in('status', ['confirmed', 'pending'])
-        if (regsErr) rosterErr = regsErr.message
-
-        const students: AssignedStudent[] = (regs ?? [])
-          .flatMap((r: { students: AssignedStudent | AssignedStudent[] | null }) =>
-            Array.isArray(r.students) ? r.students : r.students ? [r.students] : []
-          )
+        // Crew can't read students directly; section_roster returns only roster fields, only for
+        // campers holding a seat in this section.
+        const { data, error: rosterRpcErr } = await supabase.rpc('section_roster', { p_section_id: sec.id })
+        if (rosterRpcErr) rosterErr = rosterRpcErr.message
+        const students = (data ?? []) as AssignedStudent[]
 
         return {
           id: sec.id,

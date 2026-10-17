@@ -2,6 +2,8 @@
 -- the demo DB after private.reset_demo(). Impersonates each role with SET LOCAL ROLE +
 -- request.jwt.claims; test writes are removed at the end. Expected: every "(BAD)" line absent.
 -- Last run 2026-09-30: 36 checks, all as expected (see test-plans/camp-week-gap-audit-2026-09-30.md).
+-- The "roster:" checks cover migration_volunteer_roster_access.sql (crew read campers only through
+-- section_roster()); run them after applying it.
 create temp table if not exists rls_results (n serial, test text, outcome text);
 truncate rls_results;
 grant all on rls_results to authenticated, anon;
@@ -18,6 +20,13 @@ declare
   pyb_student uuid := (select r.student_id from registrations r where r.section_id=(select s.id from sections s where s.label='PY-B' and s.week=1) and r.status in ('confirmed','pending') limit 1);
   web_student uuid := (select r.student_id from registrations r where r.section_id=(select s.id from sections s where s.label='WEB-1' and s.week=1) and r.status in ('confirmed','pending') limit 1);
   maya uuid := (select id from students where full_name='Maya Brooks');
+  -- Read as the table owner, before any role switch.
+  pyb_seated int := (select count(*) from registrations r where r.section_id=pyb and r.status in ('confirmed','pending'));
+  -- Every section the lead crews, and its unseated (cancelled, waitlisted, offered) campers.
+  sam_sections uuid[] := array(select s.id from sections s where s.lead_id=sam);
+  sam_unseated text[] := array(select r.section_id || ':' || r.student_id from registrations r
+                               where r.section_id = any(array(select s.id from sections s where s.lead_id=sam))
+                                 and r.status not in ('confirmed','pending'));
   today date := (now() at time zone 'America/Denver')::date;
   n int; arr text[]; new_id uuid; ok boolean;
 begin
@@ -50,6 +59,10 @@ begin
   insert into rls_results(test,outcome) values ('parent reads schedule items', n || ' rows');
   select count(*) into n from sections where room is not null;
   insert into rls_results(test,outcome) values ('parent reads section rooms', n || ' rows');
+  begin
+    perform public.section_roster(web);
+    insert into rls_results(test,outcome) values ('roster: parent reads own camper''s section roster', 'ALLOWED (BAD)');
+  exception when others then insert into rls_results(test,outcome) values ('roster: parent reads own camper''s section roster', 'blocked: ' || sqlerrm); end;
 
   -- ===== VOLUNTEER LEAD (Sam Okafor, leads PY-B w1) =====
   perform set_config('request.jwt.claims', json_build_object('sub', sam, 'role', 'authenticated')::text, true);
@@ -111,6 +124,27 @@ begin
     insert into rls_results(test,outcome) values ('lead gets everyone emails', 'ALLOWED (BAD)');
   exception when others then insert into rls_results(test,outcome) values ('lead gets everyone emails', 'blocked: ' || sqlerrm); end;
 
+  -- Roster access (spec 04): no direct camper reads; section_roster for own section only.
+  select count(*) into n from students;
+  insert into rls_results(test,outcome) values ('roster: lead selects students directly', n || ' rows (expect 0)');
+  select count(*) into n from (select ethnic_background, free_reduced_lunch, school_name, email, waiver_signature from students) x;
+  insert into rls_results(test,outcome) values ('roster: lead selects sensitive camper columns', n || ' rows (expect 0)');
+  select count(*) into n from registrations where status not in ('confirmed','pending');
+  insert into rls_results(test,outcome) values ('roster: lead sees unseated registrations', n || ' rows (expect 0)');
+  begin
+    select count(*) into n from public.section_roster(pyb);
+    insert into rls_results(test,outcome) values ('roster: lead reads own section roster',
+      n || ' campers (expect ' || pyb_seated || ')' || case when n <> pyb_seated then ' (BAD)' else '' end);
+    select count(*) into n from unnest(sam_sections) sid cross join lateral public.section_roster(sid) sr
+      where sid || ':' || sr.id = any(sam_unseated);
+    insert into rls_results(test,outcome) values ('roster: own rosters include unseated campers',
+      n || ' (expect 0; lead''s sections have ' || coalesce(array_length(sam_unseated,1),0) || ' unseated rows)' || case when n > 0 then ' (BAD)' else '' end);
+  exception when others then insert into rls_results(test,outcome) values ('roster: lead reads own section roster', 'BLOCKED (BAD): ' || sqlerrm); end;
+  begin
+    perform public.section_roster(web);
+    insert into rls_results(test,outcome) values ('roster: lead reads other section roster', 'ALLOWED (BAD)');
+  exception when others then insert into rls_results(test,outcome) values ('roster: lead reads other section roster', 'blocked: ' || sqlerrm); end;
+
   -- ===== SUPPORT VOLUNTEER of PY-B =====
   perform set_config('request.jwt.claims', json_build_object('sub', pyb_support, 'role', 'authenticated')::text, true);
   begin
@@ -121,6 +155,12 @@ begin
     insert into updates(audience, section_id, body) values ('section', pyb, 'support post');
     insert into rls_results(test,outcome) values ('support posts update', 'ALLOWED (BAD)');
   exception when others then insert into rls_results(test,outcome) values ('support posts update', 'blocked: ' || sqlerrm); end;
+  select count(*) into n from students;
+  insert into rls_results(test,outcome) values ('roster: support selects students directly', n || ' rows (expect 0)');
+  begin
+    select count(*) into n from public.section_roster(pyb);
+    insert into rls_results(test,outcome) values ('roster: support reads own section roster', n || ' campers (expect ' || pyb_seated || ')');
+  exception when others then insert into rls_results(test,outcome) values ('roster: support reads own section roster', 'BLOCKED (BAD): ' || sqlerrm); end;
 
   -- ===== ADMIN =====
   perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated')::text, true);
@@ -136,6 +176,12 @@ begin
   insert into schedule_items(session_id, start_time, title) values ((select id from sessions limit 1), '07:00', 'test') returning id into new_id;
   delete from schedule_items where id=new_id;
   insert into rls_results(test,outcome) values ('admin edits schedule', 'ok');
+  select count(*) into n from students;
+  insert into rls_results(test,outcome) values ('roster: admin selects students directly', n || ' rows');
+  begin
+    select count(*) into n from public.section_roster(web);
+    insert into rls_results(test,outcome) values ('roster: admin reads any section roster', n || ' campers');
+  exception when others then insert into rls_results(test,outcome) values ('roster: admin reads any section roster', 'BLOCKED (BAD): ' || sqlerrm); end;
 
   -- ===== ANON =====
   execute 'set local role anon';
@@ -147,8 +193,16 @@ begin
     perform public.section_lead_names();
     insert into rls_results(test,outcome) values ('anon lead names', 'ALLOWED (BAD)');
   exception when others then insert into rls_results(test,outcome) values ('anon lead names', 'blocked: ' || sqlerrm); end;
+  begin
+    perform public.section_roster(pyb);
+    insert into rls_results(test,outcome) values ('roster: anon reads a roster', 'ALLOWED (BAD)');
+  exception when others then insert into rls_results(test,outcome) values ('roster: anon reads a roster', 'blocked: ' || sqlerrm); end;
 
   execute 'reset role';
   delete from roll_call_marks where day = today and section_id = pyb and marked_by in (sam, pyb_support);
 end $$;
 select test, outcome from rls_results order by n;
+-- section_roster returns exactly the roster fields (expect: id, full_name, age, allergies,
+-- medical_conditions, medical_info, emergency_contact_name, emergency_contact_phone,
+-- emergency_contact_relation, parent_name, parent_phone).
+select pg_get_function_result('public.section_roster(uuid)'::regprocedure) as roster_columns;

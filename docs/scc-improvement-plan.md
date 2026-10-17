@@ -398,7 +398,7 @@ flowchart TD
 | **Bad input: age outside range** | Not offered in the UI; refused by the DB with a reason; age can't be edited out of range of a held class | DB: `age_min/age_max` CHECKs, insert trigger, `students_guard_age` | ✅ |
 | **Missing guardian contact** | Can't finish registration without parent phone/email and an emergency contact | UI validation ✅. 🔎 **DB doesn't require them** (nullable). Add a CHECK, or require them in the `register_camper` RPC (PR 17) | ⚠️ UI only |
 | **Parent can't see another family** | Every camper/registration/roll-call read is filtered to `parent_id = auth.uid()` | DB: RLS ✅ (policies read; plus `test-plans/camp-week-rls-tests.sql`, 36 impersonation checks). PR 8 runs them in CI | ✅ |
-| **Volunteer sees only what's needed** | Crew sees name, age, allergies, medical, emergency contact and parent phone *for campers holding a seat in their section* | A `section_roster()` RPC returns only those fields, only for seated campers; volunteer screens read through it | ❌ broader than this today (PR 4) |
+| **Volunteer sees only what's needed** | Crew sees name, age, allergies, medical, emergency contact and parent name and phone *for campers holding a seat in their section* | A `section_roster()` RPC returns only those fields, only for seated campers; volunteer screens read through it | ❌ broader than this today (PR 4) |
 | **Admin cancels a class with people in it** | Soft-cancel: registrations → `cancelled` with reason, families emailed with a rebook link, history kept. Hard delete only when empty | DB: `ON DELETE RESTRICT` from registrations → sections (instead of CASCADE) + `cancel_section()` RPC | ⚠️ hard cascade delete behind a confirm (PR 6) |
 
 ### 2.3 Performance and load
@@ -475,8 +475,8 @@ Not a risk at our scale: the per-section row lock serializes sign-ups for *one* 
 
 | Data | Parent (own) | Lead/support (own section, seated campers) | Chapter admin | National |
 |---|---|---|---|---|
-| Name, age, grade | ✅ | ✅ | ✅ | aggregate |
-| Allergies, medical, emergency + parent phone | ✅ | ✅ | ✅ | ✗ |
+| Name, age, grade | ✅ | name and age (no grade) | ✅ | aggregate |
+| Allergies, medical, emergency contact, parent name + phone | ✅ | ✅ | ✅ | ✗ |
 | School, email, ethnicity, gender, free lunch, signatures | ✅ | **✗ (PR 4 enforces)** | ✅ | aggregate only |
 
 - **Minimization:** ethnicity, gender and free/reduced lunch are reporting data. Show them only in aggregate exports, never on rosters (already true in the UI).
