@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "build:demo": "tsc -b && vite build --mode demo",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.107.0",
@@ -32,6 +33,7 @@
     "tailwindcss": "^4.3.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "vitest": "^3.2.4"
   }
 }
