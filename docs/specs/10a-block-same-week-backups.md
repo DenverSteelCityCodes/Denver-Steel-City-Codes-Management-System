@@ -1,6 +1,6 @@
 # 10a: Block same-week waitlist backups
 
-**Status:** ⬜ not started · **Issue:** #78 · **Priority:** P0 · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #119](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/119) · **Issue:** #78 · **Priority:** P0 · **Effort:** S · **Phase:** B
 **Depends on:** none · **Unblocks:** 10
 **Plan reference:** Plan §6 decision Q-W4
 
