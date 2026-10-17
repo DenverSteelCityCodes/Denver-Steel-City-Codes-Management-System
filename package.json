@@ -1,7 +1,21 @@
 {
-  "name": "scc-app",
+  "name": "scc-management-system",
   "private": true,
   "version": "0.0.0",
+  "description": "Registration and camp-operations platform for Steel City Codes Denver: parent registration, volunteer applications and crewing, and admin tools, on React + Supabase.",
+  "license": "MIT",
+  "author": "Haanie Mohammed",
+  "homepage": "https://scc.haanie.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
