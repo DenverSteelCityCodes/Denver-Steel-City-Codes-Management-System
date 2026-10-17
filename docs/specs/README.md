@@ -31,7 +31,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [02](02-custom-smtp.md) | #70 | Custom SMTP, branded auth emails, rate limits, leaked-password protection | P0 | S | 01 | A |
 | ✅ | [03](03-password-reset.md) | #71 | Forgot password, reset page, resend confirmation | P0 | S | 02 | A |
 | ✅ | [04](04-volunteer-pii-lockdown.md) | #72 | Tighten volunteer access to camper data | P0 | S | — | A |
-| ⬜ | [05](05-audit-log.md) | #73 | Audit log table + trigger | P0 | M | — | A |
+| ✅ | [05](05-audit-log.md) | #73 | Audit log table + trigger | P0 | M | — | A |
 | ⬜ | [06](06-soft-cancel.md) | #74 | Soft-cancel registrations, cancel-section RPC, RESTRICT deletes | P0 | M | 05 | A |
 | ⬜ | [07](07-edit-conflicts.md) | #75 | `updated_at` + conflict-checked saves | P0 | S | — | A |
 | ⬜ | [08](08-tests-and-ci.md) | #76 | Vitest, SQL/RLS tests, seat-race test, GitHub Actions | P0 | M | 01 | A |

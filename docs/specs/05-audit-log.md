@@ -1,6 +1,6 @@
 # 05: Audit log: who changed what, when
 
-**Status:** ⬜ not started · **Issue:** #73 · **Priority:** P0 · **Effort:** M · **Phase:** A
+**Status:** ✅ [PR #115](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/115) · **Issue:** #73 · **Priority:** P0 · **Effort:** M · **Phase:** A
 **Depends on:** none · **Unblocks:** 06, 10, 15, 20, 24, 28, L4
 **Plan reference:** Plan §2.1 'How it's enforced', §0 Risk 5
 
