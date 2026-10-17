@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy } from 'lucide-react'
+import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy, MailWarning } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
 import { useAdminStudents } from './useAdminStudents'
@@ -51,11 +51,15 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
   const { sessions, loading: sessionsLoading } = useSessions()
   // Possible duplicate campers (same name, different accounts); an error just hides the item.
   const [dupes, setDupes] = useState<DuplicatePair[] | null>(null)
+  // Emails that failed for good (3 attempts) — spec 09.
+  const [failedEmails, setFailedEmails] = useState(0)
   useEffect(() => {
     let alive = true
     supabase.rpc('possible_duplicate_campers').then(({ data, error }) => {
       if (alive) setDupes(error ? [] : ((data ?? []) as DuplicatePair[]))
     })
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3)
+      .then(({ count }) => { if (alive) setFailedEmails(count ?? 0) })
     return () => { alive = false }
   }, [])
 
@@ -194,6 +198,23 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       detail: `${first.a_name} (${first.a_parent ?? 'one account'}) and ${first.b_name} (${first.b_parent ?? 'another account'}): ${first.reason}`,
       ctaLabel: 'Review campers',
       to: `/admin/students?q=${encodeURIComponent(first.a_name)}`,
+      wide: false,
+    })
+  }
+
+  // ── 1d. Emails that couldn't be sent (spec 09) ───────────────────────────
+  if (failedEmails > 0) {
+    items.push({
+      key: 'failed-emails',
+      icon: MailWarning,
+      iconWrap: 'bg-danger-soft text-danger',
+      cardCls: '',
+      badge: null,
+      badgeCls: null,
+      title: `${failedEmails} ${plural(failedEmails, "email couldn't", "emails couldn't")} be sent`,
+      detail: 'Families may not know about a confirmation or change. Check the email log.',
+      ctaLabel: 'Open email log',
+      to: '/admin/updates',
       wide: false,
     })
   }

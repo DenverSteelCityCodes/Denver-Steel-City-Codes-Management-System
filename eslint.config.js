@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'supabase/functions']),  // Edge Functions are Deno code, linted separately
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

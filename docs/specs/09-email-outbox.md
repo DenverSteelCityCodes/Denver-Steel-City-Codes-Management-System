@@ -1,6 +1,6 @@
 # 09: Notifications outbox, sender and templates
 
-**Status:** ⬜ not started · **Issue:** #77 · **Priority:** P0 · **Effort:** M · **Phase:** B: Feb-critical
+**Status:** 🟨 outbox built ([PR #125](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/125)); sending waits for spec 02 · **Issue:** #77 · **Priority:** P0 · **Effort:** M · **Phase:** B: Feb-critical
 **Depends on:** 02 · **Unblocks:** 10, 11, 12, 14, L2, and every notify-on-change rule
 **Plan reference:** Plan §1 cross-cutting 'clear feedback', §1.5 cross-role table, §3 rank 1
 
@@ -40,4 +40,8 @@ The app sends no email of its own. Status changes reach a parent only when they 
 - Postal address for the footer ❓ (national's or Denver's).
 
 ## Notes for the builder
+- Built 2026-10-17 (everything up to the provider). Outbox, registration triggers, templates (`supabase/functions/send-notifications/templates.ts`), the sender Edge Function (deployed to the demo project), the per-minute pg_cron job (via two Vault secrets), the admin email log on Updates, and the "emails couldn't be sent" attention item.
+- **To start sending:** finish spec 02 (provider account, and SPF/DKIM on `steelcitycodes.org`), then set the Edge Function secrets `RESEND_API_KEY`, `NOTIFY_FROM` and `APP_URL`. Until then, emails wait in the queue and the log says so. The sender is written for Resend; another provider means changing one `fetch` call.
+- Not queued: writes with no signed-in user and no reason (SQL editor, the nightly demo reset), and example.com addresses (recorded as "skipped").
+- **Not built yet:** announcements via the outbox ("Also email" still opens the mail app, so no unsubscribe link is needed yet), and the in-camp-week `medical_changed` email to the lead. Both are small follow-ups once a provider is live. Specs 10–12 add their templates to `templates.ts`.
 - Keep templates in one folder in the Edge Function, so national can edit the wording without touching logic.

@@ -3,6 +3,7 @@ import { useUpdates } from '../hooks/useUpdates'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import UpdateComposer from '../components/UpdateComposer'
 import UpdatesFeed from '../components/UpdatesFeed'
+import EmailLog from '../components/EmailLog'
 
 // Admin: post to everyone, all parents, all volunteers, or one section's families, with
 // "Also email" to open the mail client with the audience in BCC. Everything posted is listed.
@@ -42,6 +43,8 @@ export default function AdminUpdates() {
           emptyText="Nothing posted yet. Your first update could be a welcome note with drop-off and pickup times."
         />
       </section>
+
+      <EmailLog />
     </div>
   )
 }
