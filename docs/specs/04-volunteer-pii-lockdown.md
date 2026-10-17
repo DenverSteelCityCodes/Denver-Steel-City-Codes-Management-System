@@ -1,6 +1,6 @@
 # 04: Tighten volunteer access to camper data
 
-**Status:** ⬜ not started · **Issue:** #72 · **Priority:** P0 · **Effort:** S · **Phase:** A
+**Status:** ✅ [PR #110](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/110) · **Issue:** #72 · **Priority:** P0 · **Effort:** S · **Phase:** A
 **Depends on:** none · **Unblocks:** L3
 **Plan reference:** Plan §0 Risk 4, §2.2 'volunteer sees only what's needed', §2.4 who-sees-what
 
