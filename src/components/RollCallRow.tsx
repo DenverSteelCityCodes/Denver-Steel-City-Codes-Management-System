@@ -47,10 +47,12 @@ export default function RollCallRow({ student, state, pending, failed, onToggle 
       <button
         type="button"
         onClick={onToggle}
-        disabled={pending}
+        // aria-disabled, not disabled: a disabled button drops keyboard focus mid-save. The panel
+        // ignores taps on a row that is still saving.
+        aria-disabled={pending || undefined}
         aria-busy={pending || undefined}
         aria-label={spoken}
-        className={`min-h-11 min-w-[132px] px-3 rounded border-2 font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors disabled:cursor-progress ${tone}`}
+        className={`min-h-11 min-w-[132px] px-3 rounded border-2 font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors aria-disabled:cursor-progress ${tone}`}
       >
         {icon}{label}
       </button>

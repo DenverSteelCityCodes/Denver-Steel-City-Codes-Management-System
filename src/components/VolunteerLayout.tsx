@@ -50,8 +50,9 @@ export default function VolunteerLayout() {
 
   // Camp day on a phone (under 768px): the roll call must stay in view, so the bar and tab strip
   // scroll away and only the roll-call band sticks (DESIGN.md › Layout). The band marks itself with
-  // data-rollcall-band; `group-has` keys the shell off it so the two can never disagree.
-  const campDayStatic = 'max-md:group-has-[[data-rollcall-band]]/shell:static'
+  // data-rollcall-band; `group-has` keys the shell off it so the two can never disagree. Important,
+  // because between 640 and 767px the header's own `sm:sticky` would otherwise win.
+  const campDayStatic = 'max-md:group-has-[[data-rollcall-band]]/shell:static!'
 
   return (
     <div className="group/shell min-h-dvh bg-bg">

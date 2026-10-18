@@ -67,6 +67,8 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
     // Pin the tab the volunteer is working on; the time-of-day default only applies until then.
     setChosen(kind)
     forget([key])
+    // Marking a row by hand moves on from a failed "Mark all"; its message would only mislead.
+    if (markAllFailed === kind) setMarkAllFailed(null)
     track([key], true)
     // unmarked → present; present → absent; absent → present
     setMark(student.id, kind, !(getMark(student.id, kind)?.present ?? false))
@@ -86,10 +88,12 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
       .finally(() => track(keys, false))
   }
 
+  // A named camper first; the "Mark all" failure only while there is still someone to mark (its
+  // button is the way to try again, and it disappears once everyone is marked).
   const failedNames = [...failed].filter(([k]) => k.endsWith(`:${current}`)).map(([, n]) => n)
-  const saveError = markAllFailed === current ? "Couldn't mark everyone present. Check your connection and try again."
-    : failedNames.length === 1 ? `Couldn't save ${failedNames[0]}. Check your connection and tap again.`
-      : failedNames.length > 1 ? `Couldn't save ${failedNames.length} campers: ${failedNames.join(', ')}. Check your connection and tap again.`
+  const saveError = failedNames.length === 1 ? `Couldn't save ${failedNames[0]}. Check your connection and tap again.`
+    : failedNames.length > 1 ? `Couldn't save ${failedNames.length} campers: ${failedNames.join(', ')}. Check your connection and tap again.`
+      : markAllFailed === current && left > 0 ? "Couldn't mark everyone present. Check your connection and try again."
         : null
 
   const headingId = `rc-${section.id}`
@@ -99,7 +103,7 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
   return (
     <section aria-labelledby={headingId} className="@container -mx-4 sm:-mx-8 lg:mx-0">
       <div data-rollcall-band
-        className="sticky top-0 md:top-16 z-20 bg-shell text-on-shell px-4 sm:px-8 lg:px-4 py-3 lg:rounded grid grid-cols-1 @min-[46rem]:grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 dark:shadow-[inset_0_-1px_0_var(--border)] [&_:focus-visible]:outline-brand">
+        className="sticky top-0 md:top-16 z-20 bg-shell text-on-shell px-4 sm:px-8 lg:px-4 py-3 lg:rounded grid grid-cols-1 @min-[42rem]:grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 dark:shadow-[inset_0_-1px_0_var(--border)] [&_:focus-visible]:outline-brand">
         <h2 id={headingId} className={showClass ? 'col-span-full text-sm font-bold text-on-shell-muted' : 'sr-only'}>
           {label} roll call{showClass ? `, ${section.class_name} ${section.label}` : ''}
         </h2>
@@ -128,7 +132,7 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
         </div>
 
         {!loading && total > 0 && (
-          <p className="@min-[46rem]:justify-self-end flex items-baseline gap-[0.15em] text-brand font-extrabold tabular-nums leading-[0.92] tracking-[-0.03em] text-[3.5rem]">
+          <p className="@min-[42rem]:justify-self-end flex items-baseline gap-[0.15em] text-brand font-extrabold tabular-nums leading-[0.92] tracking-[-0.03em] text-[3.5rem]">
             {done && <Check strokeWidth={3} className="self-center size-[0.62em]" aria-hidden="true" />}
             <span aria-hidden="true">{presentCount}/{total}</span>
             <span aria-hidden="true" className="text-[0.42em] tracking-normal">present</span>
