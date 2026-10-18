@@ -188,10 +188,10 @@ function LinkPanel({
       <div>
         <label htmlFor={id} className={label}>Meeting link for {when}</label>
         <Input id={id} type="url" inputMode="url" autoFocus value={url} onChange={e => { setUrl(e.target.value); setErr(null) }}
-          placeholder="https://meet.google.com/…" aria-invalid={!!err || undefined} aria-describedby={`${id}-hint`} />
+          placeholder="https://meet.google.com/…" aria-invalid={!!err || undefined} aria-describedby={`${id}-hint${err ? ` ${id}-err` : ''}`} />
         <p id={`${id}-hint`} className="mt-1.5 text-sm text-ink-muted text-pretty">Only the applicant booked into this time sees it, on their page and in their reminder emails. Leave it empty to remove it.</p>
       </div>
-      {err && <p role="alert" className="text-sm font-bold text-danger">{err}</p>}
+      {err && <p id={`${id}-err`} role="alert" className="text-sm font-bold text-danger">{err}</p>}
       <div className="flex flex-wrap gap-2">
         <Button onClick={onCancel}>Cancel</Button>
         <Button type="submit" variant="ink" disabled={saving}>{saving ? 'Saving…' : url.trim() ? 'Save link' : 'Remove link'}</Button>

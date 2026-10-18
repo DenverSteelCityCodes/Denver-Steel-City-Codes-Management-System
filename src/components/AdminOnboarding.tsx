@@ -262,8 +262,9 @@ export default function AdminOnboarding() {
               return (
                 <li key={v.id} className="border-t border-border first:border-t-0">
                   <button type="button" onClick={() => setOpen(isOpen ? null : v.id)} aria-expanded={isOpen} aria-controls={`ob-${v.id}`}
-                    className="w-full flex flex-wrap items-center gap-x-4 gap-y-1 min-h-11 py-2 text-left cursor-pointer hover:bg-ink/[0.03]">
-                    <span className="flex-[1_1_12rem] min-w-0 font-bold">
+                    className="w-full grid grid-cols-[1fr_auto] items-center gap-x-3 min-h-11 py-2 text-left cursor-pointer hover:bg-ink/[0.03]">
+                    <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 min-w-0">
+                    <span className="min-w-0 font-bold">
                       {v.name}{v.preferred_name && v.preferred_name !== v.name.split(' ')[0] ? <span className="font-normal text-ink-muted"> (goes by {v.preferred_name})</span> : null}
                     </span>
                     {tasks.length > 0 && n === tasks.length
@@ -271,6 +272,7 @@ export default function AdminOnboarding() {
                       : late > 0
                         ? <StatusWord tone="waiting" icon={Clock3}>{n} of {tasks.length} done · {late} overdue</StatusWord>
                         : <span className="text-sm text-ink-muted">{n} of {tasks.length} done</span>}
+                    </span>
                     <ChevronDown size={18} aria-hidden="true" className={`shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {isOpen && (

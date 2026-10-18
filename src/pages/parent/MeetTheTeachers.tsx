@@ -89,7 +89,7 @@ export default function MeetTheTeachers() {
           {ordered.map(crew => {
             const s = crew[0]
             const sorted = [...crew].sort((a, b) => Number(b.crew_role === 'lead') - Number(a.crew_role === 'lead') || a.name.localeCompare(b.name))
-            const meta = [s.room && `Room ${s.room}`, s.my_campers && `${s.my_campers}'s class`].filter(Boolean).join(' · ')
+            const meta = [s.room, s.my_campers && `${s.my_campers}'s class`].filter(Boolean).join(' · ')
             return (
               <section key={s.section_id} aria-labelledby={`sec-${s.section_id}`} className="mt-8 break-inside-avoid-page">
                 <h2 id={`sec-${s.section_id}`} className={h2Cls}>{s.class_name} · {s.section_label}</h2>

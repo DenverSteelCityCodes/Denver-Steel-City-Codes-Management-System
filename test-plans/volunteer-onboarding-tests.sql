@@ -233,6 +233,22 @@ begin
   select name, photo_path into m, url from public.meet_the_crew() where volunteer_id = v and section_id = lead_sec;
   res := res || E'\ncrew shows the preferred name and the consented photo: ' || case when m = 'Testy' and url = path then 'ok' else 'BAD (' || coalesce(m, 'null') || ', ' || coalesce(url, 'null') || ')' end;
   res := res || E'\nparent may read that photo file: ' || case when private.crew_photo_visible(path) then 'ok' else 'BAD' end;
+  -- The storage policies themselves, on storage.objects (what the Storage API checks).
+  perform set_config('request.jwt.claims', claims_v, true);
+  insert into storage.objects (bucket_id, name, owner_id) values ('volunteer-photos', path, v::text);
+  begin
+    insert into storage.objects (bucket_id, name, owner_id) values ('volunteer-photos', user_a::text || '/sneaky.jpg', v::text);
+    res := res || E'\nvolunteer uploads into someone else''s folder: ALLOWED (BAD)';
+  exception when insufficient_privilege then
+    res := res || E'\nvolunteer uploads into someone else''s folder: blocked ok';
+  end;
+  perform set_config('request.jwt.claims', claims_p1, true);
+  select count(*) into n from storage.objects where bucket_id = 'volunteer-photos' and name = path;
+  res := res || E'\nparent in that week reads the photo object: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+  perform set_config('request.jwt.claims', claims_b, true);
+  select count(*) into n from storage.objects where bucket_id = 'volunteer-photos' and name = path;
+  res := res || E'\nsomeone with no camper that week reads it: ' || case when n = 0 then 'blocked ok' else 'ALLOWED (BAD)' end;
+  perform set_config('request.jwt.claims', claims_p1, true);
   select count(*) into n from public.meet_the_crew() where photo_path is not null and not private.volunteer_photo_ok(volunteer_id);
   res := res || E'\nno unconsented photo reaches a parent: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
   perform set_config('request.jwt.claims', claims_adm, true);
