@@ -26,7 +26,7 @@ export default function AdminUpdates() {
         { to: '/admin/updates?tab=emails', label: 'Sent emails', current: tab === 'emails' },
       ]} />
 
-      <div className="max-w-[720px]">
+      <div className={tab === 'post' ? 'max-w-[720px]' : 'max-w-[960px]'}>
         {tab === 'post' ? (
           <>
             <section aria-labelledby="compose-heading">

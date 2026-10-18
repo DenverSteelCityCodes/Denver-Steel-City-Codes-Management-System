@@ -189,7 +189,7 @@ export default function AdminAttendance() {
                 tone="quiet"
                 context={`${latestLabel} roll call`}
                 figure={campers}
-                message={`campers accounted for at ${latestLabel}`}
+                message={campers === 1 ? 'camper accounted for' : 'campers accounted for'}
               />
             )}
           </div>

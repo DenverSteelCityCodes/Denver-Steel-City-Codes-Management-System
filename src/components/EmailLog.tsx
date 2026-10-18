@@ -68,7 +68,7 @@ export default function EmailLog() {
           </p>
         </div>
       )}
-      <p className="text-ink-muted text-pretty">
+      <p className="text-ink-muted text-pretty max-w-[65ch]">
         Confirmations, waitlist and change notices go to families by themselves. Addresses at example.com (the demo) are skipped. The 50 newest are here, newest first.
       </p>
       {error && <p role="alert" title={error} className="mt-4 font-bold text-danger">Couldn't load the sent emails. Reload the page to try again.</p>}
@@ -99,7 +99,7 @@ export default function EmailLog() {
                     <b className="font-bold">{LABELS[r.template] ?? r.template}</b>
                     {(camper || cls) && <span className="block text-sm text-ink-muted">{[camper, cls].filter(Boolean).join(' · ')}</span>}
                   </td>
-                  <td className="px-3 py-3 align-top [overflow-wrap:anywhere] max-md:block max-md:p-0 max-md:pt-1">
+                  <td className="px-3 py-3 align-top break-words max-md:block max-md:p-0 max-md:pt-1">
                     <span className={mobileLabel}>To </span>{r.recipient_email ?? <span className="text-ink-muted">No address</span>}
                   </td>
                   <td className="px-3 py-3 align-top whitespace-nowrap max-md:block max-md:p-0">
