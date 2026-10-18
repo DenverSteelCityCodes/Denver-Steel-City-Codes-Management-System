@@ -20,7 +20,7 @@ interface RequestRow {
 export default function AdminChangeRequests({ onResolved }: { onResolved?: () => void }) {
   const { hash } = useLocation()
   const [rows, setRows] = useState<RequestRow[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ what: 'load' | 'save'; message: string } | null>(null)
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
   const [version, setVersion] = useState(0)
@@ -38,7 +38,7 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
       .order('created_at', { ascending: true })
       .then(({ data, error }) => {
         if (!alive) return
-        if (error) setError(error.message)
+        if (error) setError({ what: 'load', message: error.message })
         else { setError(null); setRows((data ?? []) as unknown as RequestRow[]) }
       })
     return () => { alive = false }
@@ -55,7 +55,7 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
     const { error } = await supabase.from('change_requests')
       .update({ status, resolution_note: notes[id]?.trim() || null }).eq('id', id)
     setBusy(null)
-    if (error) { setError(error.message); return }
+    if (error) { setError({ what: 'save', message: error.message }); return }
     setError(null)
     setVersion(v => v + 1)
     onResolved?.()
@@ -73,8 +73,12 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
         The person who asked gets an email either way, with your reply.
       </p>
       {error && (
-        <p role="alert" title={error} className="mt-3 font-bold text-danger text-pretty">
-          Couldn't {rows ? 'save that' : 'load the change requests'}. Check your connection, then try again.
+        <p role="alert" title={error.message} className="mt-3 font-bold text-danger text-pretty">
+          {error.what === 'save'
+            ? "Couldn't save that. Check your connection, then try again."
+            : rows
+              ? "Couldn't reload the change requests, so this list may be out of date. Check your connection."
+              : "Couldn't load the change requests. Check your connection, then try again."}
         </p>
       )}
       {!rows ? (

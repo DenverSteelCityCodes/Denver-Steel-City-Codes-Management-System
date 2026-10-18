@@ -143,6 +143,7 @@ export default function HistoryStrip({
                   {canRevert && confirming !== e.id && (
                     <button
                       type="button"
+                      id={`revert-${e.id}`}
                       onClick={() => { setNote(null); setConfirming(e.id) }}
                       className="ui-btn ui-btn--text -my-2.5"
                     >
@@ -159,7 +160,7 @@ export default function HistoryStrip({
                       cancelLabel="Keep"
                       busy={busy}
                       onConfirm={() => { void revert(e.id) }}
-                      onCancel={() => setConfirming(null)}
+                      onCancel={() => { setConfirming(null); requestAnimationFrame(() => document.getElementById(`revert-${e.id}`)?.focus()) }}
                     />
                   </div>
                 )}
