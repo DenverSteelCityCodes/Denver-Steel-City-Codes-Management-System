@@ -1,16 +1,22 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { KeyRound, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { BrandBar } from '../components/Wordmark'
+import Button from '../components/Button'
+import PublicShell, { PageHead } from '../components/PublicShell'
+import { FormError, FormField, PasswordInput, Spinner } from '../components/PublicForm'
+import { classifyAuthError, authMessage } from '../lib/authErrors'
 import { focusOnMount } from '../lib/focus'
+import { buttonClass } from '../lib/ui'
 
 // The recovery link lands here as /reset#access_token=…&type=recovery (or #error=… when it has
 // expired). supabase-js reads and clears the hash while the client initializes, so capture it at
 // module load, which runs before that.
 const INITIAL_HASH = typeof window !== 'undefined' ? window.location.hash : ''
 const linkFailed = /error_code=otp_expired|error=access_denied/.test(INITIAL_HASH)
+
+type Errors = { password?: string; confirm?: string }
 
 // Step 2 of a password reset. The link signs the user in with a short-lived recovery session;
 // a signed-in user who opens /reset directly can also use it to change their password.
@@ -19,121 +25,92 @@ export default function ResetPasswordPage() {
   const { session, loading: authLoading } = useAuth()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [errors, setErrors] = useState<Errors>({})
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (password.length < 8) { setError('Use at least 8 characters.'); return }
-    if (password !== confirm) { setError("The two passwords don't match."); return }
     setError(null)
+    const errs: Errors = {
+      password: !password ? 'Choose a new password.' : password.length < 8 ? 'Use at least 8 characters.' : undefined,
+      confirm: !confirm ? 'Type the same password again.' : confirm !== password ? "The two passwords don't match." : undefined,
+    }
+    setErrors(errs)
+    if (errs.password || errs.confirm) {
+      document.getElementById(errs.password ? 'reset-password' : 'reset-confirm')?.focus()
+      return
+    }
     setSaving(true)
     const { error } = await supabase.auth.updateUser({ password })
     setSaving(false)
     if (error) {
-      setError(/same|different/i.test(error.message)
-        ? 'Choose a password different from your old one.'
-        : /weak|pwned|leaked|known/i.test(error.message)
-          ? 'That password has appeared in a data breach. Choose a different one.'
-          : `Couldn't save your new password: ${error.message}`)
+      const kind = classifyAuthError(error)
+      if (kind === 'same-password' || kind === 'weak-password' || kind === 'breached-password') {
+        setErrors({ password: authMessage(kind) })
+        document.getElementById('reset-password')?.focus()
+      } else {
+        setError(authMessage(kind))
+      }
       return
     }
     setDone(true)
   }
 
-  const input = 'ui-input'
-
-  let body: React.ReactNode
   if (authLoading) {
-    body = (
-      <div className="flex justify-center py-6">
-        <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-      </div>
-    )
-  } else if (done) {
-    body = (
-      <div className="text-center">
-        <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 size={20} className="text-success" />
+    return (
+      <PublicShell>
+        <div role="status" className="flex items-center gap-3 py-6 text-ink-muted">
+          <span aria-hidden="true" className="w-6 h-6 rounded-full border-[3px] border-ink border-t-transparent animate-spin" />
+          Checking your link…
         </div>
-        <h1 ref={focusOnMount} tabIndex={-1} className="font-display font-bold text-xl text-ink mb-2 focus:outline-none">Password updated</h1>
-        <p role="status" className="font-sans text-ink-muted text-sm">You're signed in with your new password.</p>
-        <button
-          type="button"
-          onClick={() => navigate('/', { replace: true })}
-          className="ui-btn ui-btn--primary mt-6 w-full"
-        >
-          Continue
-        </button>
-      </div>
+      </PublicShell>
     )
-  } else if (!session) {
-    body = (
-      <div className="text-center">
-        <h1 className="font-display font-bold text-xl text-ink mb-2">
-          {linkFailed ? 'This link has expired' : "This link isn't valid"}
-        </h1>
-        <p role="alert" className="font-sans text-ink-muted text-sm">
-          Reset links work once, for one hour. Ask for a new one and use the newest email.
-        </p>
-        <Link
-          to="/forgot"
-          className="ui-btn ui-btn--primary mt-6 w-full"
-        >
-          Send a new link
-        </Link>
-        <Link to="/login" className="mt-4 inline-block font-sans font-semibold text-sm text-ink hover:underline">
-          Back to sign in
-        </Link>
-      </div>
+  }
+
+  if (done) {
+    return (
+      <PublicShell>
+        <PageHead title="Password updated" lede="You're signed in with your new password." ledeRole="status" headingRef={focusOnMount} />
+        <Button variant="primary" block onClick={() => navigate('/', { replace: true })}>Go to my account</Button>
+      </PublicShell>
     )
-  } else {
-    body = (
-      <>
-        <h1 className="font-display font-bold text-2xl text-ink mb-1">Choose a new password</h1>
-        <p className="font-sans text-ink-muted text-sm mb-6">
-          For <strong className="text-ink">{session.user.email}</strong>. Use at least 8 characters.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="block font-sans font-semibold text-sm text-ink" htmlFor="reset-password">New password</label>
-            <input id="reset-password" type="password" autoComplete="new-password" required minLength={8} autoFocus
-              value={password} onChange={e => setPassword(e.target.value)} placeholder="8+ characters" className={input} />
-          </div>
-          <div className="space-y-1.5">
-            <label className="block font-sans font-semibold text-sm text-ink" htmlFor="reset-confirm">Type it again</label>
-            <input id="reset-confirm" type="password" autoComplete="new-password" required minLength={8}
-              value={confirm} onChange={e => setConfirm(e.target.value)} className={input} />
-          </div>
+  }
 
-          {error && (
-            <p role="alert" className="text-danger text-sm font-sans flex items-center gap-1.5">
-              <span>⚠</span> {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="ui-btn ui-btn--primary w-full"
-          >
-            {saving
-              ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
-              : <KeyRound size={16} />}
-            {saving ? 'Saving…' : 'Save new password'}
-          </button>
-        </form>
-      </>
+  if (!session) {
+    return (
+      <PublicShell>
+        <PageHead
+          title={linkFailed ? 'This link has expired' : "This link isn't valid"}
+          lede="Reset links work once, for one hour. Ask for a new one and use the newest email."
+          ledeRole="alert"
+        />
+        <Link to="/forgot" className={buttonClass('primary', undefined, true)}>Send a new link</Link>
+        <p className="mt-4"><Link to="/login" className={buttonClass('text')}><ArrowLeft size={16} strokeWidth={2.5} aria-hidden="true" />Back to sign in</Link></p>
+      </PublicShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col">
-      <BrandBar />
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
-        <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8">{body}</div>
-      </main>
-    </div>
+    <PublicShell>
+      <PageHead
+        title="Choose a new password"
+        lede={<>For <strong className="text-ink [overflow-wrap:anywhere]">{session.user.email}</strong>. Use at least 8 characters.</>}
+      />
+      <form onSubmit={handleSubmit} noValidate className="grid gap-5">
+        <FormField id="reset-password" label="New password" error={errors.password}>
+          {a => <PasswordInput {...a} autoComplete="new-password" autoFocus value={password} onChange={e => setPassword(e.target.value)} />}
+        </FormField>
+        <FormField id="reset-confirm" label="Type it again" error={errors.confirm}>
+          {a => <PasswordInput {...a} autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} />}
+        </FormField>
+        {error && <FormError>{error}</FormError>}
+        <Button type="submit" variant="primary" block disabled={saving}>
+          {saving ? <><Spinner />Saving…</> : 'Save new password'}
+        </Button>
+      </form>
+      <p className="mt-6"><Link to="/login" className={buttonClass('text')}><ArrowLeft size={16} strokeWidth={2.5} aria-hidden="true" />Back to sign in</Link></p>
+    </PublicShell>
   )
 }
