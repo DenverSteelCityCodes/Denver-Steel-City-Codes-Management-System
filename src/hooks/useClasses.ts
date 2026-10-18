@@ -17,7 +17,7 @@ export function useClasses() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Only the first load shows a spinner; refreshes (step 4 of the wizard, the class browser's 30 s
+  // Only the first load shows a spinner; refreshes (step 5 of the wizard, the class browser's 30 s
   // poll) update seat counts in place.
   const loadedOnce = useRef(false)
 

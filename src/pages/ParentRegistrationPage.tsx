@@ -20,7 +20,10 @@ import { placeSentence } from '../lib/campSite'
 import { formatTimeRange } from '../lib/campDay'
 import { buttonClass } from '../lib/ui'
 import { LAPTOP_DEVICES, LAPTOP_ON_SITE, wizardLaptopLines, type WizardLaptopResult } from '../lib/laptopLoans'
-import { ErrorLine, Segmented, hintCls, labelCls } from './parent/parts'
+import { LEAVE_MODES, pickupDraftError, type PickupDraft } from '../lib/pickups'
+import { saveWizardPickups } from '../hooks/usePickups'
+import type { LeaveMode } from '../types/database'
+import { ErrorLine, Segmented, hintCls, labelCls, mutedTextBtn } from './parent/parts'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -68,6 +71,14 @@ interface FormData {
   emergency_name: string
   emergency_phone: string
   emergency_relation: string
+  // Pickup (spec 36): '' until answered; 'me' = only the parent; 'others' = the adults listed too.
+  // Ids are the camper's any-day adults already on file (a returning camper).
+  pickup_choice: '' | 'me' | 'others'
+  pickup_adults: (PickupDraft & { id?: string })[]
+  // May leave camp on their own every day of the weeks they get a seat in.
+  leave_alone: boolean
+  leave_mode: LeaveMode | ''
+  leave_note: string
   // Medical
   allergies: string
   medical_conditions: string
@@ -125,6 +136,7 @@ const INITIAL: FormData = {
   ethnic_background: [], gender: '',
   parent_name: '', parent_email: '', parent_phone: '',
   emergency_name: '', emergency_phone: '', emergency_relation: '',
+  pickup_choice: '', pickup_adults: [], leave_alone: false, leave_mode: '', leave_note: '',
   allergies: '', medical_conditions: '', free_reduced_lunch: null, lunch_provision: false,
   other_info: '',
   how_heard: '', previous_program: null, program_last_year: '', candy_consent: false,
@@ -133,7 +145,10 @@ const INITIAL: FormData = {
   waiver_signature: '', guardian_signature: '',
 }
 
-const STEP_NAMES = ['Camper', 'Parent and emergency contact', 'Health and details', 'Session and class', 'Waiver and consent']
+const STEP_NAMES = ['Camper', 'Parent and emergency contact', 'Pickup', 'Health and details', 'Session and class', 'Waiver and consent']
+// Steps that other code jumps to (spec 36 added Pickup as step 3).
+const STEP_CLASS = 5
+const LAST_STEP = STEP_NAMES.length
 
 // Form key → the control (or button group label) a validation error points at.
 const FIELD_IDS: Record<string, string> = {
@@ -146,6 +161,7 @@ const FIELD_IDS: Record<string, string> = {
   free_reduced_lunch: 'reg-lunch', how_heard: 'reg-how-heard', previous_program: 'reg-previous',
   candy_consent: 'reg-candy', waiver_signature: 'reg-waiver-sig', guardian_signature: 'reg-guardian-sig',
   place_with: 'reg-place-with', exception1: 'reg-exception-1', exception2: 'reg-exception-2',
+  pickup_choice: 'reg-pickup', leave_mode: 'reg-leave-mode',
 }
 
 // Yes / No as a segmented control: the selected answer fills ink, never gold.
@@ -190,7 +206,7 @@ export default function ParentRegistrationPage() {
   const placeLine = placeSentence(campSessions.filter(s => s.is_active))
   // The step lives in the URL (?step=3), so the browser's back button and a reload keep the
   // parent where they were (spec 16). Answers are kept as a draft on this device.
-  const step = Math.min(5, Math.max(1, Number(searchParams.get('step')) || 1))
+  const step = Math.min(LAST_STEP, Math.max(1, Number(searchParams.get('step')) || 1))
   const myDraftKey = user ? draftKey(user.id, studentId) : null
   const [restoredDraft] = useState(() => (myDraftKey ? readDraft(myDraftKey) : null))
   const [form, setForm] = useState<FormData>(() => ({
@@ -213,7 +229,7 @@ export default function ParentRegistrationPage() {
       else p.set('step', String(n))
       return p
     }, { replace })
-    if (n === 4) void refetchClasses()   // seat counts can change while a parent fills steps 1–3
+    if (n === STEP_CLASS) void refetchClasses()   // seat counts can change while a parent fills the steps before
     window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   }
   // When re-registering an existing camper (?studentId=…), we update that student row for the
@@ -226,6 +242,9 @@ export default function ParentRegistrationPage() {
   const [waitlistedCount, setWaitlistedCount] = useState(0)
   const [registeredCount, setRegisteredCount] = useState(0)
   const [laptopResults, setLaptopResults] = useState<WizardLaptopResult[]>([])
+  // Spec 36: the any-day pickup adults already on file (a returning camper), and a failed save.
+  const [pickupIdsOnFile, setPickupIdsOnFile] = useState<string[]>([])
+  const [pickupError, setPickupError] = useState<string | null>(null)
   // Exception requests sent with the registration, and any that couldn't be sent (spec 31).
   const [exceptionsSent, setExceptionsSent] = useState<string[]>([])
   const [exceptionErrors, setExceptionErrors] = useState<string[]>([])
@@ -318,8 +337,11 @@ export default function ParentRegistrationPage() {
     let cancelled = false
     const key = `${studentId}:${prefillAttempt}`
     ;(async () => {
-      const { data, error: fetchErr } = await supabase
-        .from('students').select('*').eq('id', studentId).maybeSingle()
+      const [{ data, error: fetchErr }, { data: onFile }] = await Promise.all([
+        supabase.from('students').select('*').eq('id', studentId).maybeSingle(),
+        // The camper's any-day pickup adults (spec 36); a failed read just leaves the step blank.
+        supabase.from('authorized_pickups').select('id, name, relation, phone').eq('student_id', studentId).is('days', null).order('created_at'),
+      ])
       if (cancelled) return
       if (fetchErr || !data) {
         setCamperPrefill({
@@ -331,6 +353,7 @@ export default function ParentRegistrationPage() {
         return
       }
       setEditingId(data.id)
+      setPickupIdsOnFile((onFile ?? []).map(p => p.id))
       setCamperPrefill({ key, error: null })
       setForm(f => ({
         ...f,
@@ -357,6 +380,7 @@ export default function ParentRegistrationPage() {
         previous_program: data.previous_program ?? null,
         program_last_year: data.program_last_year ?? '',
         candy_consent: data.candy_consent ?? false,
+        ...(onFile?.length ? { pickup_choice: 'others' as const, pickup_adults: onFile } : {}),
         // Unfinished answers from this device win over what's on file.
         ...(restoredDraft ? (restoredDraft.form as Partial<FormData>) : {}),
       }))
@@ -365,7 +389,7 @@ export default function ParentRegistrationPage() {
   }, [studentId, prefillAttempt, restoredDraft])
 
   // Draft: saved (debounced) only once the parent has typed something or moved between steps in
-  // this visit. Landing on ?step=5 alone (a reload after submitting, a remount) must not save an
+  // this visit. Landing on the last step alone (a reload after submitting, a remount) must not save an
   // empty draft.
   useEffect(() => {
     if (!myDraftKey || submitted || !dirty.current) return
@@ -390,7 +414,7 @@ export default function ParentRegistrationPage() {
     ;(target ?? errorRef.current)?.focus()
   }, [error, errorField])
 
-  // A new step is announced: focus moves to its "Step N of 5" line (not on first load).
+  // A new step is announced: focus moves to its "Step N of 6" line (not on first load).
   const stepRef = useRef<HTMLHeadingElement>(null)
   const firstStep = useRef(true)
   useEffect(() => {
@@ -454,6 +478,16 @@ export default function ParentRegistrationPage() {
       if (!form.emergency_relation.trim()) return fail('emergency_relation', `${q('emergency_relation').label} is required`)
     }
     if (stepNow === 3) {
+      if (!form.pickup_choice) return fail('pickup_choice', `Choose who will pick up ${studentFirst}`)
+      if (form.pickup_choice === 'others') {
+        for (const [i, a] of form.pickup_adults.entries()) {
+          const bad = pickupDraftError(a)
+          if (bad) { failedField.current = `reg-pickup-${i}-${bad.field}`; return `Adult ${i + 1}: ${bad.message}` }
+        }
+      }
+      if (form.leave_alone && !form.leave_mode) return fail('leave_mode', `Choose how ${studentFirst} gets home`)
+    }
+    if (stepNow === 4) {
       if (!form.allergies.trim()) return fail('allergies', `${q('allergies').label}: enter "None" if not applicable`)
       if (!form.medical_conditions.trim()) return fail('medical_conditions', `${q('medical_conditions').label}: enter "None" if not applicable`)
       if (q('other_info').required && !form.other_info.trim()) return fail('other_info', `Please answer: ${q('other_info').label}`)
@@ -462,7 +496,7 @@ export default function ParentRegistrationPage() {
       if (q('previous_program').required && form.previous_program === null) return fail('previous_program', `Please answer: ${q('previous_program').label}`)
       if (q('candy_consent').required && !form.candy_consent) return fail('candy_consent', `Please confirm: ${q('candy_consent').label}`)
     }
-    if (stepNow === 4) {
+    if (stepNow === 5) {
       if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet. No camp sessions are scheduled."
       if (!registrationIsOpen(season)) return `Registration opens ${formatCampDateTime(season!.registration_opens_at!)} (Denver time). Your answers are saved on this device, so you can pick the class here once it opens.`
       if (!form.session1 && !form.session2) return 'Please select at least one session'
@@ -478,7 +512,7 @@ export default function ParentRegistrationPage() {
         if (both) return `${both.name} runs both weeks, so it can't be combined with a different class. Pick it for both sessions, or choose another class.`
       }
     }
-    if (stepNow === 5) {
+    if (stepNow === 6) {
       if (!form.waiver_signature.trim()) return fail('waiver_signature', `${q('waiver_signature').label} is required`)
       if (!form.guardian_signature.trim()) return fail('guardian_signature', `${q('guardian_signature').label} is required`)
     }
@@ -499,8 +533,8 @@ export default function ParentRegistrationPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Every step, not just this one: a reload or a link can land on step 5 directly.
-    for (let s2 = 1; s2 <= 5; s2++) {
+    // Every step, not just this one: a reload or a link can land on the last step directly.
+    for (let s2 = 1; s2 <= LAST_STEP; s2++) {
       const err = validate(s2)
       if (err) { setError(err); setErrorField(failedField.current); if (s2 !== step) goToStep(s2); return }
     }
@@ -519,7 +553,7 @@ export default function ParentRegistrationPage() {
         setFullAcknowledged(true)
         setSubmitting(false)
         void refetchClasses()
-        setError(`${nowFull.map(x => x.c.name).join(' and ')} just filled up. Submit again to join the waitlist, or go back to step 4 to pick another class.`)
+        setError(`${nowFull.map(x => x.c.name).join(' and ')} just filled up. Submit again to join the waitlist, or go back to step ${STEP_CLASS} to pick another class.`)
         return
       }
     }
@@ -613,6 +647,8 @@ export default function ParentRegistrationPage() {
     const placeWith = form.place_with.trim() || null
     const regsToCreate = [...sectionIds].map(section_id => ({ student_id: student.id, section_id, place_with: placeWith }))
     const exceptionsToSend = ([1, 2] as const).map(exceptionFor).filter((x): x is ExceptionDraft => !!x && !!x.message.trim())
+    // The weeks the camper got a seat in, for the walk-home consent (spec 36).
+    const seatedWeeks = new Set<string>()
 
     if (regsToCreate.length > 0) {
       const { data: regs, error: regErr } = await supabase
@@ -623,12 +659,18 @@ export default function ParentRegistrationPage() {
         setError(regErr.code === '23505'
           ? `${studentFullName} is already registered for that class.`
           : regErr.hint === 'course_rule'
-            ? `Your camper's details are saved, but the class couldn't be booked: ${regErr.message.replace(/\s*Request an exception\?$/, '')} Go back to step 4 to pick another class or request an exception.`
+            ? `Your camper's details are saved, but the class couldn't be booked: ${regErr.message.replace(/\s*Request an exception\?$/, '')} Go back to step ${STEP_CLASS} to pick another class or request an exception.`
             : `Your camper's details are saved, but the class couldn't be booked: ${regErr.message}. Go back to change the class, then submit again.`)
         setSubmitting(false)
         return
       }
       setWaitlistedCount((regs ?? []).filter(r => r.status === 'waitlisted').length)
+      for (const r of regs ?? []) {
+        if (r.status !== 'confirmed' && r.status !== 'pending') continue
+        const sec = classes.flatMap(c => c.sections).find(x => x.id === r.section_id)
+        const ids = sec?.session_id ? [sec.session_id] : sec?.week ? [campSessions[sec.week - 1]?.id] : campSessions.map(x => x.id)
+        for (const id of ids) if (id) seatedWeeks.add(id)
+      }
       setRegisteredCount((regs ?? []).length)
 
       // "Will your camper need to borrow a laptop?" Yes: ask for one in each week with a spot. The
@@ -657,6 +699,12 @@ export default function ParentRegistrationPage() {
         .update({ registration_year: campYear, waiver_signed_at: new Date().toISOString() })
         .eq('id', student.id)
     }
+
+    // Who may collect the camper, and the walk-home consent (spec 36). A failure doesn't undo the
+    // registration: the last screen says so, and Home can do it.
+    setPickupError(await saveWizardPickups(student.id,
+      form.pickup_choice === 'others' ? form.pickup_adults : [], pickupIdsOnFile,
+      form.leave_alone && form.leave_mode ? { mode: form.leave_mode, note: form.leave_note } : null, [...seatedWeeks]))
 
     // Exception requests go once the camper (and any Week 1 class) is saved, so the database
     // judges them on the same facts. One failing doesn't undo the registration.
@@ -733,6 +781,11 @@ export default function ParentRegistrationPage() {
             <p key={line} className="mt-2 text-pretty">{line}</p>
           ))}
           {exceptionErrors.map(e => <ErrorLine key={e} className="mt-2">{e}</ErrorLine>)}
+          {pickupError && (
+            <ErrorLine className="mt-2">
+              We couldn't save who can pick up {form.first_name.trim() || 'your camper'}: {pickupError} Add it on Home: tap your camper, then Pickup.
+            </ErrorLine>
+          )}
           <button type="button" onClick={() => navigate('/parent')} className={buttonClass('primary', 'mt-5')}>
             Back to Home
           </button>
@@ -788,15 +841,15 @@ export default function ParentRegistrationPage() {
             square on a phone (DESIGN.md › Sign Band, sticky); under the bar from 768px. */}
         <div className="sticky top-0 md:top-16 z-20 -mx-4 md:mx-0 -mt-5 md:-mt-8 mb-6 px-4 md:px-5 pt-1 pb-3 bg-brand text-brand-on md:rounded-b">
           <div className="flex items-center justify-between gap-3">
-            <p aria-hidden="true" className="text-sm font-bold text-brand-on-muted">Step {step} of 5</p>
+            <p aria-hidden="true" className="text-sm font-bold text-brand-on-muted">Step {step} of {LAST_STEP}</p>
             <button type="button" onClick={saveAndExit} className={buttonClass('text', 'text-brand-on focus-visible:outline-brand-on!')}>
               Save and exit
             </button>
           </div>
           <h1 ref={stepRef} tabIndex={-1} className={`${pageTitle} focus:outline-none`}>
-            <span className="sr-only">Step {step} of 5: </span>{STEP_NAMES[step - 1]}
+            <span className="sr-only">Step {step} of {LAST_STEP}: </span>{STEP_NAMES[step - 1]}
           </h1>
-          <StepBar current={step} total={5} />
+          <StepBar current={step} total={LAST_STEP} />
         </div>
         {restoredDraft && (
           <p role="status" className="-mt-2 mb-6 text-sm text-ink-muted">
@@ -938,8 +991,98 @@ export default function ParentRegistrationPage() {
             </div>
           )}
 
-          {/* Step 3: Medical & misc */}
+          {/* Step 3: Pickup (spec 36) */}
           {step === 3 && (
+            <div className="space-y-5">
+              <p className="text-pretty">
+                You can always collect {studentFirst}. Tell us who else may, and whether {studentFirst} may go home on their own.
+                You can change this on Home until the end of camp week.
+              </p>
+              <div>
+                <p id="reg-pickup" className={labelCls}>Who will pick up {studentFirst}? *</p>
+                <div role="radiogroup" aria-labelledby="reg-pickup" className="grid gap-2">
+                  {([['me', 'Only I will pick up'], ['others', 'Other adults may pick up too']] as const).map(([key, text]) => (
+                    <label key={key} className={choiceCls}>
+                      <input type="radio" name="reg-pickup" className="w-5 h-5 shrink-0" checked={form.pickup_choice === key}
+                        {...invalidProps('reg-pickup')}
+                        onChange={() => {
+                          set('pickup_choice', key)
+                          if (key === 'others' && form.pickup_adults.length === 0) set('pickup_adults', [{ name: '', relation: '', phone: '' }])
+                        }} />
+                      <span className="font-bold">{text}</span>
+                    </label>
+                  ))}
+                </div>
+                {fieldError('reg-pickup')}
+              </div>
+              {form.pickup_choice === 'others' && (
+                <div className="space-y-5">
+                  {form.pickup_adults.map((a, i) => {
+                    const fid = (f: string) => `reg-pickup-${i}-${f}`
+                    const put = (f: keyof PickupDraft, v: string) => set('pickup_adults', form.pickup_adults.map((x, j) => (j === i ? { ...x, [f]: v } : x)))
+                    return (
+                      <fieldset key={i} className="space-y-4 pt-5 border-t border-border first:pt-0 first:border-t-0">
+                        <legend className="sr-only">Adult {i + 1}</legend>
+                        <div>
+                          <label htmlFor={fid('name')} className={labelCls}>Their name *</label>
+                          <input id={fid('name')} {...invalidProps(fid('name'))} type="text" autoComplete="off" maxLength={100} className={inputCls} value={a.name} onChange={e => put('name', e.target.value)} />
+                          {fieldError(fid('name'))}
+                        </div>
+                        <div className="grid min-[480px]:grid-cols-2 gap-x-4 gap-y-5">
+                          <div>
+                            <label htmlFor={fid('relation')} className={labelCls}>How they know {studentFirst} *</label>
+                            <input id={fid('relation')} {...invalidProps(fid('relation'))} type="text" maxLength={50} className={inputCls} placeholder="Grandparent, carpool" value={a.relation} onChange={e => put('relation', e.target.value)} />
+                            {fieldError(fid('relation'))}
+                          </div>
+                          <div>
+                            <label htmlFor={fid('phone')} className={labelCls}>Phone *</label>
+                            <input id={fid('phone')} {...invalidProps(fid('phone'))} type="tel" autoComplete="off" maxLength={30} className={inputCls} value={a.phone} onChange={e => put('phone', e.target.value)} />
+                            {fieldError(fid('phone'))}
+                          </div>
+                        </div>
+                        {form.pickup_adults.length > 1 && (
+                          <button type="button" className={mutedTextBtn} onClick={() => set('pickup_adults', form.pickup_adults.filter((_, j) => j !== i))}>
+                            Remove {a.name.trim() || `adult ${i + 1}`}
+                          </button>
+                        )}
+                      </fieldset>
+                    )
+                  })}
+                  {form.pickup_adults.length < 10 && (
+                    <button type="button" className={buttonClass('text')} onClick={() => set('pickup_adults', [...form.pickup_adults, { name: '', relation: '', phone: '' }])}>
+                      Add another adult
+                    </button>
+                  )}
+                  <p className={`${hintCls} text-pretty`}>Someone coming only on certain days? Add them on Home after you register, and pick the days.</p>
+                </div>
+              )}
+              <h2 className="pt-5 border-t-2 border-ink text-lg font-bold">Going home on their own</h2>
+              <label className={checkRowCls}>
+                <input type="checkbox" className="w-[22px] h-[22px] mt-0.5 shrink-0" checked={form.leave_alone} onChange={e => set('leave_alone', e.target.checked)} />
+                <span className="text-pretty">{studentFirst} may leave camp on their own (walking, biking or by transit) every day of camp</span>
+              </label>
+              {form.leave_alone ? (
+                <>
+                  <div>
+                    <p id="reg-leave-mode" className={labelCls}>How does {studentFirst} get home? *</p>
+                    <Segmented labelledBy="reg-leave-mode" invalid={!!error && errorField === 'reg-leave-mode'} describedBy={error && errorField === 'reg-leave-mode' ? 'reg-error' : undefined}
+                      items={LEAVE_MODES.map(m => ({ key: m.key, label: m.label, on: form.leave_mode === m.key, onClick: () => set('leave_mode', m.key) }))} />
+                    {fieldError('reg-leave-mode')}
+                  </div>
+                  <div>
+                    <label htmlFor="reg-leave-note" className={labelCls}>A note for the crew <span className="font-normal text-ink-muted">(optional)</span></label>
+                    <input id="reg-leave-note" type="text" maxLength={300} className={inputCls} placeholder="e.g. walks home with her brother" value={form.leave_note} onChange={e => set('leave_note', e.target.value)} />
+                  </div>
+                  <p className={`${hintCls} text-pretty`}>To allow only some days, change it on Home after you register.</p>
+                </>
+              ) : (
+                <p className={`${hintCls} text-pretty`}>Unticked, {studentFirst} goes home only with you or an adult on the list.</p>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Medical & misc */}
+          {step === 4 && (
             <div className="space-y-5">
               <div>
                 <label htmlFor="reg-allergies" className={labelCls}>{labelText('allergies', 'enter "None" if not applicable')}</label>
@@ -1004,8 +1147,8 @@ export default function ParentRegistrationPage() {
             </div>
           )}
 
-          {/* Step 4: Session & class selection */}
-          {step === 4 && (
+          {/* Step 5: Session & class selection */}
+          {step === 5 && (
             <div className="space-y-6">
               <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }}><NotifyMeSwitch /></RegistrationCountdown>
               {/* Hours vary by class, so each class row shows its own days, time and room. */}
@@ -1118,8 +1261,8 @@ export default function ParentRegistrationPage() {
             </div>
           )}
 
-          {/* Step 5: Waiver */}
-          {step === 5 && (
+          {/* Step 6: Waiver */}
+          {step === 6 && (
             <div className="space-y-6">
               {/* The official waiver is still coming from SCC national (PRODUCT.md), so the text sits
                   in a dashed "not final" frame (DESIGN.md › Shapes) and says so. */}
@@ -1168,7 +1311,7 @@ export default function ParentRegistrationPage() {
                 <ChevronLeft size={20} strokeWidth={2.25} aria-hidden="true" /> Back
               </button>
             )}
-            {step < 5 ? (
+            {step < LAST_STEP ? (
               // Distinct keys: without them React reuses the Next <button> as Submit and the click
               // that lands on the last step can fire a submit.
               <button key="next" type="button" onClick={handleNext} className={buttonClass('primary', 'flex-1')}>

@@ -319,6 +319,30 @@ export const ADMIN_GUIDE: HelpGuide = {
           ],
         },
         {
+          id: 'dismissal-pickups',
+          title: 'Dismissal: who collected each camper',
+          keywords: 'pickup pick up collect release walk bike transit home alone consent admin ok dismissal csv',
+          body: [
+            { kind: 'p', text: 'Families list the adults who may collect each camper, and can say a camper may walk, bike or take transit home on their own, for a whole week or named days. At dismissal the crew taps who collected each camper.' },
+            {
+              kind: 'steps',
+              items: [
+                'Open [[admin-attendance]]. Under **Dismissal**, **Not collected yet** lists every camper still in a room whose dismissal has started, with who may collect them and their numbers.',
+                'When a crew member calls about an adult who isn\'t on the list (or a camper leaving alone without consent for today), call the family. If it\'s fine, tell the crew to tap **An admin said OK**.',
+                '**Released on an admin\'s OK** lists those releases and who recorded them, so you can follow up with the family.',
+                'The **Week export** CSV has a **Collected by** column for each camper and day.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'The crew can\'t record a camper leaving on their own without the parent\'s consent for that day, or with an adult who isn\'t on that day\'s list, except as admin OK.',
+                'Families change pickups on their Home page until the week ends. During camp week the section\'s lead gets an email about each change.',
+              ],
+            },
+          ],
+        },
+        {
           id: 'updates-and-email',
           title: 'Updates and email',
           keywords: 'announcement post message email outbox log bcc mail',

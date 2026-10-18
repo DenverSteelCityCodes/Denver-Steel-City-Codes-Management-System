@@ -81,7 +81,7 @@ export default function ParentDashboard() {
               {drafts.map(({ key, studentId, draft }) => (
                 <li key={key} className="py-4 border-t-2 border-ink first:border-t-0">
                   <p className="text-lg font-bold leading-snug">Finish registering {draft.name || 'your new camper'}.</p>
-                  <p className="mt-1 text-ink-muted">You're on step {draft.step} of 5. Your answers are saved on this device.</p>
+                  <p className="mt-1 text-ink-muted">You're on step {draft.step} of 6. Your answers are saved on this device.</p>
                   <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
                     <Link to={`/parent/register?${studentId ? `studentId=${studentId}&` : ''}step=${draft.step}`} className={buttonClass('ink')}>Continue</Link>
                     <button type="button" onClick={() => { clearDraft(key); setDrafts(d => d.filter(x => x.key !== key)) }} className={mutedTextBtn}>Discard</button>
@@ -136,10 +136,10 @@ function Band({ band, today, students, marks, schedule, leadNames, onAccept, onD
   }
 
   if (band.kind === 'register') return (
-    <SignBand id="band" context="About ten minutes" figure={5} unit="steps" message="Register your first camper"
+    <SignBand id="band" context="About ten minutes" figure={6} unit="steps" message="Register your first camper"
       sub="Your answers are saved on this device as you go, so you can finish later.">
       <ol className="mt-3 grid gap-1">
-        {['The camper', 'You and an emergency contact', 'Health and details', 'Week and class', 'Waiver and consent'].map((t, i) => (
+        {['The camper', 'You and an emergency contact', 'Who picks up', 'Health and details', 'Week and class', 'Waiver and consent'].map((t, i) => (
           <li key={t} className="flex gap-3"><span aria-hidden="true" className="w-3 font-extrabold">{i + 1}</span>{t}</li>
         ))}
       </ol>
