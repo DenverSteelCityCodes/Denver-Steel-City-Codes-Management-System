@@ -61,3 +61,39 @@ export function wizardLaptopLines(camper: string, results: WizardLaptopResult[])
   }
   return lines
 }
+
+// ── Admin (spec 29, phase 2) ──
+
+export interface LaptopCounts { inUse: number; handedOut: number; queued: number }
+
+// Loans per week: in use (reserved + handed out), of which handed out, and queued.
+export function countBySession(rows: { status: LaptopLoanStatus; session_id: string | null }[]): Map<string, LaptopCounts> {
+  const out = new Map<string, LaptopCounts>()
+  for (const r of rows) {
+    if (!r.session_id) continue
+    const c = out.get(r.session_id) ?? { inUse: 0, handedOut: 0, queued: 0 }
+    if (r.status === 'reserved' || r.status === 'handed_out') c.inUse++
+    if (r.status === 'handed_out') c.handedOut++
+    if (r.status === 'queued') c.queued++
+    out.set(r.session_id, c)
+  }
+  return out
+}
+
+// "Loaners: 18 / 25 reserved (6 handed out), 4 queued" for the Sessions page.
+export function loanerSummary(cap: number, c: LaptopCounts | undefined): string {
+  const { inUse, handedOut, queued } = c ?? { inUse: 0, handedOut: 0, queued: 0 }
+  if (cap === 0 && inUse === 0 && queued === 0) return 'No loaner laptops set'
+  return `Loaners: ${inUse} / ${cap} reserved${handedOut ? ` (${handedOut} handed out)` : ''}${queued ? `, ${queued} queued` : ''}`
+}
+
+// One registration's laptop on the admin campers list and CSV; nothing for none or released.
+export function adminLaptopWord(status: LaptopLoanStatus | null | undefined): string | null {
+  switch (status) {
+    case 'reserved': return 'Laptop reserved'
+    case 'queued': return 'Laptop queued'
+    case 'handed_out': return 'Laptop handed out'
+    case 'returned': return 'Laptop returned'
+    default: return null
+  }
+}

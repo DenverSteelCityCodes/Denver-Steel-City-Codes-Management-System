@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { joinWeeks, laptopState, rosterLaptopLabel, wizardLaptopLines, type MyLaptop } from '../laptopLoans'
+import { adminLaptopWord, countBySession, joinWeeks, laptopState, loanerSummary, rosterLaptopLabel, wizardLaptopLines, type MyLaptop } from '../laptopLoans'
 
 const row = (over: Partial<MyLaptop>): MyLaptop => ({ registration_id: 'r', status: null, queue_position: null, changes_open: true, ...over })
 
@@ -59,5 +59,29 @@ describe('wizardLaptopLines', () => {
   })
   it('says nothing when nothing was asked', () => {
     expect(wizardLaptopLines('Ava', [])).toEqual([])
+  })
+})
+
+describe('admin laptop counts', () => {
+  it('counts in use (reserved + handed out), handed out and queued per week', () => {
+    const c = countBySession([
+      { status: 'reserved', session_id: 'w1' }, { status: 'handed_out', session_id: 'w1' },
+      { status: 'queued', session_id: 'w1' }, { status: 'released', session_id: 'w1' },
+      { status: 'returned', session_id: 'w1' }, { status: 'reserved', session_id: 'w2' },
+      { status: 'reserved', session_id: null },
+    ])
+    expect(c.get('w1')).toEqual({ inUse: 2, handedOut: 1, queued: 1 })
+    expect(c.get('w2')).toEqual({ inUse: 1, handedOut: 0, queued: 0 })
+  })
+  it('words the Sessions line', () => {
+    expect(loanerSummary(25, { inUse: 18, handedOut: 6, queued: 4 })).toBe('Loaners: 18 / 25 reserved (6 handed out), 4 queued')
+    expect(loanerSummary(6, { inUse: 2, handedOut: 0, queued: 0 })).toBe('Loaners: 2 / 6 reserved')
+    expect(loanerSummary(0, undefined)).toBe('No loaner laptops set')
+    expect(loanerSummary(0, { inUse: 0, handedOut: 0, queued: 3 })).toBe('Loaners: 0 / 0 reserved, 3 queued')
+  })
+  it('names a registration\'s laptop for the campers list and CSV', () => {
+    expect(adminLaptopWord('queued')).toBe('Laptop queued')
+    expect(adminLaptopWord('released')).toBeNull()
+    expect(adminLaptopWord(null)).toBeNull()
   })
 })

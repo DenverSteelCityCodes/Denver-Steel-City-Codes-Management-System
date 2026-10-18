@@ -267,6 +267,30 @@ export const ADMIN_GUIDE: HelpGuide = {
           ],
         },
         {
+          id: 'loaner-laptops',
+          title: 'Loaner laptops',
+          keywords: 'laptop loaner chromebook queue cap hand out',
+          body: [
+            { kind: 'p', text: 'Families ask for a loaner laptop per camper and week, when they register or later on their Home page. Each week lends as many as you set; requests past that wait in a first-come queue. Loaners stay at camp.' },
+            {
+              kind: 'steps',
+              items: [
+                'Set each week\'s number on [[admin-sessions]]: tap **Edit** on the week and fill in **Loaner laptops**. The week\'s line shows how many are reserved, handed out and queued.',
+                'Raising the number gives loaners to the queue at once, oldest request first, and emails those families. Lowering it takes nothing back.',
+                'On [[admin-students]], the **Laptop** column and the CSV show each camper\'s laptop by week.',
+                'On camp morning, tick each laptop as you hand it out under **Loaner laptops** on [[admin-attendance]].',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'Cancelling a spot releases its laptop to the next camper in the queue. A laptop already handed out stays on the list until it\'s back.',
+                'Families can release a laptop or leave the queue online until the week starts; after that, changes happen at check-in.',
+              ],
+            },
+          ],
+        },
+        {
           id: 'camp-week',
           title: 'Camp week: roll call, the attendance board and calling families',
           keywords: 'attendance roll call unaccounted board call parent emergency print roster export csv',
@@ -280,6 +304,7 @@ export const ADMIN_GUIDE: HelpGuide = {
                 'Sections with **No roll call yet** are also listed with their room and lead, so you know who to call.',
                 '**Unaccounted now** lists every missing camper across all sections, with their section, room, lead, any health note and a call link for each contact (for example **Call Linh Tran (parent)**). On a phone these dial straight away.',
                 'For paper backups, open a section and tap **Print roster**. At the end of the week, open **Week export** at the bottom and tap **Download attendance CSV**.',
+                '**Loaner laptops** lists each section\'s borrowed laptops. Tick a camper\'s box as you hand theirs out; untick it if you ticked the wrong one.',
               ],
             },
             {
