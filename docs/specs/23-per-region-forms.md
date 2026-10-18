@@ -13,7 +13,7 @@ The school district list is four Denver-metro districts in code. The waiver is p
 ## Scope: what to build
 - District list per region in `form_configs` (editable in the Form editor), with "Other".
 - `waivers.region_id`: each region publishes its own versions (L2 tables).
-- `sections.grades_allowed text[]` (null = any), edited in the section form, enforced in `registrations_before_insert()` and in swaps. Remove `courseConstraints.ts` name matching; keep the requirement note as `classes.requirement_note`.
+- ~~`sections.grades_allowed text[]`~~ Built by spec 31 as class-level rules (`classes.grades_allowed`, `requires_class_id`, `requirement_note`, `next_class_id`), enforced in `registrations_before_insert()` and in swaps; `courseConstraints.ts` is gone. This spec only makes them (and the grade list they use) per region.
 - Grade list (4th–9th) and the grade→age map per region in settings, defaulting to Denver's.
 - The wizard's hardcoded venue line ("Camp is held at Cherry Creek High School, 8:00 AM – 4:00 PM each day", step 4) becomes per-region (or per-session) text. Found while building spec 13.
 
