@@ -34,7 +34,7 @@ export const TIPS = {
   },
   'section-week': {
     role: 'admin',
-    where: 'Classes › section form › Week',
+    where: 'Classes › a section › Edit › Week',
     body: [
       'Pick Week 1 or Week 2. A section on **Any** isn\'t tied to a camp week: its campers can\'t take another class in either week, it never shows on the attendance board, and its crew never get a roll call.',
     ],
@@ -42,7 +42,7 @@ export const TIPS = {
   },
   'remove-section': {
     role: 'admin',
-    where: 'Classes › the trash button on a section or class',
+    where: 'Classes › a section › Edit › Remove section, or Remove on a class',
     body: [
       'A section with no registrations is deleted. One with registrations is cancelled instead: every registration is kept as cancelled, and families are told on Home and go first on that week\'s waitlists.',
       'A cancelled section can\'t be edited or brought back, so move its crew first.',
@@ -51,7 +51,7 @@ export const TIPS = {
   },
   'admin-move': {
     role: 'admin',
-    where: 'Students › a camper › Move to section',
+    where: 'Campers › a camper › Move to',
     body: [
       'Admin moves skip the checks families get: a move can over-fill a section, break its age range or give a camper a second class that week. The confirmation names each problem before anything changes.',
       'A confirmed seat stays confirmed. The seat left behind is offered to that section\'s waitlist.',

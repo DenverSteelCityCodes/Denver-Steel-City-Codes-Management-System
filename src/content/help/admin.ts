@@ -54,14 +54,16 @@ export const ADMIN_GUIDE: HelpGuide = {
         {
           id: 'finding-your-way',
           title: 'Find your way around',
-          keywords: 'dashboard today to do bell search',
+          keywords: 'dashboard today to do bell search menu rail tabs dark mode',
           body: [
             {
               kind: 'list',
               items: [
                 '[[admin-today]] opens first. The gold sign says whether registration is open, with seats left. **To do** lists what needs a person, most serious first. **Seats** shows every section\'s fill and waitlist. It refreshes every minute and when you come back to the tab.',
-                'The bell in the top bar holds the same to-do list on every page.',
-                'The search box in the top bar finds pages, classes, campers and volunteer applicants.',
+                'On a laptop the menu down the left lists the five jobs (Today, Campers, Classes, Volunteers, Updates) and Setup, with each job\'s other pages under it: Attendance under Today, Interviews and Duties under Volunteers, Forms and Users and roles under Setup. On a phone the same six are tabs along the top, and the page you\'re on shows its other pages just below them.',
+                'The bell in the top bar holds the same to-do list on every page, and the newest updates.',
+                'The search box in the top bar finds pages (old names like Students or Sessions work too), classes, campers and volunteer applicants.',
+                'Your name, **Dark mode**, Help and **Sign out** are in the menu under your initials.',
               ],
             },
           ],
@@ -121,7 +123,7 @@ export const ADMIN_GUIDE: HelpGuide = {
                 'On [[admin-sessions]], tap **New session** for each camp week. Give it a name (for example "Week 1"), a start date and an end date, leave **Show on sign-up forms** ticked, and tap **Create session**. Week 1 and Week 2 are that year\'s first and second sessions by start date.',
                 'Under each week, tap **Add a time block** for the daily schedule (drop-off, lunch, pickup). Families see it on Home. Once one week has a schedule, the other week offers **Copy from** that week.',
                 'On [[admin-classes]], tap **New class**, enter the course name and the description parents see, and tap **Create class**. Its first section form opens.',
-                'Fill in the section: a label, capacity, age range, **Week 1** or **Week 2**, days, room, times, and the lead and supports if you know them. Tap **Add section**. Add more with **Add section to** the class.',
+                'Fill in the section: a label, capacity, youngest and oldest age, **Week 1** or **Week 2**, days, room, times, and the lead and supports if you know them. Tap **Add section**. Add more with **Add section** in that class\'s week column.',
                 'On [[admin-forms]], rename questions, hide optional ones and choose what\'s required. Changes apply to the live forms at once.',
                 'Back on [[admin-sessions]], under **Registration**, set the **Opening time (Denver)**, the **Change deadline**, and the two waitlist offer windows. Tap **Save settings**.',
                 'When everything is ready, turn on **Families can register** (see [Registration night](/admin/help#registration-night)).',
@@ -192,8 +194,8 @@ export const ADMIN_GUIDE: HelpGuide = {
               heading: 'To see or override offers',
               items: [
                 'On [[admin-students]], tap the **Offered** filter to see every open offer.',
-                'To offer a seat to a particular camper, open them and under **Set status** tap **Offered**. They get the normal window and the offer email. The waitlist order isn\'t checked.',
-                'To place someone straight away, tap **Confirmed** instead. If the section is full, the confirmation warns that it will over-fill; tap **Set confirmed anyway** only if you mean it.',
+                'To offer a seat to a particular camper, open them, choose **Offered** in **Status** and tap **Set status**. They get the normal window and the offer email. The waitlist order isn\'t checked.',
+                'To place someone straight away, choose **Confirmed** instead and tap **Set status**. If the section is full, the confirmation warns that it will over-fill; tap **Set confirmed anyway** only if you mean it.',
               ],
             },
           ],
@@ -208,7 +210,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'Open requests show on [[admin-today]] under **To do** ("open change requests"). Tap **Review requests**, or open [[admin-students]]: **Change requests** is at the top.',
-                'Read the request. Then make the change yourself: open the camper below and use **Move to section**, **Set status** or **Remove registration**. For a volunteer, change their section on [[admin-classes]].',
+                'Read the request. Then make the change yourself: open the camper below and use **Move to** (then **Move**) or **Status** (then **Set status**; **Cancelled** removes them from the class). For a volunteer, change their section on [[admin-classes]].',
                 'Back in **Change requests**, type a **Reply** if you want to explain, then tap **Mark done**, or **Decline** if you can\'t make the change.',
               ],
             },
@@ -249,7 +251,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               heading: 'Crews',
               items: [
                 'To fill empty spots automatically, open [[admin-volunteers]], go to **Auto-assign volunteers**, pick the week and tap **Preview matches**. Check the table, then tap **Apply assignments**.',
-                'To set a crew by hand, open the class on [[admin-classes]], tap the pencil on the section, and choose the **Lead** and **Supports**. Tap **Save section**.',
+                'To set a crew by hand, select the section on [[admin-classes]] (it sits in its week\'s column), open **Edit**, and choose the **Lead** and **Supports**. Each name says their level, whether they\'re free that week and what they already crew; free people are listed first. Tap **Save** (the button names the section).',
                 'Daily jobs live on [[admin-duties]]: add a duty type, then **Add duty slot** with a date and how many volunteers. Volunteers sign up themselves.',
               ],
             },
@@ -337,7 +339,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'For a camper: on [[admin-students]], open them and tap **Show history**. It covers their details and every registration.',
-                'For a section: on [[admin-classes]], tap the pencil on the section. Its history is under the form.',
+                'For a section: on [[admin-classes]], select the section and open its **History** tab.',
                 'Each line says when, who and what changed. To undo an edit, tap **Revert** on it, then **Revert** again to confirm.',
               ],
             },
@@ -345,7 +347,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'system',
               items: [
                 'A revert is saved as a new change, so it can be undone too.',
-                'It\'s refused if the same fields changed again later (revert the newer change first), or if it would put a camper back into a cancelled or now-full section. Then use **Move to section** or **Set status** instead.',
+                'It\'s refused if the same fields changed again later (revert the newer change first), or if it would put a camper back into a cancelled or now-full section. Then use **Move to** or **Status** on the camper instead.',
                 'Deletes can\'t be undone: empty sections and classes, sessions, duty and interview slots, and update posts.',
                 'A cancelled section can\'t be un-cancelled in the app.',
               ],
@@ -367,9 +369,9 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'steps',
               items: [
-                'If they told the camp in the app, [[admin-today]] shows "can\'t make it" under **To do**, with the names of senior volunteers who could cover. Tap **Find cover**. If they texted you instead, open the class on [[admin-classes]].',
-                'Tap the pencil on their section.',
-                'Change the **Lead** (or remove them from **Supports** and add someone else) and tap **Save section**.',
+                'If they told the camp in the app, [[admin-today]] shows "can\'t make it" under **To do**, with the names of senior volunteers who could cover. Tap **Find cover**; [[admin-classes]] opens at that class. If they texted you instead, open [[admin-classes]] yourself.',
+                'Select their section and open **Edit**.',
+                'Change the **Lead** (or remove them from **Supports** and add someone else) and tap **Save**. The **Lead** list shows who is free that week first.',
                 'Call or text the volunteer who\'s covering. The app doesn\'t notify them.',
                 'If nobody can cover today, a support can still take roll call: leads and supports both can.',
               ],
@@ -392,8 +394,8 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'steps',
               items: [
-                '[[admin-today]] lists it under **To do** ("has no lead") while its week hasn\'t ended. Tap **Assign a lead**; the class opens.',
-                'Tap the pencil on the section, choose a **Lead** and tap **Save section**.',
+                '[[admin-today]] lists it under **To do** ("has no lead") while its week hasn\'t ended. Tap **Assign a lead**; [[admin-classes]] opens at that class, where the section says **No lead**.',
+                'Select the section: it opens on **Edit**. Choose a **Lead** and tap **Save**.',
                 'Or fill every empty spot at once: on [[admin-volunteers]], use **Auto-assign volunteers** for that week, **Preview matches**, then **Apply assignments**.',
               ],
             },
@@ -414,8 +416,8 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'steps',
               items: [
-                'First move its crew if they\'re needed elsewhere: tap the pencil on the section and clear the **Lead** and **Supports**. A cancelled section can\'t be edited.',
-                'On [[admin-classes]], open the class and tap the trash button on the section.',
+                'First move its crew if they\'re needed elsewhere: select the section on [[admin-classes]], open **Edit**, clear the **Lead** and **Supports** and tap **Save**. A cancelled section can\'t be edited.',
+                'Still on **Edit**, tap **Remove section** at the bottom.',
                 'Read the confirmation: it counts the campers with a spot and on the waitlist. Tap **Cancel section**.',
                 'Post an update to the families if you want to explain (see [Updates and email](/admin/help#updates-and-email)).',
               ],
@@ -467,8 +469,8 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'Their request shows under **Change requests** at the top of [[admin-students]] (and on **To do**).',
-                'Decide. To switch them: open the camper and pick the new class in **Move to section**. Read the confirmation (seats, ages, another class that week) and tap **Move**.',
-                'To cancel: tap **Remove registration** on that class, then **Remove**.',
+                'Decide. To switch them: open the camper, pick the new class in **Move to** (each choice shows its seats and ages) and tap **Move**. Read the confirmation (seats, ages, another class that week) and tap **Move** again.',
+                'To cancel: choose **Cancelled** in that class\'s **Status**, tap **Set status**, then **Cancel seat** (or **Take off waitlist**).',
                 'In **Change requests**, add a **Reply** and tap **Mark done**, or **Decline** with a reason.',
               ],
             },
@@ -502,7 +504,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               items: [
                 'On [[admin-students]], find the camper and open them.',
                 'Check the class: the seat may already be on offer to the next family.',
-                'Under **Set status**, tap **Confirmed** (or **Offered** to give them a new window). If the section is now full, the confirmation warns that it will over-fill.',
+                'In that class\'s **Status**, choose **Confirmed** (or **Offered** to give them a new window) and tap **Set status**. If the section is now full, the confirmation warns that it will over-fill.',
               ],
             },
           ],
@@ -518,7 +520,7 @@ export const ADMIN_GUIDE: HelpGuide = {
                 '[[admin-today]] lists "possible duplicate campers" under **To do**: the same name under different parent accounts, with the same grade or school. Tap **Review campers**; [[admin-students]] opens searched for that name.',
                 'Open both records and compare the parent, grade, school and registrations.',
                 'Ask the family which account they use, and tell them to sign in with that one from now on.',
-                'On the record they don\'t use, tap **Remove registration** on each class, then **Remove**.',
+                'On the record they don\'t use, set each class\'s **Status** to **Cancelled**, tap **Set status**, then **Cancel seat**.',
               ],
             },
             {
@@ -540,7 +542,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'If the grade was wrong and the family tries to fix it, the save is refused while the camper is in a class that doesn\'t fit the new age. They\'re told to contact the camp.',
-                'On [[admin-students]], open the camper and use **Move to section** to pick a class that fits. The confirmation warns if the ages don\'t fit.',
+                'On [[admin-students]], open the camper and use **Move to** to pick a class that fits (each choice shows its ages), then **Move**. The confirmation warns if the ages don\'t fit.',
                 'Then ask the family to save the new grade in **Family details**.',
               ],
             },
@@ -561,7 +563,7 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'steps',
               items: [
-                'To make room, open the class on [[admin-classes]], tap the pencil on the section, raise **Capacity** and tap **Save section**.',
+                'To make room, select the section on [[admin-classes]], open **Edit**, raise **Capacity** and tap **Save**.',
                 'Or move someone else out on [[admin-students]].',
               ],
             },
@@ -654,7 +656,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'On [[admin-sessions]], turn **Families can register** off and tap **Close registration**. New sign-ups stop at once.',
-                'Decide what to do with sign-ups that came in early: keep them, or on [[admin-students]] tap **Remove registration** on each one (each family gets a cancellation email queued, and the seat is offered to that section\'s waitlist).',
+                'Decide what to do with sign-ups that came in early: keep them, or on [[admin-students]] set each one\'s **Status** to **Cancelled** and confirm (each family gets a cancellation email queued, and the seat is offered to that section\'s waitlist).',
                 'Set the right **Opening time (Denver)** and tap **Save settings**.',
                 'Turn **Families can register** back on. The line under it should read "Opens by itself" with the right time.',
                 'Post an update to explain if families noticed (see [Updates and email](/admin/help#updates-and-email)).',

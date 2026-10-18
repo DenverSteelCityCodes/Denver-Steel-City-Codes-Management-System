@@ -322,7 +322,7 @@ function SectionForm({
             <span id={id('week-label')} className={label}>Week</span>
             <Segmented mode="radio" labelledBy={id('week-label')} className="mt-1.5" value={form.week}
               onChange={w => set({ week: w })}
-              options={[{ value: '', label: 'Both' }, { value: '1', label: 'Week 1' }, { value: '2', label: 'Week 2' }]} />
+              options={[{ value: '', label: 'Any' }, { value: '1', label: 'Week 1' }, { value: '2', label: 'Week 2' }]} />
           </div>
           <div className="mt-5">
             <label className={label} htmlFor={id('days')}>Days</label>
