@@ -52,14 +52,14 @@ export default function LaptopLoanLine({ registrationId, camper, where, laptops 
           </p>
           <button ref={actionRef} type="button" disabled={busy} aria-busy={busy}
             onClick={() => { void run(() => laptops.request(registrationId)) }} className={textBtn}>
-            {busy ? 'Asking…' : `Borrow a laptop for ${camper}`}
+            {busy ? 'Asking…' : `Borrow a laptop for ${camper}`}<span className="sr-only">, {where}</span>
           </button>
         </>
       )}
 
       {(action === 'release' || action === 'leave') && !confirming && (
         <button ref={actionRef} type="button" onClick={() => { setConfirming(true); setErr(null) }} className={textBtn}>
-          {action === 'release' ? 'Release the laptop' : 'Leave the laptop queue'}
+          {action === 'release' ? 'Release the laptop' : 'Leave the laptop queue'}<span className="sr-only">, {where}</span>
         </button>
       )}
       {confirming && (
