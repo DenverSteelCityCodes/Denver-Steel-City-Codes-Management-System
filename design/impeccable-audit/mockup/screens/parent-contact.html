@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your contact details · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Your contact details</h1>
+      <p class="lede">How camp reaches you. Each camper's health details and emergency contact are below.</p>
+    </div>
+  </div>
+
+  <form aria-labelledby="you-h">
+    <h2 id="you-h">Taylor Brooks</h2>
+    <div class="field mt-4"><label for="cd-email">Email</label><input class="input" id="cd-email" type="email" autocomplete="email" value="demo.parent@example.com"></div>
+    <div class="field"><label for="cd-phone">Phone</label><input class="input" id="cd-phone" type="tel" autocomplete="tel" value="303-555-0199"></div>
+    <h3 class="mt-8">Your emergency contact</h3>
+    <div class="field mt-3"><label for="cd-ec-name">Name</label><input class="input" id="cd-ec-name" autocomplete="off" value="Morgan Brooks"></div>
+    <div class="grid2 grid2--pair">
+      <div class="field"><label for="cd-ec-phone">Their phone</label><input class="input" id="cd-ec-phone" type="tel" autocomplete="off" value="720-555-0199"></div>
+      <div class="field"><label for="cd-ec-rel">Relationship</label><input class="input" id="cd-ec-rel" autocomplete="off" value="Aunt"></div>
+    </div>
+    <button class="btn btn--ink mt-6" type="submit">Save your details</button>
+  </form>
+
+  <section class="section" aria-labelledby="campers-h">
+    <h2 id="campers-h">Your campers</h2>
+    <ul class="mt-3">
+        <li class="camper anchor group" id="maya">
+          <div class="row">
+            <div class="grow"><h3 class="name">Maya Brooks</h3><p class="meta">Entering 7th <span class="sep">·</span> Campus Middle School</p></div>
+            <button class="link" type="button" data-toggle="edit-maya">Edit details<span class="sr-only"> for Maya</span></button>
+          </div>
+          <dl class="facts">
+            <dt>Allergies</dt><dd>Peanuts</dd>
+            <dt>Medical</dt><dd>None</dd>
+            <dt>Emergency contact</dt><dd>Morgan Brooks (Aunt), <span class="nw">720-555-0199</span></dd>
+          </dl>
+          <form class="group-edit" id="edit-maya" aria-label="Edit Maya's details" hidden>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="maya-first">First name</label><input class="input" id="maya-first" value="Maya" autocomplete="off"></div>
+              <div class="field"><label for="maya-last">Last name</label><input class="input" id="maya-last" value="Brooks" autocomplete="off"></div>
+            </div>
+            <div class="field"><label for="maya-grade">Grade this fall</label><select class="select" id="maya-grade"><option>4th</option><option>5th</option><option>6th</option><option selected>7th</option><option>8th</option><option>9th</option></select></div>
+            <div class="field"><label for="maya-allergies">Allergies or dietary needs</label><span class="hint" id="maya-allergies-h">Write None if there aren't any.</span><input class="input" id="maya-allergies" aria-describedby="maya-allergies-h" value="Peanuts"></div>
+            <div class="field"><label for="maya-medical">Medical conditions or learning needs</label><span class="hint" id="maya-medical-h">Write None if there aren't any.</span><input class="input" id="maya-medical" aria-describedby="maya-medical-h" value="None"></div>
+            <div class="field"><label for="maya-ec">Emergency contact</label><input class="input" id="maya-ec" value="Morgan Brooks" autocomplete="off"></div>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="maya-ec-phone">Their phone</label><input class="input" id="maya-ec-phone" type="tel" value="720-555-0199" autocomplete="off"></div>
+              <div class="field"><label for="maya-ec-rel">Relationship</label><input class="input" id="maya-ec-rel" value="Aunt" autocomplete="off"></div>
+            </div>
+            <div class="do-row"><button class="btn btn--ink" type="submit">Save Maya's details</button><button class="link link--muted" type="button" data-toggle="edit-maya">Cancel</button></div>
+          </form>
+        </li>
+        <li class="camper anchor group" id="eli">
+          <div class="row">
+            <div class="grow"><h3 class="name">Eli Brooks</h3><p class="meta">Entering 4th <span class="sep">·</span> Cottonwood Creek Elementary</p></div>
+            <button class="link" type="button" data-toggle="edit-eli">Edit details<span class="sr-only"> for Eli</span></button>
+          </div>
+          <dl class="facts">
+            <dt>Allergies</dt><dd>None</dd>
+            <dt>Medical</dt><dd>None</dd>
+            <dt>Emergency contact</dt><dd>Morgan Brooks (Aunt), <span class="nw">720-555-0199</span></dd>
+          </dl>
+          <form class="group-edit" id="edit-eli" aria-label="Edit Eli's details" hidden>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="eli-first">First name</label><input class="input" id="eli-first" value="Eli" autocomplete="off"></div>
+              <div class="field"><label for="eli-last">Last name</label><input class="input" id="eli-last" value="Brooks" autocomplete="off"></div>
+            </div>
+            <div class="field"><label for="eli-grade">Grade this fall</label><select class="select" id="eli-grade"><option selected>4th</option><option>5th</option><option>6th</option><option>7th</option><option>8th</option><option>9th</option></select></div>
+            <div class="field"><label for="eli-allergies">Allergies or dietary needs</label><span class="hint" id="eli-allergies-h">Write None if there aren't any.</span><input class="input" id="eli-allergies" aria-describedby="eli-allergies-h" value="None"></div>
+            <div class="field"><label for="eli-medical">Medical conditions or learning needs</label><span class="hint" id="eli-medical-h">Write None if there aren't any.</span><input class="input" id="eli-medical" aria-describedby="eli-medical-h" value="None"></div>
+            <div class="field"><label for="eli-ec">Emergency contact</label><input class="input" id="eli-ec" value="Morgan Brooks" autocomplete="off"></div>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="eli-ec-phone">Their phone</label><input class="input" id="eli-ec-phone" type="tel" value="720-555-0199" autocomplete="off"></div>
+              <div class="field"><label for="eli-ec-rel">Relationship</label><input class="input" id="eli-ec-rel" value="Aunt" autocomplete="off"></div>
+            </div>
+            <div class="do-row"><button class="btn btn--ink" type="submit">Save Eli's details</button><button class="link link--muted" type="button" data-toggle="edit-eli">Cancel</button></div>
+          </form>
+        </li>
+        <li class="camper anchor group" id="noor">
+          <div class="row">
+            <div class="grow"><h3 class="name">Noor Brooks</h3><p class="meta">Entering 8th <span class="sep">·</span> Campus Middle School</p></div>
+            <button class="link" type="button" data-toggle="edit-noor">Edit details<span class="sr-only"> for Noor</span></button>
+          </div>
+          <dl class="facts">
+            <dt>Allergies</dt><dd>None</dd>
+            <dt>Medical</dt><dd>Asthma, inhaler in backpack</dd>
+            <dt>Emergency contact</dt><dd>Morgan Brooks (Aunt), <span class="nw">720-555-0199</span></dd>
+          </dl>
+          <form class="group-edit" id="edit-noor" aria-label="Edit Noor's details" hidden>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="noor-first">First name</label><input class="input" id="noor-first" value="Noor" autocomplete="off"></div>
+              <div class="field"><label for="noor-last">Last name</label><input class="input" id="noor-last" value="Brooks" autocomplete="off"></div>
+            </div>
+            <div class="field"><label for="noor-grade">Grade this fall</label><select class="select" id="noor-grade"><option>4th</option><option>5th</option><option>6th</option><option>7th</option><option selected>8th</option><option>9th</option></select></div>
+            <div class="field"><label for="noor-allergies">Allergies or dietary needs</label><span class="hint" id="noor-allergies-h">Write None if there aren't any.</span><input class="input" id="noor-allergies" aria-describedby="noor-allergies-h" value="None"></div>
+            <div class="field"><label for="noor-medical">Medical conditions or learning needs</label><span class="hint" id="noor-medical-h">Write None if there aren't any.</span><input class="input" id="noor-medical" aria-describedby="noor-medical-h" value="Asthma, inhaler in backpack"></div>
+            <div class="field"><label for="noor-ec">Emergency contact</label><input class="input" id="noor-ec" value="Morgan Brooks" autocomplete="off"></div>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="noor-ec-phone">Their phone</label><input class="input" id="noor-ec-phone" type="tel" value="720-555-0199" autocomplete="off"></div>
+              <div class="field"><label for="noor-ec-rel">Relationship</label><input class="input" id="noor-ec-rel" value="Aunt" autocomplete="off"></div>
+            </div>
+            <div class="do-row"><button class="btn btn--ink" type="submit">Save Noor's details</button><button class="link link--muted" type="button" data-toggle="edit-noor">Cancel</button></div>
+          </form>
+        </li>
+    </ul>
+    <p class="meta mt-4">Noor's details need their yearly check for 2026. <a class="link" href="parent-classes-quickcheck.html">Review Noor's details</a></p>
+  </section>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+// Mockup only: arriving from Home's "Edit" (#maya, #eli, #noor) opens that camper's fields in place.
+document.addEventListener('DOMContentLoaded', function () {
+  function open() {
+    var id = location.hash.slice(1);
+    if (!/^(maya|eli|noor)$/.test(id)) return;
+    var form = document.getElementById('edit-' + id);
+    if (!form || !form.hidden) return;
+    form.hidden = false;
+    document.querySelectorAll('[data-toggle="edit-' + id + '"]').forEach(function (b) { b.setAttribute('aria-expanded', 'true'); });
+    document.getElementById(id).scrollIntoView();
+  }
+  open(); window.addEventListener('hashchange', open);
+});
+</script>
+</body>
+</html>

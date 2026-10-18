@@ -1,0 +1,70 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Updates
+
+Posts show on parent and volunteer dashboards and in their bells. Tick "Also email" to open your mail app with the right addresses in BCC.
+
+NEW UPDATE
+Send to
+Everyone this season (parents + volunteers)
+This season's parents
+All volunteers
+One section's families
+Message · This season's parents and every volunteer
+
+0/2000
+
+Also email
+(opens your mail app)
+Post update
+Posted updates
+
+Fiona Zhang
+Web Development · WEB-1 · Week 1
+· just now
+
+Great first day in Web Dev! Everyone built their first page with a heading, a photo and a link. Tomorrow we add colour with CSS — no homework, just bring your ideas.
+
+Jordan Rivera
+Parents
+· just now
+
+Reminder: Friday is show-and-tell at 2:30. Families are welcome to come early and see what the campers built this week.
+
+Jordan Rivera
+Volunteers
+· just now
+
+Crew huddle at 8:15 each morning by the check-in table. Roll calls happen at arrival, after lunch and at dismissal — take them on your phone from the dashboard.
+
+Jordan Rivera
+Everyone
+· 5 h ago
+
+Welcome to Week 1! Drop-off is 8:30–9:00 in the front lobby and pickup starts at 3:00. Please send a water bottle and a labelled laptop charger each day.
+
+EMAILS THE APP SENT
+
+Confirmations, waitlist and change notices go to families automatically. Addresses at example.com (the demo) are skipped.
+
+No emails yet.

@@ -1,0 +1,804 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Users & roles
+
+Every account and what it can access. Role changes take effect the next time the person loads a page.
+
+Admins
+2
+J
+
+Jordan Rivera(you)
+
+demo.admin@example.com · joined 9/30/2026
+
+Two-step sign-in: not set up yet
+
+Admin
+You can't change your own role
+H
+
+Haanie Mohammed
+
+No email on file · joined 6/5/2026
+
+Two-step sign-in: not set up yet
+
+Role
+Admin
+Volunteer
+Parent
+Volunteers
+28
+M
+
+Mila Novak
+
+applicant3@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+C
+
+Cameron Ortiz
+
+cameron.ortiz@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+A
+
+Avery Johnson
+
+applicant2@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+H
+
+Harper Ito
+
+harper.ito@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+I
+
+Isaiah Grant
+
+isaiah.grant@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+E
+
+Eli Grant
+
+applicant6@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+T
+
+Tyler Washington
+
+tyler.washington@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+K
+
+Kevin Osei
+
+kevin.osei@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+D
+
+Daniela Ruiz
+
+daniela.ruiz@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+F
+
+Fiona Zhang
+
+fiona.zhang@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+J
+
+Jalen Price
+
+applicant4@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+E
+
+Elijah Foster
+
+elijah.foster@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+M
+
+Marcus Bell
+
+marcus.bell@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+L
+
+Lily Moreau
+
+lily.moreau@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+Q
+
+Quinn Alvarez
+
+quinn.alvarez@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+S
+
+Sienna Cole
+
+sienna.cole@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+N
+
+Nadia Rahman
+
+nadia.rahman@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+P
+
+Paige Morgan
+
+paige.morgan@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+A
+
+Aiden Brooks
+
+aiden.brooks@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+S
+
+Sofia Haddad
+
+applicant5@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+J
+
+Jasmine Kaur
+
+jasmine.kaur@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+G
+
+Gabe Holloway
+
+gabe.holloway@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+B
+
+Bella Nguyen
+
+bella.nguyen@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+R
+
+Ravi Iyer
+
+ravi.iyer@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+O
+
+Oscar Lindqvist
+
+oscar.lindqvist@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+S
+
+Sam Okafor
+
+demo.volunteer@example.com · joined 9/30/2026
+
+Role
+Admin
+Volunteer
+Parent
+R
+
+Riley Chen
+
+demo.applicant@example.com · joined 9/30/2026
+
+Role
+Admin
+Volunteer
+Parent
+H
+
+Haanie Mohammed
+
+No email on file · joined 6/5/2026
+
+Role
+Admin
+Volunteer
+Parent
+Parents
+47
+M
+
+Mei Kim
+
+mei.kim@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+A
+
+Ana Hernandez
+
+ana.hernandez@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+M
+
+Maria Nguyen
+
+maria.nguyen@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+D
+
+David Patel
+
+david.patel@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+S
+
+Sean Walsh
+
+sean.walsh@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+H
+
+Hiroshi Yamamoto
+
+hiroshi.yamamoto@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+M
+
+Michael Haddad
+
+michael.haddad@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+S
+
+Sarah Martinez
+
+sarah.martinez@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+Y
+
+Yusuf Ibrahim
+
+yusuf.ibrahim@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+P
+
+Priya Singh
+
+priya.singh@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+S
+
+Sofia Reyes
+
+sofia.reyes@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+L
+
+Lucia Moreno
+
+lucia.moreno@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+C
+
+Carlos Okafor
+
+carlos.okafor@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+A
+
+Aisha Garcia
+
+aisha.garcia@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+D
+
+Daniel Lopez
+
+daniel.lopez@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+P
+
+Paul Cooper
+
+paul.cooper@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+M
+
+Molly Sullivan
+
+molly.sullivan@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+R
+
+Robert Thompson
+
+robert.thompson@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+J
+
+Javier Ortiz
+
+javier.ortiz@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+T
+
+Tom Fischer
+
+tom.fischer@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+F
+
+Fatima Rivera
+
+fatima.rivera@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+B
+
+Ben Novak
+
+ben.novak@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+G
+
+Grace Mensah
+
+grace.mensah@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+K
+
+Kwame Chen
+
+kwame.chen@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+H
+
+Hassan Ali
+
+hassan.ali@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+H
+
+Hannah Price
+
+hannah.price@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+L
+
+Laura Brown
+
+laura.brown@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+J
+
+Jin Park
+
+jin.park@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+A
+
+Anjali Shah
+
+anjali.shah@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+G
+
+Gabriela Diaz
+
+gabriela.diaz@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+L
+
+Linh Tran
+
+linh.tran@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+R
+
+Rachel Davis
+
+rachel.davis@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+J
+
+James Johnson
+
+james.johnson@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+N
+
+Nadia Robinson
+
+nadia.robinson@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+E
+
+Erik Larsen
+
+erik.larsen@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+E
+
+Elena Williams
+
+elena.williams@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+R
+
+Rosa Vargas
+
+rosa.vargas@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+R
+
+Rose Begay
+
+rose.begay@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+C
+
+Chris Clarke
+
+chris.clarke@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+M
+
+Mark Bennett
+
+mark.bennett@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+D
+
+Diana Romero
+
+diana.romero@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+K
+
+Kareem Ahmed
+
+kareem.ahmed@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+C
+
+Carmen Castillo
+
+carmen.castillo@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+L
+
+Luis Flores
+
+luis.flores@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+P
+
+Peter Kowalski
+
+peter.kowalski@example.com · joined 10/17/2026
+
+Role
+Admin
+Volunteer
+Parent
+T
+
+Taylor Brooks
+
+demo.parent@example.com · joined 9/30/2026
+
+Role
+Admin
+Volunteer
+Parent
+H
+
+haanie09
+
+No email on file · joined 6/5/2026
+
+Role
+Admin
+Volunteer
+Parent

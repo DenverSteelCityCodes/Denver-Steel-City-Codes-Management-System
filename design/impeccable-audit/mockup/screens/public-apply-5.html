@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteer application, step 5 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Volunteer application, 2026</h1>
+    </div>
+  </div>
+
+  <section class="sign" aria-labelledby="step-h">
+    <h2 class="steplabel" id="step-h" aria-live="polite">Step 5 of 5 · Interview</h2>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span></div>
+  </section>
+
+  <form class="fstack mt-8" data-next="public-apply-sent.html" novalidate>
+    <fieldset>
+      <legend>Pick a time for your 15-minute online interview</legend>
+      <p class="hint">You can change it later from your dashboard.</p>
+      <ul class="slots">
+        <li>
+          <h3><span aria-hidden="true">Mon, Oct 19</span><span class="sr-only">Monday, October 19</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot" checked><span class="sr-only">Monday, October 19, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Monday, October 19, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Wed, Oct 21</span><span class="sr-only">Wednesday, October 21</span></h3>
+          <div class="times"><label class="opt late"><input type="radio" name="slot"><span class="sr-only">Wednesday, October 21, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Thu, Oct 22</span><span class="sr-only">Thursday, October 22</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot"><span class="sr-only">Thursday, October 22, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Thursday, October 22, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Fri, Oct 23</span><span class="sr-only">Friday, October 23</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot"><span class="sr-only">Friday, October 23, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Friday, October 23, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Mon, Oct 26</span><span class="sr-only">Monday, October 26</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot"><span class="sr-only">Monday, October 26, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Monday, October 26, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Tue, Oct 27</span><span class="sr-only">Tuesday, October 27</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot"><span class="sr-only">Tuesday, October 27, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Tuesday, October 27, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Wed, Oct 28</span><span class="sr-only">Wednesday, October 28</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot"><span class="sr-only">Wednesday, October 28, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Wednesday, October 28, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Thu, Oct 29</span><span class="sr-only">Thursday, October 29</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot"><span class="sr-only">Thursday, October 29, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Thursday, October 29, </span>4:30 PM</label></div>
+        </li>
+        <li>
+          <h3><span aria-hidden="true">Fri, Oct 30</span><span class="sr-only">Friday, October 30</span></h3>
+          <div class="times"><label class="opt"><input type="radio" name="slot"><span class="sr-only">Friday, October 30, </span>4:00 PM</label><label class="opt"><input type="radio" name="slot"><span class="sr-only">Friday, October 30, </span>4:30 PM</label></div>
+        </li>
+      </ul>
+    </fieldset>
+    <div class="formnav">
+      <a class="btn btn--secondary" href="public-apply-4.html"><i data-lucide="chevron-left"></i>Back</a>
+      <button class="btn btn--primary" type="submit">Send application</button>
+    </div>
+  </form>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script></body>
+</html>

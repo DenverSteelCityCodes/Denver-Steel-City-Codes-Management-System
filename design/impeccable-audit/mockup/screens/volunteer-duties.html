@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Duties · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="volunteer-today.html">Today</a>
+      <a href="volunteer-class.html">Class</a>
+      <a href="volunteer-duties.html" aria-current="page">Duties</a>
+      <a href="volunteer-updates.html">Updates</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="SO, account menu">SO</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <a href="volunteer-today.html">Today</a>
+    <a href="volunteer-class.html">Class</a>
+    <a href="volunteer-duties.html" aria-current="page">Duties</a>
+    <a href="volunteer-updates.html">Updates</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Sam Okafor</b><span>demo.volunteer@example.com</span></div>
+    <a href="volunteer-profile.html"><i data-lucide="user-round"></i>Profile and availability</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page">
+  <div class="cols">
+    <section aria-labelledby="mine-h">
+      <h1 id="mine-h">You're on 1 duty</h1>
+      <ul class="rows rows--framed mt-4">
+        <li>
+          <div class="row">
+            <div class="grow">
+              <p class="name">Morning Check-In</p>
+              <p><b>Monday, Oct 19</b> · you and 1 other</p>
+              <p class="desc">Welcome campers and check them in at arrival</p>
+            </div>
+            <button class="link link--danger" data-toggle="drop-mci">Cancel<span class="sr-only"> Morning Check-In, Monday</span></button>
+          </div>
+          <div class="confirm" id="drop-mci">
+            <p>Drop Morning Check-In on Monday, October 19? The camp will need someone else to cover it.</p>
+            <div class="do"><button class="btn btn--secondary" data-toggle="drop-mci" autofocus>Keep it</button><button class="btn btn--danger">Drop duty</button></div>
+          </div>
+        </li>
+      </ul>
+      <p class="mt-4">Can't make a day? <a class="link" href="volunteer-profile.html#days-off">Tell the camp</a></p>
+    </section>
+
+    <section aria-labelledby="find-h">
+      <h2 id="find-h">Find a duty</h2>
+      <div class="seg mt-3" role="group" aria-label="Week" data-seg>
+        <button aria-pressed="true">Week 1, Oct 19</button>
+        <button aria-pressed="false">Week 2, Oct 26</button>
+      </div>
+      <div class="seg seg--block days" role="group" aria-label="Day" data-seg>
+          <button aria-pressed="true" data-show="p-mon"><span class="dn">Mon<span class="sr-only"> October</span></span><span class="dd">19</span><span class="dq">You're on</span></button>
+          <button aria-pressed="false" data-show="p-tue"><span class="dn">Tue<span class="sr-only"> October</span></span><span class="dd">20</span><span class="dq">1 open</span></button>
+          <button aria-pressed="false" data-show="p-wed"><span class="dn">Wed<span class="sr-only"> October</span></span><span class="dd">21</span><span class="dq">1 open</span></button>
+          <button aria-pressed="false" data-show="p-thu"><span class="dn">Thu<span class="sr-only"> October</span></span><span class="dd">22</span><span class="dq">1 open</span></button>
+          <button aria-pressed="false" data-show="p-fri"><span class="dn">Fri<span class="sr-only"> October</span></span><span class="dd">23</span><span class="dq">4 open</span></button>
+      </div>
+      <div id="p-mon">
+        <h3 class="daylabel">Monday, October 19</h3>
+        <ul class="rows rows--framed mt-2">
+          <li class="row">
+            <div class="grow"><p class="name">Morning Check-In</p><p class="desc">Welcome campers and check them in at arrival</p><p class="meta">You and 1 other</p></div>
+            <span class="status status--ok"><i data-lucide="check" class="icon-sm"></i>You're on</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Break Supervision</p><p class="desc">Supervise campers during scheduled breaks</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Lunch Duty</p><p class="desc">Supervise campers during the lunch period</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Lunch Duty, Monday</span></button>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Afternoon Dismissal</p><p class="desc">Supervise camper dismissal at the end of the day</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+        </ul>
+      </div>
+      <div id="p-tue" hidden>
+        <h3 class="daylabel">Tuesday, October 20</h3>
+        <ul class="rows rows--framed mt-2">
+          <li class="row">
+            <div class="grow"><p class="name">Morning Check-In</p><p class="desc">Welcome campers and check them in at arrival</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Break Supervision</p><p class="desc">Supervise campers during scheduled breaks</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Lunch Duty</p><p class="desc">Supervise campers during the lunch period</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Lunch Duty, Tuesday</span></button>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Afternoon Dismissal</p><p class="desc">Supervise camper dismissal at the end of the day</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+        </ul>
+      </div>
+      <div id="p-wed" hidden>
+        <h3 class="daylabel">Wednesday, October 21</h3>
+        <ul class="rows rows--framed mt-2">
+          <li class="row">
+            <div class="grow"><p class="name">Morning Check-In</p><p class="desc">Welcome campers and check them in at arrival</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Break Supervision</p><p class="desc">Supervise campers during scheduled breaks</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Lunch Duty</p><p class="desc">Supervise campers during the lunch period</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Afternoon Dismissal</p><p class="desc">Supervise camper dismissal at the end of the day</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Afternoon Dismissal, Wednesday</span></button>
+          </li>
+        </ul>
+      </div>
+      <div id="p-thu" hidden>
+        <h3 class="daylabel">Thursday, October 22</h3>
+        <ul class="rows rows--framed mt-2">
+          <li class="row">
+            <div class="grow"><p class="name">Morning Check-In</p><p class="desc">Welcome campers and check them in at arrival</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Break Supervision</p><p class="desc">Supervise campers during scheduled breaks</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Break Supervision, Thursday</span></button>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Lunch Duty</p><p class="desc">Supervise campers during the lunch period</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Afternoon Dismissal</p><p class="desc">Supervise camper dismissal at the end of the day</p></div>
+            <span class="status status--plain">Full</span>
+          </li>
+        </ul>
+      </div>
+      <div id="p-fri" hidden>
+        <h3 class="daylabel">Friday, October 23</h3>
+        <ul class="rows rows--framed mt-2">
+          <li class="row">
+            <div class="grow"><p class="name">Morning Check-In</p><p class="desc">Welcome campers and check them in at arrival</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Morning Check-In, Friday</span></button>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Break Supervision</p><p class="desc">Supervise campers during scheduled breaks</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Break Supervision, Friday</span></button>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Lunch Duty</p><p class="desc">Supervise campers during the lunch period</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Lunch Duty, Friday</span></button>
+          </li>
+          <li class="row">
+            <div class="grow"><p class="name">Afternoon Dismissal</p><p class="desc">Supervise camper dismissal at the end of the day</p><p class="meta">1 of 2 open</p></div>
+            <button class="btn btn--ink">Sign up<span class="sr-only"> for Afternoon Dismissal, Friday</span></button>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

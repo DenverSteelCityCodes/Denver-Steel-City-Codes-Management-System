@@ -1,0 +1,83 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Form editor
+
+Rename questions, hide optional ones, and choose what's required. Changes apply to the live forms immediately.
+
+Volunteer application
+Camper registration
+Volunteer application
+
+Open · The public form at /apply.
+
+Preview
+Close form
+
+Show
+
+Question label (click to rename)
+
+Required?
+
+Label for First name
+Required
+Label for Last name
+Required
+Label for Email
+Required
+Label for Phone number
+Required
+Label for Age
+Required
+Label for Current grade
+Required
+Label for School
+Required
+Label for Shirt size
+Required
+Label for Which sessions can you attend?
+Required
+Label for Why do you want to volunteer with Steel City Codes?
+Required
+Label for Have you volunteered at a previous Steel City Codes activity?
+Required
+Label for CS languages you know
+Required
+Label for CS classes you've taken
+Optional
+Label for Experience working with children or volunteering
+Optional
+Label for Skill levels
+Optional
+Label for First choice course
+Required
+Label for Second choice course
+Required
+Label for Other curricula you could teach
+Optional
+Label for Volunteer electronic signature
+Required
+Label for Parent / guardian electronic signature
+As needed
+
+Locked questions can be renamed but not hidden or made optional — the database, camp safety, or eligibility checks depend on them.

@@ -31,3 +31,10 @@ supabase/.temp/
 *.sln
 *.sw?
 .vercel
+
+# impeccable (design skill): local and temporary files
+.impeccable/config.local.json
+.impeccable/review/
+.impeccable/questions/
+.impeccable/live/
+.impeccable/*.cache

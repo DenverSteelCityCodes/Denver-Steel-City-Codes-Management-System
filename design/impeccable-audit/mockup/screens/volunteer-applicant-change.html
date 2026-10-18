@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Change your interview · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-applicant.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="RC, account menu">RC</button>
+  </div>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Riley Chen</b><span>demo.applicant@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead"><div class="grow"><h1>Your application</h1></div></div>
+
+  <section class="sign" aria-labelledby="iv-h">
+    <span class="ctx">Step 2 of 4 · your interview</span>
+    <span class="fig">4:00<small>PM</small></span>
+    <h2 class="msg" id="iv-h">Tuesday, October 20</h2>
+    <span class="sub">15 minutes, online.</span>
+
+  </section>
+
+  <section class="mt-6" aria-labelledby="pick-h">
+    <h2 id="pick-h">Pick a new time</h2>
+    <p class="meta mt-2">Every interview is 15 minutes, online.</p>
+    <form onsubmit="return false">
+    <div class="slotpick">
+    <fieldset>
+      <legend class="slotweek">Week of Oct 19</legend>
+      <div class="slotday"><span class="d">Mon, Oct 19</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Mon, Oct 19, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Mon, Oct 19, 4:30 PM"><span>4:30 PM</span></label></div></div>
+      <div class="slotday"><span class="d">Tue, Oct 20</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Tue, Oct 20, 4:00 PM" data-yours><span>4:00 PM <span class="yours">· Your time</span></span></label></div></div>
+      <div class="slotday"><span class="d">Wed, Oct 21</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Wed, Oct 21, 4:30 PM"><span>4:30 PM</span></label></div></div>
+      <div class="slotday"><span class="d">Thu, Oct 22</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Thu, Oct 22, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Thu, Oct 22, 4:30 PM" checked><span>4:30 PM</span></label></div></div>
+      <div class="slotday"><span class="d">Fri, Oct 23</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Fri, Oct 23, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Fri, Oct 23, 4:30 PM"><span>4:30 PM</span></label></div></div>
+    </fieldset>
+    <fieldset>
+      <legend class="slotweek">Week of Oct 26</legend>
+      <div class="slotday"><span class="d">Mon, Oct 26</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Mon, Oct 26, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Mon, Oct 26, 4:30 PM"><span>4:30 PM</span></label></div></div>
+      <div class="slotday"><span class="d">Tue, Oct 27</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Tue, Oct 27, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Tue, Oct 27, 4:30 PM"><span>4:30 PM</span></label></div></div>
+      <div class="slotday"><span class="d">Wed, Oct 28</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Wed, Oct 28, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Wed, Oct 28, 4:30 PM"><span>4:30 PM</span></label></div></div>
+      <div class="slotday"><span class="d">Thu, Oct 29</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Thu, Oct 29, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Thu, Oct 29, 4:30 PM"><span>4:30 PM</span></label></div></div>
+      <div class="slotday"><span class="d">Fri, Oct 30</span><div class="times"><label class="choice"><input type="radio" name="slot" value="Fri, Oct 30, 4:00 PM"><span>4:00 PM</span></label><label class="choice"><input type="radio" name="slot" value="Fri, Oct 30, 4:30 PM"><span>4:30 PM</span></label></div></div>
+    </fieldset>
+    </div>
+    <button class="btn btn--primary btn--block mt-4" type="submit" id="move">Move to Thu, Oct 22, 4:30 PM</button>
+    <a class="link mt-2" href="volunteer-applicant.html">Keep Tue, Oct 20, 4:00 PM</a>
+    </form>
+  </section>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('input[name="slot"]').forEach(function (r) {
+  r.addEventListener('change', function () {
+    var b = document.getElementById('move');
+    var mine = r.hasAttribute('data-yours');
+    b.disabled = mine;
+    b.textContent = mine ? 'Pick a new time' : 'Move to ' + r.value;
+  });
+});
+</script>
+</body>
+</html>

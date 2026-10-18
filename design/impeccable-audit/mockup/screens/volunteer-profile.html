@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your profile · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="volunteer-today.html">Today</a>
+      <a href="volunteer-class.html">Class</a>
+      <a href="volunteer-duties.html">Duties</a>
+      <a href="volunteer-updates.html">Updates</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="SO, account menu">SO</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <a href="volunteer-today.html">Today</a>
+    <a href="volunteer-class.html">Class</a>
+    <a href="volunteer-duties.html">Duties</a>
+    <a href="volunteer-updates.html">Updates</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Sam Okafor</b><span>demo.volunteer@example.com</span></div>
+    <a href="volunteer-profile.html" aria-current="page"><i data-lucide="user-round"></i>Profile and availability</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Sam Okafor</h1>
+      <p class="lede">demo.volunteer@example.com</p>
+    </div>
+  </div>
+
+  <div class="cols cols--even">
+    <div>
+      <section aria-labelledby="prefs-h">
+        <div class="row headrow">
+          <h2 class="grow" id="prefs-h">Availability and courses</h2>
+          <button class="link" data-toggle="prefs-edit">Edit<span class="sr-only"> availability and courses</span></button>
+        </div>
+        <p class="meta">Admins use these when they assign classes.</p>
+        <dl class="facts">
+          <dt>Weeks</dt><dd>Week 1 and Week 2</dd>
+          <dt>First choice</dt><dd>Intro to Python</dd>
+          <dt>Second choice</dt><dd>Intro to Java</dd>
+        </dl>
+        <form class="mt-4" id="prefs-edit" hidden onsubmit="return false">
+          <fieldset>
+            <legend>Weeks you can help</legend>
+            <div class="choices grid2 mt-2">
+              <label class="choice"><input type="checkbox" checked><span class="grow">Week 1, Oct 19</span></label>
+              <label class="choice"><input type="checkbox" checked><span class="grow">Week 2, Oct 26</span></label>
+            </div>
+          </fieldset>
+          <div class="grid2 mt-4">
+            <div class="field">
+              <label for="c1">First choice</label>
+              <select class="select" id="c1"><option selected>Intro to Python</option><option>Intro to Java</option><option>Microcontrollers</option><option>Web Development</option></select>
+            </div>
+            <div class="field">
+              <label for="c2">Second choice</label>
+              <select class="select" id="c2"><option>Intro to Python</option><option selected>Intro to Java</option><option>Microcontrollers</option><option>Web Development</option></select>
+            </div>
+          </div>
+          <div class="formrow">
+            <button class="btn btn--ink" type="submit">Save availability</button>
+            <button class="link link--muted" type="button" data-toggle="prefs-edit">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="section" aria-labelledby="switch-h">
+        <h2 id="switch-h">Switch classes</h2>
+        <p class="mt-2">You're in PY-B for Weeks 1 and 2. Ask an admin to switch.</p>
+        <button class="btn btn--secondary mt-3" data-toggle="switch-form">Ask to switch</button>
+        <form class="mt-4" id="switch-form" hidden onsubmit="return false">
+          <div class="field">
+            <label for="sw">Which class would you like, and why?</label>
+            <textarea class="textarea" id="sw" maxlength="1000"></textarea>
+          </div>
+          <div class="formrow">
+            <button class="btn btn--ink" type="submit">Send request</button>
+            <button class="link link--muted" type="button" data-toggle="switch-form">Cancel</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <section id="days-off" aria-labelledby="off-h">
+      <h2 id="off-h">Days you can't make it</h2>
+      <p class="meta mt-2">Tell the camp early so they can find cover. Admins see it right away.</p>
+      <p class="mt-3">None added yet.</p>
+      <form class="mt-4" onsubmit="return false" novalidate>
+        <div class="grid2">
+          <div class="field">
+            <label for="off-from">First day</label>
+            <input class="input" id="off-from" type="date" min="2026-10-17" value="2026-10-21">
+          </div>
+          <div class="field">
+            <label for="off-to">Last day <span class="meta">(optional)</span></label>
+            <input class="input" id="off-to" type="date" min="2026-10-21">
+          </div>
+        </div>
+        <div class="field mt-4">
+          <label for="off-note">Note for the camp <span class="meta">(optional)</span></label>
+          <input class="input" id="off-note" maxlength="500" placeholder="Dentist in the morning">
+        </div>
+        <div class="formrow">
+          <button class="btn btn--primary" type="submit">Tell the camp</button>
+          <button class="link link--muted" type="reset">Cancel</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

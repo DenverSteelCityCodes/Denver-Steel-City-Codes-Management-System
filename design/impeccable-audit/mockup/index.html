@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SCC Redesign Mockup</title>
+<link rel="stylesheet" href="system.css">
+<style>
+  /* The viewer for the mockup. It uses the same system; its own additions stay here. */
+  .viewer { display: grid; grid-template-columns: 1fr; min-height: calc(100dvh - 56px); }
+  @media (min-width: 1024px) { .viewer { grid-template-columns: 300px 1fr; } }
+  .index { padding: var(--s5) var(--gutter) var(--s10); }
+  @media (min-width: 1024px) { .index { border-right: 2px solid var(--rule); height: calc(100dvh - 56px); overflow-y: auto; position: sticky; top: 56px; } }
+  .index h2 { font-size: var(--t-meta); font-weight: 800; margin: var(--s6) 0 var(--s2); }
+  .index h2:first-of-type { margin-top: var(--s4); }
+  .index a.scr { display: grid; gap: 2px; padding: var(--s2) var(--s3); min-height: var(--tap); border-radius: var(--r); text-decoration: none; }
+  .index a.scr:hover { background: color-mix(in oklab, var(--text) 6%, transparent); }
+  .index a.scr[aria-current="true"] { box-shadow: inset 0 0 0 2px var(--rule); }
+  .index a.scr b { font-weight: 700; }
+  .index a.scr span { color: var(--muted); font-size: var(--t-meta); }
+  .stage { padding: var(--s5) var(--gutter) var(--s10); min-width: 0; display: none; }
+  @media (min-width: 1024px) { .stage { display: block; } }
+  .frames { display: flex; gap: var(--s6); align-items: flex-start; margin-top: var(--s5); }
+  .frame { flex: none; border: 2px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--surface); position: relative; }
+  .frame iframe { border: 0; transform-origin: 0 0; display: block; background: var(--floor); }
+  .frame-label { font-size: var(--t-meta); font-weight: 700; color: var(--muted); margin-bottom: var(--s2); }
+  .notes { margin-top: var(--s6); max-width: 72ch; }
+  .notes li { padding: var(--s2) 0; border-top: 1px solid var(--hair); }
+  .notes li:first-child { border-top: 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+  .phone-only { display: block; }
+  @media (min-width: 1024px) { .phone-only { display: none; } }
+</style>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="mock.js"></script>
+<script src="notes/parent.js"></script>
+<script src="notes/volunteer.js"></script>
+<script src="notes/admin.js"></script>
+<script src="notes/public.js"></script>
+</head>
+<body>
+<header class="shell">
+  <div class="bar">
+    <a class="wordmark" href="../"><img src="assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></a>
+    <span style="font-weight:700">Redesign mockup</span>
+    <span class="spacer"></span>
+    <a class="iconbtn" href="../" aria-label="Back to the report"><i data-lucide="file-text"></i></a>
+    <label class="iconbtn" title="Dark mode" style="cursor:pointer"><span class="sr-only">Dark mode</span><input type="checkbox" class="sr-only" data-theme-switch id="themeSwitch"><i data-lucide="moon"></i></label>
+  </div>
+</header>
+
+<div class="viewer">
+  <nav class="index" aria-label="Screens">
+    <h1 class="h1" style="font-size:1.375rem">Every screen</h1>
+    <p class="lede">Terminal Yellow: one sign per screen holds the one next decision. Fictional demo data.</p>
+    <p class="phone-only lede">On a phone, each screen opens full size. Use your browser's back button to return here.</p>
+    <div id="list"></div>
+  </nav>
+
+  <main class="stage" aria-live="polite">
+    <div class="controls">
+      <div class="grow" style="flex:1 1 300px;min-width:0">
+        <h2 id="title" class="h2">Pick a screen</h2>
+        <p id="state" class="meta mt-2"></p>
+      </div>
+      <div class="seg" data-seg role="group" aria-label="Frames">
+        <button type="button" aria-pressed="true" data-frames="both">Phone + laptop</button>
+        <button type="button" aria-pressed="false" data-frames="phone">Phone</button>
+        <button type="button" aria-pressed="false" data-frames="laptop">Laptop</button>
+      </div>
+      <a id="open" class="btn btn--secondary" href="#" target="_blank" rel="noopener">Open full size <i data-lucide="external-link" class="icon-sm"></i></a>
+    </div>
+    <div class="frames" id="frames">
+      <div id="phoneWrap"><p class="frame-label">Phone · 390 × 844</p><div class="frame" id="phoneFrame"><iframe id="phone" title="Phone preview" width="390" height="844"></iframe></div></div>
+      <div id="laptopWrap" style="min-width:0;flex:1"><p class="frame-label">Laptop · 1280 × 800</p><div class="frame" id="laptopFrame"><iframe id="laptop" title="Laptop preview" width="1280" height="800"></iframe></div></div>
+    </div>
+    <section class="notes" aria-labelledby="why-h">
+      <h2 id="why-h" class="h3">Why it looks like this</h2>
+      <p id="replaces" class="meta mt-2"></p>
+      <ul id="notes" class="mt-3"></ul>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var screens = window.SCC_SCREENS || [];
+  var order = ['Signed out', 'Parent', 'Volunteer applicant', 'Volunteer', 'Admin'];
+  var list = document.getElementById('list');
+  var theme = function () { return document.documentElement.dataset.theme || 'light'; };
+  var groups = {};
+  screens.forEach(function (s) { (groups[s.role] = groups[s.role] || []).push(s); });
+  Object.keys(groups).sort(function (a, b) { var ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); }).forEach(function (role) {
+    var h = document.createElement('h2'); h.textContent = role + ' · ' + groups[role].length; list.appendChild(h);
+    groups[role].forEach(function (s) {
+      var a = document.createElement('a'); a.className = 'scr'; a.href = 'screens/' + s.file; a.dataset.file = s.file;
+      a.innerHTML = '<b></b><span></span>'; a.firstChild.textContent = s.title; a.lastChild.textContent = s.state || '';
+      a.addEventListener('click', function (ev) { if (matchMedia('(min-width: 1024px)').matches) { ev.preventDefault(); show(s); } });
+      list.appendChild(a); s.el = a;
+    });
+  });
+  var phone = document.getElementById('phone'), laptop = document.getElementById('laptop');
+  var current = null;
+  function show(s) {
+    current = s;
+    screens.forEach(function (o) { if (o.el) o.el.setAttribute('aria-current', String(o === s)); });
+    var url = 'screens/' + s.file + '?theme=' + theme();
+    phone.src = url; laptop.src = url;
+    document.getElementById('open').href = url;
+    document.getElementById('title').textContent = s.role + ' · ' + s.title;
+    document.getElementById('state').textContent = s.state || '';
+    document.getElementById('replaces').textContent = s.replaces ? 'Replaces ' + s.replaces : '';
+    var ul = document.getElementById('notes'); ul.innerHTML = '';
+    (s.notes || []).forEach(function (n) { var li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+    try { history.replaceState(null, '', '#' + s.file); } catch (e) {}
+    fit();
+  }
+  function fit() {
+    var wrap = document.getElementById('laptopWrap'), lf = document.getElementById('laptopFrame');
+    var w = Math.max(320, wrap.clientWidth - 4), k = Math.min(1, w / 1280);
+    laptop.style.transform = 'scale(' + k + ')'; lf.style.width = (1280 * k + 4) + 'px'; lf.style.height = (800 * k + 4) + 'px';
+    var pf = document.getElementById('phoneFrame'), avail = window.innerHeight - 220, pk = Math.min(1, avail / 844);
+    phone.style.transform = 'scale(' + pk + ')'; pf.style.width = (390 * pk + 4) + 'px'; pf.style.height = (844 * pk + 4) + 'px';
+  }
+  window.addEventListener('resize', fit);
+  document.querySelectorAll('[data-frames]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var m = b.dataset.frames;
+      document.getElementById('phoneWrap').hidden = m === 'laptop';
+      document.getElementById('laptopWrap').hidden = m === 'phone';
+      fit();
+    });
+  });
+  document.getElementById('themeSwitch').addEventListener('change', function () { if (current) show(current); });
+  var first = screens.filter(function (s) { return s.file === (location.hash.slice(1) || 'parent-home.html'); })[0] || screens[0];
+  if (first && matchMedia('(min-width: 1024px)').matches) show(first);
+})();
+</script>
+</body>
+</html>

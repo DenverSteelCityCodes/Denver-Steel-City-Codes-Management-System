@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register a new camper, step 3 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <a class="link link--muted" href="parent-home.html"><i data-lucide="chevron-left" class="icon-sm"></i>Save and exit</a>
+  <h1 class="mt-1">Register a new camper</h1>
+
+  <section class="sign mt-4" aria-labelledby="step-h">
+    <span class="ctx">Sam Brooks · Intro to Python, Week 1</span>
+    <h2 class="msg" id="step-h"><span class="sr-only">Step 3 of 5: </span>Contacts</h2>
+    <span class="sub">Filled in from your account. Check them, then go on.</span>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span class="done"></span><span></span><span></span></div>
+  </section>
+
+  <form class="mt-6" action="parent-register-4.html" novalidate>
+    <ul class="decisions decisions--plain">
+      <li class="group">
+        <div>
+          <div class="row"><h3 class="what grow">You</h3><button class="link" type="button" data-toggle="r-you">Edit<span class="sr-only"> your details</span></button></div>
+          <dl class="facts">
+            <dt>Name</dt><dd>Taylor Brooks</dd>
+            <dt>Email</dt><dd>demo.parent@example.com</dd>
+            <dt>Phone</dt><dd>303-555-0199</dd>
+          </dl>
+          <div class="group-edit" id="r-you" hidden>
+            <div class="field"><label for="r-pname">Parent or guardian name</label><input class="input" id="r-pname" value="Taylor Brooks" autocomplete="name"></div>
+            <div class="field"><label for="r-pemail">Email</label><input class="input" id="r-pemail" type="email" value="demo.parent@example.com" autocomplete="email"></div>
+            <div class="field"><label for="r-pphone">Phone</label><input class="input" id="r-pphone" type="tel" value="303-555-0199" autocomplete="tel"></div>
+          </div>
+        </div>
+      </li>
+      <li class="group">
+        <div>
+          <div class="row"><h3 class="what grow">Emergency contact</h3><button class="link" type="button" data-toggle="r-em">Edit<span class="sr-only"> emergency contact</span></button></div>
+          <dl class="facts">
+            <dt>Name</dt><dd>Morgan Brooks (Aunt)</dd>
+            <dt>Phone</dt><dd>720-555-0199</dd>
+          </dl>
+          <div class="group-edit" id="r-em" hidden>
+            <div class="field"><label for="r-ec">Name</label><input class="input" id="r-ec" value="Morgan Brooks" autocomplete="off"></div>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="r-ec-phone">Their phone</label><input class="input" id="r-ec-phone" type="tel" value="720-555-0199" autocomplete="off"></div>
+              <div class="field"><label for="r-ec-rel">Relationship</label><input class="input" id="r-ec-rel" value="Aunt" autocomplete="off"></div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+    <div class="wiznav">
+      <a class="link" href="parent-register-2.html"><i data-lucide="chevron-left" class="icon-sm"></i>Back</a>
+      <a class="btn btn--primary" href="parent-register-4.html">Next: Health <i data-lucide="arrow-right"></i></a>
+    </div>
+  </form>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

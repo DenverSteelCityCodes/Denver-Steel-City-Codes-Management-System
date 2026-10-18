@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register a new camper, step 1 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <a class="link link--muted" href="parent-home.html"><i data-lucide="chevron-left" class="icon-sm"></i>Save and exit</a>
+  <h1 class="mt-1">Register a new camper</h1>
+
+  <section class="sign mt-4" aria-labelledby="step-h">
+    <h2 class="msg" id="step-h"><span class="sr-only">Step 1 of 5: </span>Camper</h2>
+    <span class="sub">Your answers save on this phone as you go.</span>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span></span><span></span><span></span><span></span></div>
+  </section>
+
+  <form class="mt-6" action="parent-register-2.html" novalidate>
+    <div class="grid2 grid2--pair">
+      <div class="field"><label for="r-first">First name</label><input class="input" id="r-first" autocomplete="off" value="Sam"></div>
+      <div class="field"><label for="r-last">Last name</label><input class="input" id="r-last" autocomplete="off" value="Brooks"></div>
+    </div>
+    <div class="field"><label for="r-email">Sam's email</label><input class="input" id="r-email" type="email" autocomplete="off" value="sam.brooks@example.com"></div>
+    <div class="field"><label for="r-district">School district</label><select class="select" id="r-district"><option selected>Cherry Creek School District</option><option>Douglas County School District</option><option>Jefferson County Public Schools</option><option>Adams 12 Five Star Schools</option><option>Other</option></select></div>
+    <div class="field"><label for="r-school">School name</label><input class="input" id="r-school" autocomplete="off" aria-invalid="true" aria-describedby="r-school-err"><p class="error" id="r-school-err"><i data-lucide="circle-alert" class="icon-sm"></i>Enter the school Sam goes to this fall.</p></div>
+    <div class="grid2 grid2--pair">
+      <div class="field"><label for="r-grade">Grade this fall</label><select class="select" id="r-grade"><option>4th</option><option>5th</option><option selected>6th</option><option>7th</option><option>8th</option><option>9th</option></select></div>
+      <div class="field"><label for="r-shirt">Shirt size</label><select class="select" id="r-shirt"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option></select></div>
+    </div>
+    <div class="field"><span class="label" id="r-laptop-l">Can Sam bring a laptop each day?</span>
+      <div class="seg" data-seg role="group" aria-labelledby="r-laptop-l"><button type="button" aria-pressed="true">Yes</button><button type="button" aria-pressed="false">No</button></div></div>
+    <details class="more mt-5">
+      <summary>Optional: for grant reporting <i data-lucide="chevron-down" class="chev"></i></summary>
+      <fieldset class="mt-2">
+        <legend>Ethnic background</legend>
+        <p class="hint">Choose any that apply.</p>
+        <div class="choices choices--2 mt-2">
+          <label class="choice"><input type="checkbox"><span class="grow">American Indian or Alaska Native</span></label>
+          <label class="choice"><input type="checkbox"><span class="grow">Asian</span></label>
+          <label class="choice"><input type="checkbox"><span class="grow">Black or African American</span></label>
+          <label class="choice"><input type="checkbox"><span class="grow">Hispanic or Latino</span></label>
+          <label class="choice"><input type="checkbox"><span class="grow">Native Hawaiian or Other Pacific Islander</span></label>
+          <label class="choice"><input type="checkbox"><span class="grow">White</span></label>
+          <label class="choice"><input type="checkbox"><span class="grow">Two or more races</span></label>
+          <label class="choice"><input type="checkbox"><span class="grow">Prefer not to say</span></label>
+        </div>
+      </fieldset>
+      <div class="field mt-5"><label for="r-gender">Gender</label><input class="input" id="r-gender" autocomplete="off"></div>
+    </details>
+    <div class="wiznav">
+      
+      <a class="btn btn--primary" href="parent-register-2.html">Next: Week and class <i data-lucide="arrow-right"></i></a>
+    </div>
+  </form>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

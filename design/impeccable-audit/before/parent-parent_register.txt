@@ -1,0 +1,53 @@
+Home
+Browse classes
+TB
+Back to dashboard
+
+Step 1 of 5: Camper
+
+Student information
+First name *
+Last name *
+Student's preferred email *
+School district *
+Select…
+Cherry Creek School District
+Douglas County School District
+Jefferson County Public Schools
+Adams 12 Five Star Schools
+Other
+School name *
+Grade (entering fall) *
+Select…
+4th
+5th
+6th
+7th
+8th
+9th
+Shirt size *
+Select…
+XS
+S
+M
+L
+XL
+
+Does your student have access to a personal laptop? *
+
+Yes
+No
+
+Ethnic background (optional) (for grant reporting only)
+
+American Indian or Alaska Native
+Asian
+Black or African American
+Hispanic or Latino
+Native Hawaiian or Other Pacific Islander
+White
+Two or more races
+Prefer not to say
+Gender (optional)
+Next
+Questions or changes? Email the camp at denver@steelcitycodes.org.

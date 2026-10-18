@@ -1,0 +1,138 @@
+/* Signed-out screens (role: public). Additions only, in the system's vocabulary: tokens, no raw hex.
+   Each block names the component it adds so it can be promoted into system.css. */
+
+/* [hidden] must win over component display rules (.choice is display:flex). */
+[hidden] { display: none !important; }
+
+/* ── Signed-out shell: the ink bar only. Nothing lives in it, so it scrolls away. ── */
+.shell--flat { position: relative; }
+.bar--form { max-width: 640px; }
+.foot--form { max-width: 640px; }
+
+/* ── Form rhythm: one column, label above field, more space above a subhead than below it ── */
+.fstack > * + * { margin-top: var(--s5); }
+.fstack > h3 { margin-top: var(--s10); }
+.fstack > h3 + * { margin-top: var(--s3); }
+fieldset > legend { margin-bottom: var(--s2); }
+fieldset > legend + .hint { display: block; margin: calc(-1 * var(--s1)) 0 var(--s3); color: var(--muted); font-size: var(--t-meta); }
+.optional { font-weight: 400; color: var(--muted); }
+.field .error { margin-top: 2px; }
+.grid2 > .field + .field { margin-top: 0; } /* the grid gap already spaces stacked fields on a phone */
+.error .icon-sm { margin-top: 2px; }
+
+/* Label row with an inline action (e.g. "Forgot password?"): the action keeps a 44px target. */
+.label-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.label-row .link { margin: -10px 0; }
+
+/* Password with a Show/Hide toggle inside the field (44px target). */
+.reveal { position: relative; }
+.reveal .input { padding-right: 84px; }
+.reveal__btn { position: absolute; top: 2px; right: 2px; bottom: 2px; min-width: 72px; padding: 0 var(--s3); border: 0; border-left: 1px solid var(--hair); border-radius: 0 var(--r) var(--r) 0; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; }
+.reveal__btn:hover { background: color-mix(in oklab, var(--text) 6%, transparent); }
+
+/* Choice rows two-up (weeks, Yes/No, courses) and as short chips (languages). */
+@media (min-width: 480px) { .choices--2 { grid-template-columns: 1fr 1fr; } }
+.choices--chips { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
+.choices--chips .choice { min-height: var(--tap); padding: var(--s1) var(--s3); }
+
+/* Option squares built on real radios: the 1–5 scale and interview times.
+   The radio covers its label, so it is clickable, keyboard-operable and announced; the frame shows state. */
+.opt { position: relative; display: grid; place-items: center; min-height: var(--tap); background: var(--surface); color: var(--text); font-weight: 700; cursor: pointer; }
+.opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.opt:has(input:checked) { background: var(--shell); color: var(--on-shell); }
+:root[data-theme="dark"] .opt:has(input:checked) { background: var(--text); color: var(--floor); }
+.opt:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; z-index: 1; }
+
+/* Scale: one joined 5-segment control per skill, full width, 44px tall. Fits 320px. */
+.scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; background: var(--rule); border: 2px solid var(--rule); border-radius: var(--r); overflow: hidden; } /* dividers are the 2px gap showing the rule colour */
+.scale .opt:has(input:focus-visible) { outline-offset: -6px; }
+.scale .opt:has(input:checked:focus-visible) { outline-color: currentColor; }
+.fstack > .hint + .skills { margin-top: var(--s1); }
+.skills > li { position: relative; padding: var(--s3) 0 var(--s4); border-top: 1px solid var(--hair); }
+.skills > li:first-child { border-top: 0; }
+.skills legend { font-weight: 700; min-height: var(--tap); display: flex; align-items: center; padding-right: 84px; margin-bottom: var(--s1); }
+.skills .clear { position: absolute; top: var(--s3); right: 0; }
+
+/* Interview times: one row per day, times aligned in columns like a departures board. */
+.slots { border-top: 2px solid var(--rule); } /* the nav row's rule closes the list */
+.slots > li { display: grid; grid-template-columns: 7.5rem 1fr; gap: var(--s3); align-items: center; padding: var(--s2) 0; border-top: 1px solid var(--hair); }
+.slots > li:first-child { border-top: 0; }
+.slots h3 { font-size: var(--t-body); }
+.slots .times { display: grid; grid-template-columns: repeat(2, minmax(0, 7.5rem)); gap: var(--s2); }
+.slots .opt { border: 2px solid var(--field); border-radius: var(--r); }
+.slots .opt:has(input:checked) { border-color: var(--shell); }
+:root[data-theme="dark"] .slots .opt:has(input:checked) { border-color: var(--text); }
+.slots .late { grid-column: 2; }
+
+/* Wizard nav: Back left, the one primary right (full width beside Back on a phone). */
+.formnav { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s8); padding-top: var(--s5); border-top: 2px solid var(--rule); }
+.formnav .btn--primary { flex: 1; }
+@media (min-width: 640px) { .formnav .btn--primary { flex: 0 1 auto; margin-left: auto; min-width: 220px; } }
+.summary { margin-top: var(--s8); align-items: center; }
+.summary + .formnav { margin-top: var(--s3); }
+.summary a { color: inherit; }
+
+/* Sign additions: the step rail and its words span the band; the step label is the step's h2. */
+.sign .steps { grid-column: 1 / -1; margin-top: var(--s2); }
+.sign .steplabel { grid-column: 1 / -1; font: 800 var(--t-row)/1.3 var(--ui); margin-top: var(--s3); }
+.sign .msg a, .sign .sub a { color: inherit; }
+.sign .wrap { overflow-wrap: anywhere; }
+.sign .ctx + .msg + .go { grid-row: 2; } /* a sign with no figure: the arrow sits beside the message */
+.sign .ctx + .msg:has(+ .go) { align-self: center; }
+
+/* ── Demo login: the junction. Four destinations on one sign, each a full-width row ── */
+.sign .seats { grid-column: 1 / -1; margin: var(--s3) calc(-1 * var(--s4)) calc(-1 * var(--s4)); }
+.seats a { display: grid; grid-template-columns: 1fr auto; gap: var(--s4); align-items: center; min-height: 72px; padding: var(--s3) var(--s4); border-top: 2px solid var(--on-sign); color: inherit; text-decoration: none; }
+.seats a:hover { background: var(--sign-press); }
+.seats a:focus-visible { outline-offset: -4px; border-radius: var(--r); }
+.seats li:last-child a { border-radius: 0 0 var(--r) var(--r); }
+.seats b { display: block; font: 800 var(--t-row)/1.25 var(--ui); }
+.seats .blurb { display: block; margin-top: 2px; color: var(--on-sign-muted); }
+.sign .seats .go { grid-row: auto; grid-column: auto; align-self: center; }
+
+.login__demo, .login__form { max-width: 640px; margin: 0 auto; }
+.login__demo { padding: var(--s5) var(--gutter) 0; }
+.login__signin { padding: var(--s8) var(--gutter) var(--s10); }
+.signin-h { display: flex; align-items: center; gap: var(--s3); font: 700 var(--t-meta)/1.3 var(--ui); color: var(--muted); }
+.signin-h::after { content: ""; flex: 1; height: 2px; background: var(--rule); }
+.signin-h .full { display: none; }
+@media (min-width: 1024px) {
+  .login { display: grid; grid-template-columns: 5fr 7fr; min-height: 100dvh; }
+  .login > .shell, :root[data-theme="dark"] .login > .shell { grid-area: 1 / 1; align-self: start; z-index: 2; background: transparent; box-shadow: none; }
+  .login > .shell .bar { max-width: none; height: 96px; padding: 0 var(--s12); }
+  .login > .shell .wordmark img { height: 44px; width: auto; }
+  .login__main { grid-area: 1 / 1 / 2 / 3; display: grid; grid-template-columns: 5fr 7fr; }
+  .login__demo { max-width: none; margin: 0; padding: 128px var(--s12) var(--s12); background: var(--shell); display: flex; flex-direction: column; justify-content: center; }
+  :root[data-theme="dark"] .login__demo { box-shadow: inset -1px 0 0 var(--hair); }
+  .login__demo .sign { padding: var(--s6); }
+  .login__demo .sign .seats { margin: var(--s4) calc(-1 * var(--s6)) calc(-1 * var(--s6)); }
+  .login__demo .seats a { padding: var(--s3) var(--s6); }
+  .login__demo .sign .msg { font-size: var(--t-h1); }
+  .login__signin { display: grid; place-items: center; padding: var(--s12); }
+  .login__form { width: 100%; max-width: 400px; margin: 0; }
+  .signin-h { font: 700 var(--t-msg)/1.2 var(--ui); color: var(--text); }
+  .signin-h::after { display: none; }
+  .signin-h .or { display: none; }
+  .signin-h .full { display: inline; }
+}
+
+/* ── Numbered next steps (sequence carries meaning): an outlined number square, not a pictogram ── */
+.stepnum { width: 40px; height: 40px; display: inline-grid; place-items: center; border: 2px solid var(--rule); border-radius: var(--r); font: 800 var(--t-row)/1 var(--ui); }
+
+/* ── Waiver placeholder: in flow, 16px, 65ch; a dashed frame marks text that is not final ── */
+.legal { max-width: 65ch; }
+.legal p + p { margin-top: var(--s3); }
+.notice { display: flex; gap: var(--s3); align-items: flex-start; padding: var(--s3) var(--s4); border: 2px dashed var(--rule); border-radius: var(--r); }
+.notice .icon { margin-top: 2px; }
+
+/* ── Two-step sign-in: QR placeholder (drawn), manual key (mono: it is a code), code field ── */
+.qr { width: 176px; height: 176px; position: relative; display: grid; place-items: center; background: var(--on-shell); color: var(--shell); border: 2px solid var(--rule); border-radius: var(--r); font-size: var(--t-meta); font-weight: 700; }
+.qr::before, .qr::after, .qr .finder { content: ""; position: absolute; width: 44px; height: 44px; background: var(--shell); border: 7px solid var(--shell); box-shadow: inset 0 0 0 7px var(--on-shell); }
+.qr::before { top: 12px; left: 12px; }
+.qr::after { top: 12px; right: 12px; }
+.qr .finder { bottom: 12px; left: 12px; }
+.key { display: inline-block; margin-top: var(--s2); padding: var(--s2) var(--s3); background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r); font: 600 var(--t-body)/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .06em; user-select: all; overflow-wrap: anywhere; }
+.input--code { max-width: 15rem; font-size: 1.5rem; font-weight: 700; letter-spacing: .3em; text-align: center; }
+
+/* Disabled text button (resend countdown). */
+.link[disabled] { color: var(--muted); text-decoration: none; cursor: not-allowed; }

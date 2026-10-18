@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Check your email · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1 tabindex="-1">Check your email</h1>
+      <p class="lede">We sent a confirmation link to <b>taylor.brooks@example.com</b>.</p>
+    </div>
+  </div>
+
+  <div class="sign">
+    <span class="msg">Open the link in that email</span>
+    <span class="sub">It brings you back here to sign in. Then you'll add your campers.</span>
+  </div>
+
+  <p class="mt-6">Didn't get it? Check your spam folder first.</p>
+  <p><button class="link" type="button" id="resend" disabled><span>Resend in <span data-n>42</span>s</span></button></p>
+  <p role="status" class="meta" id="resend-note"></p>
+  <p><a class="link" href="public-login.html"><i data-lucide="arrow-left" class="icon-sm"></i>Back to sign in</a></p>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+(function () {
+  var b = document.getElementById('resend'), n = b.querySelector('[data-n]'), left = 42;
+  var t = setInterval(function () {
+    left -= 1;
+    if (left > 0) { n.textContent = left; return; }
+    clearInterval(t); b.disabled = false; b.textContent = 'Resend the email';
+  }, 1000);
+  b.addEventListener('click', function () {
+    document.getElementById('resend-note').textContent = 'Sent again. Check your inbox and spam folder.';
+  });
+})();
+</script>
+</body>
+</html>

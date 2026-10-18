@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register a new camper, step 2 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <a class="link link--muted" href="parent-home.html"><i data-lucide="chevron-left" class="icon-sm"></i>Save and exit</a>
+  <h1 class="mt-1">Register a new camper</h1>
+
+  <section class="sign mt-4" aria-labelledby="step-h">
+    <span class="ctx">Sam Brooks · entering 6th</span>
+    <h2 class="msg" id="step-h"><span class="sr-only">Step 2 of 5: </span>Week and class</h2>
+    <span class="sub">Your seat is held when you register, at step 5.</span>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span></span><span></span><span></span></div>
+  </section>
+
+  <form class="mt-6" action="parent-register-3.html" novalidate>
+    <div class="field">
+      <span class="label" id="r-wk-l">Week</span>
+      <div class="seg seg--block" data-seg role="group" aria-labelledby="r-wk-l">
+        <button type="button" aria-pressed="true" data-show="sam-w1">Week 1</button>
+        <button type="button" aria-pressed="false" data-show="sam-w2">Week 2</button>
+      </div>
+      <p class="hint">One class per week. You can add the other week from Classes after you register.</p>
+    </div>
+    <fieldset id="sam-w1" class="mt-5">
+      <legend>Classes <span class="sep">·</span> Mon–Fri, Oct 19–23</legend>
+      <div class="choices mt-3">
+        <label class="choice"><input type="radio" name="sam-w1" value="java" data-class="Intro to Java"><span class="grow"><span class="top"><b>Intro to Java</b><span class="seats">8 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 201</span></span><span class="meta">Object-oriented programming fundamentals. For campers who have tried some coding before.</span></span></label>
+        <label class="choice"><input type="radio" name="sam-w1" value="python" data-class="Intro to Python" checked><span class="grow"><span class="top"><b>Intro to Python</b><span class="seats">7 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 102</span></span><span class="meta">First steps in programming: variables, loops and functions, building small games and art.</span></span></label>
+        <label class="choice"><input type="radio" name="sam-w1" value="web" data-class="Web Development"><span class="grow"><span class="top"><b>Web Development</b><span class="seats">6 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 202</span></span><span class="meta">Build and publish a personal website with HTML, CSS and a little JavaScript.</span></span></label>
+      </div>
+      <details class="more mt-3">
+          <summary>1 class isn't open to Sam <i data-lucide="chevron-down" class="chev"></i></summary>
+          <ul class="rows">
+            <li><b>Microcontrollers</b> <span class="meta"><span class="sep">·</span> for campers entering grades 7–9</span></li>
+          </ul>
+        </details>
+    </fieldset>
+    <fieldset id="sam-w2" class="mt-5" hidden>
+      <legend>Classes <span class="sep">·</span> Mon–Fri, Oct 26–30</legend>
+      <div class="choices mt-3">
+        <label class="choice"><input type="radio" name="sam-w2" value="java" data-class="Intro to Java"><span class="grow"><span class="top"><b>Intro to Java</b><span class="seats">3 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 201</span></span><span class="meta">Object-oriented programming fundamentals. For campers who have tried some coding before.</span></span></label>
+        <label class="choice"><input type="radio" name="sam-w2" value="python" data-class="Intro to Python"><span class="grow"><span class="top"><b>Intro to Python</b><span class="seats">5 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 102</span></span><span class="meta">First steps in programming: variables, loops and functions, building small games and art.</span></span></label>
+      </div>
+      <details class="more mt-3">
+          <summary>1 class isn't open to Sam <i data-lucide="chevron-down" class="chev"></i></summary>
+          <ul class="rows">
+            <li><b>Microcontrollers</b> <span class="meta"><span class="sep">·</span> for campers entering grades 7–9</span></li>
+          </ul>
+        </details>
+      <p class="meta">Web Development runs in Week 1 only.</p>
+    </fieldset>
+    <div class="wiznav">
+      <a class="link" href="parent-register-1.html"><i data-lucide="chevron-left" class="icon-sm"></i>Back</a>
+      <a class="btn btn--primary" href="parent-register-3.html">Next: Contacts <i data-lucide="arrow-right"></i></a>
+    </div>
+  </form>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

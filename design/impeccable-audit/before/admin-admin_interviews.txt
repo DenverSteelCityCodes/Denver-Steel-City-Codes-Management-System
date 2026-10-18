@@ -1,0 +1,197 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Interviews
+
+Open interview slots, book applicants into them, and keep notes.
+
+TOTAL SLOTS
+
+20
+
+BOOKED
+
+3
+
+AVAILABLE
+
+17
+
+Add interview slot
+
+Date
+Time
+Minutes
+Add slot
+Monday, October 19, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Tuesday, October 20, 2026
+
+4:00 PM
+
+15 min
+
+Riley Chen
+
+Booked
+
+4:30 PM
+
+15 min
+
+Sofia Haddad
+
+Booked
+Wednesday, October 21, 2026
+
+4:00 PM
+
+15 min
+
+Jalen Price
+
+Booked
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Thursday, October 22, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Friday, October 23, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Monday, October 26, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Tuesday, October 27, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Wednesday, October 28, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Thursday, October 29, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book
+Friday, October 30, 2026
+
+4:00 PM
+
+15 min
+
+Available
+Book
+
+4:30 PM
+
+15 min
+
+Available
+Book

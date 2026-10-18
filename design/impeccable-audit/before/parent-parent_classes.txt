@@ -1,0 +1,77 @@
+Home
+Browse classes
+TB
+Back to dashboard
+Camper
+Select a camper to enroll…
+Maya Brooks (age 12)
+Eli Brooks (age 9)
+Noor Brooks (age 13)
+Search courses
+
+Select a camper above to see eligibility and register.
+
+Intro to Java
+
+Object-oriented programming fundamentals in Java. Recommended for campers who have tried some coding before.
+
+JAVA-1
+W1
+
+6 / 14
+
+JAVA-1
+W2
+
+11 / 14
+
+Intro to Python
+
+First steps in programming: variables, loops and functions, building small games and art with Python.
+
+PY-A
+W1
+
+10 / 10Full
+
+PY-B
+W1
+
+9 / 16
+
+PY-A
+W2
+
+9 / 14
+
+PY-B
+W2
+
+11 / 16
+
+Microcontrollers
+
+Program real hardware — LEDs, sensors and buttons — with CircuitPython. For campers entering grades 7–9 with some Python experience.
+
+For campers entering grades 7–9 with at least intermediate Python knowledge.
+
+MC-1
+W1
+
+10 / 10Full
+
+MC-1
+W2
+
+9 / 10Almost full
+
+Web Development
+
+Build and publish a personal website with HTML, CSS and a little JavaScript.
+
+WEB-1
+W1
+
+12 / 18
+
+Questions or changes? Email the camp at denver@steelcitycodes.org.

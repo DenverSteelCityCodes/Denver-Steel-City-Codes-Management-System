@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Create a parent account · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Create a parent account</h1>
+      <p class="lede">You'll add your campers after you sign in.</p>
+    </div>
+  </div>
+
+  <form class="fstack" data-next="public-signup-sent.html" novalidate>
+    <div class="field">
+      <label for="name">Your name</label>
+      <p class="hint" id="name-hint">Parent or guardian</p>
+      <input class="input" id="name" type="text" autocomplete="name" aria-describedby="name-hint">
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input class="input" id="email" type="email" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+  <label for="pw">Password</label>
+  <p class="hint" id="pw-hint">At least 8 characters</p>
+  <div class="reveal">
+    <input class="input" id="pw" type="password" autocomplete="new-password" aria-describedby="pw-hint">
+    <button class="reveal__btn" type="button" data-reveal="pw">Show<span class="sr-only"> password</span></button>
+  </div>
+</div>
+    <button class="btn btn--primary btn--block" type="submit">Create account</button>
+  </form>
+
+  <p class="mt-6">Already have an account? <a class="link" href="public-login.html">Sign in</a></p>
+  <p>Volunteering instead? <a class="link" href="public-apply-1.html">Apply to volunteer</a></p>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script>
+<script>
+document.querySelectorAll('[data-reveal]').forEach(function (b) {
+  var input = document.getElementById(b.getAttribute('data-reveal'));
+  b.addEventListener('click', function () {
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    b.innerHTML = (show ? 'Hide' : 'Show') + '<span class="sr-only"> password</span>';
+  });
+});
+</script></body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteer application, step 2 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Volunteer application, 2026</h1>
+    </div>
+  </div>
+
+  <section class="sign" aria-labelledby="step-h">
+    <h2 class="steplabel" id="step-h" aria-live="polite">Step 2 of 5 · Availability</h2>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span></span><span></span><span></span></div>
+  </section>
+
+  <form class="fstack mt-8" data-next="public-apply-3.html" novalidate>
+    <fieldset>
+      <legend>Which weeks can you come?</legend>
+      <p class="hint">Pick one or both.</p>
+      <div class="choices choices--2">
+        <label class="choice"><input type="checkbox" checked><span class="grow"><b>Week 1</b><span class="meta">Oct 19–23</span></span></label>
+        <label class="choice"><input type="checkbox"><span class="grow"><b>Week 2</b><span class="meta">Oct 26–30</span></span></label>
+      </div>
+    </fieldset>
+    <div class="field">
+      <label for="a-shirt">T-shirt size</label>
+      <select class="select" id="a-shirt"><option value="">Choose…</option><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
+    </div>
+    <div class="field">
+      <label for="a-why">Why do you want to volunteer with Steel City Codes?</label>
+      <p class="hint" id="a-why-hint">2–3 sentences</p>
+      <textarea class="textarea" id="a-why" aria-describedby="a-why-hint">I took AP Computer Science Principles this year and loved it. I'd like younger kids to get the same start I did, and I'm good at explaining things slowly.</textarea>
+    </div>
+    <fieldset>
+      <legend>Have you volunteered with Steel City Codes before?</legend>
+      <div class="choices choices--2">
+        <label class="choice"><input type="radio" name="before"><span class="grow">Yes</span></label>
+        <label class="choice"><input type="radio" name="before" checked><span class="grow">No</span></label>
+      </div>
+    </fieldset>
+    <div class="formnav">
+      <a class="btn btn--secondary" href="public-apply-1.html"><i data-lucide="chevron-left"></i>Back</a>
+      <button class="btn btn--primary" type="submit">Next: Experience<i data-lucide="chevron-right"></i></button>
+    </div>
+  </form>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script></body>
+</html>

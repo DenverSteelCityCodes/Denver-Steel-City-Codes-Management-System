@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteers · Applications · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html" aria-current="page">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html" aria-current="page"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Volunteers</h1></div>
+      <div class="act"><a class="btn btn--secondary" href="#"><i data-lucide="download"></i>Export CSV</a></div>
+    </div>
+    <nav class="subtabs" aria-label="Volunteers">
+  <a href="admin-volunteers.html" aria-current="page">Applications <span class="n">5</span></a>
+  <a href="admin-volunteers-interviews.html">Interviews</a>
+  <a href="admin-volunteers-crew.html">Crew</a>
+  <a href="admin-volunteers-duties.html">Duties</a>
+</nav>
+
+    <div class="statusline">
+      <p class="grow"><b>Applications are open</b> at <a href="public-apply-1.html">scc.haanie.com/apply</a></p>
+      <button class="link" type="button"><i data-lucide="copy" class="icon-sm"></i>Copy link</button>
+      <button class="btn btn--secondary" type="button" data-toggle="close-apps">Close applications</button>
+    </div>
+    <div class="confirm" id="close-apps" role="group" aria-labelledby="close-apps-q" hidden>
+      <p id="close-apps-q">Close volunteer applications? The form at /apply stops taking new applications until you open it again. The 28 already in stay as they are.</p>
+      <div class="do"><button class="btn btn--secondary" type="button" data-toggle="close-apps" autofocus>Keep them open</button><button class="btn btn--danger" type="button">Close applications</button></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Show applications" data-seg>
+        <button type="button" aria-pressed="true">Pending 5</button>
+        <button type="button" aria-pressed="false">Accepted 22</button>
+        <button type="button" aria-pressed="false">Rejected 1</button>
+        <button type="button" aria-pressed="false">All 28</button>
+      </div>
+      <span class="meta">Oldest first</span>
+    </div>
+
+    <ul class="rows rows--framed">
+        <li>
+          <button class="rowbtn" type="button" data-toggle="app-riley">
+            <span class="grow"><span class="name">Riley Chen</span><span class="meta">Grandview High School · 11th · Week 1 · applied 5 days ago</span></span>
+            <span>Interview Tue Oct 20, 4:00 PM</span>
+            <i data-lucide="chevron-down" class="chev"></i>
+          </button>
+          <div class="detail" id="app-riley">
+            <div class="twocol">
+              <dl class="kv">
+                <dt>Email</dt><dd>demo.applicant@example.com</dd>
+                <dt>Phone</dt><dd><a class="call" href="tel:+13035550161">(303) 555-0161</a></dd>
+                <dt>Age</dt><dd>16 · 11th grade at Grandview High School</dd>
+                <dt>Weeks</dt><dd>Week 1 only</dd>
+                <dt>Courses</dt><dd>1st Intro to Python · 2nd Web Development</dd>
+                <dt>Languages</dt><dd>Python, some JavaScript</dd>
+                <dt>Shirt</dt><dd>M</dd>
+                <dt>Signatures</dt><dd>Riley and a parent signed Oct 12</dd>
+              </dl>
+              <div class="stack">
+                <div><p class="meta"><b class="ink">Why Riley wants to volunteer</b></p><p class="quote">“I learned to code at a library club and want to help younger kids get started the same way.”</p></div>
+                <div><p class="meta"><b class="ink">Experience with children</b></p><p class="quote">“I help run my school’s robotics open house for middle schoolers.”</p></div>
+                <div><p class="meta"><b class="ink">Volunteered with Steel City Codes before</b></p><p>No</p></div>
+              </div>
+            </div>
+            <div class="row mt-6">
+              <button class="btn btn--primary" type="button"><i data-lucide="check"></i>Accept Riley</button>
+              <button class="link" type="button" data-toggle="reject-riley">Reject</button>
+            </div>
+            <div class="confirm" id="reject-riley" role="group" aria-labelledby="reject-riley-q" hidden>
+              <p id="reject-riley-q">Reject Riley Chen’s application? It moves to the Rejected list.</p>
+              <div class="do"><button class="btn btn--secondary" type="button" data-toggle="reject-riley" autofocus>Keep it pending</button><button class="btn btn--danger" type="button">Reject Riley</button></div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <button class="rowbtn" type="button" aria-expanded="false">
+            <span class="grow"><span class="name">Avery Johnson</span><span class="meta">Smoky Hill High School · 12th · Weeks 1, 2 · applied 4 days ago</span></span>
+            <span class="flag"><i data-lucide="calendar-x-2"></i>No interview yet</span>
+            <i data-lucide="chevron-down" class="chev"></i>
+          </button>
+        </li>
+        <li>
+          <button class="rowbtn" type="button" aria-expanded="false">
+            <span class="grow"><span class="name">Sofia Haddad</span><span class="meta">Cherry Creek High School · 12th · Week 1 · applied 3 days ago</span></span>
+            <span>Interview Tue Oct 20, 4:30 PM</span>
+            <i data-lucide="chevron-down" class="chev"></i>
+          </button>
+        </li>
+        <li>
+          <button class="rowbtn" type="button" aria-expanded="false">
+            <span class="grow"><span class="name">Jalen Price</span><span class="meta">Rock Canyon High School · 11th · Weeks 1, 2 · applied 3 days ago</span></span>
+            <span>Interview Wed Oct 21, 4:00 PM</span>
+            <i data-lucide="chevron-down" class="chev"></i>
+          </button>
+        </li>
+        <li>
+          <button class="rowbtn" type="button" aria-expanded="false">
+            <span class="grow"><span class="name">Mila Novak</span><span class="meta">Eaglecrest High School · 10th · Week 1 · applied 2 days ago</span></span>
+            <span class="flag"><i data-lucide="calendar-x-2"></i>No interview yet</span>
+            <i data-lucide="chevron-down" class="chev"></i>
+          </button>
+        </li>
+    </ul>
+  </main>
+</div>
+</body>
+</html>
