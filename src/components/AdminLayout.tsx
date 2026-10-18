@@ -18,8 +18,9 @@ import wordmark from '../../assets/sccdenver.png'
 // Admin shell (DESIGN.md › Navigation, A-admin §9): an ink bar with search, the bell and the
 // avatar; from 1024px a 232px ink rail of five jobs plus Setup, each job's other pages listed
 // under it; below 1024px the same six as an ink tab strip, with the current job's pages as
-// sub-tabs on the floor. Every admin page has a permanent link. Identity, dark mode, help and
-// sign-out live in one place: the avatar menu.
+// sub-tabs on the floor. Every admin page has a permanent link here: the shell owns navigation
+// between pages; tabs within one page (Volunteers' ?tab=) stay in that page. Identity, dark mode,
+// help and sign-out live in one place: the avatar menu.
 
 interface Page {
   to: string
@@ -30,7 +31,7 @@ interface Page {
 
 interface Job extends Page {
   icon: LucideIcon
-  // What the job's own page is called among its sub-tabs (Volunteers opens on Applications).
+  // What the job's own page is called among its sub-tabs (Setup opens on Season); else its label.
   home?: string
   // The job's other pages: listed under it in the rail, as sub-tabs on a phone.
   more?: Page[]
@@ -41,7 +42,7 @@ const JOBS: Job[] = [
     more: [{ to: '/admin/attendance', label: 'Attendance', keywords: ['Roll call', 'Unaccounted', 'Attendance CSV', 'Week export'] }] },
   { to: '/admin/students', label: 'Campers', icon: Backpack, keywords: ['Students', 'Change requests', 'Registrations'] },
   { to: '/admin/classes', label: 'Classes', icon: LayoutGrid, keywords: ['Sections', 'Timetable', 'Rosters', 'Leads'] },
-  { to: '/admin/volunteers', label: 'Volunteers', icon: HandHelping, home: 'Applications', keywords: ['Applications', 'Crew', 'Volunteer roster'],
+  { to: '/admin/volunteers', label: 'Volunteers', icon: HandHelping, keywords: ['Applications', 'Crew', 'Volunteer roster'],
     more: [
       { to: '/admin/interviews', label: 'Interviews', keywords: ['Interview slots', 'Bookings'] },
       { to: '/admin/duties', label: 'Duties', keywords: ['Duty schedule', 'duty', 'Duty slots'] },
@@ -52,7 +53,7 @@ const SETUP: Job = {
   to: '/admin/sessions', label: 'Setup', icon: Settings, home: 'Season', keywords: ['Sessions', 'Season', 'Weeks', 'Registration', 'Schedule'],
   more: [
     { to: '/admin/forms', label: 'Forms', keywords: ['Form editor', 'Questions'] },
-    { to: '/admin/users', label: 'Users and roles', keywords: ['Users & roles', 'Roles', 'Accounts', 'Admins'] },
+    { to: '/admin/users', label: 'Users & roles', keywords: ['Users and roles', 'Roles', 'Accounts', 'Admins'] },
   ],
 }
 const HELP: Job = { to: '/admin/help', label: 'Help', icon: CircleQuestionMark, keywords: ['Guide', 'How to', 'Playbook'] }
@@ -302,7 +303,7 @@ export default function AdminLayout() {
                         className={`inline-flex items-center gap-1.5 min-h-12 px-2 sm:px-3 font-bold whitespace-nowrap no-underline focus-visible:-outline-offset-[3px] ${
                           here ? 'text-ink shadow-[inset_0_-4px_0_var(--ink)]' : 'text-ink-muted hover:text-ink'}`}>
                         {p.label}
-                        {counts[p.to] && counts[p.to].n > 0 && p.to !== job?.to && (
+                        {counts[p.to] && counts[p.to].n > 0 && (
                           <span className="font-semibold tabular-nums">{counts[p.to].n}<span className="sr-only"> {counts[p.to].said}</span></span>
                         )}
                       </Link>

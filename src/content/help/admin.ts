@@ -60,10 +60,10 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'list',
               items: [
                 '[[admin-today]] opens first. The gold sign says whether registration is open, with seats left. **To do** lists what needs a person, most serious first. **Seats** shows every section\'s fill and waitlist. It refreshes every minute and when you come back to the tab.',
-                'On a laptop the menu down the left lists the five jobs (Today, Campers, Classes, Volunteers, Updates) and Setup, with each job\'s other pages under it: Attendance under Today, Interviews and Duties under Volunteers, Forms and Users and roles under Setup. On a phone the same six are tabs along the top, and the page you\'re on shows its other pages just below them.',
+                'On a laptop the menu down the left lists the five jobs (Today, Campers, Classes, Volunteers, Updates) and Setup, with each job\'s other pages under it: Attendance under Today, Interviews and Duties under Volunteers, Forms and Users & roles under Setup. On a phone the same six are tabs along the top, and the page you\'re on shows its other pages just below them.',
                 'The bell in the top bar holds the same to-do list on every page, and the newest updates.',
                 'The search box in the top bar finds pages (old names like Students or Sessions work too), classes, campers and volunteer applicants.',
-                'Your name, **Dark mode**, Help and **Sign out** are in the menu under your initials.',
+                'Your name, **Dark mode** and **Sign out** are in the menu under your initials. Help is at the bottom of the left menu on a laptop, and in the menu under your initials on a phone.',
               ],
             },
           ],
@@ -96,7 +96,7 @@ export const ADMIN_GUIDE: HelpGuide = {
         },
         {
           id: 'users-and-roles',
-          title: 'Users and roles',
+          title: 'Users & roles',
           keywords: 'account parent volunteer admin access permissions',
           body: [
             {
