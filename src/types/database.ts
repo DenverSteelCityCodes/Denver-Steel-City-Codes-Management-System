@@ -135,7 +135,8 @@ export interface RollCallMark {
   marked_at: string
 }
 
-export type UpdateAudience = 'everyone' | 'parents' | 'volunteers' | 'section'
+// week_families / week_crew name a session (migration_urgent_and_incidents.sql, spec 34).
+export type UpdateAudience = 'everyone' | 'parents' | 'volunteers' | 'section' | 'week_families' | 'week_crew'
 
 export interface Update {
   id: string
@@ -143,7 +144,27 @@ export interface Update {
   author_name: string
   audience: UpdateAudience
   section_id: string | null
+  session_id?: string | null
+  // A safety notice: emailed to the whole audience at once and shown as a banner that day (spec 34).
+  urgent?: boolean
   body: string
+  created_at: string
+}
+
+// The incident log (spec 34). Crew read only their own entries; admins read every entry.
+export type IncidentKind = 'injury' | 'behavior' | 'conduct' | 'safety' | 'other'
+export type IncidentLevel = 'note' | 'warning' | 'admin_room' | 'written_notice'
+
+export interface Incident {
+  id: string
+  section_id: string
+  student_id: string | null
+  occurred_at: string
+  kind: IncidentKind
+  level: IncidentLevel
+  description: string
+  reported_by: string | null
+  parent_notified_at: string | null
   created_at: string
 }
 

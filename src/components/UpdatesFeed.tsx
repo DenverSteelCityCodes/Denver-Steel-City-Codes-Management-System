@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Copy, Trash2 } from 'lucide-react'
+import { Copy, Trash2, TriangleAlert } from 'lucide-react'
 import InlineConfirm from './InlineConfirm'
+import StatusWord from './StatusWord'
 import { fetchRecipientEmails, type UpdateWithSection } from '../hooks/useUpdates'
 import { timeAgo } from '../lib/campDay'
 import { copyText } from '../lib/mailto'
@@ -41,7 +42,7 @@ export default function UpdatesFeed({
 
   async function copyEmails(u: UpdateWithSection) {
     try {
-      const emails = await fetchRecipientEmails(u.audience, u.section_id)
+      const emails = await fetchRecipientEmails(u.audience, u.section_id, u.session_id)
       const ok = await copyText(emails.join(', '))
       setMsg({ id: u.id, text: ok ? `Copied ${emails.length} ${emails.length === 1 ? 'address' : 'addresses'}.` : "Your browser blocked the clipboard. Try again from a secure tab." })
     } catch {
@@ -64,6 +65,8 @@ export default function UpdatesFeed({
         const remove = canDelete?.(u)
         return (
           <li key={u.id} className={`border-t border-border first:border-t-0 ${compact ? 'py-3' : 'py-4'}`}>
+            {/* An urgent notice is a safety notice (spec 34): red, the one place updates use it. */}
+            {u.urgent && <StatusWord tone="danger" icon={TriangleAlert} className="mb-1.5">Urgent notice</StatusWord>}
             <p className="text-sm text-ink-muted">
               <b className="font-bold text-ink">{u.author_name}</b> to {audienceText(u)},{' '}
               <time dateTime={u.created_at}>{timeAgo(u.created_at)}</time>

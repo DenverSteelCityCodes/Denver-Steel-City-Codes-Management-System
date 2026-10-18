@@ -5,7 +5,11 @@ import type { Update, UpdateAudience } from '../types/database'
 
 export interface UpdateWithSection extends Update {
   sections: { label: string; week: number | null; classes: { name: string } | null } | null
+  // The week of a week audience (spec 34).
+  sessions?: { name: string } | null
 }
+
+const SELECT = '*, sections ( label, week, classes ( name ) ), sessions ( name )'
 
 // Updates the signed-in user may read (RLS decides), newest first. Any role can call this.
 export function useUpdates(limit = 50) {
@@ -15,7 +19,7 @@ export function useUpdates(limit = 50) {
 
   const fetchUpdates = useCallback(() => supabase
     .from('updates')
-    .select('*, sections ( label, week, classes ( name ) )')
+    .select(SELECT)
     .order('created_at', { ascending: false })
     .limit(limit)
     .then(({ data, error }) => {
@@ -27,11 +31,19 @@ export function useUpdates(limit = 50) {
   useEffect(() => { void fetchUpdates() }, [fetchUpdates])
   useRefetchOnFocus(fetchUpdates, 120_000)
 
-  async function postUpdate(input: { audience: UpdateAudience; section_id?: string | null; body: string }) {
+  async function postUpdate(input: PostInput) {
+    const week = input.audience === 'week_families' || input.audience === 'week_crew'
     const { data, error } = await supabase
       .from('updates')
-      .insert({ audience: input.audience, section_id: input.audience === 'section' ? input.section_id : null, body: input.body.trim() })
-      .select('*, sections ( label, week, classes ( name ) )')
+      .insert({
+        audience: input.audience,
+        section_id: input.audience === 'section' ? input.section_id : null,
+        session_id: week ? input.session_id : null,
+        body: input.body.trim(),
+        // Only sent when set, so a lead's post never names the column (admins only).
+        ...(input.urgent ? { urgent: true } : {}),
+      })
+      .select(SELECT)
       .single()
     if (error) throw new Error(error.message)
     setUpdates(prev => [data as unknown as UpdateWithSection, ...prev])
@@ -47,8 +59,21 @@ export function useUpdates(limit = 50) {
   return { updates, loading, error, postUpdate, deleteUpdate, refetch: fetchUpdates }
 }
 
+export interface PostInput {
+  audience: UpdateAudience
+  section_id?: string | null
+  session_id?: string | null
+  body: string
+  urgent?: boolean
+}
+
 // Email addresses for an audience (admins: any; a section's crew: that section's families).
-export async function fetchRecipientEmails(audience: UpdateAudience, sectionId?: string | null): Promise<string[]> {
+export async function fetchRecipientEmails(audience: UpdateAudience, sectionId?: string | null, sessionId?: string | null): Promise<string[]> {
+  if (audience === 'week_families' || audience === 'week_crew') {
+    const { data, error } = await supabase.rpc('week_recipient_emails', { p_audience: audience, p_session_id: sessionId ?? null })
+    if (error) throw new Error(error.message)
+    return (data ?? []) as string[]
+  }
   const { data, error } = await supabase.rpc('update_recipient_emails', {
     p_audience: audience, p_section_id: audience === 'section' ? sectionId ?? null : null,
   })
@@ -57,8 +82,10 @@ export async function fetchRecipientEmails(audience: UpdateAudience, sectionId?:
 }
 
 // Human label for where an update went.
-export function audienceLabel(u: Pick<UpdateWithSection, 'audience' | 'sections'>): string {
+export function audienceLabel(u: Pick<UpdateWithSection, 'audience' | 'sections' | 'sessions'>): string {
   switch (u.audience) {
+    case 'week_families': return `Families in ${u.sessions?.name ?? 'one week'}`
+    case 'week_crew': return `Crew in ${u.sessions?.name ?? 'one week'}`
     case 'everyone': return 'Everyone'
     case 'parents': return 'Parents'
     case 'volunteers': return 'Volunteers'
