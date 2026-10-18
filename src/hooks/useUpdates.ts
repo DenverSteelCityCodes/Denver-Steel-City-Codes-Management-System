@@ -60,7 +60,7 @@ export async function fetchRecipientEmails(audience: UpdateAudience, sectionId?:
 export function audienceLabel(u: Pick<UpdateWithSection, 'audience' | 'sections'>): string {
   switch (u.audience) {
     case 'everyone': return 'Everyone'
-    case 'parents': return 'All parents'
+    case 'parents': return 'Parents'
     case 'volunteers': return 'Volunteers'
     case 'section': {
       const cls = u.sections?.classes?.name

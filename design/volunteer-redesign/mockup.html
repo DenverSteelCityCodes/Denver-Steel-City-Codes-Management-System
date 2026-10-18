@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteer Portal Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/* Tokens: copied from src/index.css (AA-adjusted values). Semantic only. */
+:root{
+  --bg:#FAF6EF;--surface:#FFFFFF;--sunken:#F2ECE2;--raised:#FFFFFF;
+  --ink:#262019;--muted:#665A4C;--faint:#766959;--border:#E6DFD3;--border-strong:#CFC6B8;
+  --brand:#F1C446;--brand-hover:#E7B62C;--brand-soft:#FCEFC4;--on-brand:#1A1613;--bar:#1A1613;
+  --success-soft:#C2E6C9;--success:#17652F;--warning-soft:#FAE1A1;--warning:#715709;
+  --danger-soft:#F6D5D2;--danger:#B42318;--info-soft:#CEDDE8;--info:#2D5E83;
+  --vol-soft:#CEDDE8;--vol:#2D5E83;
+  --band:#1A1613;--band-line:transparent;
+  --page:#EFE9DF;
+}
+:root[data-theme="dark"]{
+  --bg:#171310;--surface:#221C16;--sunken:#100D0A;--raised:#2C251D;
+  --ink:#F5EFE4;--muted:#B9AD9C;--faint:#9C907F;--border:#39302699;--border-strong:#4A3F33;
+  --brand-hover:#F6CF5E;--brand-soft:#3A2F12;
+  --success-soft:#16341F;--success:#86E0A0;--warning-soft:#3A2F12;--warning:#F1C446;
+  --danger-soft:#3A1A1A;--danger:#F0A19C;--info-soft:#16293A;--info:#9CCBEC;
+  --vol-soft:#16293A;--vol:#9CCBEC;
+  --band:#2C251D;--band-line:#4A3F33;--page:#0E0B09;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171310;--surface:#221C16;--sunken:#100D0A;--raised:#2C251D;
+    --ink:#F5EFE4;--muted:#B9AD9C;--faint:#9C907F;--border:#39302699;--border-strong:#4A3F33;
+    --brand-hover:#F6CF5E;--brand-soft:#3A2F12;
+    --success-soft:#16341F;--success:#86E0A0;--warning-soft:#3A2F12;--warning:#F1C446;
+    --danger-soft:#3A1A1A;--danger:#F0A19C;--info-soft:#16293A;--info:#9CCBEC;
+    --vol-soft:#16293A;--vol:#9CCBEC;
+    --band:#2C251D;--band-line:#4A3F33;--page:#0E0B09;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font-family:"Josefin Sans",ui-sans-serif,system-ui,sans-serif;font-weight:500;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{-webkit-tap-highlight-color:transparent}
+svg.lucide{width:1em;height:1em;flex-shrink:0;stroke-width:2.2}
+:focus-visible{outline:2px solid var(--brand-hover);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* ── Doc chrome (the page around the mockup) ─────────────── */
+.doc{max-width:1320px;margin:0 auto;padding:28px 16px 64px}
+.doc>h1{font-size:30px;line-height:1.2;margin:0 0 6px;font-weight:700;letter-spacing:-.01em}
+.doc .lede{color:var(--muted);max-width:720px;margin:0 0 20px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;margin-bottom:22px}
+.ctl .cap{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:0 12px;height:36px;font-size:14px;font-weight:600;border-left:1px solid var(--border-strong);white-space:nowrap}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.stage{display:grid;grid-template-columns:auto minmax(0,1fr);gap:32px;align-items:start}
+.stage.desktop{grid-template-columns:minmax(0,1fr)}
+.notes{position:sticky;top:16px;max-width:620px}
+.notes .kicker{font-size:14px;color:var(--muted);margin:0 0 2px;font-weight:600}
+.notes h3{font-size:23px;margin:0 0 12px;line-height:1.25}
+.notes h4{font-size:15px;margin:18px 0 4px}
+.notes ul{margin:0;padding:0;list-style:none}
+.notes li{margin:0 0 12px;font-size:15px;padding-left:14px;border-left:3px solid var(--border-strong)}
+.notes li small{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.notes .old{font-size:14.5px;color:var(--muted);margin:0}
+.stage.desktop .notes{position:static}
+.ref{margin-top:48px}
+.ref>h2{font-size:23px;margin:0 0 4px}
+.ref p.sub{color:var(--muted);margin:0 0 14px;max-width:720px}
+table.map{width:100%;border-collapse:collapse;font-size:14.5px}
+table.map th,table.map td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-strong);vertical-align:top}
+table.map th{font-size:14px;color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px 32px}
+.cols h3{margin:0 0 6px;font-size:17px}
+.cols ul{margin:0 0 8px;padding-left:18px;font-size:14.5px}
+.cols li{margin:5px 0}
+code{font-size:.9em;background:var(--sunken);padding:1px 4px;border-radius:4px}
+
+/* ── Device frames ───────────────────────────────────────── */
+.phone{width:375px;height:812px;border-radius:44px;border:10px solid #111;background:var(--bg);overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.ios-status{height:44px;flex-shrink:0;background:var(--bar);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0;font-size:14px;font-weight:600}
+.ios-status .isl{width:110px;height:30px;border-radius:16px;background:#000}
+.safari{flex-shrink:0;background:color-mix(in srgb,var(--surface) 92%,var(--bg));border-top:1px solid var(--border);padding:8px 14px 26px}
+.safari .url{height:40px;border-radius:12px;background:var(--sunken);display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;color:var(--ink)}
+.safari .url svg{font-size:12px;color:var(--muted)}
+.desk{width:100%;max-width:1200px;height:760px;border-radius:12px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.12)}
+.desk .chrome{height:34px;flex-shrink:0;background:var(--sunken);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:0 12px}
+.desk .chrome i{width:10px;height:10px;border-radius:50%;background:var(--border-strong);display:block}
+.desk .chrome .url{margin-left:16px;height:22px;flex:0 1 360px;border-radius:6px;background:var(--bg);font-size:12px;color:var(--muted);display:flex;align-items:center;padding:0 10px}
+/* The page itself scrolls (as it would in the browser) — sticky headers, no inner scroll panes. */
+.viewport{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;scrollbar-width:thin;overscroll-behavior:contain}
+
+/* ── App shell ───────────────────────────────────────────── */
+.bar{height:52px;background:var(--bar);display:flex;align-items:center;gap:8px;padding:0 10px 0 16px;position:relative;z-index:6}
+.desk .bar{height:64px;padding:0 24px;position:sticky;top:0}
+.bar img{height:24px;width:auto}
+.desk .bar img{height:32px}
+.bar .right{margin-left:auto;display:flex;align-items:center;gap:2px}
+.iconbtn{border:0;background:none;color:rgba(255,255,255,.75);width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--vol-soft);color:var(--vol);display:grid;place-items:center;font-weight:700;font-size:13px;box-shadow:0 0 0 2px var(--bar),0 0 0 4px var(--brand)}
+.avatarbtn{border:0;background:none;display:flex;align-items:center;gap:4px;color:rgba(255,255,255,.75);height:44px;padding:0 6px;border-radius:12px}
+/* Phone: tabs are a strip under the bar that sticks to the top. The bottom edge belongs to Safari. */
+.tabs{position:sticky;top:0;z-index:5;background:var(--bar);display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--band-line)}
+.tabs button{border:0;background:none;height:46px;color:rgba(255,255,255,.7);font-size:14.5px;font-weight:600;position:relative;display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button[aria-current="page"]{color:#fff}
+.tabs button[aria-current="page"]::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--brand)}
+.tabs .count{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--brand);color:var(--on-brand);font-size:11px;line-height:19px;font-weight:700}
+.topnav{display:flex;gap:4px;margin-left:20px}
+.topnav button{border:0;background:none;color:rgba(255,255,255,.7);height:40px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.topnav button:hover{color:#fff;background:rgba(255,255,255,.1)}
+.topnav button[aria-current="page"]{background:rgba(255,255,255,.15);color:#fff}
+.menu{position:absolute;right:8px;top:50px;width:260px;background:var(--raised);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:6px;z-index:20;color:var(--ink)}
+.desk .menu{right:22px;top:60px}
+.menu .who{padding:10px 12px 12px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.menu .who b{display:block;font-size:16px}
+.menu .who span{font-size:13.5px;color:var(--muted)}
+.menu button{width:100%;border:0;background:none;text-align:left;display:flex;align-items:center;gap:10px;padding:0 12px;height:46px;border-radius:10px;font-size:15px;font-weight:600}
+.menu button:hover{background:var(--sunken)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:6px 0}
+
+/* ── Content ─────────────────────────────────────────────── */
+.page{padding:20px 16px calc(32px + env(safe-area-inset-bottom))}
+.desk .page{padding:32px 32px 48px;max-width:1080px;margin:0 auto}
+.dateline{font-size:14px;color:var(--muted);margin:0 0 2px;font-weight:600}
+h1.title{font-size:28px;line-height:1.15;margin:0;font-weight:700;letter-spacing:-.01em}
+.desk h1.title{font-size:34px}
+.lead{font-size:16.5px;line-height:1.5;margin:8px 0 0;max-width:34em}
+.lead b{font-weight:700}
+h2.h{font-size:18px;line-height:1.3;margin:0;font-weight:700}
+.sect{margin-top:28px}
+.sect>header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+.sect>header p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14.5px}
+.xs{font-size:13.5px}
+.list{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.grid2{display:grid;gap:0 40px}
+.desk .grid2{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:start}
+.desk .grid2>.col2>.sect:first-child{margin-top:0}
+.tag{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 9px;font-size:12.5px;font-weight:600;white-space:nowrap;background:var(--vol-soft);color:var(--vol)}
+.tag.ok{background:var(--success-soft);color:var(--success)}
+.tag.neutral{background:var(--sunken);color:var(--muted)}
+.btn{height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.primary:hover{background:var(--brand-hover)}
+.btn.quiet{border-color:transparent;background:none;color:var(--muted);padding:0 10px}
+.btn.quiet:hover{background:var(--sunken);color:var(--ink)}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.textlink{border:0;background:none;padding:0;min-height:44px;color:var(--ink);font-weight:600;text-decoration:underline;text-decoration-color:var(--brand-hover);text-decoration-thickness:2px;text-underline-offset:4px;font-size:15px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+
+/* Roll call: the one loud thing on the page. */
+.rc{margin:22px -16px 0}
+.desk .rc{margin:24px 0 0}
+.rc-band{position:sticky;top:46px;z-index:4;background:var(--band);color:#fff;padding:14px 16px 14px;border-top:1px solid var(--band-line);border-bottom:1px solid var(--band-line)}
+.desk .rc-band{top:64px;border-radius:14px 14px 0 0}
+.rc-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.rc-top h2{font-size:20px;margin:0;line-height:1.2}
+.rc-top p{margin:2px 0 0;font-size:14px;color:rgba(255,255,255,.72)}
+.big{font-size:44px;font-weight:700;line-height:.9;color:var(--brand);font-variant-numeric:tabular-nums;text-align:right}
+.big span{display:block;white-space:nowrap;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.72);margin-top:6px}
+.rc-kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.rc-kinds button{border:1px solid rgba(255,255,255,.22);background:transparent;color:rgba(255,255,255,.85);height:40px;border-radius:10px;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;gap:4px}
+.rc-kinds button[aria-selected="true"]{background:#fff;border-color:#fff;color:#1A1613}
+.rc-kinds button.done:not([aria-selected="true"]){color:#9FE3B4;border-color:rgba(159,227,180,.45)}
+.rc-all{margin-top:10px;width:100%;height:50px;font-size:16px}
+.rc-list{background:var(--surface);border-bottom:1px solid var(--border)}
+.desk .rc-list{border:1px solid var(--border);border-top:0;border-radius:0 0 14px 14px;overflow:hidden}
+.rc-foot{display:flex;justify-content:space-between;align-items:center;padding:0 16px}
+.camper{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.camper:last-child{border-bottom:0}
+.camper.absent{background:color-mix(in srgb,var(--danger-soft) 45%,transparent)}
+.ini{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--sunken);color:var(--muted);font-weight:700;font-size:13px;flex-shrink:0}
+.camper.present .ini{background:var(--success-soft);color:var(--success)}
+.camper.absent .ini{background:var(--danger-soft);color:var(--danger)}
+.cname{font-weight:600;font-size:16px;line-height:1.2}
+.cname small{font-weight:500;font-size:13.5px;color:var(--muted);margin-left:4px}
+.medbtn{border:0;background:var(--danger-soft);color:var(--danger);border-radius:6px;font-size:12.5px;font-weight:700;min-height:26px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;margin-top:4px}
+.mednote{margin:6px 0 0;font-size:14px;background:var(--danger-soft);border-radius:8px;padding:8px 10px}
+.mednote small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.toggle{height:44px;min-width:100px;padding:0 10px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-shrink:0}
+.toggle.present{background:var(--success-soft);border-color:color-mix(in srgb,var(--success) 35%,transparent);color:var(--success)}
+.toggle.absent{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,transparent);color:var(--danger)}
+.callbtn{width:44px;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);display:grid;place-items:center;color:var(--ink);flex-shrink:0;font-size:17px;text-decoration:none}
+
+/* Schedule */
+.now{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.now b{font-size:17px}
+.sched{list-style:none;margin:6px 0 0;padding:0}
+.sched li{display:grid;grid-template-columns:104px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:15px}
+.sched li:last-child{border-bottom:0}
+.sched .t{color:var(--muted);font-variant-numeric:tabular-nums;font-size:14px;padding-top:1px}
+.sched b{font-weight:600;display:block;line-height:1.3}
+.sched .loc{color:var(--muted);font-size:13.5px}
+.sched li.on{box-shadow:inset 3px 0 0 var(--brand);padding-left:10px}
+.sched li.on .t{color:var(--ink);font-weight:700}
+.sched li.past b,.sched li.past .t,.sched li.past .loc{color:var(--faint)}
+details.coll>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center}
+details.coll>summary::-webkit-details-marker{display:none}
+details.coll .chev{transition:transform .15s}
+details.coll[open] .chev{transform:rotate(180deg)}
+
+/* Weeks, days, slots */
+.weekseg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;background:var(--surface)}
+.weekseg button{border:0;background:none;height:44px;font-weight:600;font-size:15px;border-left:1px solid var(--border-strong)}
+.weekseg button:first-child{border-left:0}
+.weekseg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.days{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.day{border:1px solid var(--border-strong);background:var(--surface);border-radius:12px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.day .wd{font-size:13px;color:var(--muted);font-weight:600}
+.day b{font-size:18px;line-height:1}
+.day .op{font-size:12px;color:var(--muted);font-weight:600}
+.day[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.day[aria-pressed="true"] .wd,.day[aria-pressed="true"] .op{color:var(--on-brand)}
+.day .mine{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--vol)}
+.day[aria-pressed="true"] .mine{background:var(--on-brand)}
+.item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item b{display:block;font-size:16px;line-height:1.25;font-weight:600}
+.item .sub{font-size:13.5px;color:var(--muted)}
+.seats{font-size:13.5px;color:var(--muted)}
+.datebox{width:42px;text-align:center;flex-shrink:0;line-height:1.05}
+.datebox span{display:block;font-size:12.5px;color:var(--muted);font-weight:600}
+.datebox b{font-size:20px}
+.confirm{background:var(--danger-soft);padding:12px 16px;font-size:14.5px;border-bottom:1px solid var(--border)}
+.confirm .row{margin-top:10px;justify-content:flex-end}
+
+/* Updates */
+.upd{padding:14px 16px;border-bottom:1px solid var(--border)}
+.upd:last-child{border-bottom:0}
+.upd .by{font-size:14px;color:var(--muted)}
+.upd .by b{color:var(--ink);font-weight:700}
+.upd p{margin:4px 0 0;font-size:16px;line-height:1.5}
+
+/* Forms — 16px minimum so iOS Safari doesn't zoom on focus */
+.field label,.field .lbl{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.input{width:100%;height:46px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-size:16px;-webkit-appearance:none;appearance:none}
+select.input{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 20px,calc(100% - 13px) 20px;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+textarea.input{height:auto;padding:10px 12px;resize:vertical}
+.checks{display:flex;gap:8px;flex-wrap:wrap}
+.checkpill{display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border:1px solid var(--border-strong);border-radius:10px;font-weight:600;background:var(--surface)}
+.checkpill input{width:20px;height:20px;accent-color:var(--brand-hover)}
+.formstack>*+*{margin-top:14px}
+.actions{display:flex;gap:8px;justify-content:flex-end}
+.saved{color:var(--success);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.err{color:var(--danger);font-size:14.5px;margin:0}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0;font-size:16px}
+dl.kv dt{color:var(--muted)}
+dl.kv dd{margin:0;font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
+.back{border:0;background:none;display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--muted);padding:0;min-height:44px;font-size:15px;margin:-10px 0 4px}
+.who{display:flex;align-items:center;gap:14px}
+.who .avatar{width:56px;height:56px;font-size:19px;box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--brand)}
+.empty{padding:28px 4px 8px}
+.empty .ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:22px;margin-bottom:12px}
+
+/* Applicant tracker — a real sequence, so it's numbered. */
+.track{list-style:none;margin:0;padding:0}
+.track li{display:grid;grid-template-columns:32px 1fr;gap:14px;position:relative;padding-bottom:22px}
+.track li:last-child{padding-bottom:0}
+.track li::before{content:"";position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--border-strong)}
+.track li:last-child::before{display:none}
+.track li.done::before{background:var(--success)}
+.track .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--bg);color:var(--muted);border:2px solid var(--border-strong)}
+.track li.done .n{background:var(--success);color:var(--surface);border-color:var(--success)}
+.track li.cur .n{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.track b{display:block;font-size:17px;line-height:1.3;padding-top:4px}
+.track p{margin:2px 0 0;font-size:15px;color:var(--muted)}
+.track li.cur .when{font-size:24px;font-weight:700;color:var(--ink);margin:6px 0 2px;line-height:1.2}
+.slotday{font-size:14px;font-weight:600;color:var(--muted);margin:14px 0 6px}
+.slotgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.slotgrid button{height:46px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);font-weight:600;font-size:15px}
+.slotgrid button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+
+@media (max-width:860px){
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .notes{position:static}
+  .phone{margin:0 auto}
+}
+@media (max-width:420px){
+  .phone{width:100%;border:0;border-radius:0;height:min(812px,100dvh);box-shadow:none}
+  .ios-status,.safari{display:none}
+}
+</style>
+</head>
+<body>
+<div class="doc">
+  <h1>Volunteer portal redesign</h1>
+  <p class="lede">A clickable mockup of the volunteer pages, framed the way most volunteers will see them: in Safari or Chrome on their phone. It adds no features. Every control maps to an RPC or table the app already uses; the work is in where things live and how they read.</p>
+
+  <div class="controls">
+    <div class="ctl"><span class="cap">Where the volunteer is</span>
+      <div class="seg" id="ctl-mode">
+        <button data-v="applicant">Applied</button>
+        <button data-v="notcrewed">Accepted</button>
+        <button data-v="before">Assigned, camp next week</button>
+        <button data-v="campday">Camp day</button>
+      </div></div>
+    <div class="ctl"><span class="cap">Screen</span>
+      <div class="seg" id="ctl-view">
+        <button data-v="phone">Phone browser</button>
+        <button data-v="desktop">Laptop</button>
+      </div></div>
+    <div class="ctl"><span class="cap">Theme</span>
+      <div class="seg" id="ctl-theme">
+        <button data-v="light">Light</button>
+        <button data-v="dark">Dark</button>
+      </div></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div id="device"></div>
+    <aside class="notes" id="notes" aria-live="polite"></aside>
+  </div>
+
+  <section class="ref">
+    <h2>What the research said</h2>
+    <p class="sub">From 1,682 inbox threads (66 unique threads where a volunteer or applicant wrote in), the 2026 Master Roster and schedule docs, specs 04, 25, 34–36, B2 and L3, <code>design_system.md</code>, and the live demo measured at 375 px.</p>
+    <div class="cols">
+      <div><h3>The page today</h3><ul>
+        <li>The assigned-volunteer page is <b>5,193 px tall</b>, 6.4 phone screens.</li>
+        <li>Duties start 2.8 screens down and list all 40 slots in one column.</li>
+        <li>Preferences, days off and switch requests sit between the daily tools.</li>
+        <li>Each week's section repeats its own "Roll calls open on…" box.</li>
+        <li>On a phone the name and "Sign out" wrap onto two lines in the top bar.</li>
+      </ul></div>
+      <div><h3>How volunteers work</h3><ul>
+        <li>They think in <b>a week and a class</b>. The Master Roster had a tab per week, and volunteers name themselves by section code ("I'm P2-2").</li>
+        <li>Day-of questions went to Discord and Remind, from phones, mostly after 3 pm. Camp-day tools must work one-handed in a mobile browser.</li>
+        <li>Interview logistics were the biggest cluster: 18 thread-tags for booking, the link, or a missed slot.</li>
+        <li>Availability changes (5 threads) are occasional. They belong in settings, not on the camp-day screen.</li>
+      </ul></div>
+      <div><h3>Built for the mobile browser</h3><ul>
+        <li>Tabs sit at the top. In iOS Safari, a first tap near the bottom edge often just brings Safari's own toolbar back, so a bottom tab bar would take two taps. This replaces the bottom bar suggested in <code>design_system.md</code> §7.6.</li>
+        <li>Every input is 16 px. Below that, iOS Safari zooms the page on focus; today's app uses 14 px fields.</li>
+        <li>The page scrolls normally with sticky headers, uses <code>dvh</code> and safe-area padding, and has no hover-only information.</li>
+        <li>Saves keep the app's existing "check your connection" errors, for weak classroom Wi-Fi.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="ref">
+    <h2>Everything still there, and where it moved</h2>
+    <p class="sub">Every control on today's <code>/volunteer</code> page, mapped to its new place. Nothing removed, nothing added.</p>
+    <div class="tablewrap"><table class="map">
+      <thead><tr><th>Today, on one long page</th><th>In the redesign</th><th>Backed by (unchanged)</th></tr></thead>
+      <tbody>
+        <tr><td>Top bar with role pill, name and Sign out</td><td>The avatar menu holds your name and email, My profile, theme and Sign out, the same as the parent and admin layouts.</td><td><code>useAuth</code></td></tr>
+        <tr><td>"My sections": a header and roll-call panel per section</td><td>The <b>Today</b> tab has the roll call for the section running today. <b>Classes</b> has a week switch, the section's details and the roster.</td><td><code>useAssignedClass</code>, <code>useRollCalls</code>, <code>RollCallRow</code></td></tr>
+        <tr><td>"Roll calls open on the first day of Week N", once per section</td><td>One "Camp starts Monday" line on Today</td><td><code>useSessions</code></td></tr>
+        <tr><td>Paper roster and Refresh links</td><td>Paper roster on Classes; Refresh under the roll call</td><td><code>/print/roster/:id</code></td></tr>
+        <tr><td>Updates, with one "Post to … families" button per led section</td><td>The <b>Updates</b> tab has one Post button that asks which section only when you lead more than one. Today shows the latest update.</td><td><code>useUpdates</code>, <code>UpdateComposer</code>, <code>UpdatesFeed</code></td></tr>
+        <tr><td>Daily schedule</td><td>On Today, folded to "Right now" with the full day one tap away</td><td><code>useScheduleItems</code></td></tr>
+        <tr><td>My preferences</td><td><b>My profile</b>: shown read-only, with an inline Edit</td><td><code>my_volunteer_prefs</code>, <code>update_my_volunteer_prefs</code></td></tr>
+        <tr><td>Days I can't make it</td><td><b>My profile</b>, with a shortcut from Duties</td><td><code>crew_absences</code></td></tr>
+        <tr><td>Switch section</td><td><b>My profile</b></td><td><code>request_change('crew_switch')</code></td></tr>
+        <tr><td>Duty schedule: 40 rows grouped by date</td><td><b>Duties</b> starts with your own duties, then a week switch and Mon–Fri chips, 4 rows per day. Cancelling asks first, inline.</td><td><code>useDutySlots</code></td></tr>
+        <tr><td>Applicant: "under review" card and interview card</td><td>A four-step tracker with the interview inside step two</td><td><code>applicationStatus</code>, <code>useMyInterview</code>, <code>open_interview_slots</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="ref">
+    <h2>Found in the research, left out on purpose</h2>
+    <p class="sub">These would be new features, and most are already specs. Each one has an obvious home in this layout, so adding it later won't move anything else.</p>
+    <div class="cols">
+      <ul>
+        <li><b>Interview join link and onboarding checklist</b> (spec 35): steps two and three of the applicant tracker.</li>
+        <li><b>Hours and service letter</b> (spec B2): a section on My profile.</li>
+        <li><b>Co-teachers</b> (the Master Roster's Teachers column): Classes, under the class details.</li>
+      </ul>
+      <ul>
+        <li><b>Pickups and "may leave alone"</b> (spec 36) and <b>roll-call notes</b> (spec 34): the Dismissal roll call.</li>
+        <li><b>Urgent banner</b> (spec 34): above the day header on Today.</li>
+        <li><b>No-photos flag</b> (L3): next to the health tag on each camper.</li>
+        <li><b>Resources</b> (orientation recording, packet, setup): an item in the avatar menu.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ───────── Fictional demo data, same shape as the demo seed ───────── */
+const ME = { name: 'Sam Okafor', email: 'sam.okafor@example.org', initials: 'SO' }
+const COURSES = ['Intro to Python', 'Intro to Java', 'Microcontrollers', 'Web Development']
+const WEEK_DATES = { 1: ['2026-10-19','2026-10-20','2026-10-21','2026-10-22','2026-10-23'], 2: ['2026-10-26','2026-10-27','2026-10-28','2026-10-29','2026-10-30'] }
+const SECTIONS = [
+  { id: 'pyb1', course: 'Intro to Python', label: 'PY-B', week: 1, room: 'Room 102', lead: true, ages: '11 to 13' },
+  { id: 'pyb2', course: 'Intro to Python', label: 'PY-B', week: 2, room: 'Room 102', lead: false, ages: '11 to 13' },
+]
+const CAMPERS = [
+  ['Ava Delgado', 12, null], ['Ben Carter', 11, null], ['Chloe Park', 13, 'Allergies: Peanuts'], ['Diego Ramos', 12, null],
+  ['Ella Brooks', 11, null], ['Finn Walsh', 13, 'Medical: Asthma — inhaler in backpack'], ['Grace Liu', 12, null], ['Hugo Martin', 11, null],
+  ['Isla Moreno', 12, 'Allergies: Bee stings — EpiPen in backpack'], ['Jonah Price', 13, null], ['Kai Turner', 11, null], ['Lena Fischer', 12, null],
+  ['Milo Ortiz', 13, null], ['Nora Kim', 11, null],
+].map(([name, age, med], i) => ({ id: 'c' + i, name, age, med, phone: '303-555-01' + String(10 + i) }))
+const SCHEDULE = [
+  ['8:30','9:00','Drop-off','Front lobby'], ['9:00','10:30','Morning session','Classrooms'], ['10:30','10:45','Snack break','Courtyard'],
+  ['10:45','12:00','Morning session continues','Classrooms'], ['12:00','12:45','Lunch','Cafeteria'], ['12:45','2:30','Afternoon session','Classrooms'],
+  ['2:30','3:00','Show and tell','Classrooms'], ['3:00','3:30','Pickup','Front lobby'],
+]
+const DUTY_TYPES = ['Morning Check-In', 'Lunch Duty', 'Break Supervision', 'Afternoon Dismissal']
+// Seats taken by other volunteers (capacity 2), same pattern as the live demo.
+const FILLS = {
+  '2026-10-19':[1,1,2,2],'2026-10-20':[2,1,2,2],'2026-10-21':[1,2,2,1],'2026-10-22':[2,2,1,2],'2026-10-23':[1,1,1,1],
+  '2026-10-26':[2,2,1,2],'2026-10-27':[2,1,2,2],'2026-10-28':[1,1,2,2],'2026-10-29':[1,2,1,2],'2026-10-30':[1,1,2,2],
+}
+const UPDATES = [
+  { by: 'Jordan Rivera', to: 'volunteers', when: 'Saturday, 4:12 PM', text: 'Crew huddle at 8:15 each morning by the check-in table. Roll calls happen at arrival, after lunch and at dismissal — take them on your phone from Today.' },
+  { by: 'Jordan Rivera', to: 'everyone', when: 'Saturday, 3:30 PM', text: 'Welcome to Week 1! Drop-off is 8:30–9:00 in the front lobby and pickup starts at 3:00. Please send a water bottle and a labelled laptop charger each day.' },
+]
+const INTERVIEW_SLOTS = [['Monday, Oct 19', ['4:00 PM','4:30 PM']], ['Tuesday, Oct 20', ['4:00 PM','4:30 PM','5:00 PM']], ['Wednesday, Oct 21', ['4:30 PM','5:00 PM']]]
+
+/* ───────── State ───────── */
+const S = {
+  mode: 'campday', view: 'phone', theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  tab: 'today', profile: false, menu: false,
+  roll: 'arrival', marks: {}, medOpen: null,
+  classWeek: 1, dutyWeek: 1, dutyDay: '2026-10-19',
+  myDuties: new Set(['2026-10-19|Morning Check-In', '2026-10-21|Morning Check-In']), confirmDuty: null,
+  prefs: { w1: true, w2: true, first: 'Intro to Python', second: 'Web Development' }, prefsEdit: null, prefsSaved: false,
+  absences: [{ id: 'a1', from: '2026-10-29', to: '2026-10-29', note: 'Dentist in the morning' }], absOpen: false, absConfirm: null,
+  switchOpen: false, switchSent: false,
+  composing: false, posted: [], unread: 2,
+  interview: 'Tuesday, Oct 20|4:00 PM', ivChoosing: false, ivPicked: '',
+}
+const today = () => S.mode === 'campday' ? '2026-10-19' : '2026-10-17'
+const NOW = 9 * 60 + 4 // 9:04 AM on the camp-day mock
+
+/* ───────── Helpers ───────── */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const icon = (n, extra = '') => `<i data-lucide="${n}" aria-hidden="true" ${extra}></i>`
+const dd = iso => new Date(iso + 'T12:00:00')
+const fmtDay = iso => dd(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+const fmtLong = iso => dd(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+const wd = iso => dd(iso).toLocaleDateString('en-US', { weekday: 'short' })
+const ini = n => n.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
+const toMin = t => { let [h, m] = t.split(':').map(Number); if (h < 8) h += 12; return h * 60 + m }
+const crewed = () => S.mode === 'before' || S.mode === 'campday'
+const slotFilled = (day, i) => FILLS[day][i] + (S.myDuties.has(day + '|' + DUTY_TYPES[i]) ? 1 : 0)
+const openCount = day => DUTY_TYPES.filter((t, i) => slotFilled(day, i) < 2).length
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`
+const weekOf = day => WEEK_DATES[1].includes(day) ? 1 : 2
+const NAV = [['today', 'Today', 'sun'], ['classes', 'Classes', 'graduation-cap'], ['duties', 'Duties', 'clipboard-list'], ['updates', 'Updates', 'megaphone']]
+
+/* ───────── Shell ───────── */
+function header() {
+  const desk = S.view === 'desktop'
+  const nav = S.mode !== 'applicant'
+  return `<header class="bar">
+    <img src="sccdenver.png" alt="Steel City Codes Denver">
+    ${desk && nav ? `<nav class="topnav" aria-label="Volunteer">${NAV.map(([k, l, i]) => `<button data-tab="${k}" ${S.tab === k && !S.profile ? 'aria-current="page"' : ''}>${icon(i)} ${l}</button>`).join('')}</nav>` : ''}
+    <div class="right">
+      <button class="iconbtn" data-act="theme" aria-label="Switch to ${S.theme === 'dark' ? 'light' : 'dark'} mode">${icon(S.theme === 'dark' ? 'sun' : 'moon')}</button>
+      <button class="avatarbtn" data-act="menu" aria-haspopup="menu" aria-expanded="${S.menu}" aria-label="Account menu"><span class="avatar">${ME.initials}</span>${desk ? icon('chevron-down') : ''}</button>
+    </div>
+    ${S.menu ? `<div class="menu" role="menu">
+      <div class="who" style="display:block"><b>${ME.name}</b><span>${ME.email}</span></div>
+      ${S.mode !== 'applicant' ? `<button role="menuitem" data-act="profile">${icon('user-round')} My profile and availability</button>` : ''}
+      <button role="menuitem" data-act="theme">${icon(S.theme === 'dark' ? 'sun' : 'moon')} ${S.theme === 'dark' ? 'Light' : 'Dark'} mode</button>
+      <hr><button role="menuitem" data-act="noop">${icon('log-out')} Sign out</button>
+    </div>` : ''}
+  </header>`
+}
+function tabStrip() {
+  if (S.view === 'desktop' || S.mode === 'applicant') return ''
+  return `<nav class="tabs" aria-label="Volunteer">${NAV.map(([k, l]) =>
+    `<button data-tab="${k}" ${S.tab === k && !S.profile ? 'aria-current="page"' : ''}>${l}${k === 'updates' && S.unread ? `<span class="count" aria-label="${S.unread} new">${S.unread}</span>` : ''}</button>`).join('')}</nav>`
+}
+
+/* ───────── Today ───────── */
+function todayScreen() {
+  if (S.mode === 'notcrewed') return acceptedToday()
+  if (S.mode === 'before') return beforeToday()
+  const sec = SECTIONS[0]
+  const duty = [...S.myDuties].filter(k => k.startsWith(today())).map(k => k.split('|')[1])
+  return `<div class="page">
+    <p class="dateline">${fmtLong(today())}</p>
+    <h1 class="title">Day 1 of Week 1</h1>
+    <p class="lead">You're ${sec.lead ? 'leading' : 'supporting'} <b>${sec.course}, ${sec.label}</b> in ${sec.room} from 9:00 to 3:00.${duty.length ? ` You're also on <b>${duty.join(' and ')}</b>.` : ''}</p>
+    <div class="grid2"><div>${rollCall(sec)}</div>
+    <div class="col2">${scheduleBlock(true)}${latestUpdate()}</div></div>
+  </div>`
+}
+function beforeToday() {
+  const mine = [...S.myDuties].sort()
+  return `<div class="page">
+    <p class="dateline">${fmtLong(today())}</p>
+    <h1 class="title">Camp starts Monday</h1>
+    <p class="lead">Be in by <b>8:30 on Monday, October 19</b>. Roll calls open that morning, right here on Today.</p>
+    <div class="grid2"><div>
+      <section class="sect"><header><h2 class="h">Your classes</h2><button class="textlink" data-tab="classes">Rosters</button></header>
+        <div class="list">${SECTIONS.map(s => `<div class="item"><div class="datebox"><span>Week</span><b>${s.week}</b></div>
+          <div style="flex:1"><b>${s.course}, ${s.label}</b><span class="sub">${s.room}, Monday to Friday, 9:00 to 3:00</span></div>
+          <span class="tag">${s.lead ? 'Lead' : 'Support'}</span></div>`).join('')}</div></section>
+      <section class="sect"><header><h2 class="h">Your duties</h2><button class="textlink" data-tab="duties">Find more</button></header>
+        <div class="list">${mine.length ? mine.map(dutyMine).join('') : `<p class="item muted">None yet.</p>`}</div></section>
+    </div><div class="col2">${scheduleBlock(false)}${latestUpdate()}</div></div>
+  </div>`
+}
+function acceptedToday() {
+  return `<div class="page">
+    <p class="dateline">${fmtLong(today())}</p>
+    <h1 class="title">You're on the crew</h1>
+    <p class="lead">An admin will assign your class before camp starts. When they do, it shows up here and under Classes.</p>
+    <div class="grid2"><div>
+      <section class="sect"><header><h2 class="h">What we'll assign you from</h2><button class="textlink" data-act="profile">Change</button></header>
+        <div class="panel"><dl class="kv"><dt>Weeks</dt><dd>${[S.prefs.w1 && 'Week 1', S.prefs.w2 && 'Week 2'].filter(Boolean).join(' and ')}</dd>
+        <dt>First choice</dt><dd>${S.prefs.first || 'No preference'}</dd><dt>Second choice</dt><dd>${S.prefs.second || 'No preference'}</dd></dl></div></section>
+      <section class="sect"><header><h2 class="h">Duties are open</h2><button class="textlink" data-tab="duties">Browse</button></header>
+        <p class="small muted" style="margin:0">Check-in, lunch, breaks and dismissal, for both weeks. Sign up for any you can cover.</p></section>
+    </div><div class="col2">${latestUpdate()}</div></div>
+  </div>`
+}
+function rollCall(sec) {
+  const kinds = [['arrival', 'Arrival'], ['after_lunch', 'After lunch'], ['dismissal', 'Dismissal']]
+  const m = S.marks[S.roll] || {}
+  const present = CAMPERS.filter(c => m[c.id] === 'present').length
+  const marked = CAMPERS.filter(c => m[c.id]).length
+  const left = CAMPERS.length - marked
+  const label = kinds.find(k => k[0] === S.roll)[1]
+  const hint = left === CAMPERS.length ? 'Mark everyone, then tap whoever is missing.'
+    : left ? `${plural(left, 'camper')} still to mark.`
+    : `Done. ${present} here${marked - present ? `, ${marked - present} absent` : ''}.`
+  return `<section class="rc" aria-labelledby="rc-h">
+    <div class="rc-band">
+      <div class="rc-top"><div><h2 id="rc-h">${label} roll call</h2><p>${hint}</p></div>
+        <div class="big" aria-label="${present} of ${CAMPERS.length} here">${present}<span>of ${CAMPERS.length} here</span></div></div>
+      <div class="rc-kinds" role="tablist" aria-label="Roll call">${kinds.map(([k, l]) => {
+        const done = S.marks[k] && CAMPERS.every(c => S.marks[k][c.id])
+        return `<button role="tab" data-roll="${k}" aria-selected="${S.roll === k}" class="${done ? 'done' : ''}">${done ? icon('check') : ''}${l}</button>`
+      }).join('')}</div>
+      ${left ? `<button class="btn primary rc-all" data-act="allpresent">${icon('check-check')} Mark ${left === CAMPERS.length ? 'all ' + CAMPERS.length : 'the other ' + left} present</button>` : ''}
+    </div>
+    <div class="rc-list">${CAMPERS.map(c => camper(c, m[c.id], true)).join('')}</div>
+    <div class="rc-foot"><button class="textlink" data-act="noop" style="color:var(--muted);font-size:14px">Refresh</button><span class="xs muted">${CAMPERS.filter(c => c.med).length} campers have health notes</span></div>
+  </section>`
+}
+function camper(c, st, taking) {
+  const open = S.medOpen === c.id
+  return `<div class="camper ${st || ''}">
+    <div class="ini" aria-hidden="true">${ini(c.name)}</div>
+    <div style="flex:1;min-width:0">
+      <div class="cname">${c.name}<small>${c.age}</small></div>
+      ${c.med ? `<button class="medbtn" data-med="${c.id}" aria-expanded="${open}">${icon('heart-pulse')} ${c.med.startsWith('Allerg') ? 'Allergy' : 'Medical'}</button>
+      ${open ? `<p class="mednote">${esc(c.med.replace(/^\w+: /, ''))}<small>Confidential, for camp staff only.</small></p>` : ''}` : ''}
+    </div>
+    ${(!taking || st === 'absent') ? `<a class="callbtn" href="tel:${c.phone.replace(/-/g, '')}" data-act="noop" aria-label="Call ${c.name}'s parent, ${c.phone}">${icon('phone')}</a>` : ''}
+    ${taking ? `<button class="toggle ${st || ''}" data-mark="${c.id}" aria-pressed="${st === 'present'}" aria-label="${c.name}: ${st || 'not marked'}">${st === 'present' ? icon('check') + ' Here' : st === 'absent' ? icon('x') + ' Absent' : 'Mark'}</button>` : ''}
+  </div>`
+}
+function scheduleBlock(live) {
+  const items = SCHEDULE.map(([a, b, t, l]) => {
+    const s = toMin(a), e = toMin(b), cls = !live ? '' : NOW >= s && NOW < e ? 'on' : NOW >= e ? 'past' : ''
+    return `<li class="${cls}"><span class="t">${a} to ${b}</span><span><b>${t}</b><span class="loc">${l}</span></span></li>`
+  }).join('')
+  if (!live) return `<section class="sect"><header><h2 class="h">The daily schedule</h2></header><ol class="sched">${items}</ol></section>`
+  const cur = SCHEDULE.find(([a, b]) => NOW >= toMin(a) && NOW < toMin(b))
+  return `<section class="sect"><details class="coll" ${S.view === 'desktop' ? 'open' : ''}><summary><span class="now" style="width:100%">
+      <span><span class="xs muted" style="display:block;font-weight:600">Right now, until ${cur[1]}</span><b>${cur[2]}</b><span class="muted small">, ${cur[3].toLowerCase()}</span></span>
+      <span class="row xs muted" style="gap:4px;font-weight:600">Full day ${icon('chevron-down', 'class="chev"')}</span></span></summary>
+    <ol class="sched">${items}</ol></details></section>`
+}
+function latestUpdate() {
+  const u = [...S.posted, ...UPDATES][0]
+  return `<section class="sect"><header><h2 class="h">Latest from the camp</h2><button class="textlink" data-tab="updates">All updates</button></header>
+    <div class="list">${updRow(u)}</div></section>`
+}
+function dutyMine(k) {
+  const [day, type] = k.split('|')
+  const confirming = S.confirmDuty === k
+  return `<div class="item"><div class="datebox"><span>${wd(day)}</span><b>${dd(day).getDate()}</b></div>
+    <div style="flex:1"><b>${type}</b><span class="sub">Week ${weekOf(day)}</span></div>
+    ${S.tab === 'duties' && !S.profile && !confirming ? `<button class="btn quiet" data-uncl="${k}" aria-label="Cancel ${type} on ${fmtDay(day)}">Cancel</button>` : ''}</div>
+    ${confirming ? `<div class="confirm" role="alert">Drop ${type} on ${fmtLong(day)}? The camp will need someone else to cover it.
+      <div class="row"><button class="btn" data-act="keepduty">Keep it</button><button class="btn primary" data-unclyes="${k}">Drop duty</button></div></div>` : ''}`
+}
+
+/* ───────── Classes ───────── */
+function classesScreen() {
+  if (S.mode === 'notcrewed') return `<div class="page"><h1 class="title">Classes</h1>
+    <div class="empty"><div class="ic" style="background:var(--vol-soft);color:var(--vol)">${icon('graduation-cap')}</div>
+    <h2 class="h">No class assigned yet</h2><p class="muted" style="margin:4px 0 0">An admin will assign you to a section before camp starts.</p></div></div>`
+  const s = SECTIONS.find(x => x.week === S.classWeek)
+  const health = CAMPERS.filter(c => c.med).length
+  const live = s.week === 1 && S.mode === 'campday'
+  return `<div class="page">
+    <div class="weekseg" role="group" aria-label="Week">${SECTIONS.map(x => `<button data-cw="${x.week}" aria-pressed="${S.classWeek === x.week}">Week ${x.week}, ${dd(WEEK_DATES[x.week][0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</button>`).join('')}</div>
+    <div class="grid2" style="margin-top:22px"><div>
+      <h1 class="title">${s.course}, ${s.label}</h1>
+      <p class="lead">You ${s.lead ? 'lead' : 'support'} this class. ${s.room}, Monday to Friday, 9:00 to 3:00. Ages ${s.ages}.</p>
+      <div class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px">
+        <button class="btn" data-act="noop">${icon('printer')} Paper roster</button>
+        ${s.lead ? `<button class="btn" data-tab="updates" data-compose="1">${icon('megaphone')} Post to families</button>` : ''}
+      </div>
+      <p class="small muted" style="margin:14px 0 0">${live ? `Take today's roll call on <button class="textlink" data-tab="today" style="min-height:0;font-size:inherit">Today</button>.` : `Roll calls open ${fmtLong(WEEK_DATES[s.week][0])}.`}</p>
+    </div>
+    <section class="sect"><header><h2 class="h">${CAMPERS.length} campers</h2><p class="xs muted">${health} with health notes</p></header>
+      <div class="list">${CAMPERS.map(c => camper(c, null, false)).join('')}</div></section></div>
+  </div>`
+}
+
+/* ───────── Duties ───────── */
+function dutiesScreen() {
+  const mine = [...S.myDuties].sort()
+  const day = S.dutyDay
+  return `<div class="page"><div class="grid2"><div>
+    <h1 class="title">${mine.length ? `You're on ${plural(mine.length, 'duty').replace('dutys', 'duties')}` : 'No duties yet'}</h1>
+    <div class="list" style="margin-top:14px">${mine.length ? mine.map(dutyMine).join('') : `<p class="item muted" style="margin:0">Pick an open slot below.</p>`}</div>
+    <p class="small muted" style="margin:8px 0 0">Can't make a day? <button class="textlink" data-act="profile-abs" style="font-size:inherit">Tell the camp</button></p>
+  </div>
+  <section class="sect col2"><header><h2 class="h">Find a duty</h2></header>
+    <div class="weekseg" role="group" aria-label="Week">${[1, 2].map(w => `<button data-dw="${w}" aria-pressed="${S.dutyWeek === w}">Week ${w}</button>`).join('')}</div>
+    <div class="days" role="group" aria-label="Day">${WEEK_DATES[S.dutyWeek].map(d => {
+      const has = [...S.myDuties].some(k => k.startsWith(d)), o = openCount(d)
+      return `<button class="day" data-dd="${d}" aria-pressed="${day === d}" aria-label="${fmtLong(d)}, ${o ? o + ' open' : 'full'}${has ? ', you have a duty' : ''}">${has ? '<i class="mine"></i>' : ''}<span class="wd">${wd(d)}</span><b>${dd(d).getDate()}</b><span class="op">${o ? o + ' open' : 'Full'}</span></button>`
+    }).join('')}</div>
+    <p class="small" style="margin:16px 0 6px;font-weight:700">${fmtLong(day)}</p>
+    <div class="list">${DUTY_TYPES.map((t, i) => {
+      const k = day + '|' + t, mineK = S.myDuties.has(k), f = slotFilled(day, i)
+      return `<div class="item"><div style="flex:1"><b>${t}</b><span class="seats">${mineK ? 'You and ' + (f - 1) + ' other' : f >= 2 ? 'Both seats taken' : f ? '1 of 2 seats taken' : 'Both seats open'}</span></div>
+        ${mineK ? `<span class="tag ok">${icon('check')} You're on</span>` : f >= 2 ? `<span class="tag neutral">Full</span>` : `<button class="btn primary" data-claim="${k}">Sign up</button>`}</div>`
+    }).join('')}</div>
+  </section></div></div>`
+}
+
+/* ───────── Updates ───────── */
+function updRow(u) {
+  return `<article class="upd"><p class="by"><b>${u.by}</b> to ${u.to}, ${u.when}</p><p>${esc(u.text)}</p></article>`
+}
+function updatesScreen() {
+  const lead = SECTIONS.filter(s => s.lead)
+  return `<div class="page" style="max-width:${S.view === 'desktop' ? '760px' : 'none'}">
+    <h1 class="title">Updates</h1>
+    ${crewed() && lead.length ? (S.composing ? `<form id="compose" class="panel formstack" style="margin-top:16px;border-color:var(--brand)">
+        ${lead.length > 1 ? `<div class="field"><label for="cs">Section</label><select id="cs" class="input">${lead.map(s => `<option value="${s.id}">${s.course} ${s.label}, Week ${s.week}</option>`).join('')}</select></div>`
+          : `<p style="margin:0;font-weight:700">To families in ${lead[0].course}, ${lead[0].label}, Week ${lead[0].week}</p>`}
+        <div class="field"><label for="cm">Message</label><textarea id="cm" class="input" rows="4" maxlength="2000" placeholder="We're building a quiz game tomorrow. Headphones help!"></textarea></div>
+        <div class="actions"><button type="button" class="btn" data-act="nocompose">Cancel</button><button class="btn primary">${icon('send')} Post update</button></div>
+      </form>` : `<button class="btn primary block" data-act="compose" style="margin-top:16px">${icon('megaphone')} Post to your class's families</button>`) : ''}
+    <div class="list" style="margin-top:16px">${[...S.posted, ...UPDATES].map(updRow).join('')}</div>
+  </div>`
+}
+
+/* ───────── Profile ───────── */
+function profileScreen() {
+  const p = S.prefs, e = S.prefsEdit
+  return `<div class="page"><button class="back" data-act="unprofile">${icon('chevron-left')} Back</button>
+    <div class="who"><span class="avatar">${ME.initials}</span><div><h1 class="title" style="font-size:24px">${ME.name}</h1><p class="small muted" style="margin:2px 0 0">${ME.email}</p></div></div>
+    <div class="grid2"><div>
+      <section class="sect" aria-labelledby="pf-h"><header><h2 class="h" id="pf-h">Availability and courses</h2>
+        ${!e ? `<button class="btn quiet" data-act="editprefs">${icon('pencil')} Edit</button>` : ''}</header>
+        <p class="small muted" style="margin:-4px 0 10px">Admins use these when they assign classes.</p>
+        ${!e ? `<div class="panel"><dl class="kv"><dt>Weeks</dt><dd>${[p.w1 && 'Week 1', p.w2 && 'Week 2'].filter(Boolean).join(' and ')}</dd>
+          <dt>First choice</dt><dd>${p.first || 'No preference'}</dd><dt>Second choice</dt><dd>${p.second || 'No preference'}</dd></dl></div>
+          ${S.prefsSaved ? `<p class="saved" role="status" style="margin:10px 0 0">${icon('check')} Availability saved</p>` : ''}`
+        : `<form id="prefs" class="panel formstack">
+            <fieldset style="border:0;padding:0;margin:0"><legend class="field"><span class="lbl">Weeks you can help</span></legend>
+              <div class="checks"><label class="checkpill"><input type="checkbox" name="w1" ${e.w1 ? 'checked' : ''}> Week 1</label><label class="checkpill"><input type="checkbox" name="w2" ${e.w2 ? 'checked' : ''}> Week 2</label></div></fieldset>
+            <div class="field"><label for="pf1">First-choice course</label><select id="pf1" name="first" class="input"><option value="">No preference</option>${COURSES.map(c => `<option ${c === e.first ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+            <div class="field"><label for="pf2">Second choice</label><select id="pf2" name="second" class="input"><option value="">No preference</option>${COURSES.map(c => `<option ${c === e.second ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+            <p class="err" id="pf-err" role="alert"></p>
+            <div class="actions"><button type="button" class="btn" data-act="cancelprefs">Cancel</button><button class="btn primary">${icon('check')} Save availability</button></div>
+          </form>`}
+      </section>
+      ${crewed() ? `<section class="sect" aria-labelledby="sw-h"><header><h2 class="h" id="sw-h">Switch classes</h2></header>
+        ${S.switchSent ? `<p class="saved" role="status">${icon('check')} Request sent. An admin will reply by email.</p>`
+        : S.switchOpen ? `<form id="switch" class="panel formstack"><div class="field"><label for="swm">Which class would you like, and why?</label><textarea id="swm" class="input" rows="3" maxlength="1000"></textarea></div>
+            <div class="actions"><button type="button" class="btn" data-act="noswitch">Cancel</button><button class="btn primary">Send request</button></div></form>`
+        : `<p class="small muted" style="margin:0 0 10px">You're in ${SECTIONS.map(s => `${s.label} for Week ${s.week}`).join(' and ')}. Admins assign classes, but you can ask for a change.</p><button class="btn" data-act="switch">Ask to switch</button>`}
+      </section>` : ''}
+    </div>
+    <div class="col2">
+      <section class="sect" id="abs" aria-labelledby="ab-h"><header><h2 class="h" id="ab-h">Days you can't make it</h2></header>
+        <p class="small muted" style="margin:-4px 0 10px">Tell the camp early so they can find cover. Admins see it right away.</p>
+        ${S.absences.length ? `<div class="list">${S.absences.map(a => `<div class="item"><div style="flex:1"><b>${a.from === a.to ? fmtLong(a.from) : fmtDay(a.from) + ' to ' + fmtDay(a.to)}</b>${a.note ? `<span class="sub">${esc(a.note)}</span>` : ''}</div>
+          ${S.absConfirm !== a.id ? `<button class="callbtn" data-absdel="${a.id}" aria-label="Remove ${fmtDay(a.from)}">${icon('trash-2')}</button>` : ''}</div>
+          ${S.absConfirm === a.id ? `<div class="confirm" role="alert">Remove this day? The camp will count on you being there.<div class="row"><button class="btn" data-act="keepabs">Keep it</button><button class="btn primary" data-absyes="${a.id}">Remove</button></div></div>` : ''}`).join('')}</div>` : ''}
+        ${S.absOpen ? `<form id="absform" class="panel formstack" novalidate style="margin-top:10px">
+            <div class="row" style="gap:10px;align-items:flex-start"><div class="field" style="flex:1"><label for="af">First day</label><input id="af" type="date" class="input" min="${today()}"></div><div class="field" style="flex:1"><label for="at">Last day</label><input id="at" type="date" class="input" min="${today()}"></div></div>
+            <div class="field"><label for="an">Note for the camp (optional)</label><input id="an" class="input" maxlength="500" placeholder="Dentist in the morning"></div>
+            <p class="err" id="ab-err" role="alert"></p>
+            <div class="actions"><button type="button" class="btn" data-act="noabs">Cancel</button><button class="btn primary">Tell the camp</button></div></form>`
+          : `<button class="btn" data-act="abs" style="margin-top:10px">${icon('plus')} Add a day</button>`}
+      </section>
+      <section class="sect"><button class="btn" data-act="noop">${icon('log-out')} Sign out</button></section>
+    </div></div></div>`
+}
+
+/* ───────── Applicant ───────── */
+function applicantScreen() {
+  const [ivDay, ivTime] = S.interview.split('|')
+  return `<div class="page" style="max-width:${S.view === 'desktop' ? '640px' : 'none'}">
+    <h1 class="title">Your application</h1>
+    <p class="lead">Next up is your interview. Here's where everything stands.</p>
+    <ol class="track" style="margin-top:24px">
+      <li class="done"><span class="n">${icon('check')}</span><div><b>Application received</b><p>Monday, October 12</p></div></li>
+      <li class="cur"><span class="n">2</span><div><b>Interview</b>
+        <p class="when">${ivDay}, ${ivTime}</p><p>Denver time. 15 minutes, online.</p>
+        ${!S.ivChoosing ? `<button class="btn" data-act="ivchange" style="margin-top:12px">Change time</button>`
+        : `<div>${INTERVIEW_SLOTS.map(([d, ts]) => `<p class="slotday">${d}</p><div class="slotgrid">${ts.map(t => {
+            const k = d + '|' + t, mine = k === S.interview
+            return `<button data-iv="${k}" aria-pressed="${S.ivPicked === k}" ${mine ? 'disabled' : ''}>${t}${mine ? ', yours' : ''}</button>`
+          }).join('')}</div>`).join('')}
+          <div class="actions" style="margin-top:14px"><button class="btn" data-act="ivkeep">Keep my time</button><button class="btn primary" data-act="ivsave" ${S.ivPicked ? '' : 'disabled'}>Move my interview</button></div></div>`}
+      </div></li>
+      <li><span class="n">3</span><div><b>Decision</b><p>We email everyone after interviews wrap up.</p></div></li>
+      <li><span class="n">4</span><div><b>Your class</b><p>Admins assign classes before camp.</p></div></li>
+    </ol>
+  </div>`
+}
+
+/* ───────── Notes ───────── */
+const NOTES = {
+  applicant: ['Applied', 'A tracker instead of a waiting room', [
+    ['Inbox', 'Interview logistics were the biggest cluster (18 thread-tags), plus 4 or more "never heard back" threads. People lose track during the month between booking and interview.'],
+    ['Code', 'The tracker uses only what the app knows today: the application status and the interview booking.'],
+    ['Bug #147', 'Times say "Denver time".'],
+    ['Layout', 'No tabs, because there is nothing else to open yet.'],
+  ], 'Before: an "Application under review" card, then a separate interview card.'],
+  notcrewed: ['Accepted', 'Something to check while you wait', [
+    ['Inbox', 'Acceptances went out around May 2–3 and assignments around May 11. In between, the useful things are your availability and the duty sign-ups, so Today points to both.'],
+  ], 'Before: an empty card, then every form and all 40 duty rows.'],
+  'before:today': ['Assigned, camp next week', 'Today answers when and where', [
+    ['Inbox', 'Camp-eve emails kept repeating "8:30 sharp", which room and which week. The heading and one sentence answer that, using section and session data the app already has.'],
+    ['Audit', 'Replaces the two "Roll calls open on…" boxes with one sentence.'],
+  ], 'Before: two section cards, two "roll calls open" boxes, updates, schedule, three forms, then duties.'],
+  'campday:today': ['Camp day', 'Roll call is the one loud thing', [
+    ['System', 'Roll call is the daily driver (§7.13). Its band is the only dark, high-contrast block on the page, readable outside, and it sticks under the tabs while you scroll campers.'],
+    ['Browser', 'Normal page scroll with sticky headers, 44 px targets, and the call button as a real tel: link.'],
+    ['Copy', 'The day is a sentence ("You\'re leading…"), not a card of labelled facts. The schedule folds to "Right now".'],
+    ['Try it', 'Mark everyone, then tap a camper to mark them absent.'],
+  ], 'Before: the same roll-call panel under "My sections", with the schedule about 1,000 px below it.'],
+  classes: ['Classes', 'A week and a class', [
+    ['Drive', 'The Master Roster had a tab per week, and volunteers name themselves by section code. A week switch matches how they think.'],
+    ['Spec 04', 'The roster lists only section_roster() fields, with health notes behind a tap and a call button per camper.'],
+  ], 'Before: both weeks\' sections stacked on the main page.'],
+  duties: ['Duties', 'Yours first, then a week strip', [
+    ['Audit', 'The 40 rows made up 2,900 px. Day chips show open counts and a dot on your days, and each day shows just 4 rows.'],
+    ['Copy', '"1 of 2 seats taken" replaces "1/2 filled". Dropping a duty now asks first, inline.'],
+  ], 'Before: every slot for both weeks in one list, 2.8 screens down.'],
+  updates: ['Updates', 'One post button, one feed', [
+    ['Audit', 'Leads get one Post button, which asks which class only if they lead more than one. The old page showed one long gold button per section.'],
+  ], 'Before: an Updates panel between the roll calls and the schedule.'],
+  profile: ['My profile', 'Settings live under your avatar', [
+    ['You', 'This matches the parent and admin menus. Availability changes are occasional (5 inbox threads), so they move off the daily screen.'],
+    ['Code', 'Read-only first with an inline Edit, the same pattern as ContactDetailsCard. It uses the same RPCs as today.'],
+    ['Spec 25', 'Experience level is still never shown. Contact details aren\'t editable here because that would be a new feature.'],
+  ], 'Before: three forms between Updates and Duties.'],
+}
+function notesKey() {
+  if (S.mode === 'applicant') return 'applicant'
+  if (S.profile) return 'profile'
+  if (S.mode === 'notcrewed' && S.tab === 'today') return 'notcrewed'
+  if (S.tab === 'today') return S.mode + ':today'
+  return S.tab
+}
+function renderNotes() {
+  const [kicker, title, items, was] = NOTES[notesKey()]
+  document.getElementById('notes').innerHTML = `<p class="kicker">${kicker}</p><h3>${title}</h3><ul>${items.map(([tag, t]) => `<li><small>${tag}</small>${t}</li>`).join('')}</ul><h4>Before</h4><p class="old">${was}</p>`
+}
+
+/* ───────── Render ───────── */
+function render(keep = true) {
+  document.documentElement.dataset.theme = S.theme
+  const vp = document.querySelector('.viewport'), y = keep && vp ? vp.scrollTop : 0
+  const body = S.mode === 'applicant' ? applicantScreen() : S.profile ? profileScreen()
+    : { today: todayScreen, classes: classesScreen, duties: dutiesScreen, updates: updatesScreen }[S.tab]()
+  const desk = S.view === 'desktop'
+  document.getElementById('stage').className = 'stage' + (desk ? ' desktop' : '')
+  document.getElementById('device').innerHTML = desk
+    ? `<div class="desk"><div class="chrome"><i></i><i></i><i></i><span class="url">scc.haanie.com/volunteer</span></div><div class="viewport">${header()}${body}</div></div>`
+    : `<div class="phone"><div class="ios-status"><span>9:04</span><span class="isl"></span><span>${icon('wifi')}</span></div>
+        <div class="viewport">${header()}${tabStrip()}${body}</div>
+        <div class="safari"><div class="url">${icon('lock')} scc.haanie.com</div></div></div>`
+  document.querySelector('.viewport').scrollTop = y
+  for (const [id, key] of [['ctl-mode', 'mode'], ['ctl-view', 'view'], ['ctl-theme', 'theme']])
+    document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S[key]))
+  renderNotes()
+  lucide.createIcons()
+}
+const go = (patch, keep = false) => { Object.assign(S, patch); render(keep) }
+
+document.querySelector('.controls').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]'); if (!b) return
+  const key = b.parentElement.id.replace('ctl-', '')
+  const patch = { [key]: b.dataset.v, menu: false }
+  if (key === 'mode') Object.assign(patch, { tab: 'today', profile: false, dutyDay: '2026-10-19', dutyWeek: 1, classWeek: 1 })
+  go(patch)
+})
+document.getElementById('device').addEventListener('click', e => {
+  const t = e.target.closest('button,a')
+  if (!t) { if (S.menu) go({ menu: false }, true); return }
+  if (t.tagName === 'A') e.preventDefault()
+  const d = t.dataset
+  if (d.tab) return go({ tab: d.tab, profile: false, menu: false, composing: !!d.compose, unread: d.tab === 'updates' ? 0 : S.unread })
+  if (d.roll) return go({ roll: d.roll }, true)
+  if (d.mark) { const m = S.marks[S.roll] = S.marks[S.roll] || {}; m[d.mark] = m[d.mark] === 'present' ? 'absent' : 'present'; return go({}, true) }
+  if (d.med) return go({ medOpen: S.medOpen === d.med ? null : d.med }, true)
+  if (d.cw) return go({ classWeek: +d.cw }, true)
+  if (d.dw) return go({ dutyWeek: +d.dw, dutyDay: WEEK_DATES[+d.dw][0] }, true)
+  if (d.dd) return go({ dutyDay: d.dd }, true)
+  if (d.claim) { S.myDuties.add(d.claim); return go({}, true) }
+  if (d.uncl) return go({ confirmDuty: d.uncl }, true)
+  if (d.unclyes) { S.myDuties.delete(d.unclyes); return go({ confirmDuty: null }, true) }
+  if (d.absdel) return go({ absConfirm: d.absdel }, true)
+  if (d.absyes) { S.absences = S.absences.filter(a => a.id !== d.absyes); return go({ absConfirm: null }, true) }
+  if (d.iv) return go({ ivPicked: d.iv }, true)
+  const focus = id => document.getElementById(id)?.focus()
+  switch (d.act) {
+    case 'menu': return go({ menu: !S.menu }, true)
+    case 'theme': return go({ theme: S.theme === 'dark' ? 'light' : 'dark', menu: false }, true)
+    case 'profile': return go({ profile: true, menu: false })
+    case 'profile-abs': go({ profile: true, absOpen: true }); return focus('af')
+    case 'unprofile': return go({ profile: false })
+    case 'allpresent': { const m = S.marks[S.roll] = S.marks[S.roll] || {}; CAMPERS.forEach(c => { if (!m[c.id]) m[c.id] = 'present' }); return go({}, true) }
+    case 'keepduty': return go({ confirmDuty: null }, true)
+    case 'editprefs': return go({ prefsEdit: { ...S.prefs }, prefsSaved: false }, true)
+    case 'cancelprefs': return go({ prefsEdit: null }, true)
+    case 'abs': go({ absOpen: true }, true); return focus('af')
+    case 'noabs': return go({ absOpen: false }, true)
+    case 'keepabs': return go({ absConfirm: null }, true)
+    case 'switch': go({ switchOpen: true }, true); return focus('swm')
+    case 'noswitch': return go({ switchOpen: false }, true)
+    case 'compose': go({ composing: true }, true); return focus('cm')
+    case 'nocompose': return go({ composing: false }, true)
+    case 'ivchange': return go({ ivChoosing: true, ivPicked: '' }, true)
+    case 'ivkeep': return go({ ivChoosing: false, ivPicked: '' }, true)
+    case 'ivsave': return go({ interview: S.ivPicked, ivChoosing: false, ivPicked: '' }, true)
+  }
+})
+document.getElementById('device').addEventListener('submit', e => {
+  e.preventDefault()
+  const f = e.target
+  if (f.id === 'prefs') {
+    const w1 = f.w1.checked, w2 = f.w2.checked
+    if (!w1 && !w2) { f.querySelector('#pf-err').textContent = 'Pick at least one week.'; return }
+    return go({ prefs: { w1, w2, first: f.first.value, second: f.second.value }, prefsEdit: null, prefsSaved: true }, true)
+  }
+  if (f.id === 'absform') {
+    const from = f.af.value, to = f.at.value || from, err = f.querySelector('#ab-err')
+    if (!from) { err.textContent = "Pick the first day you can't make it."; f.af.focus(); return }
+    if (to < from) { err.textContent = "The last day can't be before the first day."; return }
+    S.absences = [...S.absences, { id: 'a' + Date.now(), from, to, note: f.an.value.trim() }].sort((a, b) => a.from.localeCompare(b.from))
+    return go({ absOpen: false }, true)
+  }
+  if (f.id === 'switch') { if (!f.swm.value.trim()) return; return go({ switchSent: true, switchOpen: false }, true) }
+  if (f.id === 'compose') {
+    const text = f.cm.value.trim(); if (!text) return
+    const sec = f.cs ? SECTIONS.find(s => s.id === f.cs.value) : SECTIONS.find(s => s.lead)
+    S.posted.unshift({ by: ME.name, to: `${sec.label} families`, when: 'just now', text })
+    return go({ composing: false }, true)
+  }
+})
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.menu) go({ menu: false }, true) })
+render(false)
+</script>
+</body>
+</html>

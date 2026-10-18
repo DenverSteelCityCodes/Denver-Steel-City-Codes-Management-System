@@ -1,5 +1,6 @@
 import { CalendarClock } from 'lucide-react'
 import type { OpenSlot } from '../hooks/useOpenInterviewSlots'
+import { campDateKey, formatCampTime } from '../lib/denverTime'
 
 // SignUpGenius-style picker: times grouped by day, pick one.
 export default function InterviewSlotPicker({
@@ -14,9 +15,8 @@ export default function InterviewSlotPicker({
   labelledBy?: string
 }) {
   const byDay = slots.reduce<Record<string, OpenSlot[]>>((acc, s) => {
-    const d = new Date(s.slot_datetime)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    ;(acc[key] ??= []).push(s)
+    // Grouped by the Denver date, so a slot never lands under the wrong day on a device elsewhere.
+    ;(acc[campDateKey(s.slot_datetime)] ??= []).push(s)
     return acc
   }, {})
 
@@ -24,13 +24,14 @@ export default function InterviewSlotPicker({
     return (
       <p className="flex items-start gap-2 font-sans text-sm text-ink-muted bg-surface-sunken border border-border rounded-[10px] px-3 py-2.5">
         <CalendarClock size={16} className="shrink-0 mt-0.5" />
-        No interview times are open right now. You can still apply — we'll email you when times are posted, and you can book from your volunteer dashboard.
+        No interview times are open right now. You can still apply. New times show up on your volunteer page, so check back there to book one.
       </p>
     )
   }
 
   return (
     <div role="radiogroup" aria-labelledby={labelledBy} className="space-y-3">
+      <p className="font-sans text-xs text-ink-muted">All times are Denver time.</p>
       {Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([day, daySlots]) => (
         <div key={day}>
           <p className="font-sans text-xs font-semibold text-ink-muted mb-1.5">
@@ -50,7 +51,7 @@ export default function InterviewSlotPicker({
                     selected ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
                   }`}
                 >
-                  {new Date(s.slot_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  {formatCampTime(s.slot_datetime)}
                   <span className={`ml-1.5 text-xs font-normal ${selected ? 'text-brand-on/80' : 'text-ink-muted'}`}>{s.duration_minutes} min</span>
                 </button>
               )

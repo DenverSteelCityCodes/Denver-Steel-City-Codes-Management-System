@@ -35,7 +35,7 @@ function crewNote(check: CrewCheck | null): string {
 // What a role change actually means for the person, spelled out before it happens.
 function roleChangeMessage(user: AdminUser, newRole: UserRole, crew: CrewCheck | null) {
   const who = user.display_name
-  const leaving = user.role === 'volunteer' ? ` ${crewNote(crew)}` : ''
+  const leaving = user.role === 'volunteer' ? ` ${crewNote(crew)} Any upcoming duty slots they claimed are released too.` : ''
   if (newRole === 'admin') return `Make ${who} an admin? They'll be able to see every camper's details and change anything, including other people's roles.${leaving}`
   if (newRole === 'volunteer') return `Change ${who} to a volunteer? They'll see the volunteer area, but only get a section and duties once a volunteer record exists (accept their application on the Volunteers page).`
   return `Change ${who} to a parent? They'll lose access to the ${user.role} area and see the parent dashboard instead.${leaving}`

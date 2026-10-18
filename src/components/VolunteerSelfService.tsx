@@ -1,124 +1,118 @@
 import { useEffect, useState } from 'react'
-import { CalendarX, Check, Repeat, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { Check, Pencil, Plus, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { localDateISO } from '../lib/campDay'
+import { formatDayLong, localDateISO } from '../lib/campDay'
+import { useVolunteerPrefs, weeksLabel, type VolunteerPrefs } from '../hooks/useVolunteerPrefs'
 import InlineConfirm from './InlineConfirm'
 
-// Volunteer self-service (spec 25, decided Q-V1: preferences + admin assigns, no self-pick):
-// week availability and course choices, "I can't make it" dates, and a switch request.
-interface Prefs { availability_week_1: boolean; availability_week_2: boolean; course_first_choice: string | null; course_second_choice: string | null }
+// Volunteer self-service (spec 25, decided Q-V1: preferences + admin assigns, no self-pick), shown
+// on My profile: week availability and course choices, "I can't make it" days, a switch request.
 interface Absence { id: string; from_date: string; to_date: string; note: string | null }
 
-const card = 'bg-surface border border-border rounded-xl shadow-sm p-4 sm:p-5'
-const heading = 'font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5'
-const input = 'w-full h-10 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand'
-const label = 'block font-sans text-xs font-semibold text-ink-muted mb-1'
-const primary = 'h-10 px-4 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50'
-const secondary = 'h-10 px-4 rounded-[8px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition'
+const panel = 'bg-surface border border-border rounded-[14px] p-4'
+const h2 = 'font-sans font-bold text-lg text-ink'
+const hint = 'font-sans text-[15px] text-ink-muted'
+// 16px so iOS Safari doesn't zoom the page when the field is focused.
+const input = 'w-full h-11 px-3 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand'
+const label = 'block font-sans text-sm font-semibold text-ink-muted mb-1'
+const primary = 'h-11 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 transition disabled:opacity-50'
+const secondary = 'h-11 px-4 rounded-[10px] border border-border-strong bg-surface text-ink font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 hover:bg-surface-sunken transition'
 
 function fmt(d: string) {
   return new Date(`${d}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-export default function VolunteerSelfService({ userId }: { userId: string }) {
-  return (
-    <div className="space-y-4">
-      <PrefsCard />
-      <AbsenceCard userId={userId} />
-      <SwitchCard />
-    </div>
-  )
-}
-
-function PrefsCard() {
-  const [prefs, setPrefs] = useState<Prefs | null>(null)
-  const [form, setForm] = useState<Prefs | null>(null)
-  const [courses, setCourses] = useState<string[]>([])
+// Read-only first, with an inline Edit (same pattern as ContactDetailsCard on the parent side).
+export function PrefsSection() {
+  const { prefs, courses, loading, error, save } = useVolunteerPrefs()
+  const [form, setForm] = useState<VolunteerPrefs | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => {
-    let alive = true
-    void Promise.all([
-      supabase.rpc('my_volunteer_prefs'),
-      supabase.rpc('course_names'),
-    ]).then(([p, c]) => {
-      if (!alive) return
-      const row = ((p.data ?? []) as Prefs[])[0] ?? null
-      setPrefs(row)
-      setCourses((c.data ?? []) as string[])
-    })
-    return () => { alive = false }
-  }, [])
+  if (loading) return <div className="h-32 bg-surface-sunken rounded-[14px] animate-pulse" />
+  if (!prefs) return error ? <p role="alert" className="font-sans text-sm text-danger">{error}</p> : null
 
-  if (!prefs) return null
-  const cur = form ?? prefs
-  const set = (patch: Partial<Prefs>) => { setSaved(false); setErr(null); setForm({ ...cur, ...patch }) }
+  const set = (patch: Partial<VolunteerPrefs>) => { setErr(null); setForm(f => ({ ...(f ?? prefs), ...patch })) }
+  const options = (keep: string | null) => [...new Set([...(keep ? [keep] : []), ...courses])]
 
-  async function save(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form) return
+    if (!form.availability_week_1 && !form.availability_week_2) { setErr('Pick at least one week.'); return }
     setBusy(true); setErr(null)
-    const { error } = await supabase.rpc('update_my_volunteer_prefs', {
-      p_week1: cur.availability_week_1, p_week2: cur.availability_week_2,
-      p_first: cur.course_first_choice ?? '', p_second: cur.course_second_choice ?? '',
-    })
-    setBusy(false)
-    if (error) { setErr(error.message); return }
-    setPrefs(cur); setForm(null); setSaved(true)
+    try { await save(form); setForm(null); setSaved(true) }
+    catch (e2) { setErr(e2 instanceof Error ? e2.message : "Couldn't save — check your connection and try again") }
+    finally { setBusy(false) }
   }
 
-  const options = (keep: string | null) => [...new Set([...(keep ? [keep] : []), ...courses])]
   return (
-    <section aria-labelledby="prefs-heading" className={card}>
-      <h2 id="prefs-heading" className={heading}><SlidersHorizontal size={13} aria-hidden="true" /> My preferences</h2>
-      <p className="font-sans text-sm text-ink-muted mt-1 mb-3">The camp uses these when assigning crews. Your section is set by an admin.</p>
-      <form onSubmit={save} className="space-y-3">
-        <fieldset>
-          <legend className={label}>Weeks I can help</legend>
-          <div className="flex flex-wrap gap-4">
-            {([1, 2] as const).map(w => {
-              const key = w === 1 ? 'availability_week_1' : 'availability_week_2'
-              return (
-                <label key={w} className="flex items-center gap-2 font-sans text-sm text-ink min-h-6">
-                  <input type="checkbox" className="w-4 h-4 accent-brand" checked={cur[key]} onChange={e => set({ [key]: e.target.checked })} />
-                  Week {w}
-                </label>
-              )
-            })}
-          </div>
-        </fieldset>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="pref-first" className={label}>First-choice course</label>
-            <select id="pref-first" className={input} value={cur.course_first_choice ?? ''} onChange={e => set({ course_first_choice: e.target.value || null })}>
-              <option value="">No preference</option>
-              {options(cur.course_first_choice).map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="pref-second" className={label}>Second choice</label>
-            <select id="pref-second" className={input} value={cur.course_second_choice ?? ''} onChange={e => set({ course_second_choice: e.target.value || null })}>
-              <option value="">No preference</option>
-              {options(cur.course_second_choice).map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
-        {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
-        <div className="flex items-center justify-end gap-3">
-          {saved && <span role="status" className="font-sans text-sm text-success">Saved</span>}
-          <button type="submit" disabled={busy || !form} className={`${primary} flex items-center gap-1.5`}>
-            <Check size={15} aria-hidden="true" /> {busy ? 'Saving…' : 'Save preferences'}
+    <section aria-labelledby="prefs-heading">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="prefs-heading" className={h2}>Availability and courses</h2>
+        {!form && (
+          <button type="button" onClick={() => { setForm(prefs); setSaved(false) }}
+            className="h-11 px-3 rounded-[10px] font-sans font-semibold text-[15px] text-ink-muted hover:bg-surface-sunken hover:text-ink inline-flex items-center gap-1.5 transition">
+            <Pencil size={15} /> Edit
           </button>
-        </div>
-      </form>
+        )}
+      </div>
+      <p className={`${hint} mb-3`}>Admins use these when they assign classes. Your class is set by an admin.</p>
+      {!form ? (
+        <>
+          <dl className={`${panel} grid grid-cols-[auto_1fr] gap-x-5 gap-y-1.5 font-sans text-base`}>
+            <dt className="text-ink-muted">Weeks</dt><dd className="font-semibold text-ink">{weeksLabel(prefs)}</dd>
+            <dt className="text-ink-muted">First choice</dt><dd className="font-semibold text-ink">{prefs.course_first_choice || 'No preference'}</dd>
+            <dt className="text-ink-muted">Second choice</dt><dd className="font-semibold text-ink">{prefs.course_second_choice || 'No preference'}</dd>
+          </dl>
+          {saved && <p role="status" className="mt-2 font-sans text-[15px] font-semibold text-success inline-flex items-center gap-1.5"><Check size={16} /> Availability saved</p>}
+        </>
+      ) : (
+        <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') setForm(null) }} className={`${panel} space-y-4`}>
+          <fieldset>
+            <legend className={label}>Weeks you can help</legend>
+            <div className="flex flex-wrap gap-2">
+              {([1, 2] as const).map(w => {
+                const key = w === 1 ? 'availability_week_1' : 'availability_week_2'
+                return (
+                  <label key={w} className="h-11 px-3.5 flex items-center gap-2 rounded-[10px] border border-border-strong bg-surface font-sans text-[15px] font-semibold text-ink cursor-pointer">
+                    <input type="checkbox" className="w-5 h-5 accent-brand" checked={form[key]} onChange={e => set({ [key]: e.target.checked })} />
+                    Week {w}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="pref-first" className={label}>First-choice course</label>
+              <select id="pref-first" className={input} value={form.course_first_choice ?? ''} onChange={e => set({ course_first_choice: e.target.value || null })}>
+                <option value="">No preference</option>
+                {options(form.course_first_choice).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="pref-second" className={label}>Second choice</label>
+              <select id="pref-second" className={input} value={form.course_second_choice ?? ''} onChange={e => set({ course_second_choice: e.target.value || null })}>
+                <option value="">No preference</option>
+                {options(form.course_second_choice).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => { setForm(null); setErr(null) }} className={secondary}>Cancel</button>
+            <button type="submit" disabled={busy} className={primary}><Check size={15} aria-hidden="true" /> {busy ? 'Saving…' : 'Save availability'}</button>
+          </div>
+        </form>
+      )}
     </section>
   )
 }
 
-function AbsenceCard({ userId }: { userId: string }) {
+export function AbsenceSection({ userId, startOpen = false }: { userId: string; startOpen?: boolean }) {
   const [list, setList] = useState<Absence[] | null>(null)
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(startOpen)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [note, setNote] = useState('')
@@ -160,22 +154,22 @@ function AbsenceCard({ userId }: { userId: string }) {
   }
 
   return (
-    <section aria-labelledby="absence-heading" className={card}>
-      <h2 id="absence-heading" className={heading}><CalendarX size={13} aria-hidden="true" /> Days I can't make it</h2>
-      <p className="font-sans text-sm text-ink-muted mt-1 mb-3">Let the camp know early so they can find cover. Admins see it right away.</p>
+    <section id="days-off" aria-labelledby="absence-heading" className="scroll-mt-16">
+      <h2 id="absence-heading" className={h2}>Days you can't make it</h2>
+      <p className={`${hint} mb-3`}>Tell the camp early so they can find cover. Admins see it right away.</p>
       {list && list.length > 0 && (
-        <ul className="divide-y divide-border mb-3 border border-border rounded-[10px] overflow-hidden">
+        <ul className="bg-surface border border-border rounded-[14px] overflow-hidden mb-3">
           {list.map(a => (
-            <li key={a.id}>
-              <div className="flex items-center justify-between gap-3 px-3 py-2">
-                <p className="font-sans text-sm text-ink">
-                  {a.from_date === a.to_date ? fmt(a.from_date) : `${fmt(a.from_date)} – ${fmt(a.to_date)}`}
-                  {a.note && <span className="text-ink-muted"> · {a.note}</span>}
+            <li key={a.id} className="border-b border-border last:border-0">
+              <div className="flex items-center justify-between gap-3 pl-4 pr-2 py-2">
+                <p className="font-sans text-base text-ink min-w-0">
+                  <span className="font-semibold">{a.from_date === a.to_date ? formatDayLong(a.from_date) : `${fmt(a.from_date)} to ${fmt(a.to_date)}`}</span>
+                  {a.note && <span className="block text-sm text-ink-muted">{a.note}</span>}
                 </p>
                 {removing !== a.id && (
                   <button type="button" onClick={() => setRemoving(a.id)} aria-label={`Remove ${fmt(a.from_date)}`}
-                    className="w-9 h-9 flex items-center justify-center rounded-[8px] text-ink-muted hover:text-danger hover:bg-danger-soft transition">
-                    <Trash2 size={15} aria-hidden="true" />
+                    className="w-11 h-11 shrink-0 flex items-center justify-center rounded-[10px] text-ink-muted hover:text-danger hover:bg-danger-soft transition">
+                    <Trash2 size={17} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -188,20 +182,20 @@ function AbsenceCard({ userId }: { userId: string }) {
         </ul>
       )}
       {open ? (
-        <form onSubmit={add} className="space-y-3" noValidate>
+        <form onSubmit={add} className={`${panel} space-y-3`} noValidate>
           <div className="grid gap-3 grid-cols-2">
             <div>
               <label htmlFor="abs-from" className={label}>First day</label>
               <input id="abs-from" type="date" min={today} className={input} value={from} onChange={e => setFrom(e.target.value)} autoFocus />
             </div>
             <div>
-              <label htmlFor="abs-to" className={label}>Last day (if more than one)</label>
+              <label htmlFor="abs-to" className={label}>Last day (optional)</label>
               <input id="abs-to" type="date" min={from || today} className={input} value={to} onChange={e => setTo(e.target.value)} />
             </div>
           </div>
           <div>
             <label htmlFor="abs-note" className={label}>Note for the camp (optional)</label>
-            <input id="abs-note" maxLength={500} className={input} value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. Dentist in the morning" />
+            <input id="abs-note" maxLength={500} className={input} value={note} onChange={e => setNote(e.target.value)} placeholder="Dentist in the morning" />
           </div>
           {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
           <div className="flex gap-2 justify-end">
@@ -210,14 +204,14 @@ function AbsenceCard({ userId }: { userId: string }) {
           </div>
         </form>
       ) : (
-        <button type="button" onClick={() => setOpen(true)} className={secondary}>I can't make it…</button>
+        <button type="button" onClick={() => setOpen(true)} className={secondary}><Plus size={16} /> Add a day</button>
       )}
       {!open && err && <p role="alert" className="mt-2 font-sans text-sm text-danger">{err}</p>}
     </section>
   )
 }
 
-function SwitchCard() {
+export function SwitchSection({ current }: { current: string | null }) {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -234,25 +228,27 @@ function SwitchCard() {
   }
 
   return (
-    <section aria-labelledby="switch-heading" className={card}>
-      <h2 id="switch-heading" className={heading}><Repeat size={13} aria-hidden="true" /> Switch section</h2>
+    <section aria-labelledby="switch-heading">
+      <h2 id="switch-heading" className={h2}>Switch classes</h2>
       {sent ? (
-        <p role="status" className="font-sans text-sm text-ink mt-2">Request sent. An admin will get back to you by email.</p>
+        <p role="status" className="mt-1 font-sans text-[15px] font-semibold text-success inline-flex items-center gap-1.5"><Check size={16} /> Request sent. An admin will reply by email.</p>
       ) : open ? (
-        <form onSubmit={send} className="mt-2 space-y-2">
-          <label htmlFor="switch-msg" className={label}>Which section would you like, and why?</label>
-          <textarea id="switch-msg" rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
-            className="w-full px-3 py-2 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
+        <form onSubmit={send} className={`${panel} mt-2 space-y-3`}>
+          <div>
+            <label htmlFor="switch-msg" className={label}>Which class would you like, and why?</label>
+            <textarea id="switch-msg" rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
+              className="w-full px-3 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand" />
+          </div>
           {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => { setOpen(false); setErr(null) }} className={secondary}>Cancel</button>
-            <button type="submit" disabled={busy || !message.trim()} className={primary}>{busy ? 'Sending…' : 'Send to the camp'}</button>
+            <button type="submit" disabled={busy || !message.trim()} className={primary}>{busy ? 'Sending…' : 'Send request'}</button>
           </div>
         </form>
       ) : (
         <>
-          <p className="font-sans text-sm text-ink-muted mt-1 mb-3">Admins assign sections. If you'd like a different one, ask here.</p>
-          <button type="button" onClick={() => setOpen(true)} className={secondary}>Request a switch…</button>
+          <p className={`${hint} mb-3`}>{current ? `You're in ${current}. ` : ''}Admins assign classes, but you can ask for a change.</p>
+          <button type="button" onClick={() => setOpen(true)} className={secondary}>Ask to switch</button>
         </>
       )}
     </section>
