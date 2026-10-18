@@ -31,7 +31,7 @@ const h2 = 'text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]'
 const label = 'block font-bold'
 const hint = 'mt-1.5 text-sm text-ink-muted text-pretty'
 const fieldError = 'mt-1.5 text-sm font-bold text-danger'
-const textLink = 'inline-flex items-center gap-1.5 min-h-11 md:min-h-9 font-bold underline underline-offset-[3px]'
+const textLink = 'inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px]'
 
 // "Oct 19–23", or "Oct 30–Nov 3" across a month end.
 function shortRange(start: string, end: string) {
@@ -44,9 +44,10 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 const whenLine = (s: SectionWithCrew) =>
   [s.days, formatTimeRange(s.start_time, s.end_time), s.room].filter(Boolean).join(' · ')
 
+// aria-disabled, not disabled, while saving: a disabled button drops keyboard focus to the page.
 function SaveButton({ saving, children }: { saving: boolean; children: ReactNode }) {
   return (
-    <Button type="submit" variant="primary" disabled={saving} aria-busy={saving}>
+    <Button type="submit" variant="primary" aria-disabled={saving || undefined} aria-busy={saving}>
       {saving
         ? <span aria-hidden="true" className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
         : <Check size={18} strokeWidth={2.5} aria-hidden="true" />}
@@ -76,6 +77,7 @@ function ClassForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (saving) return
     if (!name.trim()) { setNameError(true); return }
     setNameError(false)
     setSaving(true)
@@ -199,7 +201,7 @@ function SectionForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!validate()) return
+    if (saving || !validate()) return
     setSaving(true)
     setSaved(false)
     setSaveError(null)
@@ -294,7 +296,7 @@ function SectionForm({
                     {nameOf(sid)}
                     <button type="button" aria-label={`Remove ${nameOf(sid)}`}
                       onClick={() => set({ support_ids: form.support_ids.filter(s => s !== sid) })}
-                      className="w-10 h-10 grid place-items-center rounded text-ink-muted hover:text-ink">
+                      className="w-11 h-11 grid place-items-center rounded text-ink-muted hover:text-ink">
                       <X size={16} strokeWidth={2.5} aria-hidden="true" />
                     </button>
                   </li>
@@ -565,9 +567,12 @@ export default function AdminClasses() {
 
   // A section with no lead opens on Edit (that's the decision it needs); others on Roster.
   const defaultTab = (s: SectionWithCrew): Tab => (!s.lead_id && !s.cancelled_at ? 'edit' : 'roster')
-  const tab: Tab = open
-    ? (tabState?.id === open.sec.id ? tabState.tab : defaultTab(open.sec))
-    : 'roster'
+  // The tab is chosen once, when a section opens (by a click or a link), and then only by the
+  // person: saving a lead on Edit must not flip the panel to Roster.
+  if ((open?.sec.id ?? null) !== (tabState?.id ?? null)) {
+    setTabState(open ? { id: open.sec.id, tab: defaultTab(open.sec) } : null)
+  }
+  const tab: Tab = open && tabState?.id === open.sec.id ? tabState.tab : open ? defaultTab(open.sec) : 'roster'
 
   // Our own clicks change the URL too; only an arrival from elsewhere moves focus.
   const selfNav = useRef(false)
@@ -712,7 +717,9 @@ export default function AdminClasses() {
   function sectionBlock(cls: ClassWithSections, s: SectionWithCrew) {
     const expanded = open?.sec.id === s.id
     const full = s.capacity > 0 && s.registered_count >= s.capacity
+    const almost = !full && s.capacity > 0 && s.registered_count / s.capacity >= 0.9
     const supportsN = s.supports.length
+    const supportNames = s.supports.map(x => x.display_name).filter(Boolean).join(', ')
     return (
       <button key={s.id} type="button" id={`sec-${s.id}`} aria-expanded={expanded} aria-controls={`panel-${s.id}`}
         onClick={() => { if (expanded) closePanel(s.id); else { reveal.current = s.id; openSection(s.id) } }}
@@ -723,6 +730,7 @@ export default function AdminClasses() {
           <span className="text-lg font-extrabold leading-[1.2] tracking-[0.02em]">{s.label}</span>
           {whenLine(s) && <span className="text-sm text-ink-muted">{whenLine(s)}</span>}
         </span>
+        <span className="text-sm text-ink-muted">Ages {s.age_min}–{s.age_max}</span>
         {s.cancelled_at ? (
           <span><RegistrationStatusWord status="cancelled" /></span>
         ) : (
@@ -731,6 +739,7 @@ export default function AdminClasses() {
               {fillError
                 ? `${s.capacity} seats`
                 : <>{full ? <b className="font-extrabold">{s.registered_count}/{s.capacity} full</b> : `${s.registered_count}/${s.capacity}`}
+                  {almost && ' · almost full'}
                   {s.waitlist_count > 0 && ` · ${s.waitlist_count} waitlisted`}</>}
             </span>
             {!fillError && <CapacityMeter registered={s.registered_count} capacity={s.capacity} />}
@@ -738,7 +747,7 @@ export default function AdminClasses() {
               {s.lead
                 ? <>{s.lead.display_name}{supportsN > 0 && <span className="text-ink-muted"> +{plural(supportsN, 'support')}</span>}</>
                 : <><span className="inline-flex items-center gap-1.5 font-extrabold"><UserRoundX size={16} strokeWidth={2.5} aria-hidden="true" />No lead</span>
-                  {supportsN > 0 && <span className="text-ink-muted"> · {plural(supportsN, 'support')}</span>}</>}
+                  {supportsN > 0 && <span className="text-ink-muted"> · {supportNames ? `supports ${supportNames}` : plural(supportsN, 'support')}</span>}</>}
             </span>
           </>
         )}
@@ -814,7 +823,7 @@ export default function AdminClasses() {
     const col = colLabel(s.week)
     const idBase = `panel-${s.id}`
     const tabs: { value: Tab; label: string }[] = [
-      { value: 'roster', label: fillError ? 'Roster' : `Roster · ${s.registered_count}` },
+      { value: 'roster', label: fillError ? 'Roster' : `Roster · ${s.registered_count + s.waitlist_count}` },
       ...(s.cancelled_at ? [] : [{ value: 'edit' as const, label: 'Edit' }]),
       { value: 'history', label: 'History' },
     ]
@@ -869,7 +878,7 @@ export default function AdminClasses() {
             extra={<>
               {print}
               {!(pendingDelete?.kind === 'section' && pendingDelete.id === s.id) && (
-                <button type="button" onClick={() => requestDelete({ kind: 'section', id: s.id }, [s.id])}
+                <button type="button" id={`remove-${s.id}`} onClick={() => requestDelete({ kind: 'section', id: s.id }, [s.id])}
                   className={`${textLink} text-danger`}>
                   Remove section
                 </button>
@@ -884,7 +893,7 @@ export default function AdminClasses() {
                 cancelLabel="Keep section"
                 busy={deleting || tallyLoading}
                 onConfirm={confirmDelete}
-                onCancel={() => setPendingDelete(null)}
+                onCancel={() => { setPendingDelete(null); requestAnimationFrame(() => document.getElementById(`remove-${s.id}`)?.focus()) }}
               />
             </div>
           )}
@@ -940,8 +949,8 @@ export default function AdminClasses() {
         </div>
       )}
       {!error && fillError && (
-        <div role="alert" className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 py-3 border-y-2 border-ink">
-          <p title={fillError} className="flex-[1_1_16rem] font-bold text-danger text-pretty">
+        <div role="status" className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 py-3 border-y-2 border-ink">
+          <p title={fillError} className="flex-[1_1_16rem] font-bold text-pretty">
             Seat counts couldn't be loaded, so seats and waitlists aren't shown.
           </p>
           <Button onClick={() => { void refetch() }}>Try again</Button>
@@ -1008,7 +1017,7 @@ export default function AdminClasses() {
                         className={`p-3 text-left align-top font-normal max-md:block max-md:px-0 focus:outline-none scroll-mt-44 lg:scroll-mt-28 ${rule}`}>
                         <span className="block font-bold leading-[1.3]">{cls.name}</span>
                         <span className="block mt-0.5 text-sm text-ink-muted">{ages}</span>
-                        {cls.description && <span className="hidden min-[1400px]:block mt-0.5 text-sm text-ink-muted text-pretty">{cls.description}</span>}
+                        {cls.description && <span className="block mt-0.5 text-sm text-ink-muted text-pretty">{cls.description}</span>}
                         <span className="flex flex-wrap gap-x-4 mt-1 text-sm">
                           <button type="button" onClick={() => startEditing({ kind: 'class', classId: cls.id })}
                             className={`${textLink} text-ink-muted font-semibold`}>
@@ -1030,7 +1039,7 @@ export default function AdminClasses() {
                             <div className="grid gap-2 min-w-0">
                               {here.map(s => sectionBlock(cls, s))}
                               <button type="button" onClick={() => startEditing({ kind: 'new-section', classId: cls.id, week })}
-                                className="inline-flex items-center gap-1.5 min-h-11 md:min-h-9 justify-self-start text-sm font-bold text-ink-muted hover:text-ink hover:underline underline-offset-[3px]">
+                                className="inline-flex items-center gap-1.5 min-h-11 justify-self-start text-sm font-bold text-ink-muted hover:text-ink hover:underline underline-offset-[3px]">
                                 <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
                                 Add section<span className="sr-only"> to {cls.name}, {c.label}</span>
                               </button>
