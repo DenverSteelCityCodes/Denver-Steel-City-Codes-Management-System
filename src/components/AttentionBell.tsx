@@ -1,24 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, CheckCircle2 } from 'lucide-react'
-import { useAdminAttention } from '../hooks/useAdminAttention'
+import { Bell, ArrowRight } from 'lucide-react'
+import type { AttentionItem } from '../hooks/useAdminAttention'
 import { useUpdates, audienceLabel } from '../hooks/useUpdates'
+import { useAuth } from '../context/AuthContext'
 import { timeAgo } from '../lib/campDay'
 
-// Top-bar bell: a dropdown of the same "Needs attention" queue as the dashboard. The dot only
-// shows when something is actually waiting. Remounted on navigation (keyed by path) so it's fresh.
-export default function AttentionBell() {
-  const { items, loading } = useAdminAttention()
-  const { updates } = useUpdates(3)
+// Top-bar bell: the same To do queue as Today, reachable from every page, in an inline popover
+// framed by a 2px ink rule (DESIGN.md › One Ply). The dot only shows when something is waiting.
+// The shell owns the queue (one copy, reloaded on navigation) and hands it in. Updates posted by
+// someone else (a section lead) follow the queue; the admin's own posts are on Updates.
+export default function AttentionBell({ items, loading }: { items: AttentionItem[]; loading: boolean }) {
+  const { user } = useAuth()
+  const { updates } = useUpdates(5)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
     function onDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setOpen(false); buttonRef.current?.focus() }
+    }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
     return () => {
@@ -28,63 +34,64 @@ export default function AttentionBell() {
   }, [open])
 
   const count = loading ? 0 : items.length
+  const fromOthers = updates.filter(u => u.author_id !== user?.id).slice(0, 3)
+  const row = 'flex items-start gap-3 px-4 py-3 no-underline hover:bg-bg transition-colors'
 
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={buttonRef}
+        type="button"
         onClick={() => setOpen(o => !o)}
-        aria-label={count > 0 ? `Needs attention: ${count} item${count === 1 ? '' : 's'}` : 'Notifications'}
+        aria-label={count > 0 ? `Needs attention, ${count} item${count === 1 ? '' : 's'}` : 'Needs attention, nothing waiting'}
         aria-expanded={open}
+        aria-controls="attention-list"
         className="ui-iconbtn text-on-shell-muted hover:text-on-shell"
       >
-        <Bell size={18} />
-        {count > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-shell ring-2 ring-shell" />}
+        <Bell size={20} strokeWidth={2.25} />
+        {count > 0 && <span aria-hidden="true" className="absolute top-[9px] right-[9px] w-2 h-2 rounded-full bg-on-shell" />}
       </button>
 
       {open && (
-        <div className="fixed left-4 right-4 top-[4.25rem] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[22rem] bg-surface-raised border border-border rounded-[12px] shadow-lg z-50 overflow-hidden">
-          <p className="px-4 pt-3 pb-2 font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Needs attention</p>
+        <div id="attention-list"
+          className="fixed left-4 right-4 top-[3.75rem] md:absolute md:left-auto md:right-0 md:top-[calc(100%+6px)] md:w-[24rem] max-h-[calc(100dvh-5rem)] overflow-y-auto py-2 rounded border-2 border-ink bg-surface text-ink z-50 [&_:focus-visible]:outline-focus">
+          <p className="px-4 pt-2 pb-1 text-sm font-bold text-ink-muted">Needs attention</p>
           {loading ? (
-            <div className="px-4 pb-4 space-y-2">
-              {[1, 2].map(i => <div key={i} className="h-10 bg-surface-sunken rounded-[8px] animate-pulse" />)}
+            <div aria-hidden="true" className="px-4 py-2 space-y-2">
+              {[1, 2].map(i => <div key={i} className="h-10 rounded bg-surface-sunken animate-pulse" />)}
             </div>
           ) : items.length === 0 ? (
-            <div className="px-4 pb-4 flex items-center gap-2 font-sans text-sm text-ink-muted">
-              <CheckCircle2 size={16} className="text-success" /> Nothing needs you right now.
-            </div>
+            <p className="px-4 pb-3">Nothing needs you right now.</p>
           ) : (
-            <ul className="pb-1.5">
-              {items.map(item => {
+            <ul>
+              {items.map((item, i) => {
                 const Icon = item.icon
                 return (
-                  <li key={item.key}>
-                    <Link
-                      to={item.to}
-                      onClick={() => setOpen(false)}
-                      className="flex items-start gap-3 px-4 py-2.5 hover:bg-surface-sunken transition"
-                    >
-                      <span className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${item.tone === 'danger' ? 'bg-alarm text-white' : 'bg-shell text-on-shell'}`}>
-                        <Icon size={15} />
+                  <li key={item.key} className={i > 0 ? 'border-t border-border' : undefined}>
+                    <Link to={item.to} onClick={() => setOpen(false)} className={row}>
+                      <span aria-hidden="true" className={`w-8 h-8 grid place-items-center rounded shrink-0 ${item.tone === 'danger' ? 'bg-alarm text-white' : 'bg-shell text-on-shell'}`}>
+                        <Icon size={18} strokeWidth={2.25} />
                       </span>
-                      <span className="min-w-0">
-                        <span className="block font-sans font-semibold text-sm text-ink">{item.title}</span>
-                        <span className="block font-sans text-xs text-ink-muted">{item.detail}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block font-bold leading-snug ${item.tone === 'danger' ? 'text-danger' : ''}`}>{item.title}</span>
+                        <span className="block text-sm text-ink-muted text-pretty">{item.detail}</span>
                       </span>
+                      <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" className="mt-1 shrink-0 text-ink-muted" />
                     </Link>
                   </li>
                 )
               })}
             </ul>
           )}
-          {updates.length > 0 && (
-            <div className="border-t border-border">
-              <p className="px-4 pt-3 pb-1 font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Recent updates</p>
-              <ul className="pb-1.5">
-                {updates.map(u => (
-                  <li key={u.id}>
-                    <Link to="/admin/updates" onClick={() => setOpen(false)} className="block px-4 py-2 hover:bg-surface-sunken transition">
-                      <span className="block font-sans text-xs text-ink-muted">{u.author_name} → {audienceLabel(u)} · {timeAgo(u.created_at)}</span>
-                      <span className="block font-sans text-sm text-ink line-clamp-2">{u.body}</span>
+          {fromOthers.length > 0 && (
+            <div className="mt-2 pt-2 border-t-2 border-ink">
+              <p className="px-4 pt-2 pb-1 text-sm font-bold text-ink-muted">Posted by others</p>
+              <ul>
+                {fromOthers.map((u, i) => (
+                  <li key={u.id} className={i > 0 ? 'border-t border-border' : undefined}>
+                    <Link to="/admin/updates" onClick={() => setOpen(false)} className="block px-4 py-3 no-underline hover:bg-bg transition-colors">
+                      <span className="block text-sm text-ink-muted">{u.author_name} to {audienceLabel(u)} · {timeAgo(u.created_at)}</span>
+                      <span className="block line-clamp-2">{u.body}</span>
                     </Link>
                   </li>
                 ))}
