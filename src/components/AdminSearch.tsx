@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, LayoutGrid, GraduationCap, UserPlus, CornerDownLeft } from 'lucide-react'
+import { Search, LayoutGrid, Backpack, UserPlus, CornerDownLeft } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { fetchAll } from '../lib/fetchAll'
@@ -8,17 +8,23 @@ import { fetchAll } from '../lib/fetchAll'
 interface Result {
   key: string
   label: string
+  // Other names it answers to (a page's old name, e.g. Students for Campers).
+  keywords?: string[]
   hint: string
   icon: LucideIcon
   to: string
 }
 
-// Jump-to search in the admin top bar (⌘K / Ctrl+K focuses it). Results drop down under the
-// input — no modal. The index (classes, campers, applicants) loads on focus, and reloads on a
-// later focus once it's over a minute old so new campers/applicants show up.
+// Jump-to search in the admin ink bar (⌘K / Ctrl+K focuses it). Results drop down under the field
+// in an inline popover framed by a 2px ink rule: no modal, no shadow. The index (classes, campers,
+// applicants) loads on focus, and reloads on a later focus once it's over a minute old so new
+// campers and applicants show up. On a phone the shell opens it across the bar; `onEscape` closes that.
 const INDEX_MAX_AGE_MS = 60_000
 
-export default function AdminSearch({ pages }: { pages: { label: string; to: string; icon: LucideIcon }[] }) {
+export default function AdminSearch({ pages, onEscape }: {
+  pages: { label: string; to: string; icon: LucideIcon; keywords?: string[] }[]
+  onEscape?: () => void
+}) {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -69,7 +75,7 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
           key: `c-${c.id}`, label: c.name, hint: 'Class', icon: LayoutGrid, to: `/admin/classes?open=${c.id}`,
         })),
         ...(students.data ?? []).map(s => ({
-          key: `s-${s.id}`, label: s.full_name, hint: 'Camper', icon: GraduationCap,
+          key: `s-${s.id}`, label: s.full_name, hint: 'Camper', icon: Backpack,
           to: `/admin/students?q=${encodeURIComponent(s.full_name)}`,
         })),
         ...(apps.data ?? []).map(a => ({
@@ -83,9 +89,10 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
   }
 
   const q = query.trim().toLowerCase()
-  const pageResults: Result[] = pages.map(p => ({ key: `p-${p.to}`, label: p.label, hint: 'Page', icon: p.icon, to: p.to }))
+  const pageResults: Result[] = pages.map(p => ({ key: `p-${p.to}`, label: p.label, keywords: p.keywords, hint: 'Page', icon: p.icon, to: p.to }))
+  const matches = (r: Result) => r.label.toLowerCase().includes(q) || !!r.keywords?.some(k => k.toLowerCase().includes(q))
   const results = q
-    ? [...pageResults, ...(index ?? [])].filter(r => r.label.toLowerCase().includes(q)).slice(0, 8)
+    ? [...pageResults, ...(index ?? [])].filter(matches).slice(0, 8)
     : []
 
   function go(r: Result) {
@@ -96,11 +103,16 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
   }
 
   return (
-    <div ref={boxRef} className="relative hidden md:block ml-4 w-full max-w-sm">
-      <div className="flex items-center gap-2 h-9 px-3 rounded-[10px] bg-white/10 focus-within:bg-white/15 focus-within:ring-2 focus-within:ring-brand transition">
-        <Search size={16} className="text-white/50 shrink-0" />
+    <div ref={boxRef} className="relative w-full">
+      <label htmlFor="admin-search"
+        className="flex items-center gap-2 h-11 pl-3 pr-2 rounded border border-on-shell-muted/55 bg-shell-raised text-on-shell-muted cursor-text focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand">
+        <Search size={18} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
+        <span className="sr-only">Search campers, classes and people</span>
         <input
           ref={inputRef}
+          id="admin-search"
+          type="search"
+          autoComplete="off"
           value={query}
           onFocus={() => { loadIndex(); setOpen(true) }}
           onChange={e => { setQuery(e.target.value); setActive(0); setOpen(true) }}
@@ -108,51 +120,51 @@ export default function AdminSearch({ pages }: { pages: { label: string; to: str
             if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(a + 1, results.length - 1)) }
             else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(a - 1, 0)) }
             else if (e.key === 'Enter' && results[active]) { e.preventDefault(); go(results[active]) }
-            else if (e.key === 'Escape') { setOpen(false); inputRef.current?.blur() }
+            else if (e.key === 'Escape') { setOpen(false); inputRef.current?.blur(); onEscape?.() }
           }}
-          placeholder="Search pages, classes, campers…"
-          aria-label="Search"
+          placeholder="Search campers, classes, people"
           role="combobox"
-          aria-expanded={open && results.length > 0}
+          aria-autocomplete="list"
+          aria-expanded={open && !!q}
           aria-controls="admin-search-results"
-          className="bg-transparent flex-1 min-w-0 text-sm text-white placeholder:text-white/40 focus:outline-none"
+          aria-activedescendant={open && results[active] ? `admin-search-${results[active].key}` : undefined}
+          className="flex-1 min-w-0 h-full bg-transparent border-0 text-base text-on-shell placeholder:text-on-shell-muted caret-brand focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
-        <kbd className="text-[11px] font-sans px-1.5 py-0.5 rounded bg-white/10 text-white/50 border border-white/10">⌘K</kbd>
-      </div>
+        <kbd aria-hidden="true" className="hidden md:inline px-1.5 py-1 rounded-[3px] border border-on-shell-muted/55 text-sm font-bold leading-none text-on-shell-muted">⌘K</kbd>
+      </label>
 
       {open && q && (
         <ul
           id="admin-search-results"
           role="listbox"
-          className="absolute left-0 right-0 mt-2 bg-surface-raised border border-border rounded-[12px] shadow-lg p-1.5 z-50"
+          aria-label="Search results"
+          className="absolute left-0 right-0 md:right-auto md:w-[max(100%,24rem)] top-[calc(100%+6px)] py-2 rounded border-2 border-ink bg-surface text-ink z-50"
         >
           {indexError && (
-            <li role="alert" className="flex items-center justify-between gap-3 px-3 py-2.5 font-sans text-sm text-danger">
-              <span>Couldn't load campers and classes: {indexError}</span>
-              <button type="button" onClick={() => { loadIndex(true); inputRef.current?.focus() }} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
+            <li role="alert" className="flex flex-wrap items-center justify-between gap-x-3 px-4 py-2 text-sm font-bold text-danger">
+              <span title={indexError}>Couldn't load campers and classes. Check your connection.</span>
+              <button type="button" onClick={() => { loadIndex(true); inputRef.current?.focus() }} className="ui-btn ui-btn--text text-sm text-ink">Try again</button>
             </li>
           )}
           {results.length === 0 ? (
             !indexError && (
-              <li className="px-3 py-2.5 font-sans text-sm text-ink-muted">
+              <li className="px-4 py-2.5 text-ink-muted">
                 {index ? `No matches for “${query}”` : 'Searching…'}
               </li>
             )
           ) : results.map((r, i) => {
             const Icon = r.icon
             return (
-              <li key={r.key} role="option" aria-selected={i === active}>
-                <button
-                  type="button"
-                  onMouseEnter={() => setActive(i)}
-                  onClick={() => go(r)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-[8px] text-left transition ${i === active ? 'bg-surface-sunken' : ''}`}
-                >
-                  <Icon size={15} className="text-ink-muted shrink-0" />
-                  <span className="flex-1 min-w-0 font-sans text-sm text-ink truncate">{r.label}</span>
-                  <span className="font-sans text-xs text-ink-muted shrink-0">{r.hint}</span>
-                  {i === active && <CornerDownLeft size={13} className="text-ink-faint shrink-0" />}
-                </button>
+              <li key={r.key} id={`admin-search-${r.key}`} role="option" aria-selected={i === active}
+                onMouseEnter={() => setActive(i)}
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => go(r)}
+                className={`flex items-center gap-3 min-h-11 px-4 cursor-pointer ${i === active ? 'bg-surface-sunken' : ''}`}
+              >
+                <Icon size={18} strokeWidth={2.25} aria-hidden="true" className="text-ink-muted shrink-0" />
+                <span className="flex-1 min-w-0 truncate font-bold">{r.label}</span>
+                <span className="text-sm text-ink-muted shrink-0">{r.hint}</span>
+                {i === active && <CornerDownLeft size={16} strokeWidth={2.5} aria-hidden="true" className="text-ink-muted shrink-0" />}
               </li>
             )
           })}

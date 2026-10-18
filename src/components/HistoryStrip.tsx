@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { History, RotateCcw } from 'lucide-react'
+import { flushSync } from 'react-dom'
+import { Undo2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { FIELD_LABELS } from '../lib/editConflict'
 import InlineConfirm from './InlineConfirm'
@@ -73,6 +74,7 @@ export default function HistoryStrip({
   sectionName = id => id,
   personName = () => 'a volunteer',
   onReverted,
+  heading = true,
 }: {
   load: () => PromiseLike<{ data: unknown; error: { message: string } | null }>
   // For admin_history(table, row), whose rows don't carry the table name.
@@ -80,6 +82,8 @@ export default function HistoryStrip({
   sectionName?: (id: string) => string
   personName?: (id: string) => string
   onReverted?: () => void | Promise<void>
+  // Off when the page already names the list (Classes' History tab).
+  heading?: boolean
 }) {
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -109,54 +113,57 @@ export default function HistoryStrip({
     await onReverted?.()
   }
 
+  // Rows of one dataset (DESIGN.md › Rows): the change in bold, then when, who and why; Revert is
+  // a text action with a 44px target, and its confirm opens under the row.
   return (
-    <div className="space-y-2">
-      <p className="font-semibold text-xs uppercase tracking-widest text-ink-muted flex items-center gap-1.5">
-        <History size={13} /> History
-      </p>
-      {error && <p role="alert" className="text-sm text-danger">Couldn't load the history: {error}</p>}
-      {note && <p role="status" className="text-sm text-ink-muted">{note}</p>}
+    <div>
+      {heading && <h3 className="text-lg font-bold leading-[1.3]">History</h3>}
+      {error && <p role="alert" title={error} className="mt-2 font-bold text-danger">Couldn't load the history. Check your connection, then try again.</p>}
+      {note && <p role="status" className="mt-2 text-ink-muted">{note}</p>}
       {!entries && !error ? (
-        <div className="h-16 bg-surface border border-border rounded-[10px] animate-pulse" />
+        <div aria-hidden="true" className="mt-2 h-16 rounded bg-surface-sunken animate-pulse" />
       ) : entries && entries.length === 0 ? (
-        <p className="text-sm text-ink-muted">No changes recorded yet. The log starts when the audit log was switched on.</p>
+        <p className="mt-2 text-ink-muted text-pretty">No changes recorded yet. The log starts when the audit log was switched on.</p>
       ) : (
-        <ol className="bg-surface border border-border rounded-[10px] divide-y divide-border">
-          {entries?.slice(0, 20).map(e => {
+        <ol className="mt-2 border-y-2 border-ink">
+          {entries?.slice(0, 20).map((e, i) => {
             const who = e.actor_name ? `${e.actor_name}${e.actor_role ? ` (${e.actor_role})` : ''}` : 'System'
             // The write's own reason (set by an RPC), else the cancel reason the row was stamped with.
             const raw = e.reason ?? (e.new?.cancel_reason !== e.old?.cancel_reason ? (e.new?.cancel_reason as string | null | undefined) : null) ?? null
             const reason = raw?.startsWith('revert:') ? 'Undo of an earlier change' : raw ? REASONS[raw] ?? raw : null
             const canRevert = e.action === 'UPDATE' && REVERTIBLE.has(e.table_name ?? '')
             return (
-              <li key={e.id}>
-                <div className="px-3 py-2.5 flex items-start gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-ink-muted">{when(e.at)} · {who}{reason ? ` · ${reason}` : ''}</p>
-                    {describe(e, sectionName, personName).map((line, i) => (
-                      <p key={i} className="text-sm text-ink break-words">{line}</p>
+              <li key={e.id} className={`py-3 ${i > 0 ? 'border-t border-border' : ''}`}>
+                <div className="flex flex-wrap items-start gap-x-4">
+                  <div className="min-w-0 flex-[1_1_240px]">
+                    {describe(e, sectionName, personName).map((line, j) => (
+                      <p key={j} className="font-bold break-words">{line}</p>
                     ))}
+                    <p className="text-sm text-ink-muted">{when(e.at)} · {who}{reason ? ` · ${reason}` : ''}</p>
                   </div>
                   {canRevert && confirming !== e.id && (
                     <button
                       type="button"
+                      id={`revert-${e.id}`}
                       onClick={() => { setNote(null); setConfirming(e.id) }}
-                      className="shrink-0 h-8 px-2.5 rounded-[8px] border border-border-strong text-xs font-semibold text-ink hover:bg-surface-sunken flex items-center gap-1 transition"
+                      className="ui-btn ui-btn--text -my-2.5"
                     >
-                      <RotateCcw size={12} /> Revert
+                      <Undo2 size={16} strokeWidth={2.5} aria-hidden="true" /> Revert
                     </button>
                   )}
                 </div>
                 {confirming === e.id && (
-                  <InlineConfirm
-                    tone="neutral"
-                    message="Put back the values from before this change? It's saved as a new change, so it can be undone too."
-                    confirmLabel="Revert"
-                    cancelLabel="Keep"
-                    busy={busy}
-                    onConfirm={() => { void revert(e.id) }}
-                    onCancel={() => setConfirming(null)}
-                  />
+                  <div className="mt-3">
+                    <InlineConfirm
+                      tone="neutral"
+                      message="Put back the values from before this change? It's saved as a new change, so it can be undone too."
+                      confirmLabel="Revert"
+                      cancelLabel="Keep"
+                      busy={busy}
+                      onConfirm={() => { void revert(e.id) }}
+                      onCancel={() => { flushSync(() => setConfirming(null)); document.getElementById(`revert-${e.id}`)?.focus() }}
+                    />
+                  </div>
                 )}
               </li>
             )

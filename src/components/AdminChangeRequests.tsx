@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react'
-import { MessageSquare } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { timeAgo } from '../lib/campDay'
+import { Input } from './Field'
 
-// Admin: parents' open change requests (spec 11), resolved inline. Resolving emails the family.
+// Admin: open change requests from families (spec 11) and volunteers (spec 25), first on Campers.
+// One decision per line between 2px ink rules: who and what, who asked, their words, then an
+// optional reply and Mark done / Decline. Resolving emails the person who asked, with the reply.
 interface RequestRow {
   id: string
   message: string | null
@@ -14,11 +18,13 @@ interface RequestRow {
 }
 
 export default function AdminChangeRequests({ onResolved }: { onResolved?: () => void }) {
+  const { hash } = useLocation()
   const [rows, setRows] = useState<RequestRow[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ what: 'load' | 'save'; message: string } | null>(null)
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
   const [version, setVersion] = useState(0)
+  const headingRef = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
     let alive = true
@@ -32,52 +38,78 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
       .order('created_at', { ascending: true })
       .then(({ data, error }) => {
         if (!alive) return
-        if (error) setError(error.message)
-        else setRows((data ?? []) as unknown as RequestRow[])
+        if (error) setError({ what: 'load', message: error.message })
+        else { setError(null); setRows((data ?? []) as unknown as RequestRow[]) }
       })
     return () => { alive = false }
   }, [version])
+
+  // Today's "Review requests" links to #requests: land on the heading once the list is in.
+  const hasRows = !!rows && rows.length > 0
+  useEffect(() => {
+    if (hash === '#requests' && hasRows) headingRef.current?.focus()
+  }, [hash, hasRows])
 
   async function resolve(id: string, status: 'done' | 'declined') {
     setBusy(id)
     const { error } = await supabase.from('change_requests')
       .update({ status, resolution_note: notes[id]?.trim() || null }).eq('id', id)
     setBusy(null)
-    if (error) { setError(error.message); return }
+    if (error) { setError({ what: 'save', message: error.message }); return }
+    setError(null)
     setVersion(v => v + 1)
     onResolved?.()
   }
 
   if (rows && rows.length === 0 && !error) return null
   return (
-    <section id="requests" aria-labelledby="requests-heading" className="bg-surface border border-brand/40 rounded-xl shadow-sm px-4 sm:px-5 py-4 mb-6">
-      <h2 id="requests-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5 mb-1">
-        <MessageSquare size={13} /> Change requests
+    <section id="requests" aria-labelledby="requests-heading" className="mb-10 scroll-mt-32 lg:scroll-mt-20">
+      <h2 id="requests-heading" ref={headingRef} tabIndex={-1}
+        className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em] focus:outline-none">
+        Change requests{rows ? ` (${rows.length})` : ''}
       </h2>
-      <p className="font-sans text-sm text-ink-muted mb-3">Make the change (move, cancel, reassign), then mark it done. The person who asked gets an email either way.</p>
-      {error && <p role="alert" className="font-sans text-sm text-danger mb-2">{error}</p>}
-      {!rows ? <div className="h-16 bg-surface-sunken rounded-[10px] animate-pulse" /> : (
-        <ul className="divide-y divide-border">
+      <p className="mt-2 text-sm text-ink-muted text-pretty max-w-[68ch]">
+        Make the change in the camper's row below (or the section, for a volunteer), then mark the request done.
+        The person who asked gets an email either way, with your reply.
+      </p>
+      {/* A failed reload blocks nothing (the list stays), so it's a neutral note; a failed save or
+          first load is an error. */}
+      {error && (error.what === 'load' && rows ? (
+        <p role="status" title={error.message} className="mt-3 font-bold text-pretty">
+          Couldn't reload the change requests, so this list may be out of date. Check your connection.
+        </p>
+      ) : (
+        <p role="alert" title={error.message} className="mt-3 font-bold text-danger text-pretty">
+          {error.what === 'save'
+            ? "Couldn't save that. Check your connection, then try again."
+            : "Couldn't load the change requests. Check your connection, then try again."}
+        </p>
+      ))}
+      {!rows ? (
+        !error && <div aria-hidden="true" className="mt-3 h-28 rounded bg-surface-sunken animate-pulse" />
+      ) : (
+        <ul className="mt-3 border-b-2 border-ink">
           {rows.map(r => {
             const sec = r.registration?.sections
+            const who = r.kind === 'crew_switch' ? 'Volunteer section switch' : r.student?.full_name ?? 'A camper'
+            const where = sec ? `${sec.classes?.name ?? ''}${sec.classes?.name ? ', ' : ''}${sec.label}${sec.week ? ` · Week ${sec.week}` : ''}` : null
+            const asker = r.requester?.display_name ?? (r.kind === 'crew_switch' ? 'a volunteer' : 'a parent')
             return (
-              <li key={r.id} className="py-3 space-y-2">
-                <p className="font-sans text-sm text-ink">
-                  <span className="font-semibold">{r.kind === 'crew_switch' ? 'Volunteer section switch' : r.student?.full_name ?? 'A camper'}</span>
-                  {sec ? ` · ${sec.classes?.name ?? ''} ${sec.label}${sec.week ? ` (Week ${sec.week})` : ''}` : ''}
-                  <span className="text-ink-muted"> · from {r.requester?.display_name ?? 'a parent'}, {new Date(r.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                </p>
-                <p className="font-sans text-sm text-ink bg-surface-sunken rounded-[8px] px-3 py-2">“{r.message}”</p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <label htmlFor={`note-${r.id}`} className="sr-only">Reply (optional)</label>
-                  <input id={`note-${r.id}`} placeholder="Reply (optional)" value={notes[r.id] ?? ''}
-                    onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))}
-                    className="ui-input flex-1 min-h-11 py-1.5" />
-                  <div className="flex gap-2">
-                    <button type="button" disabled={busy === r.id} onClick={() => { void resolve(r.id, 'declined') }}
-                      className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition disabled:opacity-50">Decline</button>
+              <li key={r.id} className="py-4 border-t-2 border-ink">
+                <p className="text-lg font-bold leading-[1.3] text-pretty">{who}{where && <> · {where}</>}</p>
+                <p className="mt-1 text-ink-muted">From {asker} · {timeAgo(r.created_at)}</p>
+                {r.message && <p className="mt-2 max-w-[68ch] text-pretty">“{r.message}”</p>}
+                <div className="mt-3 flex flex-wrap items-end gap-x-5 gap-y-2">
+                  <div className="flex-[1_1_320px] max-w-[480px] min-w-0">
+                    <label htmlFor={`note-${r.id}`} className="block font-bold">Reply <span className="font-normal text-ink-muted">(optional)</span></label>
+                    <Input id={`note-${r.id}`} className="mt-1.5" value={notes[r.id] ?? ''}
+                      onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))} />
+                  </div>
+                  <div className="flex flex-wrap gap-x-5">
                     <button type="button" disabled={busy === r.id} onClick={() => { void resolve(r.id, 'done') }}
-                      className="ui-btn ui-btn--primary">Mark done</button>
+                      className="ui-btn ui-btn--text">Mark done</button>
+                    <button type="button" disabled={busy === r.id} onClick={() => { void resolve(r.id, 'declined') }}
+                      className="ui-btn ui-btn--text text-ink-muted font-semibold">Decline</button>
                   </div>
                 </div>
               </li>

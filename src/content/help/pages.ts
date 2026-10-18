@@ -8,19 +8,19 @@ export interface HelpPage {
 }
 
 export const PAGES = {
-  // Admin (menu labels in AdminLayout; Today is the Dashboard item)
+  // Admin (the rail and tab labels in AdminLayout; Setup opens on the season page)
   'admin-today': { label: 'Today', to: '/admin' },
   'admin-updates': { label: 'Updates', to: '/admin/updates' },
-  'admin-students': { label: 'Students', to: '/admin/students' },
+  'admin-students': { label: 'Campers', to: '/admin/students' },
   'admin-volunteers': { label: 'Volunteers', to: '/admin/volunteers' },
   'admin-applications': { label: 'Volunteers › Applications', to: '/admin/volunteers?tab=applications' },
   'admin-users': { label: 'Users & roles', to: '/admin/users' },
   'admin-attendance': { label: 'Attendance', to: '/admin/attendance' },
   'admin-classes': { label: 'Classes', to: '/admin/classes' },
-  'admin-sessions': { label: 'Sessions', to: '/admin/sessions' },
-  'admin-duties': { label: 'Duty schedule', to: '/admin/duties' },
+  'admin-sessions': { label: 'Setup', to: '/admin/sessions' },
+  'admin-duties': { label: 'Duties', to: '/admin/duties' },
   'admin-interviews': { label: 'Interviews', to: '/admin/interviews' },
-  'admin-forms': { label: 'Form editor', to: '/admin/forms' },
+  'admin-forms': { label: 'Forms', to: '/admin/forms' },
   'admin-help': { label: 'Admin help', to: '/admin/help' },
 
   // Parent (top tabs and the avatar menu in ParentLayout)
