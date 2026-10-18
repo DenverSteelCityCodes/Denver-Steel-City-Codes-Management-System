@@ -1,7 +1,11 @@
 import { useRef, useState } from 'react'
-import { Settings2, Lock, ExternalLink } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Settings2, Lock, ExternalLink, ArrowRight } from 'lucide-react'
 import { useFormConfigs } from '../hooks/useFormConfigs'
 import { useAppSettings } from '../hooks/useAppSettings'
+import { useSessions, activeCampYear } from '../hooks/useSessions'
+import { useSeasonSettings } from '../hooks/useSeasonSettings'
+import { registrationPhase } from '../lib/registrationStatus'
 import { FORM_DEFINITIONS, resolveField, type FieldConfig, type FieldDef, type FormKey } from '../lib/formFields'
 
 function Toggle({ on, disabled, label, onChange }: { on: boolean; disabled?: boolean; label: string; onChange: () => void }) {
@@ -100,8 +104,11 @@ function FieldRow({
 }
 
 export default function AdminFormEditor() {
-  const { configs, loading, setFormEnabled, updateField } = useFormConfigs()
-  const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
+  const { configs, loading, updateField } = useFormConfigs()
+  const { settings, loading: settingsLoading } = useAppSettings()
+  const { sessions, loading: sessionsLoading } = useSessions()
+  const { settings: season } = useSeasonSettings(sessionsLoading ? null : activeCampYear(sessions))
+  const [now] = useState(() => Date.now())
   const [activeForm, setActiveForm] = useState<FormKey>('volunteer_application')
   const [saving, setSaving] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -109,10 +116,15 @@ export default function AdminFormEditor() {
   const activeConfig = configs.find(c => c.form_key === activeForm)
   const formDef = FORM_DEFINITIONS[activeForm]
 
-  // The volunteer form's open/closed switch is the same setting as Volunteers → "Applications open".
-  const isOpen = activeForm === 'volunteer_application'
-    ? settings['volunteer_applications_open'] === 'true'
-    : activeConfig?.config.enabled !== false
+  // Each form opens and closes in one place only (issue #171): volunteer applications on
+  // Volunteers › Applications, camper registration in Sessions. Here it's just the status.
+  const status = activeForm === 'volunteer_application'
+    ? (settings['volunteer_applications_open'] === 'true' ? 'Open' : 'Closed')
+    : { open: 'Open', scheduled: 'Opens at its set time', closed: 'Closed' }[
+        registrationPhase(activeConfig?.config.enabled !== false, season?.registration_opens_at, now)]
+  const control = activeForm === 'volunteer_application'
+    ? { to: '/admin/volunteers?tab=applications', label: 'Open or close it in Volunteers' }
+    : { to: '/admin/sessions', label: 'Open or close it in Sessions' }
 
   async function run(key: string, fn: () => Promise<void>) {
     setSaving(key)
@@ -120,12 +132,6 @@ export default function AdminFormEditor() {
     try { await fn() }
     catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong') }
     finally { setSaving(null) }
-  }
-
-  function toggleOpen() {
-    void run('enabled', () => activeForm === 'volunteer_application'
-      ? updateSetting('volunteer_applications_open', isOpen ? 'false' : 'true')
-      : setFormEnabled(activeForm, !isOpen))
   }
 
   const overrides = activeConfig?.config.fields ?? {}
@@ -175,7 +181,7 @@ export default function AdminFormEditor() {
             <div>
               <h2 className="font-sans font-bold text-base text-ink">{formDef.label}</h2>
               <p className="font-sans text-xs text-ink-muted mt-0.5">
-                {isOpen ? 'Open' : 'Closed'} · {formDef.description}
+                <b className="font-extrabold text-ink">{status}</b> · {formDef.description}
                 {hiddenCount > 0 && ` · ${hiddenCount} question${hiddenCount === 1 ? '' : 's'} hidden`}
               </p>
             </div>
@@ -188,15 +194,9 @@ export default function AdminFormEditor() {
               >
                 <ExternalLink size={14} /> Preview
               </a>
-              <button
-                onClick={toggleOpen}
-                disabled={saving === 'enabled'}
-                className={`h-9 px-4 font-sans text-sm font-semibold rounded-[8px] transition disabled:opacity-50 ${
-                  isOpen ? 'bg-danger-soft text-danger hover:bg-danger hover:text-surface' : 'bg-success-soft text-success hover:bg-success hover:text-surface'
-                }`}
-              >
-                {isOpen ? 'Close form' : 'Open form'}
-              </button>
+              <Link to={control.to} className="inline-flex items-center gap-1.5 min-h-11 font-sans text-sm font-bold text-ink underline underline-offset-[3px]">
+                {control.label} <ArrowRight size={14} strokeWidth={2.5} aria-hidden="true" />
+              </Link>
             </div>
           </div>
 
