@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parent Pages Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/* Tokens: copied from src/index.css (AA-adjusted values). Semantic only. */
+:root{
+  --bg:#FAF6EF;--surface:#FFFFFF;--sunken:#F2ECE2;--raised:#FFFFFF;
+  --ink:#262019;--muted:#665A4C;--faint:#766959;--border:#E6DFD3;--border-strong:#CFC6B8;
+  --brand:#F1C446;--brand-hover:#E7B62C;--brand-soft:#FCEFC4;--on-brand:#1A1613;--bar:#1A1613;
+  --success-soft:#C2E6C9;--success:#17652F;--warning-soft:#FAE1A1;--warning:#715709;
+  --danger-soft:#F6D5D2;--danger:#B42318;--info-soft:#CEDDE8;--info:#2D5E83;
+  --vol-soft:#CEDDE8;--vol:#2D5E83;--par-soft:#DBBFDD;--par:#5F4266;
+  --band:#1A1613;--band-line:transparent;
+  --page:#EFE9DF;
+}
+:root[data-theme="dark"]{
+  --bg:#171310;--surface:#221C16;--sunken:#100D0A;--raised:#2C251D;
+  --ink:#F5EFE4;--muted:#B9AD9C;--faint:#9C907F;--border:#39302699;--border-strong:#4A3F33;
+  --brand-hover:#F6CF5E;--brand-soft:#3A2F12;
+  --success-soft:#16341F;--success:#86E0A0;--warning-soft:#3A2F12;--warning:#F1C446;
+  --danger-soft:#3A1A1A;--danger:#F0A19C;--info-soft:#16293A;--info:#9CCBEC;
+  --vol-soft:#16293A;--vol:#9CCBEC;--par-soft:#2E2233;--par:#D6B6DC;
+  --band:#2C251D;--band-line:#4A3F33;--page:#0E0B09;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171310;--surface:#221C16;--sunken:#100D0A;--raised:#2C251D;
+    --ink:#F5EFE4;--muted:#B9AD9C;--faint:#9C907F;--border:#39302699;--border-strong:#4A3F33;
+    --brand-hover:#F6CF5E;--brand-soft:#3A2F12;
+    --success-soft:#16341F;--success:#86E0A0;--warning-soft:#3A2F12;--warning:#F1C446;
+    --danger-soft:#3A1A1A;--danger:#F0A19C;--info-soft:#16293A;--info:#9CCBEC;
+    --vol-soft:#16293A;--vol:#9CCBEC;--par-soft:#2E2233;--par:#D6B6DC;
+    --band:#2C251D;--band-line:#4A3F33;--page:#0E0B09;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font-family:"Josefin Sans",ui-sans-serif,system-ui,sans-serif;font-weight:500;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{-webkit-tap-highlight-color:transparent}
+svg.lucide{width:1em;height:1em;flex-shrink:0;stroke-width:2.2}
+:focus-visible{outline:2px solid var(--brand-hover);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* ── Doc chrome (the page around the mockup) ─────────────── */
+.doc{max-width:1320px;margin:0 auto;padding:28px 16px 64px}
+.doc>h1{font-size:30px;line-height:1.2;margin:0 0 6px;font-weight:700;letter-spacing:-.01em}
+.doc .lede{color:var(--muted);max-width:720px;margin:0 0 20px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;margin-bottom:22px}
+.ctl .cap{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:0 12px;height:36px;font-size:14px;font-weight:600;border-left:1px solid var(--border-strong);white-space:nowrap}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.stage{display:grid;grid-template-columns:auto minmax(0,1fr);gap:32px;align-items:start}
+.stage.desktop{grid-template-columns:minmax(0,1fr)}
+.notes{position:sticky;top:16px;max-width:620px}
+.notes .kicker{font-size:14px;color:var(--muted);margin:0 0 2px;font-weight:600}
+.notes h3{font-size:23px;margin:0 0 12px;line-height:1.25}
+.notes h4,.notes .nb{font-size:15px;margin:18px 0 4px}
+.notes ul{margin:0;padding:0;list-style:none}
+.notes li{margin:0 0 14px;font-size:15px}
+.notes .nh{font-size:23px;margin:0 0 14px;line-height:1.25}
+.notes .nh span{display:block;font-size:15px;font-weight:600;color:var(--muted);margin-top:4px}
+.notes li small{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.notes .old{font-size:14.5px;color:var(--muted);margin:0}
+.stage.desktop .notes{position:static}
+.ref{margin-top:48px}
+.ref>h2{font-size:23px;margin:0 0 4px}
+.ref p.sub{color:var(--muted);margin:0 0 14px;max-width:720px}
+table.map{width:100%;border-collapse:collapse;font-size:14.5px}
+table.map th,table.map td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-strong);vertical-align:top}
+table.map th{font-size:14px;color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px 32px}
+.cols h3{margin:0 0 6px;font-size:17px}
+.cols ul{margin:0 0 8px;padding-left:18px;font-size:14.5px}
+.cols li{margin:5px 0}
+code{font-size:.9em;background:var(--sunken);padding:1px 4px;border-radius:4px}
+
+/* ── Device frames ───────────────────────────────────────── */
+.phone{width:375px;height:812px;border-radius:44px;border:10px solid #111;background:var(--bg);overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.ios-status{height:44px;flex-shrink:0;background:var(--bar);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:4px 26px 0;font-size:14px;font-weight:600}
+.ios-status .isl{width:110px;height:30px;border-radius:16px;background:#000}
+.safari{flex-shrink:0;background:color-mix(in srgb,var(--surface) 92%,var(--bg));border-top:1px solid var(--border);padding:8px 14px 26px}
+.safari .url{height:40px;border-radius:12px;background:var(--sunken);display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;color:var(--ink)}
+.safari .url svg{font-size:12px;color:var(--muted)}
+.desk{width:100%;max-width:1200px;height:760px;border-radius:12px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.12)}
+.desk .chrome{height:34px;flex-shrink:0;background:var(--sunken);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:0 12px}
+.desk .chrome i{width:10px;height:10px;border-radius:50%;background:var(--border-strong);display:block}
+.desk .chrome .url{margin-left:16px;height:22px;flex:0 1 360px;border-radius:6px;background:var(--bg);font-size:12px;color:var(--muted);display:flex;align-items:center;padding:0 10px}
+/* The page itself scrolls (as it would in the browser) — sticky headers, no inner scroll panes. */
+.viewport{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;scrollbar-width:thin;overscroll-behavior:contain}
+
+/* ── App shell ───────────────────────────────────────────── */
+.bar{height:52px;background:var(--bar);display:flex;align-items:center;gap:8px;padding:0 10px 0 16px;position:relative;z-index:6}
+.desk .bar{height:64px;padding:0 24px;position:sticky;top:0}
+.bar img{height:24px;width:auto}
+.desk .bar img{height:32px}
+.bar .right{margin-left:auto;display:flex;align-items:center;gap:2px}
+.iconbtn{border:0;background:none;color:rgba(255,255,255,.75);width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--vol-soft);color:var(--vol);display:grid;place-items:center;font-weight:700;font-size:13px;box-shadow:0 0 0 2px var(--bar),0 0 0 4px var(--brand)}
+.avatarbtn{border:0;background:none;display:flex;align-items:center;gap:4px;color:rgba(255,255,255,.75);height:44px;padding:0 6px;border-radius:12px}
+/* Phone: tabs are a strip under the bar that sticks to the top. The bottom edge belongs to Safari. */
+.tabs{position:sticky;top:0;z-index:5;background:var(--bar);display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--band-line)}
+.tabs button{border:0;background:none;height:46px;color:rgba(255,255,255,.7);font-size:14.5px;font-weight:600;position:relative;display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button[aria-current="page"]{color:#fff}
+.tabs button[aria-current="page"]::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--brand)}
+.tabs .count{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--brand);color:var(--on-brand);font-size:11px;line-height:19px;font-weight:700}
+.topnav{display:flex;gap:4px;margin-left:20px}
+.topnav button{border:0;background:none;color:rgba(255,255,255,.7);height:40px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.topnav button:hover{color:#fff;background:rgba(255,255,255,.1)}
+.topnav button[aria-current="page"]{background:rgba(255,255,255,.15);color:#fff}
+.menu{position:absolute;right:8px;top:50px;width:260px;background:var(--raised);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:6px;z-index:20;color:var(--ink)}
+.desk .menu{right:22px;top:60px}
+.menu .who{padding:10px 12px 12px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.menu .who b{display:block;font-size:16px}
+.menu .who span{font-size:13.5px;color:var(--muted)}
+.menu button{width:100%;border:0;background:none;text-align:left;display:flex;align-items:center;gap:10px;padding:0 12px;height:46px;border-radius:10px;font-size:15px;font-weight:600}
+.menu button:hover{background:var(--sunken)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:6px 0}
+
+/* ── Content ─────────────────────────────────────────────── */
+.page{padding:20px 16px calc(32px + env(safe-area-inset-bottom))}
+.desk .page{padding:32px 32px 48px;max-width:1080px;margin:0 auto}
+.dateline{font-size:14px;color:var(--muted);margin:0 0 2px;font-weight:600}
+h1.title{font-size:28px;line-height:1.15;margin:0;font-weight:700;letter-spacing:-.01em}
+.desk h1.title{font-size:34px}
+.lead{font-size:16.5px;line-height:1.5;margin:8px 0 0;max-width:34em}
+.lead b{font-weight:700}
+h2.h{font-size:18px;line-height:1.3;margin:0;font-weight:700}
+.sect{margin-top:28px}
+.sect>header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+.sect>header p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14.5px}
+.xs{font-size:13.5px}
+.list{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.grid2{display:grid;gap:0 40px;grid-template-columns:minmax(0,1fr)}
+.desk .grid2{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:start}
+.desk .grid2>.col2>.sect:first-child{margin-top:0}
+.tag{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 9px;font-size:12.5px;font-weight:600;white-space:nowrap;background:var(--vol-soft);color:var(--vol)}
+.tag.ok{background:var(--success-soft);color:var(--success)}
+.tag.neutral{background:var(--sunken);color:var(--muted)}
+.btn{height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.primary:hover{background:var(--brand-hover)}
+.btn.quiet{border-color:transparent;background:none;color:var(--muted);padding:0 10px}
+.btn.quiet:hover{background:var(--sunken);color:var(--ink)}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.textlink{border:0;background:none;padding:0;min-height:44px;color:var(--ink);font-weight:600;text-decoration:underline;text-decoration-color:var(--brand-hover);text-decoration-thickness:2px;text-underline-offset:4px;font-size:15px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+
+/* Roll call: the one loud thing on the page. */
+.rc{margin:22px -16px 0}
+.desk .rc{margin:24px 0 0}
+.rc-band{position:sticky;top:46px;z-index:4;background:var(--band);color:#fff;padding:14px 16px 14px;border-top:1px solid var(--band-line);border-bottom:1px solid var(--band-line)}
+.desk .rc-band{top:64px;border-radius:14px 14px 0 0}
+.rc-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.rc-top h2{font-size:20px;margin:0;line-height:1.2}
+.rc-top p{margin:2px 0 0;font-size:14px;color:rgba(255,255,255,.72)}
+.big{font-size:44px;font-weight:700;line-height:.9;color:var(--brand);font-variant-numeric:tabular-nums;text-align:right}
+.big span{display:block;white-space:nowrap;font-size:13.5px;font-weight:600;color:rgba(255,255,255,.72);margin-top:6px}
+.rc-kinds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.rc-kinds button{border:1px solid rgba(255,255,255,.22);background:transparent;color:rgba(255,255,255,.85);height:40px;border-radius:10px;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;gap:4px}
+.rc-kinds button[aria-selected="true"]{background:#fff;border-color:#fff;color:#1A1613}
+.rc-kinds button.done:not([aria-selected="true"]){color:#9FE3B4;border-color:rgba(159,227,180,.45)}
+.rc-all{margin-top:10px;width:100%;height:50px;font-size:16px}
+.rc-list{background:var(--surface);border-bottom:1px solid var(--border)}
+.desk .rc-list{border:1px solid var(--border);border-top:0;border-radius:0 0 14px 14px;overflow:hidden}
+.rc-foot{display:flex;justify-content:space-between;align-items:center;padding:0 16px}
+.camper{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.camper:last-child{border-bottom:0}
+.camper.absent{background:color-mix(in srgb,var(--danger-soft) 45%,transparent)}
+.ini{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--sunken);color:var(--muted);font-weight:700;font-size:13px;flex-shrink:0}
+.camper.present .ini{background:var(--success-soft);color:var(--success)}
+.camper.absent .ini{background:var(--danger-soft);color:var(--danger)}
+.cname{font-weight:600;font-size:16px;line-height:1.2}
+.cname small{font-weight:500;font-size:13.5px;color:var(--muted);margin-left:4px}
+.medbtn{border:0;background:var(--danger-soft);color:var(--danger);border-radius:6px;font-size:12.5px;font-weight:700;min-height:26px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;margin-top:4px}
+.mednote{margin:6px 0 0;font-size:14px;background:var(--danger-soft);border-radius:8px;padding:8px 10px}
+.mednote small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.toggle{height:44px;min-width:100px;padding:0 10px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-shrink:0}
+.toggle.present{background:var(--success-soft);border-color:color-mix(in srgb,var(--success) 35%,transparent);color:var(--success)}
+.toggle.absent{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 40%,transparent);color:var(--danger)}
+.callbtn{width:44px;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);display:grid;place-items:center;color:var(--ink);flex-shrink:0;font-size:17px;text-decoration:none}
+
+/* Schedule */
+.now{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.now b{font-size:17px}
+.sched{list-style:none;margin:6px 0 0;padding:0}
+.sched li{display:grid;grid-template-columns:104px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:15px}
+.sched li:last-child{border-bottom:0}
+.sched .t{color:var(--muted);font-variant-numeric:tabular-nums;font-size:14px;padding-top:1px}
+.sched b{font-weight:600;display:block;line-height:1.3}
+.sched .loc{color:var(--muted);font-size:13.5px}
+.sched li.on{box-shadow:inset 3px 0 0 var(--brand);padding-left:10px}
+.sched li.on .t{color:var(--ink);font-weight:700}
+.sched li.past b,.sched li.past .t,.sched li.past .loc{color:var(--faint)}
+details.coll>summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center}
+details.coll>summary::-webkit-details-marker{display:none}
+details.coll .chev{transition:transform .15s}
+details.coll[open] .chev{transform:rotate(180deg)}
+
+/* Weeks, days, slots */
+.weekseg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;background:var(--surface)}
+.weekseg button{border:0;background:none;height:44px;font-weight:600;font-size:15px;border-left:1px solid var(--border-strong)}
+.weekseg button:first-child{border-left:0}
+.weekseg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.days{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.day{border:1px solid var(--border-strong);background:var(--surface);border-radius:12px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.day .wd{font-size:13px;color:var(--muted);font-weight:600}
+.day b{font-size:18px;line-height:1}
+.day .op{font-size:12px;color:var(--muted);font-weight:600}
+.day[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.day[aria-pressed="true"] .wd,.day[aria-pressed="true"] .op{color:var(--on-brand)}
+.day .mine{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--vol)}
+.day[aria-pressed="true"] .mine{background:var(--on-brand)}
+.item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item b{display:block;font-size:16px;line-height:1.25;font-weight:600}
+.item .sub{font-size:13.5px;color:var(--muted)}
+.seats{font-size:13.5px;color:var(--muted)}
+.datebox{width:42px;text-align:center;flex-shrink:0;line-height:1.05}
+.datebox span{display:block;font-size:12.5px;color:var(--muted);font-weight:600}
+.datebox b{font-size:20px}
+.confirm{background:var(--danger-soft);padding:12px 16px;font-size:14.5px;border-bottom:1px solid var(--border)}
+.confirm .row{margin-top:10px;justify-content:flex-end}
+
+/* Updates */
+.upd{padding:14px 16px;border-bottom:1px solid var(--border)}
+.upd:last-child{border-bottom:0}
+.upd .by{font-size:14px;color:var(--muted)}
+.upd .by b{color:var(--ink);font-weight:700}
+.upd p{margin:4px 0 0;font-size:16px;line-height:1.5}
+
+/* Forms — 16px minimum so iOS Safari doesn't zoom on focus */
+.field label,.field .lbl{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.input{width:100%;height:46px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-size:16px;-webkit-appearance:none;appearance:none}
+select.input{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 20px,calc(100% - 13px) 20px;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+textarea.input{height:auto;padding:10px 12px;resize:vertical}
+.checks{display:flex;gap:8px;flex-wrap:wrap}
+.checkpill{display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border:1px solid var(--border-strong);border-radius:10px;font-weight:600;background:var(--surface)}
+.checkpill input{width:20px;height:20px;accent-color:var(--brand-hover)}
+.formstack>*+*{margin-top:14px}
+.actions{display:flex;gap:8px;justify-content:flex-end}
+.saved{color:var(--success);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:6px}
+.err{color:var(--danger);font-size:14.5px;margin:0}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0;font-size:16px}
+dl.kv dt{color:var(--muted)}
+dl.kv dd{margin:0;font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}
+.back{border:0;background:none;display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--muted);padding:0;min-height:44px;font-size:15px;margin:-10px 0 4px}
+.who{display:flex;align-items:center;gap:14px}
+.who .avatar{width:56px;height:56px;font-size:19px;box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--brand)}
+.empty{padding:28px 4px 8px}
+.empty .ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:22px;margin-bottom:12px}
+
+/* Applicant tracker — a real sequence, so it's numbered. */
+.track{list-style:none;margin:0;padding:0}
+.track li{display:grid;grid-template-columns:32px 1fr;gap:14px;position:relative;padding-bottom:22px}
+.track li:last-child{padding-bottom:0}
+.track li::before{content:"";position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--border-strong)}
+.track li:last-child::before{display:none}
+.track li.done::before{background:var(--success)}
+.track .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--bg);color:var(--muted);border:2px solid var(--border-strong)}
+.track li.done .n{background:var(--success);color:var(--surface);border-color:var(--success)}
+.track li.cur .n{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+.track b{display:block;font-size:17px;line-height:1.3;padding-top:4px}
+.track p{margin:2px 0 0;font-size:15px;color:var(--muted)}
+.track li.cur .when{font-size:24px;font-weight:700;color:var(--ink);margin:6px 0 2px;line-height:1.2}
+.slotday{font-size:14px;font-weight:600;color:var(--muted);margin:14px 0 6px}
+.slotgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.slotgrid button{height:46px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);font-weight:600;font-size:15px}
+.slotgrid button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+
+@media (max-width:860px){
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .notes{position:static}
+  .phone{margin:0 auto}
+}
+@media (max-width:420px){
+  .phone{width:100%;border:0;border-radius:0;height:min(812px,100dvh);box-shadow:none}
+  .ios-status,.safari{display:none}
+}
+
+/* ── Parent additions ────────────────────────────────────── */
+.tabs{grid-template-columns:repeat(3,1fr)}
+.avatar{background:var(--par-soft);color:var(--par)}
+.tag{background:var(--par-soft);color:var(--par)}
+.tag.wait{background:var(--info-soft);color:var(--info)}
+.tag.offer{background:var(--brand-soft);color:var(--warning)}
+.tag.danger{background:var(--danger-soft);color:var(--danger)}
+.tag.new{background:var(--brand);color:var(--on-brand)}
+
+/* The one loud thing: a dark band that says what matters most right now. */
+.hero{margin:22px -16px 0;background:var(--band);color:#fff;padding:18px 16px 18px;border-top:1px solid var(--band-line);border-bottom:1px solid var(--band-line)}
+.desk .hero{margin:24px 0 0;border-radius:14px;padding:22px 24px;border:1px solid var(--band-line)}
+.hero h2{font-size:21px;line-height:1.2;margin:0}
+.hero p{margin:6px 0 0;font-size:15.5px;color:rgba(255,255,255,.8);line-height:1.5}
+.hero p b{color:#fff}
+.hero .top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.hero .actions{justify-content:flex-start;margin-top:14px;flex-wrap:wrap}
+.hero .btn:not(.primary){background:transparent;border-color:rgba(255,255,255,.35);color:#fff}
+.hero .btn:not(.primary):hover{background:rgba(255,255,255,.1)}
+.hero .confirm{margin:14px 0 0;border-radius:12px;color:var(--ink)}
+.hero .confirm .btn:not(.primary){background:var(--surface);border-color:var(--border-strong);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;list-style:none;padding:0}
+.chips li{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 11px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8)}
+.chips li.ok{background:#C2E6C9;border-color:#C2E6C9;color:#17652F}
+.hero .kid{padding:12px 0;border-top:1px solid rgba(255,255,255,.14)}
+.hero .kid:first-of-type{margin-top:12px}
+.hero .kid b{font-size:17px}
+.hero .steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:15px;color:rgba(255,255,255,.85)}
+.hero .steps li{display:flex;gap:10px;align-items:center}
+.hero .steps span{width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,.35);display:grid;place-items:center;font-size:13px;font-weight:700;flex-shrink:0}
+
+/* Camper rows on Home */
+.kidrow{width:100%;border:0;background:none;text-align:left;display:flex;align-items:flex-start;gap:12px;padding:14px 16px;min-height:64px}
+.kidrow:hover{background:var(--sunken)}
+.kidrow .ini{background:var(--par-soft);color:var(--par);margin-top:1px}
+.kidrow b{display:block;font-size:17px;line-height:1.25}
+.kidrow .sub{display:block;font-size:14.5px;color:var(--muted);line-height:1.45;margin-top:2px}
+.kidrow .sub strong{color:var(--ink);font-weight:600}
+.kidrow .chev{color:var(--muted);font-size:18px;margin-top:4px;transition:transform .15s}
+.kidrow[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.kid-wrap{border-bottom:1px solid var(--border)}
+.kid-wrap:last-child{border-bottom:0}
+.kidmore{padding:0 16px 14px 64px}
+.reg{padding:10px 0;border-top:1px solid var(--border)}
+.reg:first-child{border-top:0;padding-top:0}
+.reg .what{font-size:15px;font-weight:600}
+.reg .meta{font-size:14px;color:var(--muted);margin:2px 0 0}
+.reg .row{flex-wrap:wrap;gap:4px 16px}
+.inset{margin:8px -16px 0 -64px}
+.inset .confirm{border-bottom:0;padding-left:64px}
+.optlist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.optlist{gap:0;border-top:1px solid var(--border)}
+.opt{width:100%;text-align:left;border:0;border-bottom:1px solid var(--border);background:none;padding:10px 0;min-height:56px;display:flex;align-items:center;gap:10px}
+.opt>span:first-child{flex:1}
+.opt:hover{background:var(--sunken)}
+.opt b{display:block;font-size:15.5px}
+.opt span{display:block;font-size:13.5px;color:var(--muted)}
+.opt.full{cursor:default;color:var(--muted)}
+.note{font-size:14px;color:var(--muted);margin:6px 0 0}
+
+/* Classes */
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{flex-shrink:0;height:44px;padding:0 14px 0 6px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+.pill .ini{width:32px;height:32px;font-size:12px;background:var(--par-soft);color:var(--par)}
+.pill[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.pill.add{padding:0 14px;border-style:dashed;color:var(--muted)}
+.lbl{display:block;font-size:14px;font-weight:600;color:var(--muted);margin:0 0 6px}
+.cls{padding:16px;border-bottom:1px solid var(--border)}
+.cls:last-child{border-bottom:0}
+.cls h3{font-size:17.5px;margin:0;line-height:1.25}
+.cls .desc{font-size:15px;margin:4px 0 0;color:var(--muted);line-height:1.45}
+.cls .facts{font-size:14.5px;margin:8px 0 0;line-height:1.5}
+.meter{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;margin:10px 0 4px}
+.meter i{display:block;height:100%;background:var(--success);border-radius:3px}
+.meter.almost i{background:var(--brand-hover)}
+.meter.full i{background:var(--danger)}
+.seatline{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+.cls .btn{margin-top:12px}
+.done{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:15px;font-weight:600;color:var(--success)}
+.done.wait{color:var(--info)}
+.check{background:var(--info-soft);margin:14px -16px -16px;padding:16px}
+.check h4{margin:0 0 4px;font-size:16px}
+.check dl.kv{font-size:15px;margin-top:10px}
+.check .field{margin-top:12px}
+.check .actions{display:grid;grid-template-columns:auto minmax(0,1fr)}
+.check .actions .btn{margin-top:0;padding:0 12px}
+.callout{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:15px;margin-top:14px}
+.callout svg{margin-top:3px;color:var(--muted)}
+.callout.info{background:var(--info-soft);border-color:transparent;color:var(--ink)}
+.callout.info svg{color:var(--info)}
+
+/* Family details */
+details.fold{border-bottom:1px solid var(--border)}
+details.fold:last-child{border-bottom:0}
+details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:60px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary .ini{background:var(--par-soft);color:var(--par)}
+details.fold>summary b{display:block;font-size:16.5px;line-height:1.25}
+details.fold>summary .sub{display:block;font-size:14px;color:var(--muted)}
+details.fold>summary .chev{margin-left:auto;color:var(--muted);transition:transform .15s}
+details.fold[open]>summary .chev{transform:rotate(180deg)}
+.foldbody{padding:0 16px 16px}
+.grid-2f{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.desk .grid-3f{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.desk .grid-3f>.field+.field{margin-top:0}
+
+/* Registration wizard */
+.wizhead{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 16px 12px}
+.desk .wizhead{top:64px;padding:14px 32px}
+.wizhead .row{justify-content:space-between}
+.wizhead .stepof{font-size:14px;font-weight:600;color:var(--muted)}
+.wizhead h1{font-size:21px;margin:2px 0 0;line-height:1.2}
+.prog{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:10px}
+.prog i{height:5px;border-radius:3px;background:var(--border-strong)}
+.prog i.on{background:var(--brand-hover)}
+.wiz{padding:18px 16px 40px}
+.desk .wiz{max-width:640px;margin:0 auto;padding:28px 32px 48px}
+.yesno{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.yesno button{height:46px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);font-weight:600;font-size:15.5px}
+.yesno button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.weekcard{border-top:1px solid var(--border);padding:4px 0 6px}
+.weekcard+.weekcard{margin-top:6px}
+.weekcard>label{display:flex;align-items:center;gap:12px;min-height:52px;font-weight:700;font-size:16px}
+.weekcard>label input,.radio input{width:22px;height:22px;accent-color:var(--brand-hover);flex-shrink:0}
+.radio{display:flex;align-items:center;gap:12px;border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;min-height:56px;margin-top:8px;background:var(--surface)}
+.radio b{display:block;font-size:15.5px;font-weight:600}
+.radio span span{display:block;font-size:13.5px;color:var(--muted)}
+.radio.off{background:var(--sunken);border-style:dashed;color:var(--muted)}
+.waiver{border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.waiver summary{padding:0 14px}
+.waiver .body{padding:0 14px 14px;font-size:15px}
+.waiver .body p{margin:8px 0 0}
+.wizfoot{display:flex;gap:10px;margin-top:26px}
+.wizfoot .btn{height:50px;font-size:16px}
+.wizfoot .btn.primary{flex:1}
+.hint{font-size:13.5px;color:var(--muted);margin:5px 0 0}
+.finish{text-align:center;padding:40px 8px}
+.finish .ic{width:64px;height:64px;border-radius:50%;background:var(--success-soft);color:var(--success);display:grid;place-items:center;font-size:30px;margin:0 auto 14px}
+.finish h1{font-size:28px;margin:0}
+.finish p{font-size:16.5px;margin:8px auto 22px;max-width:28em}
+.foot{margin-top:36px;font-size:14.5px;color:var(--muted)}
+.foot a{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+<div class="doc">
+  <h1>Parent pages redesign</h1>
+  <p class="lede">A clickable mockup of the parent pages, framed the way most families will see them: in Safari or Chrome on a phone. It adds no features. Every control maps to an RPC or table the app already uses; the work is in where things live and how they read. All names and numbers are made up.</p>
+
+  <div class="controls">
+    <div class="ctl"><span class="cap">Where the family is</span>
+      <div class="seg" id="ctl-mode">
+        <button data-v="new">New account</button>
+        <button data-v="before">Signed up, camp next week</button>
+        <button data-v="offer">Waitlist spot opens</button>
+        <button data-v="campday">Camp day</button>
+      </div></div>
+    <div class="ctl"><span class="cap">Screen</span>
+      <div class="seg" id="ctl-view">
+        <button data-v="phone">Phone browser</button>
+        <button data-v="desktop">Laptop</button>
+      </div></div>
+    <div class="ctl"><span class="cap">Theme</span>
+      <div class="seg" id="ctl-theme">
+        <button data-v="light">Light</button>
+        <button data-v="dark">Dark</button>
+      </div></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div id="device"></div>
+    <aside class="notes" id="notes" aria-live="polite"></aside>
+  </div>
+
+  <section class="ref">
+    <h2>What the research said</h2>
+    <p class="sub">From 278 unique threads where a parent wrote in (deduplicated from 1,682 inbox threads; counts only, no names or quotes), specs 10 to 16, 24, 29 to 36 and L6a, and the live demo measured at 375 px.</p>
+    <div class="cols">
+      <div><h3>The pages today</h3><ul>
+        <li>The dashboard is <b>2,814 px tall</b>, 3.5 phone screens. Campers start <b>two screens down</b>, under the week card, the 8-row schedule and three updates.</li>
+        <li>On a phone the top-bar nav is hidden, so Classes is reachable only from a dashboard button.</li>
+        <li>The same class shows twice (week card and camper card), and a waitlisted camper reads "On waitlist" twice on one card.</li>
+        <li>Classes is 2,872 px with a camper picked: every section of every course, both weeks, ineligible ones greyed in place.</li>
+        <li>Fields are 14 px (iOS Safari zooms on focus). 15 of 17 controls on the dashboard are under 44 px.</li>
+      </ul></div>
+      <div><h3>What parents write in about</h3><ul>
+        <li><b>"Am I in?"</b>: 85 threads on confirmation and waitlist status. 58 of them could have been answered on screen, the highest share of any group.</li>
+        <li><b>When, where, what to bring</b>: 128 threads on dates, times, location, laptops and pickup. 49 could have been answered on screen.</li>
+        <li><b>Changing a choice</b>: 87 threads on switching or cancelling, and 80 of them needed staff to act. 21 were "we picked the wrong class".</li>
+        <li><b>Which class fits</b>: 59 threads on level, grade rules and placing with a friend.</li>
+        <li>March to June holds 85% of threads, peaking in May. 2026 alone had 121.</li>
+      </ul></div>
+      <div><h3>So the home screen answers, in order</h3><ul>
+        <li>Anything that needs you: a spot to claim, a draft to finish, details to confirm.</li>
+        <li>Then status per camper per week, in one word.</li>
+        <li>Then when and where: dates, building, drop-off and pickup, from signing up onward, not only in camp week.</li>
+        <li>Then the change path for each class, with the deadline date in words.</li>
+        <li>Details you change once a year (contacts, health) move behind the avatar.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="ref">
+    <h2>Everything still there, and where it moved</h2>
+    <p class="sub">Every control on today's <code>/parent</code>, <code>/parent/classes</code> and <code>/parent/register</code> pages, mapped to its new place. One removal is flagged for your call; nothing is added.</p>
+    <div class="tablewrap"><table class="map">
+      <thead><tr><th>Today</th><th>In the redesign</th><th>Backed by (unchanged)</th></tr></thead>
+      <tbody>
+        <tr><td>Home and Browse classes links in the top bar. On phones they are hidden (<code>hidden sm:inline-flex</code>), so the only way to the classes is a button on the dashboard.</td><td>Home, Classes and Updates tabs: a strip under the bar that sticks to the top on phones, links in the bar on a laptop</td><td>react-router routes</td></tr>
+        <tr><td>Theme button, bell and avatar menu (name and Sign out)</td><td>The avatar menu holds your name and email, <b>Family details</b>, Register a new camper, theme and Sign out, the same as the volunteer layout</td><td><code>useAuth</code></td></tr>
+        <tr><td>Bell: posts from camp, then one line per camper status</td><td>Posts move to the <b>Updates</b> tab, with an unread count on the tab. Things that need you (a spot to claim, details to confirm, a class the camp cancelled) become the band at the top of Home. Status lines are already on each camper row.</td><td><code>useUpdates</code>, <code>scc-updates-seen</code> per user, <code>useRegistrations</code></td></tr>
+        <tr><td>"Welcome, Taylor" and the status sentence</td><td>Kept as the Home heading and lead</td><td><code>buildSubhead</code></td></tr>
+        <tr><td>Browse classes and Add camper buttons</td><td>The Classes tab. Add camper is in the avatar menu and on Classes as "New camper".</td><td>routes</td></tr>
+        <tr><td>"Finish registering" draft cards</td><td>On Home, above the campers, with Continue and Discard</td><td><code>listDrafts</code>, <code>clearDraft</code></td></tr>
+        <tr><td>Registration countdown</td><td>The band on Home before registration opens, and the top of Classes</td><td><code>RegistrationCountdown</code>, <code>season_settings</code></td></tr>
+        <tr><td>This week card: session, class, time, room and lead per camper, later weeks, and the full daily schedule</td><td>The band says when camp starts and where to drop off. Each camper row carries the class, time, room and lead. The schedule is folded on Home ("Right now" on a camp day).</td><td><code>useSessions</code>, <code>useScheduleItems</code>, <code>useSectionLeadNames</code></td></tr>
+        <tr><td>Today's roll-call chips under each camper</td><td>The band on a camp day: one line per camper</td><td><code>useMyRollCalls</code></td></tr>
+        <tr><td>"Updates from camp" (full feed on the dashboard)</td><td>The Updates tab. Home shows the latest one.</td><td><code>useUpdates</code>, <code>UpdatesFeed</code></td></tr>
+        <tr><td>Camper cards: a rollup chip, then a chip per class</td><td>One row per camper with one status. Tapping it opens the class details and the change actions in place.</td><td><code>rollupStatus</code>, <code>STATUS_CONFIG</code></td></tr>
+        <tr><td>Switch class, Cancel this spot, Leave the waitlist, Request a change, Claim and Decline</td><td>Inside the opened camper row, with the same inline confirmations. A spot to claim also moves up into the band.</td><td><code>my_change_deadlines</code>, <code>my_swap_options</code>, <code>swap_my_registration</code>, <code>cancel_my_registration</code>, <code>request_change</code>, <code>accept_offer</code>, <code>decline_offer</code></td></tr>
+        <tr><td>Edit camper (name, grade, health, emergency contact)</td><td><b>Family details</b>, one folded row per camper with an inline Edit</td><td><code>useStudents.updateStudent</code></td></tr>
+        <tr><td>Your contact details card at the bottom of the dashboard</td><td><b>Family details</b>, at the top</td><td><code>parent_profiles</code> via <code>useParentProfile</code></td></tr>
+        <tr><td>Register for another class, per camper</td><td>Opens Classes with that camper already picked</td><td><code>?camper=</code></td></tr>
+        <tr><td>Classes: camper dropdown, eligibility banner, every course with every section for both weeks, ineligible sections greyed in place</td><td>Camper buttons and a week switch, then only the classes that camper can take that week. Classes the camper can't take are folded at the end, with the reason.</td><td><code>useClasses</code>, <code>courseConstraint</code>, <code>gradeBlockReason</code></td></tr>
+        <tr><td>"Quick check" banner and the confirmation panel above the classes</td><td>The banner goes. The same confirmation opens inside the class you tapped Register on, then registers.</td><td><code>confirmOnboarding</code>, <code>ConfirmOnboardingPanel</code></td></tr>
+        <tr><td>Toast after registering (fixed to the bottom of the screen)</td><td>The result shows in the class you registered for. Safari's toolbar covers the bottom edge.</td><td><code>registerStudent</code></td></tr>
+        <tr><td><b>Course search box</b></td><td><b>Removed, for your call.</b> With four courses and a camper and week already picked, every result fits on one screen. Easy to bring back if the catalogue grows.</td><td>(client-side filter)</td></tr>
+        <tr><td>Registration: 5 steps with dots and Back and Continue</td><td>The same 5 steps and fields, with a sticky step header and progress bar, 16 px fields, and contact details filled in from Family details</td><td><code>ParentRegistrationPage</code>, <code>registrationDraft</code>, <code>form_configs</code></td></tr>
+        <tr><td>"Questions or changes?" email footer</td><td>Kept at the bottom of Home and Family details</td><td>mailto</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="ref">
+    <h2>Found in the research, left out on purpose</h2>
+    <p class="sub">These would be new features, and some are already specs. Each has an obvious home in this layout, so adding it later won't move anything else.</p>
+    <div class="cols">
+      <ul>
+        <li><b>Waitlist position</b> ("2nd in line"): needs a new RPC. Its home is the waitlisted camper row.</li>
+        <li><b>Laptop loans per week</b> (spec 29): a line in each camper row, and an action in the band when one is needed.</li>
+        <li><b>Grade and prerequisite rules in the database, and "Request an exception"</b> (spec 31): the folded "Not open to" list on Classes.</li>
+        <li><b>Move both weeks at once</b> (backlog B10): Switch class inside the camper row.</li>
+      </ul>
+      <ul>
+        <li><b>A second guardian on the account</b> (spec 24, households): a section on Family details.</li>
+        <li><b>Who may pick up, and walk-home consent</b> (spec 36): each camper in Family details, and the camp-day band at dismissal.</li>
+        <li><b>Urgent notice</b> (spec 34): above the band on Home.</li>
+        <li><b>Signed forms</b> (L2) and <b>structured allergies</b> (spec 33): each camper in Family details.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ───────── Fictional demo data, same shape as the demo seed ───────── */
+const ME = { name: 'Taylor Reyes', first: 'Taylor', email: 'taylor.reyes@example.org', initials: 'TR' }
+const WEEKS = {
+  1: { name: 'Week 1', dates: 'October 19 to 23', short: 'Oct 19 to 23', start: 'Monday, October 19' },
+  2: { name: 'Week 2', dates: 'October 26 to 30', short: 'Oct 26 to 30', start: 'Monday, October 26' },
+}
+const COURSES = [
+  { id: 'java', name: 'Intro to Java', desc: 'Object-oriented programming in Java, for campers who have tried some coding before.' },
+  { id: 'py', name: 'Intro to Python', desc: 'First steps in programming: variables, loops and functions, building small games and art.' },
+  { id: 'mc', name: 'Microcontrollers', desc: 'Program real hardware, from LEDs to sensors and buttons, with CircuitPython.', rule: 'For campers entering grades 7 to 9 with some Python.', grades: [7, 9] },
+  { id: 'web', name: 'Web Development', desc: 'Build and publish a personal website with HTML, CSS and a little JavaScript.' },
+]
+const SECTIONS = [
+  { id: 'java1', course: 'java', label: 'JAVA-1', week: 1, ages: [11, 14], room: 'Room 104', lead: 'Priya', taken: 6, cap: 14 },
+  { id: 'java2', course: 'java', label: 'JAVA-1', week: 2, ages: [11, 14], room: 'Room 104', lead: 'Priya', taken: 11, cap: 14 },
+  { id: 'pya1', course: 'py', label: 'PY-A', week: 1, ages: [9, 10], room: 'Room 101', lead: 'Marcus', taken: 10, cap: 10 },
+  { id: 'pyb1', course: 'py', label: 'PY-B', week: 1, ages: [11, 13], room: 'Room 102', lead: 'Sam', taken: 9, cap: 16 },
+  { id: 'pya2', course: 'py', label: 'PY-A', week: 2, ages: [9, 10], room: 'Room 101', lead: 'Marcus', taken: 9, cap: 14 },
+  { id: 'pyb2', course: 'py', label: 'PY-B', week: 2, ages: [11, 13], room: 'Room 102', lead: 'Sam', taken: 11, cap: 16 },
+  { id: 'mc1', course: 'mc', label: 'MC-1', week: 1, ages: [12, 14], room: 'Room 205', lead: 'Dana', taken: 10, cap: 10 },
+  { id: 'mc2', course: 'mc', label: 'MC-1', week: 2, ages: [12, 14], room: 'Room 205', lead: 'Dana', taken: 9, cap: 10 },
+  { id: 'web1', course: 'web', label: 'WEB-1', week: 1, ages: [10, 13], room: 'Room 202', lead: 'Fiona', taken: 12, cap: 16 },
+  { id: 'web2', course: 'web', label: 'WEB-1', week: 2, ages: [10, 13], room: 'Room 202', lead: 'Fiona', taken: 8, cap: 16 },
+]
+const sec = id => SECTIONS.find(s => s.id === id)
+const course = s => COURSES.find(c => c.id === s.course)
+const KIDS0 = [
+  { id: 'maya', first: 'Maya', last: 'Reyes', age: 12, grade: 7, allergies: 'Peanuts', medical: '', ec: ['Morgan Reyes', '720-555-0142', 'Aunt'], confirmed: true },
+  { id: 'eli', first: 'Eli', last: 'Reyes', age: 9, grade: 4, allergies: '', medical: '', ec: ['Morgan Reyes', '720-555-0142', 'Aunt'], confirmed: true },
+  { id: 'noor', first: 'Noor', last: 'Reyes', age: 13, grade: 8, allergies: '', medical: 'Asthma, inhaler in backpack', ec: ['Morgan Reyes', '720-555-0142', 'Aunt'], confirmed: false, shirt: 'Adult S', laptop: true, lunch: false },
+]
+const SCHEDULE = [
+  ['8:30', '9:00', 'Drop-off', 'Front lobby'], ['9:00', '10:30', 'Morning session', 'Classrooms'], ['10:30', '10:45', 'Snack break', 'Courtyard'],
+  ['10:45', '12:00', 'Morning session continues', 'Classrooms'], ['12:00', '12:45', 'Lunch', 'Cafeteria'], ['12:45', '2:30', 'Afternoon session', 'Classrooms'],
+  ['2:30', '3:00', 'Show and tell', 'Classrooms'], ['3:00', '3:30', 'Pickup', 'Front lobby'],
+]
+const POSTS = [
+  { by: 'Fiona Zhang', to: 'WEB-1 families', when: 'Today, 9:40 AM', text: 'Great start in Web Dev! Everyone has a page with a heading, a photo and a link. Tomorrow we add colour with CSS.', camp: true },
+  { by: 'Jordan Rivera', to: 'all families', when: 'Saturday, 3:30 PM', text: 'Welcome to Week 1! Drop-off is 8:30 to 9:00 in the front lobby and pickup starts at 3:00. Please send a water bottle and a labelled laptop charger each day.' },
+  { by: 'Jordan Rivera', to: 'all families', when: 'Thursday, 11:02 AM', text: 'Friday show-and-tell starts at 2:30. Families are welcome to come early and see what the campers built.' },
+]
+
+/* ───────── State ───────── */
+const fresh = mode => ({
+  kids: mode === 'new' ? [] : KIDS0.map(k => ({ ...k, ec: [...k.ec] })),
+  regs: mode === 'new' ? [] : [
+    { id: 'r1', kid: 'maya', sec: 'web1', status: 'confirmed' },
+    { id: 'r2', kid: 'eli', sec: 'pya1', status: mode === 'offer' ? 'offered' : 'waitlisted' },
+  ],
+})
+const S = {
+  mode: 'before', view: 'phone', theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  tab: 'home', profile: false, menu: false, wiz: 0,
+  ...fresh('before'),
+  open: null, act: null, picked: null, requested: new Set(),
+  pickKid: 'noor', week: 1, checkFor: null, checkEdit: false, justDid: null,
+  contact: { email: 'taylor.reyes@example.org', phone: '303-555-0199', ec: ['Morgan Reyes', '720-555-0142', 'Aunt'] }, contactEdit: false, contactSaved: false,
+  kidEdit: null, kidSaved: null, offerConfirm: false, unread: 2, schedOpen: false,
+  form: {}, wizErr: '',
+}
+const today = () => S.mode === 'campday' ? 'Monday, October 19' : 'Saturday, October 17'
+const changesOpen = () => S.mode !== 'campday' // the change deadline is Sunday, October 18
+
+/* ───────── Helpers ───────── */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const icon = (n, extra = '') => `<i data-lucide="${n}" aria-hidden="true" ${extra}></i>`
+const ini = k => (k.first[0] + k.last[0]).toUpperCase()
+const kid = id => S.kids.find(k => k.id === id)
+const regsOf = id => S.regs.filter(r => r.kid === id && r.status !== 'cancelled')
+const holds = r => r.status === 'confirmed'
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`
+const left = s => s.cap - s.taken - S.regs.filter(r => r.sec === s.id && holds(r) && !['r1'].includes(r.id)).length
+const list = xs => xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1]
+const NAV = [['home', 'Home', 'house'], ['classes', 'Classes', 'graduation-cap'], ['updates', 'Updates', 'megaphone']]
+function eligible(k, s) {
+  const c = course(s)
+  if (k.age < s.ages[0] || k.age > s.ages[1]) return `For ages ${s.ages[0]} to ${s.ages[1]}`
+  if (c.grades && (k.grade < c.grades[0] || k.grade > c.grades[1])) return `For grades ${c.grades[0]} to ${c.grades[1]}`
+  return null
+}
+function rollup(k) {
+  const rs = regsOf(k.id)
+  if (!rs.length) return ['Not signed up', 'neutral']
+  if (rs.some(r => r.status === 'offered')) return ['Spot offered', 'offer']
+  if (rs.every(r => r.status === 'waitlisted')) return ['On the waitlist', 'wait']
+  return ['All set', 'ok']
+}
+function subhead() {
+  if (!S.kids.length) return `Camp is ${WEEKS[1].name}, ${WEEKS[1].dates}, and ${WEEKS[2].name}, ${WEEKS[2].dates}.`
+  const bits = S.kids.map(k => {
+    const rs = regsOf(k.id), r = rs[0]
+    if (!r) return `<b>${k.first}</b> isn't signed up yet`
+    const s = sec(r.sec)
+    if (r.status === 'offered') return `a spot opened for <b>${k.first}</b> in ${course(s).name}`
+    if (r.status === 'waitlisted') return `<b>${k.first}</b> is on the waitlist for ${course(s).name}`
+    return `<b>${k.first}</b> is all set for ${WEEKS[s.week].name}`
+  })
+  const t = bits.join('. ').replace(/^./, c => c.toUpperCase()) + '.'
+  return t.replace(/\. a /g, '. A ')
+}
+
+/* ───────── Shell ───────── */
+function header() {
+  const desk = S.view === 'desktop'
+  return `<header class="bar">
+    <img src="sccdenver.png" alt="Steel City Codes Denver">
+    ${desk && !S.wiz ? `<nav class="topnav" aria-label="Parent">${NAV.map(([k, l, i]) => `<button data-tab="${k}" ${S.tab === k && !S.profile ? 'aria-current="page"' : ''}>${icon(i)} ${l}${k === 'updates' && S.unread ? ` <span class="tag new">${S.unread}</span>` : ''}</button>`).join('')}</nav>` : ''}
+    <div class="right">
+      <button class="iconbtn" data-act="theme" aria-label="Switch to ${S.theme === 'dark' ? 'light' : 'dark'} mode">${icon(S.theme === 'dark' ? 'sun' : 'moon')}</button>
+      <button class="avatarbtn" data-act="menu" aria-haspopup="menu" aria-expanded="${S.menu}" aria-label="Account menu"><span class="avatar">${ME.initials}</span>${desk ? icon('chevron-down') : ''}</button>
+    </div>
+    ${S.menu ? `<div class="menu" role="menu">
+      <div class="who" style="display:block"><b>${ME.name}</b><span>${S.contact.email}</span></div>
+      <button role="menuitem" data-act="profile">${icon('users-round')} Family details</button>
+      <button role="menuitem" data-act="wiz">${icon('user-plus')} Register a new camper</button>
+      <button role="menuitem" data-act="theme">${icon(S.theme === 'dark' ? 'sun' : 'moon')} ${S.theme === 'dark' ? 'Light' : 'Dark'} mode</button>
+      <hr><button role="menuitem" data-act="noop">${icon('log-out')} Sign out</button>
+    </div>` : ''}
+  </header>`
+}
+function tabStrip() {
+  if (S.view === 'desktop' || S.wiz) return ''
+  return `<nav class="tabs" aria-label="Parent">${NAV.map(([k, l]) =>
+    `<button data-tab="${k}" ${S.tab === k && !S.profile ? 'aria-current="page"' : ''}>${l}${k === 'updates' && S.unread ? `<span class="count" aria-label="${S.unread} new">${S.unread}</span>` : ''}</button>`).join('')}</nav>`
+}
+const footer = () => `<p class="foot">Questions or changes? Email the camp at <a href="mailto:denver@steelcitycodes.org" data-act="noop">denver@steelcitycodes.org</a>.</p>`
+
+/* ───────── Home ───────── */
+function homeScreen() {
+  return `<div class="page">
+    <h1 class="title">Hi, ${ME.first}</h1>
+    <p class="lead">${subhead()}</p>
+    <div class="grid2"><div>
+      ${hero()}
+      ${S.kids.length ? `<section class="sect" aria-labelledby="kids-h"><header><h2 class="h" id="kids-h">Your campers</h2>
+        <button class="textlink" data-tab="classes">Find a class</button></header>
+        <div class="list">${S.kids.map(kidRow).join('')}</div></section>` : ''}
+    </div>
+    <div class="col2">${S.mode === 'new' ? '' : schedule()}${latestUpdate()}${footer()}</div></div>
+  </div>`
+}
+function hero() {
+  const offer = S.regs.find(r => r.status === 'offered')
+  if (S.mode === 'new') return `<section class="hero" aria-labelledby="hero-h">
+      <h2 id="hero-h">Register your first camper</h2>
+      <p>Five short steps, about ten minutes. Your answers are saved on this device as you go, so you can finish later.</p>
+      <ol class="steps">${['The camper', 'You and an emergency contact', 'Health and details', 'Week and class', 'Waiver'].map((t, i) => `<li><span>${i + 1}</span>${t}</li>`).join('')}</ol>
+      <div class="actions"><button class="btn primary" data-act="wiz">${icon('user-plus')} Start registering</button></div>
+    </section>`
+  if (offer) {
+    const k = kid(offer.kid), s = sec(offer.sec)
+    return `<section class="hero" aria-labelledby="hero-h">
+      <h2 id="hero-h">A spot opened for ${k.first}</h2>
+      <p><b>${course(s).name}, ${WEEKS[s.week].name}</b>. Claim it by <b>Tuesday at 5:00 PM</b>, or it goes to the next family on the waitlist.</p>
+      ${S.offerConfirm ? `<div class="confirm" role="alert">Decline the spot? It goes to the next family, and ${k.first} leaves this waitlist.
+          <div class="row"><button class="btn" data-act="keepoffer">Keep the offer</button><button class="btn primary" data-act="declineyes">Decline spot</button></div></div>`
+        : `<div class="actions"><button class="btn primary" data-act="claim">${icon('check')} Claim the spot</button><button class="btn" data-act="decline">Decline</button></div>`}
+    </section>`
+  }
+  if (S.mode === 'campday') {
+    const going = S.kids.filter(k => regsOf(k.id).some(r => holds(r) && sec(r.sec).week === 1))
+    return `<section class="hero" aria-labelledby="hero-h">
+      <h2 id="hero-h">Monday, October 19: day 1 of camp</h2>
+      <p>Pickup starts at <b>3:00</b> in the front lobby.</p>
+      ${going.map(k => {
+        const r = regsOf(k.id).find(holds), s = sec(r.sec)
+        return `<div class="kid"><b>${k.first} checked in at 9:05</b><p style="margin:2px 0 0">${course(s).name} in ${s.room} with ${s.lead}</p>
+          <ul class="chips" aria-label="${k.first}'s roll calls today"><li class="ok">${icon('check')} Arrival, 9:05</li><li>After lunch</li><li>Dismissal</li></ul></div>`
+      }).join('')}
+    </section>`
+  }
+  const wk = S.kids.some(k => regsOf(k.id).some(r => holds(r) && sec(r.sec).week === 1)) ? 1 : 2
+  return `<section class="hero" aria-labelledby="hero-h">
+    <h2 id="hero-h">${WEEKS[wk].name} starts ${WEEKS[wk].start}</h2>
+    <p>At <b>Westside High School</b>. Drop-off is <b>8:30 to 9:00</b> in the front lobby, and pickup starts at <b>3:00</b>.</p>
+    <p>From Saturday's update: bring a water bottle and a labelled laptop and charger each day.</p>
+  </section>`
+}
+function kidRow(k) {
+  const [label, tone] = rollup(k), rs = regsOf(k.id), open = S.open === k.id
+  const r = rs[0], s = r && sec(r.sec)
+  const line = x => { const t = sec(x.sec)
+    return x.status === 'confirmed' ? `${WEEKS[t.week].name}: <strong>${course(t).name}</strong>, ${t.room} with ${t.lead}`
+      : `${WEEKS[t.week].name}: <strong>${course(t).name}</strong>` }
+  const sub = !r ? `Not in a class yet` : rs.slice().sort((a, b) => sec(a.sec).week - sec(b.sec).week).map(line).join('<br>')
+  return `<div class="kid-wrap">
+    <button class="kidrow" data-open="${k.id}" aria-expanded="${open}">
+      <span class="ini" aria-hidden="true">${ini(k)}</span>
+      <span style="flex:1;min-width:0"><b>${k.first} ${k.last}</b><span class="sub">${sub}</span></span>
+      <span class="tag ${tone}">${label}</span>${icon('chevron-down', 'class="chev"')}
+    </button>
+    ${open ? `<div class="kidmore">${rs.map(regBlock).join('')}
+      <button class="btn${rs.length ? '' : ' primary'}" data-find="${k.id}" style="margin-top:10px">${icon('graduation-cap')} ${rs.length ? 'Add another week' : `Find a class for ${k.first}`}</button></div>` : ''}
+  </div>`
+}
+function regBlock(r) {
+  const k = kid(r.kid), s = sec(r.sec), where = `${course(s).name}, ${WEEKS[s.week].name}`
+  const a = S.act && S.act.reg === r.id ? S.act.kind : null
+  if (r.status === 'offered') return `<div class="reg"><p class="what">${where}</p><p class="meta">Claim or decline it at the top of Home.</p></div>`
+  let body
+  if (S.requested.has(r.id)) body = `<p class="saved" role="status">${icon('check')} Change request sent. The camp will email you.</p>`
+  else if (a === 'cancel') body = `<div class="inset"><div class="confirm" role="alert">${holds(r) ? `Cancel ${k.first}'s spot in ${where}? The seat goes to the next family on the waitlist. You can sign up again later if spots are left.` : `Take ${k.first} off the waitlist for ${where}?`}
+      <div class="row"><button class="btn" data-act="noact">${holds(r) ? 'Keep spot' : 'Stay on it'}</button><button class="btn primary" data-cancel="${r.id}">${holds(r) ? 'Cancel spot' : 'Leave waitlist'}</button></div></div></div>`
+  else if (a === 'switch') body = switchPanel(r)
+  else if (a === 'request') body = `<form id="req" class="formstack" style="margin-top:8px" data-reg="${r.id}"><div class="field"><label for="reqm">What would you like to change about ${where}?</label><textarea id="reqm" class="input" rows="3" maxlength="1000"></textarea></div>
+      <div class="actions"><button type="button" class="btn" data-act="noact">Cancel</button><button class="btn primary">Send to the camp</button></div></form>`
+  else body = `<div class="row">${holds(r) && changesOpen() ? `<button class="textlink" data-switch="${r.id}">Switch class</button>` : ''}
+      ${changesOpen() || !holds(r) ? `<button class="textlink" data-askcancel="${r.id}">${holds(r) ? 'Cancel this spot' : 'Leave the waitlist'}</button>` : `<button class="textlink" data-request="${r.id}">Request a change</button>`}</div>
+      ${holds(r) ? `<p class="note">${changesOpen() ? 'You can switch or cancel online until Sunday, October 18.' : 'Online changes closed on October 18. The camp can still help.'}</p>` : ''}`
+  const many = regsOf(k.id).length > 1
+  return `<div class="reg">${many ? `<p class="what">${where}</p>` : ''}${holds(r) ? `<p class="meta">${s.label}, Monday to Friday, 9:00 to 3:00</p>` : `<p class="meta">We'll email you if a spot opens.</p>`}${body}</div>`
+}
+function switchPanel(r) {
+  const k = kid(r.kid), s = sec(r.sec)
+  const opts = SECTIONS.filter(o => o.week === s.week && o.id !== s.id && !eligible(k, o))
+  if (S.picked) {
+    const o = sec(S.picked)
+    return `<div class="inset"><div class="confirm" role="alert" style="background:var(--sunken);border-top:1px solid var(--border)">Move ${k.first} from ${course(s).name} to ${course(o).name} ${o.label}? The old seat goes to the next family on that waitlist.
+      <div class="row"><button class="btn" data-act="unpick">Back</button><button class="btn primary" data-swapyes="${r.id}">Switch class</button></div></div></div>`
+  }
+  return `<p class="note" style="color:var(--ink);font-weight:600">Switch ${k.first} to another class in ${WEEKS[s.week].name}:</p>
+    <ul class="optlist">${opts.map(o => left(o) > 0
+      ? `<li><button class="opt" data-pick="${o.id}"><span><b>${course(o).name}, ${o.label}</b><span>${o.room}, ${plural(left(o), 'spot')} left</span></span>${icon('chevron-right')}</button></li>`
+      : `<li><div class="opt full"><span><b>${course(o).name}, ${o.label} is full</b><span>To join its waitlist, cancel ${k.first}'s spot first.</span></span></div></li>`).join('')}</ul>
+    <div class="actions" style="margin-top:8px"><button class="btn" data-act="noact">Keep ${course(s).name}</button></div>`
+}
+function schedule() {
+  const live = S.mode === 'campday'
+  return `<section class="sect"><details class="coll" ${S.schedOpen ? 'open' : ''} data-sched>
+    <summary><span style="flex:1"><span class="h" style="display:block;font-size:18px;font-weight:700">${live ? 'Right now: Morning session' : 'A day at camp'}</span>
+      <span class="small muted">${live ? '9:00 to 10:30 in the classrooms. Snack break next.' : 'Drop-off 8:30, pickup 3:00. Tap for the full day.'}</span></span>${icon('chevron-down', 'class="chev"')}</summary>
+    <ul class="sched">${SCHEDULE.map(([a, b, t, l]) => `<li class="${live && t === 'Morning session' ? 'on' : live && t === 'Drop-off' ? 'past' : ''}"><span class="t">${a} to ${b}</span><span><b>${t}</b><span class="loc">${l}</span></span></li>`).join('')}</ul>
+  </details></section>`
+}
+function latestUpdate() {
+  const p = S.mode === 'campday' ? POSTS[0] : POSTS[1]
+  return `<section class="sect"><header><h2 class="h">Latest from camp</h2><button class="textlink" data-tab="updates">All updates</button></header>
+    <div class="list">${updRow(p)}</div></section>`
+}
+const updRow = (u, isNew) => `<article class="upd"><div class="by"><b>${u.by}</b> to ${u.to}${isNew ? ` <span class="tag new">New</span>` : ''}</div><div class="xs muted">${u.when}</div><p>${esc(u.text)}</p></article>`
+
+/* ───────── Classes ───────── */
+function classesScreen() {
+  if (!S.kids.length) return `<div class="page"><h1 class="title">Find a class</h1><div class="empty"><p class="lead">Classes are picked as part of registering a camper.</p><button class="btn primary" data-act="wiz" style="margin-top:14px">${icon('user-plus')} Register a camper</button></div></div>`
+  const k = kid(S.pickKid) || S.kids[0], w = S.week
+  const inWeek = SECTIONS.filter(s => s.week === w)
+  const ok = inWeek.filter(s => !eligible(k, s)), no = inWeek.filter(s => eligible(k, s))
+  const has = S.regs.find(r => r.kid === k.id && holds(r) && sec(r.sec).week === w)
+  return `<div class="page">
+    <h1 class="title">Find a class</h1>
+    <div class="sect" style="margin-top:18px"><span class="lbl" id="who-l">Who is it for?</span>
+      <div class="pills" role="group" aria-labelledby="who-l">${S.kids.map(x => `<button class="pill" data-kid="${x.id}" aria-pressed="${x.id === k.id}"><span class="ini" aria-hidden="true">${ini(x)}</span>${x.first}, ${x.age}</button>`).join('')}
+        <button class="pill add" data-act="wiz">${icon('plus')} New camper</button></div></div>
+    <div class="sect" style="margin-top:16px"><span class="lbl" id="wk-l">Which week?</span>
+      <div class="weekseg" role="group" aria-labelledby="wk-l">${[1, 2].map(n => `<button data-week="${n}" aria-pressed="${w === n}">${WEEKS[n].name}<span class="xs" style="display:block;font-weight:500;margin-top:-6px">${WEEKS[n].short}</span></button>`).join('')}</div></div>
+    ${has ? `<div class="callout">${icon('info')}<span>${k.first} is in <b>${course(sec(has.sec)).name}</b> this week. Campers take one class a week; to change it, open ${k.first} on Home and tap Switch class.</span></div>` : ''}
+    <section class="sect" aria-labelledby="cl-h"><header><h2 class="h" id="cl-h">${plural(ok.length, 'class')} for ${k.first} in ${WEEKS[w].name}</h2></header>
+      <div class="list">${ok.map(s => classCard(k, s, has)).join('')}</div></section>
+    ${no.length ? `<section class="sect"><details class="coll"><summary><span style="flex:1" class="small muted"><b style="color:var(--ink)">Not open to ${k.first} (${no.length})</b></span>${icon('chevron-down', 'class="chev"')}</summary>
+      <div class="list">${no.map(s => `<div class="item"><div style="flex:1"><b>${course(s).name}, ${s.label}</b><span class="sub">${eligible(k, s)}</span></div>${icon('lock', 'style="color:var(--muted)"')}</div>`).join('')}</div></details></section>` : ''}
+  </div>`
+}
+function classCard(k, s, has) {
+  const c = course(s), n = left(s), full = n <= 0, pct = Math.min(100, Math.round((s.cap - Math.max(n, 0)) / s.cap * 100))
+  const mine = S.regs.find(r => r.kid === k.id && r.sec === s.id && r.status !== 'cancelled')
+  let foot
+  if (mine) foot = `<p class="done ${holds(mine) ? '' : 'wait'}" role="status">${icon(holds(mine) ? 'circle-check' : 'list')} ${holds(mine) ? `${k.first} is in. Their spot is confirmed.` : `${k.first} is on the waitlist. We'll email you if a spot opens.`}</p>`
+  else if (has) foot = ''
+  else if (S.checkFor === s.id) foot = checkPanel(k, s, full)
+  else foot = `<button class="btn block" data-reg="${s.id}">${full ? `Join the waitlist` : `Register ${k.first}`}</button>`
+  return `<article class="cls">
+    <h3>${c.name}, ${s.label}</h3>
+    <p class="desc">${c.desc}</p>
+    <p class="facts">Ages ${s.ages[0]} to ${s.ages[1]}${c.rule ? `. ${c.rule}` : ''}<br>Monday to Friday, 9:00 to 3:00, ${s.room}</p>
+    <div class="meter ${full ? 'full' : n <= 2 ? 'almost' : ''}"><i style="width:${pct}%"></i></div>
+    <div class="seatline"><span>${full ? 'Full' : `${plural(n, 'spot')} left`}</span><span>${s.cap} seats</span></div>
+    ${foot}
+  </article>`
+}
+function checkPanel(k, s, full) {
+  const yesNo = v => v ? 'Yes' : 'No'
+  return `<form id="check" class="check" data-sec="${s.id}">
+    <h4>Is this still right for ${k.first}?</h4>
+    <p class="small" style="margin:0">We ask once each summer, before the first class.</p>
+    ${S.checkEdit ? `<div class="formstack" style="margin-top:10px">
+        <div class="grid-2f"><div class="field"><label for="ck-g">Grade this fall</label><select id="ck-g" class="input">${[6, 7, 8, 9].map(g => `<option ${g === k.grade ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
+        <div class="field"><label for="ck-s">Shirt size</label><select id="ck-s" class="input"><option>Youth L</option><option selected>Adult S</option><option>Adult M</option></select></div></div>
+        <div class="field"><label for="ck-m">Medical conditions, learning needs</label><input id="ck-m" class="input" value="${esc(k.medical)}"></div>
+        <div class="field"><label for="ck-a">Allergies or dietary needs</label><input id="ck-a" class="input" value="${esc(k.allergies || 'None')}"></div></div>`
+    : `<dl class="kv"><dt>Grade</dt><dd>${k.grade}</dd><dt>Shirt</dt><dd>${k.shirt}</dd><dt>Laptop</dt><dd>${yesNo(k.laptop)}</dd><dt>Health</dt><dd>${esc(k.medical || 'None')}${k.allergies ? `, ${esc(k.allergies)}` : ''}</dd>
+        <dt>Emergency</dt><dd>${k.ec[0]}, ${k.ec[2]}, ${k.ec[1]}</dd><dt>Free lunch</dt><dd>${yesNo(k.lunch)}</dd></dl>
+      <button type="button" class="textlink" data-act="checkedit">Change something</button>`}
+    <div class="field"><label for="ck-sig">Type your full name to sign again</label><input id="ck-sig" class="input" autocomplete="name" placeholder="${ME.name}"></div>
+    <p class="err" id="ck-err" role="alert"></p>
+    <div class="actions" style="margin-top:10px"><button type="button" class="btn" data-act="nocheck">Not now</button><button class="btn primary">${full ? 'Confirm and join waitlist' : `Confirm and register`}</button></div>
+  </form>`
+}
+
+/* ───────── Updates ───────── */
+function updatesScreen() {
+  const posts = S.mode === 'campday' ? POSTS : POSTS.slice(1)
+  return `<div class="page"><h1 class="title">Updates</h1>
+    <p class="lead">From the camp director and ${S.kids.length > 1 ? "your campers' class leads" : "your camper's class lead"}.</p>
+    <div class="grid2"><div><section class="sect"><div class="list">${posts.map((p, i) => updRow(p, i < S.seenNew)).join('')}</div></section></div></div></div>`
+}
+
+/* ───────── Family details (avatar menu) ───────── */
+function profileScreen() {
+  const c = S.contact, e = S.contactEdit
+  return `<div class="page"><button class="back" data-act="unprofile">${icon('chevron-left')} Back</button>
+    <h1 class="title">Family details</h1>
+    <p class="lead">The camp uses these for every class. Change them any time.</p>
+    <div class="grid2"><div>
+      <section class="sect" aria-labelledby="you-h"><header><h2 class="h" id="you-h">You</h2>${!e ? `<button class="btn quiet" data-act="editcontact">${icon('pencil')} Edit</button>` : ''}</header>
+      ${!e ? `<div class="panel"><dl class="kv"><dt>Name</dt><dd>${ME.name}</dd><dt>Email</dt><dd style="word-break:break-word">${c.email}</dd><dt>Phone</dt><dd>${c.phone}</dd>
+          <dt>Emergency</dt><dd>${c.ec[0]} (${c.ec[2]})<br>${c.ec[1]}</dd></dl></div>
+          ${S.contactSaved ? `<p class="saved" role="status" style="margin:10px 0 0">${icon('check')} Saved</p>` : ''}`
+      : `<form id="contact" class="panel formstack">
+          <div class="field"><label for="ce">Email</label><input id="ce" type="email" autocomplete="email" class="input" value="${c.email}"></div>
+          <div class="field"><label for="cp">Phone</label><input id="cp" type="tel" autocomplete="tel" class="input" value="${c.phone}"></div>
+          <div class="grid-3f"><div class="field"><label for="cn">Emergency contact</label><input id="cn" class="input" value="${c.ec[0]}"></div>
+          <div class="field"><label for="cph">Their phone</label><input id="cph" type="tel" class="input" value="${c.ec[1]}"></div>
+          <div class="field"><label for="cr">Relationship</label><input id="cr" class="input" value="${c.ec[2]}"></div></div>
+          <p class="hint">New registrations start with these. Each camper keeps their own emergency contact below.</p>
+          <p class="err" id="ce-err" role="alert"></p>
+          <div class="actions"><button type="button" class="btn" data-act="cancelcontact">Cancel</button><button class="btn primary">${icon('check')} Save</button></div></form>`}
+      </section>
+    </div><div class="col2">
+      <section class="sect" aria-labelledby="ck-h"><header><h2 class="h" id="ck-h">Campers</h2></header>
+        ${S.kids.length ? `<div class="list">${S.kids.map(kidDetails).join('')}</div>` : `<p class="small muted">No campers yet.</p>`}
+        <button class="btn" data-act="wiz" style="margin-top:12px">${icon('user-plus')} Register a new camper</button></section>
+      <section class="sect"><button class="btn" data-act="noop">${icon('log-out')} Sign out</button>${footer()}</section>
+    </div></div></div>`
+}
+function kidDetails(k) {
+  const e = S.kidEdit && S.kidEdit === k.id
+  const health = [k.allergies && `Allergy: ${k.allergies}`, k.medical && k.medical].filter(Boolean)
+  return `<details class="fold" ${S.openKid === k.id ? 'open' : ''} data-fold="${k.id}">
+    <summary><span class="ini" aria-hidden="true">${ini(k)}</span><span><b>${k.first} ${k.last}</b><span class="sub">Grade ${k.grade}${health.length ? ', has health notes' : ''}</span></span>${icon('chevron-down', 'class="chev"')}</summary>
+    <div class="foldbody">${!e ? `<dl class="kv"><dt>Grade</dt><dd>${k.grade} this fall</dd><dt>Health</dt><dd>${health.length ? health.map(esc).join('<br>') : 'None'}</dd>
+        <dt>Emergency</dt><dd>${k.ec[0]} (${k.ec[2]})<br>${k.ec[1]}</dd></dl>
+        ${S.kidSaved === k.id ? `<p class="saved" role="status" style="margin:10px 0 0">${icon('check')} Saved</p>` : ''}
+        <button class="btn" data-editkid="${k.id}" style="margin-top:12px">${icon('pencil')} Edit ${k.first}'s details</button>`
+    : `<form id="kidform" class="formstack" data-kid="${k.id}">
+        <div class="grid-2f"><div class="field"><label for="kf">First name</label><input id="kf" class="input" value="${k.first}"></div><div class="field"><label for="kl">Last name</label><input id="kl" class="input" value="${k.last}"></div></div>
+        <div class="field"><label for="kg">Grade (entering fall)</label><select id="kg" class="input">${['K', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(g => `<option ${String(g) === String(k.grade) ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
+        <div class="field"><label for="ka">Allergies or dietary needs</label><input id="ka" class="input" placeholder="None" value="${esc(k.allergies)}"></div>
+        <div class="field"><label for="km">Medical conditions</label><input id="km" class="input" placeholder="None" value="${esc(k.medical)}"></div>
+        <div class="field"><label for="kn">Emergency contact</label><input id="kn" class="input" value="${k.ec[0]}"></div>
+        <div class="grid-2f"><div class="field"><label for="kp">Their phone</label><input id="kp" type="tel" class="input" value="${k.ec[1]}"></div><div class="field"><label for="kr">Relationship</label><input id="kr" class="input" value="${k.ec[2]}"></div></div>
+        <p class="err" id="kf-err" role="alert"></p>
+        <div class="actions"><button type="button" class="btn" data-act="cancelkid">Cancel</button><button class="btn primary">${icon('check')} Save</button></div></form>`}
+    </div></details>`
+}
+
+/* ───────── Registration (5 steps, unchanged fields) ───────── */
+const STEPS = ['The camper', 'You and an emergency contact', 'Health and details', 'Week and class', 'Waiver and consent']
+function wizScreen() {
+  if (S.wiz === 6) {
+    const f = S.form, s = f.class1 && sec(f.class1)
+    const wait = s && left(s) <= 0
+    return `<div class="wiz"><div class="finish">
+      <h1>${icon(wait ? 'list' : 'circle-check', `style="color:var(--${wait ? 'info' : 'success'});vertical-align:-3px"`)} ${wait ? "You're on the waitlist" : "You're in!"}</h1>
+      <p>${wait ? `That class is full, so <b>${esc(f.first || 'your camper')}</b> is on the waitlist. We'll email you if a spot opens.` : `<b>${esc(f.first || 'Your camper')}</b>'s spot in ${s ? course(s).name : 'their class'} is confirmed. The class, time and room are on Home.`}</p>
+      <button class="btn primary" data-act="wizhome">Back to Home</button></div></div>`
+  }
+  const n = S.wiz
+  return `<div class="wizhead"><div class="row"><span class="stepof">Step ${n} of 5</span><button class="textlink" data-act="wizexit" style="font-size:14.5px">Save and exit</button></div>
+      <h1>${STEPS[n - 1]}</h1><div class="prog" aria-hidden="true">${STEPS.map((_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div></div>
+    <form id="wiz" class="wiz formstack" novalidate>${[null, step1, step2, step3, step4, step5][n]()}
+      <p class="err" role="alert">${S.wizErr}</p>
+      <div class="wizfoot">${n > 1 ? `<button type="button" class="btn" data-act="wizback">${icon('chevron-left')} Back</button>` : ''}<button class="btn primary">${n === 5 ? `Register ${esc(S.form.first || 'camper')}` : 'Continue'}</button></div>
+      <p class="hint" style="text-align:center">Saved on this device as you go.</p>
+    </form>`
+}
+const fld = (id, label, attrs = '', opt = false) => `<div class="field"><label for="${id}">${label}${opt ? ' <span style="font-weight:500">(optional)</span>' : ''}</label><input id="${id}" name="${id}" class="input" value="${esc(S.form[id] || '')}" ${attrs}></div>`
+const sel = (id, label, opts, opt = false) => `<div class="field"><label for="${id}">${label}${opt ? ' <span style="font-weight:500">(optional)</span>' : ''}</label><select id="${id}" name="${id}" class="input"><option value="">Select</option>${opts.map(o => `<option ${String(S.form[id]) === String(o) ? 'selected' : ''}>${o}</option>`).join('')}</select></div>`
+const yn = (key, label) => `<fieldset style="border:0;padding:0;margin:14px 0 0"><legend class="lbl">${label}</legend><div class="yesno">${['Yes', 'No'].map(v => `<button type="button" data-yn="${key}" data-v="${v}" aria-pressed="${S.form[key] === v}">${v}</button>`).join('')}</div></fieldset>`
+const step1 = () => `<div class="grid-2f">${fld('first', 'First name', 'autocomplete="off"')}${fld('last', 'Last name', 'autocomplete="off"')}</div>
+  ${fld('email', "Camper's email", 'type="email"', true)}
+  ${sel('district', 'School district', ['Denver Public Schools', 'Cherry Creek', 'Aurora', 'Jeffco', 'Other'])}
+  ${fld('school', 'School')}
+  <div class="grid-2f">${sel('grade', 'Grade this fall', [3, 4, 5, 6, 7, 8, 9])}${sel('shirt', 'Shirt size', ['Youth S', 'Youth M', 'Youth L', 'Adult S', 'Adult M', 'Adult L'])}</div>
+  ${yn('laptop', 'Can your camper bring a laptop each day?')}
+  ${sel('ethnic', 'Ethnic background, for grant reporting only', ['Prefer not to say', 'Asian', 'Black', 'Hispanic or Latino', 'White', 'Two or more'], true)}
+  ${fld('gender', 'Gender', 'placeholder="e.g. Female, Male, Non-binary"', true)}`
+const step2 = () => `<p class="callout info" style="margin-top:0">${icon('users-round')}<span>Filled in from Family details. Changes here apply to this camper only.</span></p>
+  ${fld('pname', 'Your name', `autocomplete="name"`)}${fld('pemail', 'Your email', 'type="email" autocomplete="email"')}${fld('pphone', 'Your phone', 'type="tel" autocomplete="tel"')}
+  ${fld('ecname', 'Emergency contact')}<div class="grid-2f">${fld('ecphone', 'Their phone', 'type="tel"')}${fld('ecrel', 'Relationship', 'placeholder="e.g. Aunt"')}</div>`
+const step3 = () => `${fld('allergies', 'Allergies or dietary needs', 'placeholder="Type None if none"')}${fld('medical', 'Medical conditions, learning needs', 'placeholder="Type None if none"')}
+  <div class="field"><label for="other">Anything else we should know? <span style="font-weight:500">(optional)</span></label><textarea id="other" name="other" class="input" rows="3">${esc(S.form.other || '')}</textarea></div>
+  ${yn('lunch', 'Does your camper qualify for free or reduced lunch and need lunch provided?')}
+  ${sel('heard', 'How did you hear about us?', ['A friend', 'School', 'Social media', 'Came before'])}
+  ${yn('prev', 'Has your camper been to a Steel City Codes program before?')}`
+function step4() {
+  const age = { 3: 8, 4: 9, 5: 10, 6: 11, 7: 12, 8: 13, 9: 14 }[S.form.grade] || 10
+  const k = { first: S.form.first || 'your camper', age, grade: +S.form.grade || 5 }
+  return `<p class="small muted" style="margin:0">Camp runs Monday to Friday, 9:00 to 3:00. Pick one or both weeks, then a class for each.</p>
+  ${[1, 2].map(w => {
+    const on = S.form['w' + w]
+    return `<div class="weekcard ${on ? 'on' : ''}"><label><input type="checkbox" data-wk="${w}" ${on ? 'checked' : ''}> ${WEEKS[w].name}, ${WEEKS[w].dates}</label>
+      ${on ? `<fieldset style="border:0;padding:0;margin:0"><legend class="lbl" style="margin:0">Class for ${WEEKS[w].name}</legend>
+        ${SECTIONS.filter(s => s.week === w).map(s => { const why = eligible(k, s), n = left(s)
+          return why ? `<div class="radio off">${icon('lock')}<span><b>${course(s).name}, ${s.label}</b><span>${why}</span></span></div>`
+            : `<label class="radio"><input type="radio" name="class${w}" value="${s.id}" ${S.form['class' + w] === s.id ? 'checked' : ''}><span><b>${course(s).name}, ${s.label}</b><span>${n > 0 ? `Ages ${s.ages[0]} to ${s.ages[1]}, ${plural(n, 'spot')} left` : 'Full, joins the waitlist'}</span></span></label>` }).join('')}</fieldset>` : ''}</div>`
+  }).join('')}`
+}
+const step5 = () => `<details class="waiver coll"><summary><span style="flex:1;font-weight:600">Read the waiver</span>${icon('chevron-down', 'class="chev"')}</summary><div class="body">
+    ${['Assumption of risk', 'Medical authorization', 'Photo and media release', 'Technology addendum', 'Code of conduct'].map(h => `<p><b>${h}.</b> Placeholder text for the mockup. The live form shows the waiver text from the form editor.</p>`).join('')}</div></details>
+  ${fld('sig1', "Camper's full legal name, as their signature")}
+  ${fld('sig2', 'Your full legal name, to consent for your camper', 'autocomplete="name"')}`
+
+/* ───────── Notes ───────── */
+const NOTES = {
+  'new:home': ['Home, new account', 'One job: register the first camper', [
+    ['Loud element', 'The dark band is the only thing on the page. It names the five steps so the form holds no surprises.'],
+    ['Evidence', 'March to June holds 85% of the 278 parent threads. Thirty were late or after-close registrations, and 16 were about registering several children.'],
+    ['Unchanged', 'The same registration route. Drafts saved on this device show here as "Finish registering" when there is one.'],
+  ], 'A "No campers yet" card under an empty This Week card and the full updates feed, with Browse classes and Add camper buttons above it.'],
+  'before:home': ['Home, signed up', 'Is my kid all set? Answered in the first screen', [
+    ['Loud element', 'The band is the only dark block on the page. It says when camp starts, where, and what to bring, once each.'],
+    ['Campers', 'One row each, one status: All set, On the waitlist, Not signed up. Tap a row for the class, the lead, and Switch, Cancel or Leave the waitlist, with the same inline confirmations as today.'],
+    ['Evidence', '"Am I in?" was the largest group: 85 threads covered confirmation and waitlist status, and 58 of them could have been answered on screen. Confirmation emails went missing or landed in junk.'],
+    ['Folded', 'The day schedule is one line until you tap it; Updates has its own tab, with the latest on Home.'],
+  ], 'The dashboard is 2,814 px tall (3.5 phone screens). Campers start 1,631 px down, two screens below a schedule and three updates. Maya\'s class shows twice, and Eli shows "On waitlist" twice on one card.'],
+  'offer:home': ['Home, a waitlist spot opens', 'The offer takes over the band', [
+    ['Loud element', 'Claim is the gold button, with the deadline in words. Decline asks first, inline, and keeping the offer is the safe choice.'],
+    ['Backed by', '<code>accept_offer</code> and <code>decline_offer</code>, unchanged. The bell dot and the subhead line point here too.'],
+    ['Evidence', 'Spec 10 gives families 48 hours to claim a spot (12 hours if camp is within 7 days). Twenty-two threads asked about waitlist status.'],
+  ], 'The offer sat inside Eli\'s card, below the This Week card and the updates feed, about two screens down.'],
+  'campday:home': ['Home, camp day', 'Did my kid get there?', [
+    ['Loud element', 'One line per camper from the roll calls: "Maya checked in at 9:05", then After lunch and Dismissal as they happen.'],
+    ['Right now', 'The schedule shows the current block first; the full day is one tap away.'],
+    ['After the deadline', 'Open a camper: Switch and Cancel give way to "Request a change", as they do today.'],
+  ], 'Roll-call chips under each camper inside the This Week card, followed by the full 8-row schedule.'],
+  classes: ['Classes', 'Pick the camper and week first, then only what fits', [
+    ['Order', 'Camper buttons and a week switch. The list shows only classes that camper can take that week; the rest fold under "Not open to Noor", with the reason.'],
+    ['Yearly check', 'Tapping Register on a camper who hasn\'t confirmed this year opens the same confirmation inside that class, prefilled. It used to open above all the classes.'],
+    ['Result', 'Shown in the class itself, not as a toast at the bottom edge, where Safari\'s toolbar sits.'],
+    ['Evidence', 'Fifty-nine threads were about picking the right class. Twenty-one of the 62 change requests were really "we picked the wrong class", and families learned the grade rules only after registering.'],
+  ], 'A dropdown, a search box and three banners, then every section of every course for both weeks: 2,872 px with a camper picked. Sections a camper can\'t take sit in place, greyed. 12 of 14 controls are under 44 px.'],
+  updates: ['Updates', 'Everything the camp posted, in one place', [
+    ['Count', 'The tab carries the unread count the bell used to show, so the bell goes.'],
+    ['Reading', 'Author and audience on one line, time on the next. No dot-joined strings.'],
+  ], 'The full feed in the middle of the dashboard, plus the same five posts again in the bell.'],
+  profile: ['Family details, from the avatar menu', 'Details you change once a year live behind the avatar', [
+    ['You', 'Email, phone and the default emergency contact, read-only with an inline Edit.'],
+    ['Campers', 'One folded row per camper: grade, health notes and emergency contact, each with its own inline Edit.'],
+    ['Evidence', 'Only 3 threads asked to update contact details, but a stale email breaks every other notice. Hence one clear home, not a card at the bottom.'],
+  ], 'An Edit camper button on every camper card, and the contact card at the very bottom of the dashboard, 2,500 px down.'],
+  wiz: ['Register a camper', 'The same five steps, built for a thumb', [
+    ['Header', 'The step, its name and a progress bar stick to the top as you scroll. "Save and exit" keeps the draft.'],
+    ['Fields', 'Every field is 16 px, so iOS Safari doesn\'t zoom in on focus (today\'s are 14 px). Yes/No answers are 46 px buttons.'],
+    ['Step 2', 'Starts filled in from Family details.'],
+    ['Step 4', 'Classes the camper can\'t take are shown locked with the reason, as today.'],
+  ], 'Five steps with small dots; 14 px fields; 5 to 13 targets under 44 px per step.'],
+}
+function notesKey() {
+  if (S.wiz) return 'wiz'
+  if (S.profile) return 'profile'
+  if (S.tab === 'home') return S.mode + ':home'
+  return S.tab
+}
+function renderNotes() {
+  const [kicker, title, items, was] = NOTES[notesKey()]
+  document.getElementById('notes').innerHTML = `<h2 class="nh">${title}<span>${kicker}</span></h2><ul>${items.map(([tag, t]) => `<li><small>${tag}</small>${t}</li>`).join('')}</ul><h3 class="nb">Before</h3><p class="old">${was}</p>`
+}
+
+/* ───────── Render ───────── */
+function render(keep = true) {
+  document.documentElement.dataset.theme = S.theme
+  const vp = document.querySelector('.viewport'), y = keep && vp ? vp.scrollTop : 0
+  const body = S.wiz ? wizScreen() : S.profile ? profileScreen() : { home: homeScreen, classes: classesScreen, updates: updatesScreen }[S.tab]()
+  const desk = S.view === 'desktop'
+  const path = S.wiz ? '/parent/register' : S.profile ? '/parent' : S.tab === 'classes' ? '/parent/classes' : '/parent'
+  document.getElementById('stage').className = 'stage' + (desk ? ' desktop' : '')
+  document.getElementById('device').innerHTML = desk
+    ? `<div class="desk"><div class="chrome"><i></i><i></i><i></i><span class="url">scc.haanie.com${path}</span></div><div class="viewport">${header()}${body}</div></div>`
+    : `<div class="phone"><div class="ios-status"><span>${S.mode === 'campday' ? '10:12' : '4:20'}</span><span class="isl"></span><span>${icon('wifi')}</span></div>
+        <div class="viewport">${header()}${tabStrip()}${body}</div>
+        <div class="safari"><div class="url">${icon('lock')} scc.haanie.com</div></div></div>`
+  document.querySelector('.viewport').scrollTop = y
+  for (const [id, key] of [['ctl-mode', 'mode'], ['ctl-view', 'view'], ['ctl-theme', 'theme']])
+    document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S[key]))
+  renderNotes()
+  lucide.createIcons()
+}
+const go = (patch, keep = false) => { Object.assign(S, patch); render(keep) }
+const focus = id => setTimeout(() => document.getElementById(id)?.focus(), 0)
+const PREFILL = () => ({ pname: ME.name, pemail: S.contact.email, pphone: S.contact.phone, ecname: S.contact.ec[0], ecphone: S.contact.ec[1], ecrel: S.contact.ec[2] })
+function saveWizFields() {
+  const f = document.getElementById('wiz'); if (!f) return
+  f.querySelectorAll('input[name],select[name],textarea[name]').forEach(el => { if (el.type === 'radio') { if (el.checked) S.form[el.name] = el.value } else S.form[el.name] = el.value })
+}
+
+document.querySelector('.controls').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]'); if (!b) return
+  const key = b.parentElement.id.replace('ctl-', '')
+  const patch = { [key]: b.dataset.v, menu: false }
+  if (key === 'mode') Object.assign(patch, { tab: 'home', profile: false, wiz: 0, open: b.dataset.v === 'campday' ? null : null, act: null, picked: null, requested: new Set(), offerConfirm: false, checkFor: null, pickKid: 'noor', week: 1, unread: b.dataset.v === 'campday' ? 2 : 1, seenNew: 0, ...fresh(b.dataset.v) })
+  go(patch)
+})
+document.getElementById('device').addEventListener('click', e => {
+  const sum = e.target.closest('summary')
+  if (sum) { const d = sum.parentElement; setTimeout(() => { if (d.dataset.sched !== undefined) S.schedOpen = d.open; if (d.dataset.fold) S.openKid = d.open ? d.dataset.fold : (S.openKid === d.dataset.fold ? null : S.openKid) }, 0); return }
+  const t = e.target.closest('button,a')
+  if (!t) { if (S.menu) go({ menu: false }, true); return }
+  if (t.tagName === 'A') e.preventDefault()
+  const d = t.dataset
+  if (d.tab) return go({ tab: d.tab, profile: false, wiz: 0, menu: false, seenNew: d.tab === 'updates' ? S.unread || S.seenNew : S.seenNew, unread: d.tab === 'updates' ? 0 : S.unread })
+  if (d.open) return go({ open: S.open === d.open ? null : d.open, act: null, picked: null }, true)
+  if (d.find) return go({ tab: 'classes', pickKid: d.find, week: regsOf(d.find).length ? 2 : 1, checkFor: null })
+  if (d.switch) return go({ act: { reg: d.switch, kind: 'switch' }, picked: null }, true)
+  if (d.askcancel) return go({ act: { reg: d.askcancel, kind: 'cancel' } }, true)
+  if (d.request) { go({ act: { reg: d.request, kind: 'request' } }, true); return focus('reqm') }
+  if (d.cancel) { S.regs.find(r => r.id === d.cancel).status = 'cancelled'; return go({ act: null }, true) }
+  if (d.pick) return go({ picked: d.pick }, true)
+  if (d.swapyes) { S.regs.find(r => r.id === d.swapyes).sec = S.picked; return go({ act: null, picked: null }, true) }
+  if (d.kid) return go({ pickKid: d.kid, checkFor: null, checkEdit: false }, true)
+  if (d.week) return go({ week: +d.week, checkFor: null, checkEdit: false }, true)
+  if (d.reg) {
+    const k = kid(S.pickKid), s = sec(d.reg)
+    if (!k.confirmed) { go({ checkFor: d.reg, checkEdit: false }, true); return focus('ck-sig') }
+    S.regs.push({ id: 'r' + Date.now(), kid: k.id, sec: s.id, status: left(s) > 0 ? 'confirmed' : 'waitlisted' }); return go({}, true)
+  }
+  if (d.editkid) return go({ kidEdit: d.editkid, kidSaved: null, openKid: d.editkid }, true)
+  if (d.yn) { saveWizFields(); S.form[d.yn] = d.v; return go({}, true) }
+  switch (d.act) {
+    case 'menu': return go({ menu: !S.menu }, true)
+    case 'theme': return go({ theme: S.theme === 'dark' ? 'light' : 'dark', menu: false }, true)
+    case 'profile': return go({ profile: true, wiz: 0, menu: false })
+    case 'unprofile': return go({ profile: false })
+    case 'wiz': return go({ wiz: 1, menu: false, profile: false, form: { ...PREFILL(), w1: true }, wizErr: '' })
+    case 'wizexit': case 'wizhome': return go({ wiz: 0, tab: 'home' })
+    case 'wizback': saveWizFields(); return go({ wiz: S.wiz - 1, wizErr: '' })
+    case 'noact': return go({ act: null, picked: null }, true)
+    case 'unpick': return go({ picked: null }, true)
+    case 'claim': S.regs.find(r => r.status === 'offered').status = 'confirmed'; return go({}, true)
+    case 'decline': return go({ offerConfirm: true }, true)
+    case 'keepoffer': return go({ offerConfirm: false }, true)
+    case 'declineyes': S.regs.find(r => r.status === 'offered').status = 'cancelled'; return go({ offerConfirm: false }, true)
+    case 'checkedit': return go({ checkEdit: true }, true)
+    case 'nocheck': return go({ checkFor: null, checkEdit: false }, true)
+    case 'editcontact': return go({ contactEdit: true, contactSaved: false }, true)
+    case 'cancelcontact': return go({ contactEdit: false }, true)
+    case 'cancelkid': return go({ kidEdit: null }, true)
+  }
+})
+document.getElementById('device').addEventListener('change', e => {
+  if (e.target.dataset.wk) { saveWizFields(); S.form['w' + e.target.dataset.wk] = e.target.checked; render(true) }
+})
+document.getElementById('device').addEventListener('submit', e => {
+  e.preventDefault()
+  const f = e.target
+  if (f.id === 'req') { if (!f.reqm.value.trim()) return; S.requested.add(f.dataset.reg); return go({ act: null }, true) }
+  if (f.id === 'check') {
+    if (!f['ck-sig'].value.trim()) { f.querySelector('#ck-err').textContent = 'Type your name to sign.'; f['ck-sig'].focus(); return }
+    const k = kid(S.pickKid), s = sec(f.dataset.sec); k.confirmed = true
+    S.regs.push({ id: 'r' + Date.now(), kid: k.id, sec: s.id, status: left(s) > 0 ? 'confirmed' : 'waitlisted' })
+    return go({ checkFor: null, checkEdit: false }, true)
+  }
+  if (f.id === 'contact') {
+    if (!f.ce.value.trim() || !f.cp.value.trim()) { f.querySelector('#ce-err').textContent = 'An email and a phone number are required.'; return }
+    S.contact = { email: f.ce.value.trim(), phone: f.cp.value.trim(), ec: [f.cn.value.trim(), f.cph.value.trim(), f.cr.value.trim()] }
+    return go({ contactEdit: false, contactSaved: true }, true)
+  }
+  if (f.id === 'kidform') {
+    if (!f.kf.value.trim() || !f.kl.value.trim()) { f.querySelector('#kf-err').textContent = "Your camper's first and last name are required."; return }
+    Object.assign(kid(f.dataset.kid), { first: f.kf.value.trim(), last: f.kl.value.trim(), grade: f.kg.value, allergies: f.ka.value.trim(), medical: f.km.value.trim(), ec: [f.kn.value.trim(), f.kp.value.trim(), f.kr.value.trim()] })
+    return go({ kidEdit: null, kidSaved: f.dataset.kid }, true)
+  }
+  if (f.id === 'wiz') {
+    saveWizFields()
+    const F = S.form, need = { 1: [['first', 'first name'], ['last', 'last name'], ['grade', 'grade']], 2: [['pphone', 'phone'], ['ecname', 'emergency contact'], ['ecphone', "emergency contact's phone"]], 3: [['allergies', 'allergies (type None if none)'], ['medical', 'medical conditions (type None if none)']], 5: [['sig1', "camper's signature"], ['sig2', 'your signature']] }[S.wiz] || []
+    const miss = need.find(([k]) => !String(F[k] || '').trim())
+    if (miss) { go({ wizErr: `Please add the ${miss[1]}.` }, true); return focus(miss[0]) }
+    if (S.wiz === 4 && !((F.w1 && F.class1) || (F.w2 && F.class2))) return go({ wizErr: 'Pick a class for each week you checked.' }, true)
+    if (S.wiz === 5) {
+      const k = { id: 'k' + Date.now(), first: F.first, last: F.last, age: 10, grade: F.grade, allergies: F.allergies === 'None' ? '' : F.allergies, medical: F.medical === 'None' ? '' : F.medical, ec: [F.ecname, F.ecphone, F.ecrel], confirmed: true }
+      S.kids.push(k)
+      for (const w of [1, 2]) if (F['w' + w] && F['class' + w]) { const s = sec(F['class' + w]); S.regs.push({ id: 'r' + w + Date.now(), kid: k.id, sec: s.id, status: left(s) > 0 ? 'confirmed' : 'waitlisted' }) }
+      if (S.mode === 'new') S.mode = 'before'
+      return go({ wiz: 6, wizErr: '' })
+    }
+    return go({ wiz: S.wiz + 1, wizErr: '' })
+  }
+})
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.menu) go({ menu: false }, true) })
+S.seenNew = 0; S.unread = 1
+render(false)
+</script>
+</body>
+</html>

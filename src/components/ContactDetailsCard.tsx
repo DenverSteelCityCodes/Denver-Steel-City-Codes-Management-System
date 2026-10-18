@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { Pencil, Check, Phone } from 'lucide-react'
+import { Pencil, Check } from 'lucide-react'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useAuth } from '../context/AuthContext'
 
-// "Your contact details" on the parent dashboard (spec 11): the contact the camp uses for every
-// camper on this account, editable inline any time.
+// "You" on Family details (spec 11): the contact the camp uses for every camper on this account.
+// Read-only first, with an inline Edit.
 export default function ContactDetailsCard() {
-  const { user } = useAuth()
+  const { user, profile: account } = useAuth()
   const { profile, loading, saveProfile } = useParentProfile()
   const [editing, setEditing] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ email: '', phone: '', emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_relation: '' })
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -22,6 +23,7 @@ export default function ContactDetailsCard() {
       emergency_contact_relation: profile?.emergency_contact_relation ?? '',
     })
     setErr(null)
+    setSaved(false)
     setEditing(true)
   }
 
@@ -38,6 +40,7 @@ export default function ContactDetailsCard() {
         emergency_contact_relation: form.emergency_contact_relation.trim() || null,
       })
       setEditing(false)
+      setSaved(true)
     } catch (e2) {
       setErr(e2 instanceof Error ? e2.message : 'Something went wrong')
     } finally {
@@ -45,51 +48,51 @@ export default function ContactDetailsCard() {
     }
   }
 
-  if (loading) return null
-  const input = 'w-full h-10 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand'
-  const label = 'block font-sans text-xs font-semibold text-ink-muted mb-1'
+  if (loading) return <div className="h-40 bg-surface-sunken rounded-[14px] animate-pulse mt-7" />
+  // 16px so iOS Safari doesn't zoom the page when the field is focused.
+  const input = 'w-full h-11 px-3 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand'
+  const label = 'block font-sans text-sm font-semibold text-ink-muted mb-1'
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const ec = profile?.emergency_contact_name
 
   return (
-    <section aria-labelledby="contact-heading" className="bg-surface border border-border rounded-xl shadow-sm px-4 sm:px-5 py-4 mb-8">
-      <div className="flex items-start justify-between gap-3">
-        <h2 id="contact-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5">
-          <Phone size={13} /> Your contact details
-        </h2>
+    <section aria-labelledby="contact-heading" className="mt-7">
+      <header className="flex items-center justify-between gap-3 mb-2">
+        <h2 id="contact-heading" className="font-sans font-bold text-lg text-ink">You</h2>
         {!editing && (
-          <button type="button" onClick={startEditing} className="h-9 px-3 text-sm font-sans font-semibold text-ink-muted rounded-[8px] hover:bg-surface-sunken hover:text-ink flex items-center gap-1.5 transition">
-            <Pencil size={14} /> Edit
+          <button type="button" onClick={startEditing} className="h-11 px-3 font-sans font-semibold text-[15px] text-ink-muted rounded-[10px] hover:bg-surface-sunken hover:text-ink flex items-center gap-1.5 transition">
+            <Pencil size={15} /> Edit
           </button>
         )}
-      </div>
+      </header>
       {!editing ? (
-        <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 font-sans text-sm">
-          <dt className="text-ink-muted">Email</dt><dd className="text-ink break-words">{profile?.email ?? user?.email ?? '—'}</dd>
-          <dt className="text-ink-muted">Phone</dt><dd className="text-ink">{profile?.phone || '—'}</dd>
-          <dt className="text-ink-muted">Emergency contact</dt>
-          <dd className="text-ink">
-            {profile?.emergency_contact_name
-              ? `${profile.emergency_contact_name}${profile.emergency_contact_relation ? ` (${profile.emergency_contact_relation})` : ''}${profile.emergency_contact_phone ? ` · ${profile.emergency_contact_phone}` : ''}`
-              : 'Not added yet'}
-          </dd>
-        </dl>
+        <>
+          <dl className="bg-surface border border-border rounded-[14px] p-4 grid grid-cols-[auto_1fr] gap-x-5 gap-y-1.5 font-sans text-base">
+            <dt className="text-ink-muted">Name</dt><dd className="text-ink font-semibold">{account?.display_name ?? '—'}</dd>
+            <dt className="text-ink-muted">Email</dt><dd className="text-ink font-semibold break-words min-w-0">{profile?.email ?? user?.email ?? '—'}</dd>
+            <dt className="text-ink-muted">Phone</dt><dd className="text-ink font-semibold">{profile?.phone || 'Not added yet'}</dd>
+            <dt className="text-ink-muted">Emergency</dt>
+            <dd className="text-ink font-semibold">
+              {ec ? <>{ec}{profile?.emergency_contact_relation ? ` (${profile.emergency_contact_relation})` : ''}{profile?.emergency_contact_phone && <><br />{profile.emergency_contact_phone}</>}</> : 'Not added yet'}
+            </dd>
+          </dl>
+          {saved && <p role="status" className="mt-2.5 font-sans text-[15px] font-semibold text-success flex items-center gap-1.5"><Check size={16} /> Saved</p>}
+        </>
       ) : (
-        <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') setEditing(false) }} className="mt-3 space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div><label htmlFor="cd-email" className={label}>Email</label><input id="cd-email" type="email" autoComplete="email" className={input} value={form.email} onChange={e => set('email', e.target.value)} /></div>
-            <div><label htmlFor="cd-phone" className={label}>Phone</label><input id="cd-phone" type="tel" autoComplete="tel" className={input} value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div><label htmlFor="cd-ec-name" className={label}>Emergency contact</label><input id="cd-ec-name" className={input} value={form.emergency_contact_name} onChange={e => set('emergency_contact_name', e.target.value)} /></div>
+        <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') setEditing(false) }} className="bg-surface border border-border rounded-[14px] p-4 space-y-3.5">
+          <div><label htmlFor="cd-email" className={label}>Email</label><input id="cd-email" type="email" autoComplete="email" className={input} value={form.email} onChange={e => set('email', e.target.value)} /></div>
+          <div><label htmlFor="cd-phone" className={label}>Phone</label><input id="cd-phone" type="tel" autoComplete="tel" className={input} value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
+          <div><label htmlFor="cd-ec-name" className={label}>Emergency contact</label><input id="cd-ec-name" className={input} value={form.emergency_contact_name} onChange={e => set('emergency_contact_name', e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-3">
             <div><label htmlFor="cd-ec-phone" className={label}>Their phone</label><input id="cd-ec-phone" type="tel" className={input} value={form.emergency_contact_phone} onChange={e => set('emergency_contact_phone', e.target.value)} /></div>
             <div><label htmlFor="cd-ec-rel" className={label}>Relationship</label><input id="cd-ec-rel" className={input} value={form.emergency_contact_relation} onChange={e => set('emergency_contact_relation', e.target.value)} /></div>
           </div>
-          <p className="font-sans text-xs text-ink-faint">Each camper also keeps its own emergency contact; edit those on the camper card.</p>
+          <p className="font-sans text-sm text-ink-muted">New registrations start with these. Each camper keeps their own emergency contact below.</p>
           {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setEditing(false)} className="h-10 px-4 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Cancel</button>
-            <button type="submit" disabled={saving} className="h-10 px-4 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm flex items-center gap-1.5 transition disabled:opacity-50">
-              <Check size={15} /> {saving ? 'Saving…' : 'Save'}
+            <button type="button" onClick={() => setEditing(false)} className="h-11 px-4 rounded-[10px] border border-border-strong bg-surface font-sans font-semibold text-[15px] text-ink hover:bg-surface-sunken transition">Cancel</button>
+            <button type="submit" disabled={saving} className="h-11 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-[15px] flex items-center gap-1.5 transition disabled:opacity-50">
+              <Check size={16} /> {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </form>

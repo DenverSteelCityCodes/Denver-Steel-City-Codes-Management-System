@@ -12,6 +12,7 @@ These are the design-review **handoffs** and specs for Steel City Codes. They we
 | [`ADMIN_DASHBOARD_HANDOFF.md`](./ADMIN_DASHBOARD_HANDOFF.md) | **Admin dashboard redesign** — app-shell sidebar/top bar, "Needs attention" work queue, contextual stat cards | 🔧 In progress — epic #31 |
 | [`PARENT_DASHBOARD_HANDOFF.md`](./PARENT_DASHBOARD_HANDOFF.md) | **Parent dashboard redesign** — human status copy, rich camper cards, parent shell + session strip | 🔧 In progress — epic #32 |
 | [`volunteer-redesign/mockup.html`](./volunteer-redesign/mockup.html) | **Volunteer portal redesign** — Today / Classes / Duties / Updates tabs, profile under the avatar, roll-call-first camp day, built for mobile Safari/Chrome. Clickable mockup with the research behind it (fictional data) | ✅ Built — issue #160 |
+| [`parent-redesign/mockup.html`](./parent-redesign/mockup.html) | **Parent pages redesign** — Home / Classes / Updates tabs, one status band on Home, camper rows that open in place, Family details under the avatar, built for mobile Safari/Chrome. Clickable mockup with the research behind it (fictional data, anonymized counts only) | ✅ Built — issue #167 |
 
 The intended-design **HTML mockups** (`Admin Dashboard — Intended Design.html`, `Parent Dashboard — Intended Design.html`, `Classes UI — Intended Design.html`, `Style Guide.html`) remain in the Claude Design project as the visual targets and can be exported from there.
 

@@ -40,8 +40,9 @@ export function Sect({ title, action, id, children, className = '' }: { title: s
   )
 }
 
-// The daily schedule. On a camp day it folds to "Right now" with the full day one tap away.
-export function ScheduleBlock({ items, live }: { items: ScheduleItem[]; live: boolean }) {
+// The daily schedule. On a camp day it folds to "Right now" with the full day one tap away; with
+// `fold`, the rest of the time it folds to its first and last items (drop-off and pickup).
+export function ScheduleBlock({ items, live, fold = false }: { items: ScheduleItem[]; live: boolean; fold?: boolean }) {
   if (items.length === 0) return null
   const now = new Date()
   const minutes = now.getHours() * 60 + now.getMinutes()
@@ -65,7 +66,29 @@ export function ScheduleBlock({ items, live }: { items: ScheduleItem[]; live: bo
       })}
     </ol>
   )
-  if (!live) return <Sect title="The daily schedule">{list}</Sect>
+  if (!live && !fold) return <Sect title="The daily schedule">{list}</Sect>
+  if (!live) {
+    const sorted = [...items].sort((a, b) => a.start_time.localeCompare(b.start_time))
+    const ends = [sorted[0], sorted[sorted.length - 1]]
+    return (
+      <section className="mt-7">
+        <details className="group">
+          <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer min-h-11 flex items-center justify-between gap-3">
+            <span>
+              <span className="block font-sans text-lg font-bold text-ink">A day at camp</span>
+              <span className="block font-sans text-[15px] text-ink-muted">
+                {ends.map((i, n) => `${n ? i.title.toLowerCase() : i.title} ${formatTime(i.start_time)}`).join(', ')}
+              </span>
+            </span>
+            <span className="flex items-center gap-1 font-sans text-sm font-semibold text-ink-muted shrink-0">
+              Full day <ChevronDown size={15} className="transition group-open:rotate-180" aria-hidden="true" />
+            </span>
+          </summary>
+          {list}
+        </details>
+      </section>
+    )
+  }
   return (
     <section className="mt-7">
       <details className="group" open={typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches}>
@@ -86,10 +109,10 @@ export function ScheduleBlock({ items, live }: { items: ScheduleItem[]; live: bo
   )
 }
 
-export function LatestUpdate() {
+export function LatestUpdate({ to = '/volunteer/updates' }: { to?: string }) {
   const { updates, loading } = useUpdates(1)
   return (
-    <Sect title="Latest from the camp" action={<Link to="/volunteer/updates" className={linkCls}>All updates</Link>}>
+    <Sect title="Latest from the camp" action={<Link to={to} className={linkCls}>All updates</Link>}>
       <div className={`${listCls} px-4`}>
         <UpdatesFeed updates={updates} loading={loading} compact emptyText="Nothing posted yet." />
       </div>
