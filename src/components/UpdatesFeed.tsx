@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Megaphone, Trash2, Mail, Users } from 'lucide-react'
+import { Copy, Trash2 } from 'lucide-react'
 import InlineConfirm from './InlineConfirm'
-import { audienceLabel, fetchRecipientEmails, type UpdateWithSection } from '../hooks/useUpdates'
+import { fetchRecipientEmails, type UpdateWithSection } from '../hooks/useUpdates'
 import { timeAgo } from '../lib/campDay'
 import { copyText } from '../lib/mailto'
+import { audienceText } from '../lib/updateMeta'
 
 interface Props {
   updates: UpdateWithSection[]
@@ -18,7 +19,11 @@ interface Props {
   compact?: boolean
 }
 
-// Read-only list of updates, newest first. Delete uses InlineConfirm under the item (no modal).
+const actionCls = 'inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px] hover:decoration-2'
+
+// Read-only list of updates, newest first, set straight on the page: who posted it and to whom as a
+// sentence, then the post. Copy emails and Delete are labelled 44px actions; Delete asks inline
+// under the item (no modal). The container frames the list (2px ink rules); rows divide with hairlines.
 export default function UpdatesFeed({
   updates, loading = false, canDelete, onDelete, canCopyEmails, limit, emptyText = 'No updates yet.', compact = false,
 }: Props) {
@@ -30,7 +35,7 @@ export default function UpdatesFeed({
   async function del(id: string) {
     setBusy(true)
     try { await onDelete?.(id); setPending(null) }
-    catch (e) { setMsg({ id, text: e instanceof Error ? e.message : "Couldn't delete" }) }
+    catch { setMsg({ id, text: "Couldn't delete it. Check your connection and try again." }) }
     finally { setBusy(false) }
   }
 
@@ -38,71 +43,63 @@ export default function UpdatesFeed({
     try {
       const emails = await fetchRecipientEmails(u.audience, u.section_id)
       const ok = await copyText(emails.join(', '))
-      setMsg({ id: u.id, text: ok ? `Copied ${emails.length} ${emails.length === 1 ? 'address' : 'addresses'}` : 'Clipboard blocked — try again from a secure tab' })
-    } catch (e) {
-      setMsg({ id: u.id, text: e instanceof Error ? e.message : "Couldn't fetch addresses" })
+      setMsg({ id: u.id, text: ok ? `Copied ${emails.length} ${emails.length === 1 ? 'address' : 'addresses'}.` : "Your browser blocked the clipboard. Try again from a secure tab." })
+    } catch {
+      setMsg({ id: u.id, text: "Couldn't get the addresses. Check your connection and try again." })
     }
     setTimeout(() => setMsg(null), 4000)
   }
 
   if (loading) {
-    return <div className="space-y-2">{[1, 2].map(i => <div key={i} className="h-16 bg-surface-sunken rounded-[10px] animate-pulse" />)}</div>
+    return <div className="space-y-3 py-3" aria-busy="true">{[1, 2].map(i => <div key={i} className="h-16 bg-surface-sunken rounded animate-pulse" />)}</div>
   }
   if (list.length === 0) {
-    return (
-      <p className="flex items-center gap-2 font-sans text-sm text-ink-muted">
-        <Megaphone size={16} className="text-ink-faint" /> {emptyText}
-      </p>
-    )
+    return <p className="py-3 text-ink-muted">{emptyText}</p>
   }
 
   return (
-    <ul className="divide-y divide-border">
-      {list.map(u => (
-        <li key={u.id} className={compact ? 'py-2.5' : 'py-3.5'}>
-          <div className="flex items-start gap-3">
-            <span className="w-8 h-8 rounded-full bg-brand-soft text-warning flex items-center justify-center shrink-0 mt-0.5">
-              <Megaphone size={14} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-baseline gap-x-2 font-sans text-xs text-ink-muted">
-                <span className="font-semibold text-ink">{u.author_name}</span>
-                <span className="inline-flex items-center gap-1"><Users size={11} /> {audienceLabel(u)}</span>
-                <span>· {timeAgo(u.created_at)}</span>
-              </p>
-              <p className={`mt-1 font-sans text-ink whitespace-pre-line ${compact ? 'text-sm' : 'text-[15px]'}`}>{u.body}</p>
-              {msg?.id === u.id && <p role="status" className="mt-1 font-sans text-xs text-ink-muted">{msg.text}</p>}
-            </div>
-            {(canCopyEmails?.(u) || canDelete?.(u)) && (
-              <div className="flex items-center gap-0.5 shrink-0">
-                {canCopyEmails?.(u) && (
-                  <button type="button" onClick={() => copyEmails(u)} title="Copy recipient emails" aria-label="Copy recipient emails"
-                    className="p-2 text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-[8px] transition">
-                    <Mail size={15} />
+    <ul>
+      {list.map(u => {
+        const copy = canCopyEmails?.(u)
+        const remove = canDelete?.(u)
+        return (
+          <li key={u.id} className={`border-t border-border first:border-t-0 ${compact ? 'py-3' : 'py-4'}`}>
+            <p className="text-sm text-ink-muted">
+              <b className="font-bold text-ink">{u.author_name}</b> to {audienceText(u)},{' '}
+              <time dateTime={u.created_at}>{timeAgo(u.created_at)}</time>
+            </p>
+            <p className="mt-1.5 max-w-[65ch] text-ink whitespace-pre-line text-pretty break-words">{u.body}</p>
+            {(copy || remove) && pending !== u.id && (
+              <div className="mt-1 flex flex-wrap gap-x-6">
+                {copy && (
+                  <button type="button" onClick={() => void copyEmails(u)} className={`${actionCls} text-ink`}>
+                    <Copy size={16} strokeWidth={2.5} aria-hidden="true" /> Copy emails
                   </button>
                 )}
-                {canDelete?.(u) && (
-                  <button type="button" onClick={() => setPending(pending === u.id ? null : u.id)} title="Delete update" aria-label="Delete update"
-                    className="p-2 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[8px] transition">
-                    <Trash2 size={15} />
+                {remove && (
+                  <button type="button" onClick={() => setPending(u.id)} className={`${actionCls} text-danger`}>
+                    <Trash2 size={16} strokeWidth={2.5} aria-hidden="true" /> Delete
                   </button>
                 )}
               </div>
             )}
-          </div>
-          {pending === u.id && (
-            <div className="mt-2 rounded-[10px] overflow-hidden border border-danger/30">
-              <InlineConfirm
-                message="Delete this update? Readers will no longer see it."
-                confirmLabel="Delete"
-                busy={busy}
-                onConfirm={() => del(u.id)}
-                onCancel={() => setPending(null)}
-              />
-            </div>
-          )}
-        </li>
-      ))}
+            {msg?.id === u.id && <p role="status" className="mt-1 text-sm font-bold text-ink-muted">{msg.text}</p>}
+            {pending === u.id && (
+              <div className="mt-3">
+                <InlineConfirm
+                  frame
+                  message="Delete this update? Readers will no longer see it."
+                  confirmLabel="Delete"
+                  cancelLabel="Keep it"
+                  busy={busy}
+                  onConfirm={() => void del(u.id)}
+                  onCancel={() => setPending(null)}
+                />
+              </div>
+            )}
+          </li>
+        )
+      })}
     </ul>
   )
 }
