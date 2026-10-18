@@ -29,7 +29,9 @@ export default function MfaGate() {
   if (!state || state.key !== key) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+        <div role="status" className="w-8 h-8 rounded-full border-2 border-ink border-t-transparent animate-spin">
+          <span className="sr-only">Checking your sign-in</span>
+        </div>
       </div>
     )
   }
