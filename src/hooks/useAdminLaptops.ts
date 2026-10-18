@@ -32,13 +32,15 @@ export interface HandoutLoan {
   requested_at: string
   section_id: string
   full_name: string
+  // False once the spot was cancelled: a handed-out laptop then can only be marked returned.
+  holds_seat: boolean
 }
 
 // One week's loans for the camp-day hand-out checklist.
 async function fetchHandout(sessionId: string): Promise<{ loans: HandoutLoan[] } | { error: string }> {
   const { data, error } = await supabase
     .from('laptop_loans')
-    .select('registration_id, status, requested_at, registrations!inner ( section_id, students ( full_name ), sections!inner ( session_id ) )')
+    .select('registration_id, status, requested_at, registrations!inner ( section_id, status, students ( full_name ), sections!inner ( session_id ) )')
     .eq('registrations.sections.session_id', sessionId)
     .in('status', ['reserved', 'handed_out', 'returned', 'queued'])
     .order('requested_at')
@@ -46,10 +48,11 @@ async function fetchHandout(sessionId: string): Promise<{ loans: HandoutLoan[] }
   return {
     loans: ((data ?? []) as unknown as {
       registration_id: string; status: LaptopLoanStatus; requested_at: string
-      registrations: { section_id: string; students: { full_name: string } | null }
+      registrations: { section_id: string; status: string; students: { full_name: string } | null }
     }[]).map(l => ({
       registration_id: l.registration_id, status: l.status, requested_at: l.requested_at,
       section_id: l.registrations.section_id, full_name: l.registrations.students?.full_name ?? 'Camper',
+      holds_seat: l.registrations.status === 'confirmed' || l.registrations.status === 'pending',
     })),
   }
 }
@@ -70,14 +73,13 @@ export function useLaptopHandout(sessionId: string | null) {
     return () => { alive = false }
   }, [sessionId, apply])
 
-  // Tick (handed out) or untick (back to reserved, undoing a mistaken tick).
-  async function setHandedOut(registrationId: string, handedOut: boolean) {
-    const { error: err } = await supabase.rpc('admin_set_laptop_status', {
-      p_registration_id: registrationId, p_status: handedOut ? 'handed_out' : 'reserved',
-    })
+  // Tick (handed out, a queued camper included when there's a spare), untick (back to reserved,
+  // undoing a mistaken tick) or returned (the laptop is back; the queue gets it).
+  async function setStatus(registrationId: string, status: 'handed_out' | 'reserved' | 'returned') {
+    const { error: err } = await supabase.rpc('admin_set_laptop_status', { p_registration_id: registrationId, p_status: status })
     if (err) throw new Error(err.message)
     if (sessionId) apply(await fetchHandout(sessionId))
   }
 
-  return { loans, error, setHandedOut }
+  return { loans, error, setStatus }
 }

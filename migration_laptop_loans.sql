@@ -30,6 +30,12 @@
 --     emails, nothing is queued for a change made with no signed-in user and no reason (the SQL
 --     editor, private.reset_demo()).
 -- students.laptop_available is no longer asked; the column stays, read-only, for past seasons.
+--
+-- Ship the frontend AFTER this migration: the admin Campers list embeds laptop_loans
+-- (useAdminStudents), so an app deployed first fails to load it. And because laptop_loans holds
+-- registrations by a RESTRICT key, anything that deletes accounts, campers or registrations
+-- (the demo reset, a future account deletion or retention job: specs 28 and L4) must delete
+-- their laptop_loans rows first.
 
 -- ── 1. A loaner cap per week ─────────────────────────────────
 
@@ -269,9 +275,11 @@ REVOKE ALL ON FUNCTION public.release_laptop(UUID) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.release_laptop(UUID) TO authenticated;
 
 -- ── 5. Admins: hand-out checklist ────────────────────────────
--- 'handed_out' (from any state: the camp can hand a spare to anyone holding a seat, which may run
--- past the cap), 'returned' (from handed_out; frees the loaner for the queue) and 'reserved'
--- (only to undo a hand-out ticked by mistake).
+-- 'handed_out' (from any state, a queued request included: the camp can hand a spare to anyone
+-- holding a seat, which may run past the cap), 'returned' (from handed_out, whatever became of the
+-- spot; frees the loaner for the queue) and 'reserved' (only to undo a hand-out ticked by mistake,
+-- and only while the camper still holds the spot: otherwise the loaner would sit reserved for
+-- nobody; mark it returned instead).
 CREATE OR REPLACE FUNCTION public.admin_set_laptop_status(p_registration_id UUID, p_status TEXT)
 RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
@@ -312,6 +320,9 @@ BEGIN
   ELSE
     IF cur IS DISTINCT FROM 'handed_out' THEN
       RAISE EXCEPTION 'Only a hand-out can be undone this way' USING ERRCODE = 'P0001';
+    END IF;
+    IF reg.status::text NOT IN ('confirmed', 'pending') THEN
+      RAISE EXCEPTION 'This camper no longer holds a spot, so the laptop can''t be reserved again. Mark it returned when it''s back.' USING ERRCODE = 'P0001';
     END IF;
     UPDATE laptop_loans SET status = 'reserved', handed_out_at = NULL WHERE registration_id = reg.id;
   END IF;
@@ -364,6 +375,9 @@ BEGIN
 
   IF NEW.status::text NOT IN ('confirmed', 'pending') OR new_sess IS NULL THEN
     IF old_sess IS NOT NULL THEN PERFORM 1 FROM sessions WHERE id = old_sess FOR UPDATE; END IF;
+    -- Re-read under the week's lock: a promotion that committed while we waited may have moved it.
+    SELECT status INTO cur FROM laptop_loans WHERE registration_id = NEW.id FOR UPDATE;
+    IF cur IS NULL OR cur NOT IN ('reserved', 'queued') THEN RETURN NULL; END IF;
     PERFORM private.set_reason('laptop_spot_ended');
     UPDATE laptop_loans SET status = 'released' WHERE registration_id = NEW.id;
     PERFORM set_config('app.reason', coalesce(prior, ''), true);
@@ -372,8 +386,12 @@ BEGIN
   ELSIF old_sess IS DISTINCT FROM new_sess THEN
     -- Both weeks, in a fixed order, so two opposite moves can't deadlock.
     PERFORM 1 FROM sessions WHERE id IN (old_sess, new_sess) ORDER BY id FOR UPDATE;
+    SELECT status INTO cur FROM laptop_loans WHERE registration_id = NEW.id FOR UPDATE;   -- fresh, as above
+    IF cur IS NULL OR cur NOT IN ('reserved', 'queued') THEN RETURN NULL; END IF;
     SELECT laptop_loaners INTO cap FROM sessions WHERE id = new_sess;
-    next := CASE WHEN private.laptop_in_use(new_sess) < cap
+    -- The registration already sits in the new week, so a reserved loan counts there already:
+    -- leave it out, or the week's last free loaner would look taken by itself.
+    next := CASE WHEN private.laptop_in_use(new_sess) - CASE WHEN cur = 'reserved' THEN 1 ELSE 0 END < cap
                   AND NOT EXISTS (SELECT 1 FROM laptop_loans q JOIN registrations qr ON qr.id = q.registration_id
                                     JOIN sections qs ON qs.id = qr.section_id
                                    WHERE qs.session_id = new_sess AND q.status = 'queued'

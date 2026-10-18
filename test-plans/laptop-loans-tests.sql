@@ -235,6 +235,35 @@ begin
   res := res || E'\n...and their view says so: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
   execute 'reset role';
 
+  -- A move into a week with one free loaner doesn't bounce through the queue (which would email
+  -- the family "queued" then "promoted"; within this one transaction the dedupe keys would hide
+  -- those emails, so the audit log is checked instead).
+  select count(*) into n from audit.log where table_name = 'laptop_loans' and row_id = r4::text
+     and reason in ('laptop_moved', 'laptop_promoted') and new->>'status' = 'queued';
+  select count(*) into m from audit.log where table_name = 'laptop_loans' and row_id = r4::text and reason = 'laptop_promoted';
+  res := res || E'\n...without passing through the queue: ' || case when n = 0 and m = 1 then 'ok' else 'BAD (' || n || '/' || m || ')' end;
+
+  -- ── Spares, and a spot that ends after the hand-out ──
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', adm, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  update sessions set laptop_loaners = 2 where id = wa;          -- in use: r1 and r5
+  st := public.request_laptop(r3);                               -- returned earlier: asks again, queued
+  res := res || E'\na new request with the week full is queued: ' || case when st = 'queued' then 'ok' else 'BAD (' || st || ')' end;
+  st := public.admin_set_laptop_status(r3, 'handed_out');
+  res := res || E'\na queued camper can be handed a spare: ' || case when st = 'handed_out' then 'ok' else 'BAD (' || st || ')' end;
+  perform public.admin_set_laptop_status(r5, 'handed_out');
+  update registrations set status = 'cancelled' where id = r5;
+  select status into st from laptop_loans where registration_id = r5;
+  res := res || E'\ncancelling a spot leaves a handed-out laptop handed out: ' || case when st = 'handed_out' then 'ok' else 'BAD (' || st || ')' end;
+  begin
+    perform public.admin_set_laptop_status(r5, 'reserved');
+    res := res || E'\nundo a hand-out after the spot ended: ALLOWED (BAD)';
+  exception when others then res := res || E'\nundo a hand-out after the spot ended: refused ' || case when sqlerrm like 'This camper no longer holds a spot%' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
+  st := public.admin_set_laptop_status(r5, 'returned');
+  select status || '/' || (returned_at is not null)::text into st from laptop_loans where registration_id = r5;
+  res := res || E'\n...but it can be marked returned: ' || case when st = 'returned/true' then 'ok' else 'BAD (' || st || ')' end;
+  execute 'reset role';
+
   -- ── Emails and audit ──
   select count(*) into n from notifications where template = 'laptop_reserved' and payload->>'student_id' = c1::text;
   res := res || E'\none laptop_reserved email for camper 1 (asking twice didn''t send two): ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
