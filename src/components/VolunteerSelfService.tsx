@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CircleAlert, CircleCheck, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { formatDayLong, localDateISO } from '../lib/campDay'
 import { useVolunteerPrefs, weeksLabel, type VolunteerPrefs } from '../hooks/useVolunteerPrefs'
@@ -7,19 +7,35 @@ import InlineConfirm from './InlineConfirm'
 
 // Volunteer self-service (spec 25, decided Q-V1: preferences + admin assigns, no self-pick), shown
 // on My profile: week availability and course choices, "I can't make it" days, a switch request.
+// Everything sits on the page (no cards): facts between hairlines, forms inline under their heading.
 interface Absence { id: string; from_date: string; to_date: string; note: string | null }
 
-const panel = 'bg-surface border border-border rounded-[14px] p-4'
-const h2 = 'font-sans font-bold text-lg text-ink'
-const hint = 'font-sans text-[15px] text-ink-muted'
-// 16px so iOS Safari doesn't zoom the page when the field is focused.
+const h2 = 'text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em] text-ink'
+const hint = 'text-ink-muted text-pretty'
 const input = 'ui-input'
-const label = 'block font-sans text-sm font-semibold text-ink-muted mb-1'
-const primary = 'ui-btn ui-btn--primary'
-const secondary = 'h-11 px-4 rounded-[10px] border border-border-strong bg-surface text-ink font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 hover:bg-surface-sunken transition'
+const label = 'block font-bold text-ink mb-1.5'
+const optional = <span className="font-normal text-ink-muted"> (optional)</span>
+const formRow = 'flex flex-wrap items-center gap-x-6 gap-y-2 mt-5'
+const cancelCls = 'ui-btn ui-btn--text text-ink-muted'
 
 function fmt(d: string) {
   return new Date(`${d}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+function ErrorLine({ text, className = '' }: { text: string; className?: string }) {
+  return (
+    <p role="alert" className={`flex items-start gap-1.5 text-sm font-bold text-danger ${className}`}>
+      <CircleAlert size={16} strokeWidth={2.5} className="shrink-0 mt-px" aria-hidden="true" />{text}
+    </p>
+  )
+}
+
+function Done({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="status" className="mt-3 flex items-start gap-1.5 font-bold text-success">
+      <CircleCheck size={18} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />{children}
+    </p>
+  )
 }
 
 // Read-only first, with an inline Edit (same pattern as ContactDetailsCard on the parent side).
@@ -30,8 +46,8 @@ export function PrefsSection() {
   const [err, setErr] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  if (loading) return <div className="h-32 bg-surface-sunken rounded-[14px] animate-pulse" />
-  if (!prefs) return error ? <p role="alert" className="font-sans text-sm text-danger">{error}</p> : null
+  if (loading) return <div className="h-32 bg-surface-sunken rounded animate-pulse" />
+  if (!prefs) return error ? <ErrorLine text="Couldn't load your availability. Check your connection and reload the page." /> : null
 
   const set = (patch: Partial<VolunteerPrefs>) => { setErr(null); setForm(f => ({ ...(f ?? prefs), ...patch })) }
   const options = (keep: string | null) => [...new Set([...(keep ? [keep] : []), ...courses])]
@@ -42,48 +58,47 @@ export function PrefsSection() {
     if (!form.availability_week_1 && !form.availability_week_2) { setErr('Pick at least one week.'); return }
     setBusy(true); setErr(null)
     try { await save(form); setForm(null); setSaved(true) }
-    catch (e2) { setErr(e2 instanceof Error ? e2.message : "Couldn't save — check your connection and try again") }
+    catch { setErr("Couldn't save. Check your connection and try again.") }
     finally { setBusy(false) }
   }
 
   return (
     <section aria-labelledby="prefs-heading">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
         <h2 id="prefs-heading" className={h2}>Availability and courses</h2>
         {!form && (
-          <button type="button" onClick={() => { setForm(prefs); setSaved(false) }}
-            className="h-11 px-3 rounded-[10px] font-sans font-semibold text-[15px] text-ink-muted hover:bg-surface-sunken hover:text-ink inline-flex items-center gap-1.5 transition">
-            <Pencil size={15} /> Edit
+          <button type="button" onClick={() => { setForm(prefs); setSaved(false) }} className="ui-btn ui-btn--text">
+            Edit<span className="sr-only"> availability and courses</span>
           </button>
         )}
       </div>
-      <p className={`${hint} mb-3`}>Admins use these when they assign classes. Your class is set by an admin.</p>
+      <p className={hint}>Admins use these when they assign classes.</p>
       {!form ? (
         <>
-          <dl className={`${panel} grid grid-cols-[auto_1fr] gap-x-5 gap-y-1.5 font-sans text-base`}>
-            <dt className="text-ink-muted">Weeks</dt><dd className="font-semibold text-ink">{weeksLabel(prefs)}</dd>
-            <dt className="text-ink-muted">First choice</dt><dd className="font-semibold text-ink">{prefs.course_first_choice || 'No preference'}</dd>
-            <dt className="text-ink-muted">Second choice</dt><dd className="font-semibold text-ink">{prefs.course_second_choice || 'No preference'}</dd>
+          <dl className="mt-3 py-3 border-y border-border grid grid-cols-[max-content_1fr] gap-x-5 gap-y-2">
+            <dt className="text-ink-muted">Weeks</dt><dd className="font-bold text-ink">{weeksLabel(prefs)}</dd>
+            <dt className="text-ink-muted">First choice</dt><dd className="font-bold text-ink">{prefs.course_first_choice || 'No preference'}</dd>
+            <dt className="text-ink-muted">Second choice</dt><dd className="font-bold text-ink">{prefs.course_second_choice || 'No preference'}</dd>
           </dl>
-          {saved && <p role="status" className="mt-2 font-sans text-[15px] font-semibold text-success inline-flex items-center gap-1.5"><Check size={16} /> Availability saved</p>}
+          {saved && <Done>Availability saved</Done>}
         </>
       ) : (
-        <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') setForm(null) }} className={`${panel} space-y-4`}>
+        <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') setForm(null) }} className="mt-4">
           <fieldset>
             <legend className={label}>Weeks you can help</legend>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 min-[480px]:grid-cols-2">
               {([1, 2] as const).map(w => {
                 const key = w === 1 ? 'availability_week_1' : 'availability_week_2'
                 return (
-                  <label key={w} className="h-11 px-3.5 flex items-center gap-2 rounded-[10px] border border-border-strong bg-surface font-sans text-[15px] font-semibold text-ink cursor-pointer">
-                    <input type="checkbox" className="w-5 h-5 accent-brand" checked={form[key]} onChange={e => set({ [key]: e.target.checked })} />
+                  <label key={w} className="flex items-center gap-3 min-h-[52px] px-4 py-2 bg-surface border-2 border-border has-[:checked]:border-ink rounded font-bold text-ink cursor-pointer">
+                    <input type="checkbox" className="w-[22px] h-[22px] shrink-0" checked={form[key]} onChange={e => set({ [key]: e.target.checked })} />
                     Week {w}
                   </label>
                 )
               })}
             </div>
           </fieldset>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 min-[480px]:grid-cols-2 mt-5">
             <div>
               <label htmlFor="pref-first" className={label}>First-choice course</label>
               <select id="pref-first" className={input} value={form.course_first_choice ?? ''} onChange={e => set({ course_first_choice: e.target.value || null })}>
@@ -99,10 +114,10 @@ export function PrefsSection() {
               </select>
             </div>
           </div>
-          {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => { setForm(null); setErr(null) }} className={secondary}>Cancel</button>
-            <button type="submit" disabled={busy} className={primary}><Check size={15} aria-hidden="true" /> {busy ? 'Saving…' : 'Save availability'}</button>
+          {err && <ErrorLine text={err} className="mt-3" />}
+          <div className={formRow}>
+            <button type="submit" disabled={busy} aria-busy={busy} className="ui-btn ui-btn--ink">{busy ? 'Saving…' : 'Save availability'}</button>
+            <button type="button" onClick={() => { setForm(null); setErr(null) }} className={cancelCls}>Cancel</button>
           </div>
         </form>
       )}
@@ -139,7 +154,7 @@ export function AbsenceSection({ userId, startOpen = false }: { userId: string; 
     setBusy(true); setErr(null)
     const { error } = await supabase.from('crew_absences').insert({ volunteer_id: userId, from_date: from, to_date: end, note: note.trim() || null })
     setBusy(false)
-    if (error) { setErr(error.message); return }
+    if (error) { setErr("Couldn't send it. Check your connection and try again."); return }
     setOpen(false); setFrom(''); setTo(''); setNote('')
     setVersion(v => v + 1)
   }
@@ -148,65 +163,72 @@ export function AbsenceSection({ userId, startOpen = false }: { userId: string; 
     setBusy(true)
     const { error } = await supabase.from('crew_absences').delete().eq('id', id)
     setBusy(false)
-    if (error) { setErr(error.message); return }
+    if (error) { setErr("Couldn't remove it. Check your connection and try again."); return }
     setRemoving(null)
     setVersion(v => v + 1)
   }
 
   return (
-    <section id="days-off" aria-labelledby="absence-heading" className="scroll-mt-16">
+    <section id="days-off" aria-labelledby="absence-heading" className="scroll-mt-16 md:scroll-mt-24">
       <h2 id="absence-heading" className={h2}>Days you can't make it</h2>
-      <p className={`${hint} mb-3`}>Tell the camp early so they can find cover. Admins see it right away.</p>
+      <p className={hint}>Tell the camp early so they can find cover. Admins see it right away.</p>
+      {list && list.length === 0 && !open && <p className="mt-3 text-ink">None added yet.</p>}
       {list && list.length > 0 && (
-        <ul className="bg-surface border border-border rounded-[14px] overflow-hidden mb-3">
-          {list.map(a => (
-            <li key={a.id} className="border-b border-border last:border-0">
-              <div className="flex items-center justify-between gap-3 pl-4 pr-2 py-2">
-                <p className="font-sans text-base text-ink min-w-0">
-                  <span className="font-semibold">{a.from_date === a.to_date ? formatDayLong(a.from_date) : `${fmt(a.from_date)} to ${fmt(a.to_date)}`}</span>
-                  {a.note && <span className="block text-sm text-ink-muted">{a.note}</span>}
-                </p>
-                {removing !== a.id && (
-                  <button type="button" onClick={() => setRemoving(a.id)} aria-label={`Remove ${fmt(a.from_date)}`}
-                    className="w-11 h-11 shrink-0 flex items-center justify-center rounded-[10px] text-ink-muted hover:text-danger hover:bg-danger-soft transition">
-                    <Trash2 size={17} aria-hidden="true" />
-                  </button>
+        <ul className="mt-3 border-y-2 border-ink">
+          {list.map(a => {
+            const when = a.from_date === a.to_date ? formatDayLong(a.from_date) : `${fmt(a.from_date)} to ${fmt(a.to_date)}`
+            return (
+              <li key={a.id} className="py-3 border-t border-border first:border-t-0">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="min-w-0 text-ink">
+                    <span className="block font-bold">{when}</span>
+                    {a.note && <span className="block text-ink-muted text-pretty">{a.note}</span>}
+                  </p>
+                  {removing !== a.id && (
+                    <button type="button" onClick={() => { setErr(null); setRemoving(a.id) }} className="ui-btn ui-btn--text shrink-0 text-danger">
+                      Remove<span className="sr-only"> {when}</span>
+                    </button>
+                  )}
+                </div>
+                {removing === a.id && (
+                  <div className="mt-3">
+                    <InlineConfirm frame message="Remove this? The camp will count on you those days." confirmLabel="Remove" cancelLabel="Keep it"
+                      busy={busy} onConfirm={() => { void remove(a.id) }} onCancel={() => setRemoving(null)} />
+                  </div>
                 )}
-              </div>
-              {removing === a.id && (
-                <InlineConfirm message="Remove this? The camp will count on you those days." confirmLabel="Remove" cancelLabel="Keep it"
-                  busy={busy} onConfirm={() => { void remove(a.id) }} onCancel={() => setRemoving(null)} />
-              )}
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
       )}
       {open ? (
-        <form onSubmit={add} className={`${panel} space-y-3`} noValidate>
-          <div className="grid gap-3 grid-cols-2">
+        <form onSubmit={add} className="mt-4" noValidate>
+          <div className="grid gap-4 min-[480px]:grid-cols-2">
             <div>
               <label htmlFor="abs-from" className={label}>First day</label>
               <input id="abs-from" type="date" min={today} className={input} value={from} onChange={e => setFrom(e.target.value)} autoFocus />
             </div>
             <div>
-              <label htmlFor="abs-to" className={label}>Last day (optional)</label>
+              <label htmlFor="abs-to" className={label}>Last day{optional}</label>
               <input id="abs-to" type="date" min={from || today} className={input} value={to} onChange={e => setTo(e.target.value)} />
             </div>
           </div>
-          <div>
-            <label htmlFor="abs-note" className={label}>Note for the camp (optional)</label>
+          <div className="mt-4">
+            <label htmlFor="abs-note" className={label}>Note for the camp{optional}</label>
             <input id="abs-note" maxLength={500} className={input} value={note} onChange={e => setNote(e.target.value)} placeholder="Dentist in the morning" />
           </div>
-          {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => { setOpen(false); setErr(null) }} className={secondary}>Cancel</button>
-            <button type="submit" disabled={busy} className={primary}>{busy ? 'Sending…' : 'Tell the camp'}</button>
+          {err && <ErrorLine text={err} className="mt-3" />}
+          <div className={formRow}>
+            <button type="submit" disabled={busy} aria-busy={busy} className="ui-btn ui-btn--primary">{busy ? 'Sending…' : 'Tell the camp'}</button>
+            <button type="button" onClick={() => { setOpen(false); setErr(null) }} className={cancelCls}>Cancel</button>
           </div>
         </form>
       ) : (
-        <button type="button" onClick={() => setOpen(true)} className={secondary}><Plus size={16} /> Add a day</button>
+        <button type="button" onClick={() => setOpen(true)} className="ui-btn ui-btn--secondary mt-4">
+          <Plus size={18} strokeWidth={2.25} aria-hidden="true" /> Add a day
+        </button>
       )}
-      {!open && err && <p role="alert" className="mt-2 font-sans text-sm text-danger">{err}</p>}
+      {!open && err && <ErrorLine text={err} className="mt-3" />}
     </section>
   )
 }
@@ -223,7 +245,7 @@ export function SwitchSection({ current }: { current: string | null }) {
     setBusy(true); setErr(null)
     const { error } = await supabase.rpc('request_change', { p_registration_id: null, p_kind: 'crew_switch', p_message: message })
     setBusy(false)
-    if (error) { setErr(error.message); return }
+    if (error) { setErr("Couldn't send it. Check your connection and try again."); return }
     setSent(true); setOpen(false); setMessage('')
   }
 
@@ -231,24 +253,23 @@ export function SwitchSection({ current }: { current: string | null }) {
     <section aria-labelledby="switch-heading">
       <h2 id="switch-heading" className={h2}>Switch classes</h2>
       {sent ? (
-        <p role="status" className="mt-1 font-sans text-[15px] font-semibold text-success inline-flex items-center gap-1.5"><Check size={16} /> Request sent. An admin will reply by email.</p>
-      ) : open ? (
-        <form onSubmit={send} className={`${panel} mt-2 space-y-3`}>
-          <div>
-            <label htmlFor="switch-msg" className={label}>Which class would you like, and why?</label>
-            <textarea id="switch-msg" rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
-              className="ui-input" />
-          </div>
-          {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => { setOpen(false); setErr(null) }} className={secondary}>Cancel</button>
-            <button type="submit" disabled={busy || !message.trim()} className={primary}>{busy ? 'Sending…' : 'Send request'}</button>
-          </div>
-        </form>
+        <Done>Request sent. An admin will reply by email.</Done>
       ) : (
         <>
-          <p className={`${hint} mb-3`}>{current ? `You're in ${current}. ` : ''}Admins assign classes, but you can ask for a change.</p>
-          <button type="button" onClick={() => setOpen(true)} className={secondary}>Ask to switch</button>
+          <p className={`${hint} mt-1`}>{current ? `You're in ${current}. ` : ''}Admins assign classes, but you can ask for a change.</p>
+          {open ? (
+            <form onSubmit={send} className="mt-4">
+              <label htmlFor="switch-msg" className={label}>Which class would you like, and why?</label>
+              <textarea id="switch-msg" rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus className={input} />
+              {err && <ErrorLine text={err} className="mt-3" />}
+              <div className={formRow}>
+                <button type="submit" disabled={busy || !message.trim()} aria-busy={busy} className="ui-btn ui-btn--ink">{busy ? 'Sending…' : 'Send request'}</button>
+                <button type="button" onClick={() => { setOpen(false); setErr(null) }} className={cancelCls}>Cancel</button>
+              </div>
+            </form>
+          ) : (
+            <button type="button" onClick={() => setOpen(true)} className="ui-btn ui-btn--secondary mt-4">Ask to switch</button>
+          )}
         </>
       )}
     </section>

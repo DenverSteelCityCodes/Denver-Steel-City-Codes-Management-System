@@ -34,6 +34,9 @@ import UnauthorizedPage from './pages/UnauthorizedPage'
 import VolunteerApplyPage from './pages/VolunteerApplyPage'
 import MfaGate from './components/MfaGate'
 import MfaPage from './pages/MfaPage'
+import AdminHelp from './pages/help/AdminHelp'
+import ParentHelp from './pages/help/ParentHelp'
+import VolunteerHelp from './pages/help/VolunteerHelp'
 
 function RoleRedirect() {
   const { role, loading } = useAuth()
@@ -79,6 +82,7 @@ function App() {
               <Route path="/admin/forms" element={<AdminFormEditor />} />
               <Route path="/admin/attendance" element={<AdminAttendance />} />
               <Route path="/admin/updates" element={<AdminUpdates />} />
+              <Route path="/admin/help" element={<AdminHelp />} />
             </Route>
             </Route>
           </Route>
@@ -90,6 +94,7 @@ function App() {
               <Route path="/volunteer/duties" element={<VolunteerDuties />} />
               <Route path="/volunteer/updates" element={<VolunteerUpdates />} />
               <Route path="/volunteer/profile" element={<VolunteerProfile />} />
+              <Route path="/volunteer/help" element={<VolunteerHelp />} />
             </Route>
           </Route>
 
@@ -107,6 +112,7 @@ function App() {
               <Route path="/parent/register" element={<ParentRegistrationPage />} />
               <Route path="/parent/updates" element={<ParentUpdates />} />
               <Route path="/parent/family" element={<ParentFamily />} />
+              <Route path="/parent/help" element={<ParentHelp />} />
             </Route>
           </Route>
 

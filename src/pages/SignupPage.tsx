@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { UserPlus } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { BrandBar } from '../components/Wordmark'
+import Button from '../components/Button'
+import { Input } from '../components/Field'
+import SignBand from '../components/SignBand'
+import PublicShell, { AsideLine, PageHead } from '../components/PublicShell'
+import { FieldError, FormError, FormField, PasswordInput, Spinner } from '../components/PublicForm'
+import { authErrorMessage, emailProblem, isExistingAccount } from '../lib/authErrors'
 import { focusOnMount } from '../lib/focus'
+import { buttonClass } from '../lib/ui'
+
+type Errors = { displayName?: string; email?: string; password?: string }
 
 export default function SignupPage() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState<Errors>({})
+  // The email already has an account: said under the field, with the two ways back in.
+  const [existing, setExisting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -27,7 +38,7 @@ export default function SignupPage() {
     setResendIn(60)
     const { error } = await supabase.auth.resend({
       type: 'signup',
-      email,
+      email: email.trim(),
       options: { emailRedirectTo: `${window.location.origin}/login` },
     })
     setResendNote(error ? "We couldn't resend it just now. Try again in a minute." : 'Sent again. Check your inbox and spam folder.')
@@ -36,150 +47,115 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setExisting(false)
+    const errs: Errors = {
+      displayName: displayName.trim() ? undefined : 'Enter your name.',
+      email: emailProblem(email) ?? undefined,
+      password: !password ? 'Choose a password.' : password.length < 8 ? 'Use at least 8 characters.' : undefined,
+    }
+    setErrors(errs)
+    const first = (['displayName', 'email', 'password'] as const).find(k => errs[k])
+    if (first) { document.getElementById(first)?.focus(); return }
+
     setLoading(true)
-
-    // Sign up — profile is created server-side by handle_new_user trigger
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
+    // Profile is created server-side by the handle_new_user trigger.
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: email.trim(),
       password,
-      options: { data: { display_name: displayName, role: 'parent' }, emailRedirectTo: `${window.location.origin}/login` },
+      options: { data: { display_name: displayName.trim(), role: 'parent' }, emailRedirectTo: `${window.location.origin}/login` },
     })
+    setLoading(false)
 
-    if (signUpError) {
-      setError(signUpError.message)
-      setLoading(false)
+    if (isExistingAccount(data?.user, signUpError)) {
+      setExisting(true)
+      document.getElementById('email')?.focus()
       return
     }
-
+    if (signUpError) {
+      const message = authErrorMessage(signUpError)
+      if (/password/i.test(message)) { setErrors({ password: message }); document.getElementById('password')?.focus() }
+      else setError(message)
+      return
+    }
     setSuccess(true)
     setResendIn(60)
-    setLoading(false)
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-bg flex flex-col">
-        <BrandBar />
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
-        <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
-            <span aria-hidden="true" className="text-success text-xl">✓</span>
-          </div>
-          <h1 ref={focusOnMount} tabIndex={-1} className="font-display font-bold text-xl text-ink mb-2 focus:outline-none">Check your email</h1>
-          <p className="font-sans text-ink-muted text-sm">
-            We sent a confirmation link to <strong className="text-ink">{email}</strong>. Click it to activate your account.
-          </p>
-          <p className="mt-4 font-sans text-ink-muted text-xs">
-            Didn't get it?{' '}
+      <PublicShell>
+        <PageHead title="Check your email" headingRef={focusOnMount} />
+        <div role="status">
+          <SignBand
+            context={<>We sent a confirmation link to <span className="[overflow-wrap:anywhere]">{email.trim()}</span></>}
+            message="Open the link in that email"
+            sub="It brings you back here to sign in. Then you'll add your campers."
+          />
+        </div>
+        <div className="mt-6 grid gap-1">
+          <p>Didn't get it? Check your spam folder first.</p>
+          <p>
             <button
               type="button"
               onClick={() => { void resend() }}
               disabled={resendIn > 0}
-              className="text-ink font-semibold hover:underline disabled:text-ink-faint disabled:no-underline disabled:cursor-not-allowed"
+              className={buttonClass('text', 'disabled:text-ink-muted disabled:no-underline')}
             >
               {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend the email'}
             </button>
           </p>
-          {resendNote && <p role="status" className="mt-2 font-sans text-xs text-ink-muted">{resendNote}</p>}
-          <Link
-            to="/login"
-            className="mt-6 inline-block font-sans font-semibold text-sm text-ink hover:underline"
-          >
-            Back to sign in
-          </Link>
+          <p role="status" className="text-sm text-ink-muted">{resendNote}</p>
+          <p><Link to="/login" className={buttonClass('text')}><ArrowLeft size={16} strokeWidth={2.5} aria-hidden="true" />Back to sign in</Link></p>
         </div>
-        </main>
-      </div>
+      </PublicShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col">
-      <BrandBar />
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
-
-      <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8">
-        <h1 className="font-display font-bold text-2xl text-ink mb-1">Create an account</h1>
-        <p className="font-sans text-ink-muted text-sm mb-6">Register to enroll your camper</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="block font-sans font-semibold text-sm text-ink" htmlFor="displayName">
-              Your name
-            </label>
-            <input
-              id="displayName"
-              type="text"
-              autoComplete="name"
-              required
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              placeholder="Jane Smith"
-              className="ui-input"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block font-sans font-semibold text-sm text-ink" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="ui-input"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block font-sans font-semibold text-sm text-ink" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="8+ characters"
-              className="ui-input"
-            />
-          </div>
-
-          {error && (
-            <p role="alert" className="text-danger text-sm font-sans flex items-center gap-1.5">
-              <span>⚠</span> {error}
-            </p>
+    <PublicShell>
+      <PageHead title="Create a parent account" lede="You'll add your campers after you sign in." />
+      <form onSubmit={handleSubmit} noValidate className="grid gap-5">
+        <FormField id="displayName" label="Your name" hint="Parent or guardian" error={errors.displayName}>
+          {a => <Input {...a} type="text" autoComplete="name" value={displayName} onChange={e => setDisplayName(e.target.value)} />}
+        </FormField>
+        <FormField id="email" label="Email" error={errors.email}>
+          {a => (
+            <>
+              <Input
+                {...a}
+                aria-invalid={a['aria-invalid'] ?? (existing || undefined)}
+                aria-describedby={[a['aria-describedby'], existing && 'email-existing'].filter(Boolean).join(' ') || undefined}
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setExisting(false) }}
+              />
+              {existing && (
+                <div role="alert" className="grid gap-0.5">
+                  <FieldError id="email-existing">There's already an account with this email.</FieldError>
+                  <p className="flex flex-wrap gap-x-5 pl-[22px]">
+                    <Link to="/login" className={buttonClass('text')}>Sign in</Link>
+                    <Link to="/forgot" className={buttonClass('text')}>Reset your password</Link>
+                  </p>
+                </div>
+              )}
+            </>
           )}
+        </FormField>
+        <FormField id="password" label="Password" hint="At least 8 characters" error={errors.password}>
+          {a => <PasswordInput {...a} autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} />}
+        </FormField>
+        {error && <FormError>{error}</FormError>}
+        <Button type="submit" variant="primary" block disabled={loading}>
+          {loading ? <><Spinner />Creating account…</> : 'Create account'}
+        </Button>
+      </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="ui-btn ui-btn--primary w-full"
-          >
-            {loading ? (
-              <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
-            ) : (
-              <UserPlus size={16} />
-            )}
-            {loading ? 'Creating account…' : 'Create account'}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm font-sans text-ink-muted">
-          Already have an account?{' '}
-          <Link to="/login" className="text-ink font-semibold hover:underline">
-            Sign in
-          </Link>
-        </p>
+      <div className="mt-6">
+        <AsideLine>Already have an account? <Link to="/login" className={buttonClass('text')}>Sign in</Link></AsideLine>
+        <AsideLine>Volunteering instead? <Link to="/apply" className={buttonClass('text')}>Apply to volunteer</Link></AsideLine>
       </div>
-      </main>
-    </div>
+    </PublicShell>
   )
 }

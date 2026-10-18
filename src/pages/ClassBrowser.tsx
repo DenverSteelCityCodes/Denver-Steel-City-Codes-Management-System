@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronDown, CircleCheck, Info, List, Lock, Plus } from 'lucide-react'
+import { ChevronDown, CircleCheck, Hourglass, Lock, Plus } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import { useStudents } from '../hooks/useStudents'
@@ -15,12 +15,17 @@ import { useFormConfig } from '../hooks/useFormConfig'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import { formatTimeRange } from '../lib/campDay'
 import { camperFirstName, holdsSeat } from '../lib/parentHome'
+import { buttonClass } from '../lib/ui'
 import type { OnboardingConfirmation, Student } from '../types/database'
-import { PageHead, Sect, btnCls, listCls, primaryCls } from './volunteer/parts'
+import { ErrorLine, PageHead, Sect, Segmented, framedCls, labelCls, rowCls, textBtn } from './parent/parts'
 
 // Classes tab (issue #167): pick the camper and the week first, then only the classes that camper
 // can take that week. The rest fold away with the reason. The yearly check opens inside the class
 // tapped, and the result shows in that class.
+//
+// Terminal Yellow: campers and weeks are segmented controls, the classes are rows on the floor
+// between 2px ink rules, seats are an ink meter (never red or gold), and the only gold on the page
+// is the yearly check's confirm button while it is open.
 export default function ClassBrowser() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
@@ -110,7 +115,7 @@ export default function ClassBrowser() {
     return (
       <>
         <PageHead title="Find a class">Classes are picked as part of registering a camper.</PageHead>
-        <Link to="/parent/register" className={`${primaryCls} mt-5`}><Plus size={16} /> Register a camper</Link>
+        <Link to="/parent/register" className={buttonClass('primary', 'mt-5')}><Plus size={20} strokeWidth={2.25} aria-hidden="true" /> Register a camper</Link>
       </>
     )
   }
@@ -136,62 +141,44 @@ export default function ClassBrowser() {
       <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
       <PageHead title="Find a class" />
       {!registrationOpen && (
-        <p role="status" className="mt-4 font-sans text-[15px] text-ink bg-surface border border-border rounded-[12px] px-4 py-3">
+        <p role="status" className="mt-3 font-bold text-pretty">
           Camper registration is closed right now. Existing registrations are unchanged.
         </p>
       )}
 
       <div className="mt-5">
-        <p id="who-l" className="font-sans text-sm font-semibold text-ink-muted mb-1.5">Who is it for?</p>
-        <div role="group" aria-labelledby="who-l" className="flex flex-wrap gap-2">
-          {students.map(s => {
-            const on = s.id === student?.id
-            const ini = s.full_name.split(/\s+/).map(n => n.match(/\p{L}/u)?.[0] ?? '').join('').toUpperCase().slice(0, 2)
-            return (
-              <button key={s.id} type="button" aria-pressed={on} onClick={() => pick({ camper: s.id })}
-                className={`h-11 pl-1.5 pr-3.5 rounded-full border inline-flex items-center gap-2 font-sans font-semibold text-[15px] transition ${
-                  on ? 'bg-ink border-ink text-bg' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'}`}>
-                <span aria-hidden="true" className="w-8 h-8 rounded-full bg-role-parent-soft text-role-parent grid place-items-center text-xs font-bold">{ini}</span>
-                {camperFirstName(s)}, {s.age}
-              </button>
-            )
-          })}
-          <Link to="/parent/register" className="h-11 px-3.5 rounded-full border border-dashed border-border-strong inline-flex items-center gap-1.5 font-sans font-semibold text-[15px] text-ink-muted hover:text-ink hover:bg-surface-sunken transition">
-            <Plus size={16} /> New camper
-          </Link>
-        </div>
+        <p id="who-l" className={labelCls}>Who is it for?</p>
+        <Segmented labelledBy="who-l" items={students.map(s => ({
+          key: s.id, label: `${camperFirstName(s)}, ${s.age}`, on: s.id === student?.id, onClick: () => pick({ camper: s.id }),
+        }))} />
+        <p className="mt-1 text-sm text-ink-muted">
+          New camper? <Link to="/parent/register" className={textBtn}>Register a new camper</Link>
+        </p>
       </div>
 
       {weeks.length > 1 && (
         <div className="mt-4">
-          <p id="week-l" className="font-sans text-sm font-semibold text-ink-muted mb-1.5">Which week?</p>
-          <div role="group" aria-labelledby="week-l" className="grid grid-flow-col auto-cols-fr border border-border-strong rounded-[10px] overflow-hidden bg-surface">
-            {weeks.map(w => (
-              <button key={w.n} type="button" aria-pressed={week === w.n} onClick={() => pick({ week: w.n })}
-                className={`min-h-12 py-1 border-l first:border-l-0 border-border-strong font-sans font-semibold text-[15px] leading-tight transition ${
-                  week === w.n ? 'bg-ink text-bg' : 'text-ink hover:bg-surface-sunken'}`}>
-                {w.session.name}
-                <span className="block font-medium text-[13px] opacity-80">{shortDates(w.session.start_date, w.session.end_date)}</span>
-              </button>
-            ))}
-          </div>
+          <p id="week-l" className={labelCls}>Which week?</p>
+          <Segmented labelledBy="week-l" items={weeks.map(w => ({
+            key: String(w.n), on: week === w.n, onClick: () => pick({ week: w.n }),
+            label: <>{w.session.name}<span className="block text-sm font-normal">{shortDates(w.session.start_date, w.session.end_date)}</span></>,
+          }))} />
         </div>
       )}
 
       {held && (
-        <p className="mt-4 flex items-start gap-2.5 bg-surface border border-border rounded-[12px] px-4 py-3 font-sans text-[15px] text-ink">
-          <Info size={17} className="shrink-0 mt-0.5 text-ink-muted" />
-          <span>{first} is in <b className="font-semibold">{held.sections?.classes?.name}</b> this week. Campers take one class a week; to change it, open {first} on Home and tap Switch class.</span>
+        <p className="mt-5 text-pretty">
+          {first} is in <b className="font-bold">{held.sections?.classes?.name}</b> this week. Campers take one class a week; to change it, open {first} on Home and tap Switch class.
         </p>
       )}
 
       <Sect title={classesLoading ? 'Classes' : `${fits.length} ${fits.length === 1 ? 'class' : 'classes'} for ${first}`} id="classes-h">
         {classesLoading ? (
-          <div className="h-48 bg-surface-sunken rounded-[14px] animate-pulse" aria-busy="true" />
+          <div className="h-48 bg-surface-sunken rounded animate-pulse" aria-busy="true" />
         ) : fits.length === 0 ? (
-          <p className="font-sans text-[15px] text-ink-muted">No class this week fits {first}'s age and grade.</p>
+          <p className="text-ink-muted">No class this week fits {first}'s age and grade.</p>
         ) : (
-          <div className={listCls}>
+          <ul className={framedCls}>
             {fits.map(({ cls, sec, constraint }) => {
               const reg = student ? getRegistration(student.id, sec.id) : null
               const left = sec.capacity - sec.registered_count
@@ -199,24 +186,26 @@ export default function ClassBrowser() {
               const pct = Math.min(100, Math.round((sec.registered_count / Math.max(sec.capacity, 1)) * 100))
               const time = sec.start_time ? `${sec.days}, ${formatTimeRange(sec.start_time, sec.end_time)}` : sec.days
               return (
-                <article key={sec.id} className="p-4 border-b border-border last:border-0">
-                  <h3 className="font-sans text-[17.5px] font-bold text-ink leading-snug">{cls.name}, {sec.label}</h3>
-                  {cls.description && <p className="mt-1 font-sans text-[15px] text-ink-muted leading-normal">{cls.description}</p>}
-                  <p className="mt-2 font-sans text-[14.5px] text-ink leading-normal">
+                <li key={sec.id} className={`py-4 ${rowCls}`}>
+                  <article aria-labelledby={`sec-${sec.id}`}>
+                  <h3 id={`sec-${sec.id}`} className="text-lg font-bold leading-snug">{cls.name}, {sec.label}</h3>
+                  {cls.description && <p className="mt-1 text-ink-muted text-pretty">{cls.description}</p>}
+                  <p className="mt-2 leading-normal">
                     Ages {sec.age_min} to {sec.age_max}{constraint?.requirementNote ? `. ${constraint.requirementNote}` : ''}
                     <br />{[time, sec.room].filter(Boolean).join(', ')}
                   </p>
-                  <div className="mt-2.5 h-1.5 rounded-full bg-surface-sunken overflow-hidden" aria-hidden="true">
-                    <div className={`h-full rounded-full ${full ? 'bg-danger' : left <= 2 ? 'bg-brand-hover' : 'bg-success'}`} style={{ width: `${pct}%` }} />
+                  {/* Seats as an ink meter: full is ink, never red (DESIGN.md › Colors). */}
+                  <div className="mt-3 h-1 rounded-[2px] bg-border overflow-hidden" aria-hidden="true">
+                    <div className={`h-full ${full ? 'bg-ink' : 'bg-ink-muted'}`} style={{ width: `${pct}%` }} />
                   </div>
-                  <p className="mt-1 flex justify-between font-sans text-sm text-ink-muted">
-                    <span>{full ? `Full${sec.waitlist_count ? `, ${sec.waitlist_count} on the waitlist` : ''}` : `${left} ${left === 1 ? 'spot' : 'spots'} left`}</span>
-                    <span>{sec.capacity} seats</span>
+                  <p className="mt-1.5 flex justify-between gap-3 text-sm">
+                    <span className="font-bold">{full ? `Full${sec.waitlist_count ? `, ${sec.waitlist_count} on the waitlist` : ''}` : `${left} ${left === 1 ? 'spot' : 'spots'} left`}</span>
+                    <span className="text-ink-muted">{sec.capacity} seats</span>
                   </p>
 
                   {reg && reg.status !== 'cancelled' ? (
-                    <p role="status" className={`mt-3 flex items-start gap-2 font-sans text-[15px] font-semibold ${holdsSeat(reg) ? 'text-success' : 'text-info'}`}>
-                      {holdsSeat(reg) ? <CircleCheck size={18} className="shrink-0 mt-0.5" /> : <List size={18} className="shrink-0 mt-0.5" />}
+                    <p role="status" className={`mt-3 flex items-start gap-2 font-bold ${holdsSeat(reg) ? 'text-success' : 'text-ink'}`}>
+                      {holdsSeat(reg) ? <CircleCheck size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 mt-0.5" /> : <Hourglass size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 mt-0.5" />}
                       {holdsSeat(reg) ? `${first} is in. Their spot is confirmed.`
                         : reg.status === 'offered' ? `A spot opened for ${first}. Claim it on Home.`
                         : `${first} is on the waitlist. We'll email you if a spot opens.`}
@@ -240,35 +229,36 @@ export default function ClassBrowser() {
                     />
                   ) : (
                     <button type="button" onClick={() => handleRegister(sec)} disabled={!!busy || sessionsLoading || !isOpen}
-                      className={`${btnCls} w-full mt-3`}>
+                      className={buttonClass('secondary', 'mt-3', true)}>
                       {busy === sec.id ? 'Registering…' : full ? 'Join the waitlist' : `Register ${first}`}
                     </button>
                   )}
-                  {errors[sec.id] && <p role="alert" className="mt-2 font-sans text-sm text-danger">{errors[sec.id]}</p>}
-                </article>
+                  {errors[sec.id] && <ErrorLine className="mt-2">{errors[sec.id]}</ErrorLine>}
+                  </article>
+                </li>
               )
             })}
-          </div>
+          </ul>
         )}
       </Sect>
 
       {notFit.length > 0 && (
-        <details className="group mt-7">
+        <details className="group mt-6">
           <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer min-h-11 flex items-center justify-between gap-3">
-            <span className="font-sans text-[15px] font-semibold text-ink">Not open to {first} ({notFit.length})</span>
-            <ChevronDown size={16} aria-hidden="true" className="text-ink-muted transition group-open:rotate-180" />
+            <span className="font-bold">Not open to {first} ({notFit.length})</span>
+            <ChevronDown size={20} strokeWidth={2.25} aria-hidden="true" className="text-ink-muted transition-transform group-open:rotate-180" />
           </summary>
-          <div className={`${listCls} mt-2`}>
+          <ul className={`mt-2 ${framedCls}`}>
             {notFit.map(({ cls, sec, reason }) => (
-              <div key={sec.id} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0">
+              <li key={sec.id} className={`flex items-center gap-3 py-3 ${rowCls}`}>
                 <span className="flex-1 min-w-0">
-                  <span className="block font-sans text-base font-semibold text-ink">{cls.name}, {sec.label}</span>
-                  <span className="block font-sans text-sm text-ink-muted">{reason}</span>
+                  <span className="block font-bold">{cls.name}, {sec.label}</span>
+                  <span className="block text-sm text-ink-muted">{reason}</span>
                 </span>
-                <Lock size={16} aria-hidden="true" className="text-ink-muted shrink-0" />
-              </div>
+                <Lock size={16} strokeWidth={2.5} aria-hidden="true" className="text-ink-muted shrink-0" />
+              </li>
             ))}
-          </div>
+          </ul>
         </details>
       )}
     </div>
