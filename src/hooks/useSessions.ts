@@ -11,6 +11,8 @@ export interface Session {
   is_active: boolean
   // Building and address (migration_public_camp_page.sql, spec 30). Null until an admin sets it.
   location?: string | null
+  // Loaner laptops for the week (migration_laptop_loans.sql, spec 29).
+  laptop_loaners?: number
   updated_at?: string
   created_at: string
 }

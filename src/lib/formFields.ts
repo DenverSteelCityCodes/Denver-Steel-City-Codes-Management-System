@@ -52,7 +52,8 @@ export const FORM_DEFINITIONS: Record<FormKey, { label: string; description: str
       { key: 'school_name', label: 'School name', required: true },
       { key: 'grade', label: 'Grade (entering fall)', required: true, locked: true },
       { key: 'shirt_size', label: 'Shirt size', required: true },
-      { key: 'laptop_available', label: 'Does your student have access to a personal laptop?', required: true },
+      // Spec 29: replaces "Does your student have access to a personal laptop?" (laptop_available).
+      { key: 'borrow_laptop', label: 'Will your camper need to borrow a laptop at camp?', required: true },
       { key: 'ethnic_background', label: 'Ethnic background' },
       { key: 'gender', label: 'Gender' },
       { key: 'parent_name', label: 'Parent / guardian name', required: true, locked: true },

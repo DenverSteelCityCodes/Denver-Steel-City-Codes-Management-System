@@ -25,6 +25,8 @@ export interface RosterStudent {
   emergency_contact_name: string | null
   emergency_contact_phone: string | null
   emergency_contact_relation: string | null
+  // 'reserved' or 'handed_out' when the camper borrows a camp laptop that week (spec 29), else null.
+  laptop_loan?: string | null
 }
 
 interface SectionRow {

@@ -133,6 +133,30 @@ export const PARENT_GUIDE: HelpGuide = {
           ],
         },
         {
+          id: 'borrow-laptop',
+          title: 'Borrow a laptop for camp',
+          keywords: 'laptop loaner chromebook ipad computer device queue',
+          body: [
+            { kind: 'p', text: 'Any laptop or Chromebook with a web browser works, or an iPad with a keyboard. If your camper doesn\'t have one, the camp lends a few each week. Loaners stay at camp.' },
+            {
+              kind: 'steps',
+              items: [
+                'When you register, answer **Yes** to "Will your camper need to borrow a laptop at camp?".',
+                'Or later: on [[parent-home]], tap your camper. Under each week it says **Laptop:** and where things stand. Tap **Borrow a laptop for** your camper.',
+                'Don\'t need it any more? Tap **Release the laptop** (or **Leave the laptop queue**), then confirm.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'Loaners go first come, first served. When a week\'s loaners are all reserved, your camper waits in that week\'s laptop queue, and you see their place in it.',
+                'When a loaner frees up, the next camper in the queue gets it and the family gets an email.',
+                'Cancelling a spot releases its laptop. Once the week starts, laptop changes happen at check-in.',
+              ],
+            },
+          ],
+        },
+        {
           id: 'after-deadline',
           title: 'You need a change after the online deadline',
           keywords: 'late change request deadline passed',
