@@ -45,6 +45,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 33 | `migration_public_camp_page.sql` | Each week's place (`sessions.location`), the public camp page's data, the "notify me" list and its every-minute job (spec 30). Deploy `send-notifications` first |
 | 34 | `migration_course_rules.sql` | Course rules on classes (grades this fall, a class to take first, a note, the next course), "place with" on registrations, exception requests and the "prerequisite at risk" list (spec 31). Steps 14, 29 and 33 call its helpers once it exists |
 | 35 | `migration_laptop_loans.sql` | Loaner laptops per camper-week: a cap per week, a first-come queue, emails, and a laptop column on the crew's roster (spec 29). Deploy `send-notifications` first |
+| 36 | `migration_authorized_pickups.sql` | Adults who may collect each camper and the dated walk-home consent; who collected each camper at dismissal; the admin dismissal board; a `pickup_changed` email to the lead (spec 36). Redefines `section_roster()` after step 35. Deploy `send-notifications` first |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 
@@ -64,7 +65,7 @@ Some headers say "then RE-APPLY X". That is for upgrading a database that alread
    supabase functions deploy send-notifications
    supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="Your Chapter <no-reply@your-domain>" APP_URL=https://your-site
    ```
-   `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three, spec 29 four).
+   `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three, spec 29 four, spec 36 one).
 5. **Notify-me links:** `migration_public_camp_page.sql` creates the Vault secret `interest_link_key` that signs confirm and unsubscribe links. Never copy it between projects; a new key only breaks links already sent.
 
 ## Demo environment

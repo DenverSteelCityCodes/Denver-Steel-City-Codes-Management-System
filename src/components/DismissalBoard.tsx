@@ -13,7 +13,8 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 // recorded on an admin's OK, and the sections that haven't started. Reloads with the board.
 export default function DismissalBoard({ version }: { version: unknown }) {
   const { rows, error } = useDismissalBoard(version)
-  if (!rows && !error) return null
+  // Nothing until it loads, and nothing on a day with no camp.
+  if ((!rows && !error) || (rows && rows.length === 0 && !error)) return null
   const s = rows ? summarizeDismissal(rows) : null
 
   return (

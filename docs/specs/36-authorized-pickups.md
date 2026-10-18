@@ -1,6 +1,6 @@
 # 36: Authorized pickups and walk-home consent
 
-**Status:** ⬜ not started · **Issue:** #156 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
+**Status:** 🟨 in review · **Issue:** #156 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
 **Depends on:** 04 ✅, 05 ✅ · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §2; promotes backlog B6 (decided 2026-10-17)
 
@@ -15,7 +15,7 @@
 - At dismissal, the volunteer records **who** collected each camper (a listed adult, or "left alone (consented)"). An unlisted adult means the volunteer checks with an admin. The app never blocks a release, it records it.
 
 ## Scope: what to build
-- **Pickups table:** `authorized_pickups(id, student_id, name, relation, phone, created_at, updated_at)`.
+- **Pickups table:** `authorized_pickups(id, student_id, name, relation, phone, days date[] null, created_at, updated_at)`. `days` null = any day; else only those dates (built: the "Done when" needs a Wednesday-only grandparent, which the original column list couldn't hold).
   - RLS: the parent owns it; admins have full access; volunteers read through the roster RPC only.
   - Audited.
 - **Release consents:** `release_consents(id, student_id, session_id, mode text check in ('walk','bike','transit','other'), days date[] null (null = every day of the session), note, consented_by, consented_at)`. Same RLS and audit.
