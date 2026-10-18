@@ -87,7 +87,7 @@ export default function SignupPage() {
         <PageHead title="Check your email" headingRef={focusOnMount} />
         <div role="status">
           <SignBand
-            context={<>We sent a confirmation link to <span className="break-all">{email.trim()}</span></>}
+            context={<>We sent a confirmation link to <span className="[overflow-wrap:anywhere]">{email.trim()}</span></>}
             message="Open the link in that email"
             sub="It brings you back here to sign in. Then you'll add your campers."
           />

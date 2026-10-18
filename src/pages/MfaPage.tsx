@@ -167,7 +167,7 @@ export default function MfaPage() {
               <p className="mt-1 text-ink-muted">Google Authenticator, Microsoft Authenticator or 1Password all work.</p>
               <img src={mode.qr} alt="QR code for your authenticator app" className="mt-4 w-44 h-44 bg-white p-2 rounded border-2 border-ink" />
               <p className="mt-4 text-sm text-ink-muted">Can't scan? Enter this key in the app instead:</p>
-              <code className="inline-block mt-2 px-3 py-2 bg-surface border border-border rounded font-mono font-semibold tracking-[0.06em] select-all break-all">{mode.secret}</code>
+              <code className="inline-block mt-2 px-3 py-2 bg-surface border border-border rounded font-mono font-semibold tracking-[0.06em] select-all [overflow-wrap:anywhere]">{mode.secret}</code>
             </div>
           </li>
           <li className="grid grid-cols-[40px_1fr] gap-x-4 py-4 border-t-2 border-ink">

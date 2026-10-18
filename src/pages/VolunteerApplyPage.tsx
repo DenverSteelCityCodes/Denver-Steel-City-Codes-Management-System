@@ -107,17 +107,21 @@ function StepSign({ step, headingRef, commitment }: {
 function SkillScale({ name, label, value, onChange }: { name: string; label: string; value: number | null; onChange: (v: number | null) => void }) {
   const firstRef = useRef<HTMLInputElement>(null)
   return (
-    <fieldset className="relative min-w-0">
-      <legend className="block py-2.5 pr-[84px] font-bold">{label}</legend>
-      {value !== null && (
-        <button
-          type="button"
-          onClick={() => { onChange(null); firstRef.current?.focus() }}
-          className={buttonClass('text', 'absolute top-0 right-0 font-semibold text-ink-muted hover:text-ink')}
-        >
-          Clear<span className="sr-only"> {label} rating</span>
-        </button>
-      )}
+    <fieldset className="min-w-0">
+      <legend className="sr-only">{label}</legend>
+      {/* The visible name shares its row with Clear, which a legend can't hold without renaming the group. */}
+      <div className="flex items-center justify-between gap-3 min-h-11">
+        <span aria-hidden="true" className="font-bold">{label}</span>
+        {value !== null && (
+          <button
+            type="button"
+            onClick={() => { onChange(null); firstRef.current?.focus() }}
+            className={buttonClass('text', 'font-semibold text-ink-muted hover:text-ink')}
+          >
+            Clear<span className="sr-only"> {label} rating</span>
+          </button>
+        )}
+      </div>
       <div className="mt-1 grid grid-cols-5 gap-[2px] bg-ink border-2 border-ink rounded overflow-hidden">
         {[1, 2, 3, 4, 5].map(n => (
           <label
@@ -381,7 +385,7 @@ export default function VolunteerApplyPage() {
   if (submitted) {
     const [clock, meridiem] = booked ? formatCampTime(booked.time).split(/\s+/) : []
     const steps: { what: string; why: ReactNode }[] = [
-      { what: 'Confirm your email', why: <>Open the link we sent to <strong className="text-ink break-all">{form.email.trim()}</strong>. You need it to sign in.</> },
+      { what: 'Confirm your email', why: <>Open the link we sent to <strong className="text-ink [overflow-wrap:anywhere]">{form.email.trim()}</strong>. You need it to sign in.</> },
       booked
         ? { what: 'Sign in to see your interview', why: 'Your dashboard shows the time and lets you pick another one.' }
         : { what: 'Pick an interview time', why: 'Sign in once times are posted and choose one from your dashboard.' },
@@ -423,7 +427,7 @@ export default function VolunteerApplyPage() {
           activeWeeks.length > 0
             ? `${activeWeeks.map(w => `${w.name} (${shortDates(w)})`).join(', ')}${activeWeeks.length > 1 ? ' or both' : ''}, plus`
             : 'Plus',
-          slotMinutes ? `a ${slotMinutes}-minute online interview.` : 'a short online interview.',
+          slotMinutes ? `a ${slotMinutes}\u2011minute online interview.` : 'a short online interview.',
         ].join(' '),
       }
     : undefined
@@ -548,7 +552,7 @@ export default function VolunteerApplyPage() {
                 {a => (
                   <div className="grid gap-2 grid-cols-2">
                     {[{ v: true, text: 'Yes' }, { v: false, text: 'No' }].map(({ v, text }) => (
-                      <ChoiceRow key={text} type="radio" name="previousScc" {...a} checked={form.previousScc === v} onChange={() => set('previousScc', v)}>{text}</ChoiceRow>
+                      <ChoiceRow key={text} type="radio" name="previousScc" value={text} {...a} checked={form.previousScc === v} onChange={() => set('previousScc', v)}>{text}</ChoiceRow>
                     ))}
                   </div>
                 )}
@@ -609,7 +613,7 @@ export default function VolunteerApplyPage() {
               {a => (
                 <div className="grid gap-2 min-[480px]:grid-cols-2">
                   {courses.map(c => (
-                    <ChoiceRow key={c} type="radio" name="courseFirst" {...a} checked={form.courseFirst === c} onChange={() => setFirstChoice(c)}>{c}</ChoiceRow>
+                    <ChoiceRow key={c} type="radio" name="courseFirst" value={c} {...a} checked={form.courseFirst === c} onChange={() => setFirstChoice(c)}>{c}</ChoiceRow>
                   ))}
                 </div>
               )}
@@ -618,7 +622,7 @@ export default function VolunteerApplyPage() {
               {a => (
                 <div className="grid gap-2 min-[480px]:grid-cols-2">
                   {secondChoices(courses, form.courseFirst).map(c => (
-                    <ChoiceRow key={c} type="radio" name="courseSecond" {...a} checked={form.courseSecond === c} onChange={() => set('courseSecond', c)}>{c}</ChoiceRow>
+                    <ChoiceRow key={c} type="radio" name="courseSecond" value={c} {...a} checked={form.courseSecond === c} onChange={() => set('courseSecond', c)}>{c}</ChoiceRow>
                   ))}
                 </div>
               )}
@@ -672,7 +676,7 @@ export default function VolunteerApplyPage() {
         {step === 5 && (
           <section aria-labelledby="vol-interview" data-field="interviewSlotId">
             <h3 id="vol-interview" className="text-lg font-bold text-balance">
-              {hasSlots ? `Pick a time for your ${slotMinutes ? `${slotMinutes}-minute ` : ''}online interview` : 'Your online interview'}
+              {hasSlots ? `Pick a time for your ${slotMinutes ? `${slotMinutes}\u2011minute ` : ''}online interview` : 'Your online interview'}
             </h3>
             {hasSlots && <p className="mt-1 text-sm text-ink-muted">You can change it later from your dashboard.</p>}
             <div className="mt-4">

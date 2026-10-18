@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
         <PageHead title="Check your email" headingRef={focusOnMount} />
         <div role="status">
           <SignBand
-            context={<>If <span className="break-all">{email.trim()}</span> has an account</>}
+            context={<>If <span className="[overflow-wrap:anywhere]">{email.trim()}</span> has an account</>}
             message="We've sent a link to choose a new password"
             sub="It works once, for one hour. If you ask again, use the newest email."
           />

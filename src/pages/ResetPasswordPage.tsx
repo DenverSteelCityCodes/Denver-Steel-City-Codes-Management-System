@@ -96,7 +96,7 @@ export default function ResetPasswordPage() {
     <PublicShell>
       <PageHead
         title="Choose a new password"
-        lede={<>For <strong className="text-ink break-all">{session.user.email}</strong>. Use at least 8 characters.</>}
+        lede={<>For <strong className="text-ink [overflow-wrap:anywhere]">{session.user.email}</strong>. Use at least 8 characters.</>}
       />
       <form onSubmit={handleSubmit} noValidate className="grid gap-5">
         <FormField id="reset-password" label="New password" error={errors.password}>
