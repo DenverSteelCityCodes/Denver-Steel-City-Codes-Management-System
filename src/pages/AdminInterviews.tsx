@@ -293,7 +293,7 @@ export default function AdminInterviews() {
   }, {}))
 
   const th = 'px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap'
-  const linkBtn = 'min-h-11 md:min-h-9 font-bold underline underline-offset-[3px] cursor-pointer'
+  const linkBtn = 'min-h-11 font-bold underline underline-offset-[3px] cursor-pointer'
 
   function slotTable(dayKeys: string[], caption: string) {
     return (

@@ -247,7 +247,7 @@ export default function AdminAttendance() {
                         <td className="px-3 py-3 align-top max-md:block max-md:p-0">
                           <button type="button" aria-expanded={open} aria-controls={`marks-${s.id}`}
                             onClick={() => setToggled(t => ({ ...t, [s.id]: !open }))}
-                            className="inline-flex items-center gap-1.5 min-h-11 md:min-h-9 text-lg font-extrabold tracking-[0.02em] cursor-pointer hover:underline underline-offset-[3px]">
+                            className="inline-flex items-center gap-1.5 min-h-11 text-lg font-extrabold tracking-[0.02em] cursor-pointer hover:underline underline-offset-[3px]">
                             {s.label}
                             <span className="sr-only">, {s.className}, campers and marks</span>
                             <ChevronDown size={18} aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`} />

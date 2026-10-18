@@ -60,7 +60,7 @@ export const TIPS = {
   },
   'auto-assign': {
     role: 'admin',
-    where: 'Volunteers › Roster › Auto-assign volunteers',
+    where: 'Volunteers › Crew › Fill open spots',
     body: [
       'Fills only empty spots in the chosen week: a senior as lead and a junior as support, from volunteers available that week who aren\'t on another crew that week. Existing crews are kept.',
       'Nothing changes until you tap **Apply assignments**.',
@@ -69,25 +69,25 @@ export const TIPS = {
   },
   'attendance-unaccounted': {
     role: 'admin',
-    where: 'Attendance › Unaccounted',
+    where: 'Attendance › Unaccounted now',
     body: [
       'A camper is unaccounted when they weren\'t marked present at the latest roll call taken in their section: marked absent, or not marked at all.',
-      'Sections with no roll call yet today aren\'t counted here; they say "No roll call taken yet". The board refreshes every minute.',
+      'Sections with no roll call yet today aren\'t counted here; they say "No roll call yet". The board refreshes every minute.',
     ],
     more: '/admin/help#unaccounted',
   },
   'email-log': {
     role: 'admin',
-    where: 'Updates › Emails the app sent',
+    where: 'Updates › Sent emails',
     body: [
-      'The app queues an email when a spot is confirmed, waitlisted, moved, cancelled or offered, and when a change request is resolved. **queued** means not sent yet: emails only go out once the camp\'s email provider is connected.',
+      'The app queues an email when a spot is confirmed, waitlisted, moved, cancelled or offered, and when a change request is resolved. **Waiting** means not sent yet: emails only go out once the camp\'s email service is connected.',
       '**Also email** on a post opens your own mail app instead, so those emails never show here.',
     ],
     more: '/admin/help#updates-and-email',
   },
   'role-change': {
     role: 'admin',
-    where: 'Users & roles › Role',
+    where: 'Users & roles › Change role',
     body: [
       'A new role applies the next time the person loads a page. A new admin can see every camper\'s medical details and is asked to set up two-step sign-in.',
       'A volunteer moved to another role leaves every crew spot and upcoming duty. Nobody can change their own role, and the last admin can\'t be changed.',

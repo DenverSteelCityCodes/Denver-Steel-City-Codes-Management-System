@@ -33,33 +33,31 @@ export default function AdminUpdates() {
         options={[{ value: 'post', label: 'Post' }, { value: 'emails', label: 'Sent emails' }]}
       />
 
-      <div role="tabpanel" id={`updates-panel-${tab}`} aria-labelledby={`updates-tab-${tab}`}
-        className={tab === 'post' ? 'max-w-[720px]' : 'max-w-[960px]'}>
-        {tab === 'post' ? (
-          <>
-            <section aria-labelledby="compose-heading">
-              <h2 id="compose-heading" className="sr-only">New update</h2>
-              <UpdateComposer mode={{ kind: 'admin', sections }} onPost={async input => { await postUpdate(input) }} autoFocus={false} />
-            </section>
+      {/* Both panels stay mounted (an unsent post survives a look at Sent emails); the other one is hidden. */}
+      <div role="tabpanel" id="updates-panel-post" aria-labelledby="updates-tab-post" hidden={tab !== 'post'} className="max-w-[720px]">
+        <section aria-labelledby="compose-heading">
+          <h2 id="compose-heading" className="sr-only">New update</h2>
+          <UpdateComposer mode={{ kind: 'admin', sections }} onPost={async input => { await postUpdate(input) }} autoFocus={false} />
+        </section>
 
-            <section aria-labelledby="feed-heading" className="mt-10">
-              <h2 id="feed-heading" className={h2Class}>Posted</h2>
-              {error && <p role="alert" title={error} className="mt-3 font-bold text-danger">Couldn't load the posted updates. Reload the page to try again.</p>}
-              <div className="mt-3 py-1 border-y-2 border-ink">
-                <UpdatesFeed
-                  updates={updates}
-                  loading={loading}
-                  canDelete={() => true}
-                  onDelete={deleteUpdate}
-                  canCopyEmails={() => true}
-                  emptyText="Nothing posted yet. Your first update could be a welcome note with drop-off and pickup times."
-                />
-              </div>
-            </section>
-          </>
-        ) : (
-          <EmailLog />
-        )}
+        <section aria-labelledby="feed-heading" className="mt-10">
+          <h2 id="feed-heading" className={h2Class}>Posted</h2>
+          {error && <p role="alert" title={error} className="mt-3 font-bold text-danger">Couldn't load the posted updates. Reload the page to try again.</p>}
+          <div className="mt-3 py-1 border-y-2 border-ink">
+            <UpdatesFeed
+              updates={updates}
+              loading={loading}
+              canDelete={() => true}
+              onDelete={deleteUpdate}
+              canCopyEmails={() => true}
+              emptyText="Nothing posted yet. Your first update could be a welcome note with drop-off and pickup times."
+            />
+          </div>
+        </section>
+      </div>
+      <div role="tabpanel" id="updates-panel-emails" aria-labelledby="updates-tab-emails" hidden={tab !== 'emails'} tabIndex={0}
+        className="max-w-[960px] focus-visible:outline-offset-4">
+        <EmailLog />
       </div>
     </div>
   )

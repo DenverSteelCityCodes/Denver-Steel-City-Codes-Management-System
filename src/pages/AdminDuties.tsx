@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Plus, UserPlus } from 'lucide-react'
 import { useDutyTypes, useDutySlots, type DutySlot } from '../hooks/useDutyRoles'
 import { useSessions, campSessions } from '../hooks/useSessions'
@@ -20,7 +20,13 @@ const openOf = (s: DutySlot) => Math.max(s.capacity - s.assigned_count, 0)
 export default function AdminDuties() {
   const { sessions } = useSessions()
   const weeks = campSessions(sessions)
-  const { types, error: typesError, createType, deleteType, refetch: refetchTypes } = useDutyTypes()
+  const { types, loading: typesLoading, error: typesError, createType, deleteType, refetch: refetchTypes } = useDutyTypes()
+  // The Duty types fold opens by itself when there are none yet or they couldn't load, since
+  // nothing else on the page works without them. It never closes itself.
+  const typesFold = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    if (!typesLoading && (typesError || types.length === 0) && typesFold.current) typesFold.current.open = true
+  }, [typesLoading, typesError, types.length])
   const [pickedWeek, setPickedWeek] = useState<string>('')
   // Every slot loads once and is placed by its date, so a slot whose session link is missing (or
   // points at another week) still shows under the week it falls in.
@@ -127,7 +133,7 @@ export default function AdminDuties() {
     />
   )
 
-  const linkBtn = 'min-h-11 md:min-h-9 text-sm font-bold underline underline-offset-[3px] cursor-pointer'
+  const linkBtn = 'min-h-11 text-sm font-bold underline underline-offset-[3px] cursor-pointer'
 
   return (
     <div className={pageClass}>
@@ -306,7 +312,7 @@ export default function AdminDuties() {
         {slotErr && <p role="alert" className="mt-2 text-sm font-bold text-danger">{slotErr}</p>}
         {slotNote && <p role="status" className="mt-2 text-sm text-ink-muted">{slotNote}</p>}
 
-        <details className="group mt-6">
+        <details ref={typesFold} className="group mt-6">
           <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
             Duty types ({types.length})
             <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />

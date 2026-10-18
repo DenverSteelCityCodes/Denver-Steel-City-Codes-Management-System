@@ -386,10 +386,10 @@ export default function AdminVolunteers() {
   }
 
   // Open spots the matcher would try to fill: a missing lead, a missing support, per section that
-  // runs that week (a section with no week runs both).
+  // runs that week (a section with no week runs both). A cancelled section needs nobody.
   const allSections = classes.flatMap(c => c.sections)
   const openSpots = (w: 1 | 2) => allSections
-    .filter(s => s.week === w || s.week === null)
+    .filter(s => (s.week === w || s.week === null) && !s.cancelled_at)
     .reduce((n, s) => n + (s.lead_id ? 0 : 1) + (s.supports.length ? 0 : 1), 0)
 
   // What each volunteer does each week: "PY-A lead". A section with no week holds both weeks.
@@ -687,7 +687,7 @@ export default function AdminVolunteers() {
                             {v.interview_notes ? (
                               <button type="button" onClick={() => setNotesOpen(open ? null : v.id)}
                                 aria-expanded={open} aria-controls={`notes-${v.id}`}
-                                className="inline-flex items-center gap-1.5 min-h-11 md:min-h-9 font-bold text-left cursor-pointer hover:underline underline-offset-[3px]">
+                                className="inline-flex items-center gap-1.5 min-h-11 font-bold text-left cursor-pointer hover:underline underline-offset-[3px]">
                                 {v.profiles.display_name}
                                 <span className="sr-only">, interview notes</span>
                                 <ChevronDown size={18} aria-hidden="true" className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
