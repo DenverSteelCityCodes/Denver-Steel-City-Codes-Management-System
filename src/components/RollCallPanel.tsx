@@ -3,6 +3,7 @@ import { Check, CheckCheck, CircleAlert, CircleCheck } from 'lucide-react'
 import type { AssignedSection, AssignedStudent } from '../hooks/useAssignedClass'
 import { useRollCalls } from '../hooks/useRollCalls'
 import RollCallRow from './RollCallRow'
+import DismissalRelease from './DismissalRelease'
 import Button from './Button'
 import { ROLL_CALLS, rollCallForTime, formatTime, localDateISO, markKey } from '../lib/campDay'
 import type { RollCallKind } from '../types/database'
@@ -36,6 +37,8 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
   const total = students.length
   const presentCount = students.filter(s => getMark(s.id, current)?.present).length
   const markedCount = students.filter(s => getMark(s.id, current)).length
+  // Dismissal (spec 36): present campers whose collector is recorded.
+  const collectedCount = students.filter(s => getMark(s.id, current)?.released_mode).length
   const left = total - markedCount
   const latestMark = marks.filter(m => m.roll_call === current).sort((a, b) => b.marked_at.localeCompare(a.marked_at))[0]
   const done = !loading && total > 0 && left === 0
@@ -179,6 +182,12 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
         </div>
       )}
 
+      {current === 'dismissal' && !loading && presentCount > 0 && (
+        <p className="px-4 sm:px-8 lg:px-0 mt-4 font-bold">
+          {collectedCount} of {presentCount} collected{collectedCount < presentCount ? '. Tap who collects each camper.' : ''}
+        </p>
+      )}
+
       <div id={`${headingId}-list`} role="tabpanel" aria-labelledby={tabId(current)}>
         <ul className="mt-4 border-y-2 border-ink">
           {loading ? (
@@ -197,6 +206,9 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
                   pending={pending.has(key)}
                   failed={failed.has(key)}
                   onToggle={() => toggle(student)}
+                  extra={current === 'dismissal' && m?.present
+                    ? <DismissalRelease student={student} mark={m} sectionId={section.id} day={today} onSaved={refetch} />
+                    : null}
                 />
               )
             })

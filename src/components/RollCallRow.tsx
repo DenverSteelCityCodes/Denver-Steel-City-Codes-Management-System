@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Check, CircleAlert, LoaderCircle, Phone, X } from 'lucide-react'
 import type { AssignedStudent } from '../hooks/useAssignedClass'
 import HealthNotes from './HealthNotes'
@@ -14,13 +15,15 @@ interface Props {
   // The last save for this camper failed (the toggle is back to what it showed before).
   failed: boolean
   onToggle: () => void
+  // Shown under the row, full width: who collected the camper at dismissal (spec 36).
+  extra?: ReactNode
 }
 
 // One camper in a roll call: the name and a 44px toggle on one line, health notes and (when absent)
 // who to call full width under them. Safety information is never behind a tap (DESIGN.md › Roll
 // Call). The toggle cycles unmarked → Present → Absent → Present …, so "mark all present, then tap
 // whoever is missing" is one tap per missing camper.
-export default function RollCallRow({ student, state, pending, failed, onToggle }: Props) {
+export default function RollCallRow({ student, state, pending, failed, onToggle, extra }: Props) {
   const health = healthLines(student)
   const calls = state === 'absent' ? callLines(student) : []
   const name = student.full_name
@@ -74,6 +77,8 @@ export default function RollCallRow({ student, state, pending, failed, onToggle 
             No phone number on file. Tell an admin.
           </p>
         ))}
+
+      {extra && <div className="col-span-2">{extra}</div>}
     </li>
   )
 }

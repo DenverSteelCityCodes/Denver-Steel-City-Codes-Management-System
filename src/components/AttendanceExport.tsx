@@ -3,14 +3,16 @@ import { supabase } from '../lib/supabase'
 import { useSessions } from '../hooks/useSessions'
 import { ROLL_CALLS, localDateISO, sessionDays } from '../lib/campDay'
 import { downloadCsv, toCsv } from '../lib/csv'
+import { releaseCell } from '../lib/pickups'
 import { ChevronDown, Download } from 'lucide-react'
 import Button from './Button'
 import { Select } from './Field'
+import type { ReleaseMode } from '../types/database'
 
 interface SecRow { id: string; label: string; classes: { name: string } | null }
 type Stud = { id: string; full_name: string }
 interface RegRow { section_id: string; students: Stud | Stud[] | null }
-interface MarkRow { section_id: string; student_id: string; day: string; roll_call: string; present: boolean; students: Stud | Stud[] | null }
+interface MarkRow { section_id: string; student_id: string; day: string; roll_call: string; present: boolean; released_to?: string | null; released_mode?: ReleaseMode | null; students: Stud | Stud[] | null }
 
 // PostgREST caps a response (1000 rows by default), and a full week of marks is more than that,
 // so read every page. `page` must order by a unique column so pages don't overlap.
@@ -63,13 +65,16 @@ export default function AttendanceExport() {
             supabase.from('registrations').select('section_id, students ( id, full_name )')
               .in('section_id', ids).in('status', ['confirmed', 'pending']).order('id').range(from, to)),
           fetchAll<MarkRow>((from, to) =>
-            supabase.from('roll_call_marks').select('section_id, student_id, day, roll_call, present, students ( id, full_name )')
+            supabase.from('roll_call_marks').select('section_id, student_id, day, roll_call, present, released_to, released_mode, students ( id, full_name )')
               .in('section_id', ids).gte('day', session.start_date).lte('day', session.end_date).order('id').range(from, to)),
         ])
       }
 
       const markMap = new Map<string, boolean>()
       for (const m of marks) markMap.set(`${m.section_id}|${m.student_id}|${m.day}|${m.roll_call}`, m.present)
+      // Who collected each camper at dismissal (spec 36).
+      const collected = new Map<string, string>()
+      for (const m of marks) if (m.roll_call === 'dismissal') collected.set(`${m.section_id}|${m.student_id}|${m.day}`, releaseCell(m.released_mode, m.released_to))
       const secMap = new Map(sections.map(s => [s.id, s]))
 
       // Who gets rows: everyone enrolled now, plus anyone with marks in a section they have since
@@ -87,7 +92,7 @@ export default function AttendanceExport() {
       // Camp days, plus any other day in the session that has a mark (a weekend event).
       const days = [...new Set([...sessionDays(session), ...marks.map(m => m.day)])].sort()
 
-      const rows: { cls: string; sec: string; camper: string; day: string; cells: string[] }[] = []
+      const rows: { cls: string; sec: string; camper: string; day: string; cells: string[]; collected: string }[] = []
       for (const { secId, stud } of campers.values()) {
         const sec = secMap.get(secId)
         if (!sec) continue
@@ -98,6 +103,7 @@ export default function AttendanceExport() {
               const v = markMap.get(`${sec.id}|${stud.id}|${day}|${rc.key}`)
               return v === undefined ? '' : v ? 'present' : 'absent'
             }),
+            collected: collected.get(`${sec.id}|${stud.id}|${day}`) ?? '',
           })
         }
       }
@@ -105,8 +111,8 @@ export default function AttendanceExport() {
       rows.sort((a, b) => cmp(a.cls, b.cls) || cmp(a.sec, b.sec) || cmp(a.camper, b.camper) || cmp(a.day, b.day))
 
       const csv = toCsv(
-        ['Camper', 'Class', 'Section', 'Day', ...ROLL_CALLS.map(r => r.label)],
-        rows.map(r => [r.camper, r.cls, r.sec, r.day, ...r.cells]),
+        ['Camper', 'Class', 'Section', 'Day', ...ROLL_CALLS.map(r => r.label), 'Collected by'],
+        rows.map(r => [r.camper, r.cls, r.sec, r.day, ...r.cells, r.collected]),
       )
       downloadCsv(`attendance-${session.name.replace(/\s+/g, '-').toLowerCase()}-${session.year}.csv`, csv)
       setDone(rows.length)
@@ -124,7 +130,7 @@ export default function AttendanceExport() {
         <h2 className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">Week export</h2>
         <ChevronDown size={20} aria-hidden="true" className="transition-transform group-open:rotate-180" />
       </summary>
-      <p className="mt-1 text-ink-muted text-pretty">One row per camper per camp day, with each roll call.</p>
+      <p className="mt-1 text-ink-muted text-pretty">One row per camper per camp day, with each roll call and who collected them.</p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <div className="flex-[0_1_20rem] min-w-0">

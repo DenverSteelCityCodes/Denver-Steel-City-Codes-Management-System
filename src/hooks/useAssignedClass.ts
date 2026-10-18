@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import type { PickupAdult } from '../lib/pickups'
 
 export interface AssignedStudent {
   id: string
@@ -16,6 +17,12 @@ export interface AssignedStudent {
   parent_phone: string | null
   // 'reserved' or 'handed_out' when the camper borrows a camp laptop that week (spec 29), else null.
   laptop_loan?: string | null
+  // Spec 36: today's pickup list (phones for the section's lead only) and the parent's consent to
+  // leave on their own today ('walk' / 'bike' / 'transit' / 'other').
+  pickup_adults?: PickupAdult[] | null
+  may_leave_alone_today?: boolean
+  leave_alone_mode?: string | null
+  leave_alone_note?: string | null
 }
 
 export interface AssignedSection {
