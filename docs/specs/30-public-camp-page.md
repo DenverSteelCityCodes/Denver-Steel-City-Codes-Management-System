@@ -1,6 +1,6 @@
 # 30: Public camp page and "notify me" list
 
-**Status:** 🟨 in review, PR_LINK · **Issue:** #150 · **Priority:** P1 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in review, [PR #193](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/193) · **Issue:** #150 · **Priority:** P1 · **Effort:** M · **Phase:** B
 **Depends on:** 09, 13 · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1
 
