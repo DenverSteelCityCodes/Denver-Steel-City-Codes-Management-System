@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import { useAdminAttention } from '../hooks/useAdminAttention'
+import type { AttentionItem } from '../hooks/useAdminAttention'
 
 // The To do list (DESIGN.md › Decision List): one decision per row between 2px ink rules, a
 // white-on-ink pictogram (red only for safety and failures), the decision, why, and one text action.
-// Already severity-sorted by useAdminAttention.
-export default function AdminNeedsAttention() {
-  const { items, loading } = useAdminAttention()
+// Items come from useAdminAttention, already most serious first; the page owns the hook so it can
+// refresh the list along with the rest of Today.
+export default function AdminNeedsAttention({ items, loading }: { items: AttentionItem[]; loading: boolean }) {
 
   if (loading) {
     return (
