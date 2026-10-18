@@ -171,6 +171,10 @@ export default function AdminLayout() {
     ) : null
   }
 
+  // A job's other pages hang off its pictogram on a hairline, a step smaller and with no pictogram
+  // of their own, so they read as pages within the job rather than jobs missing an icon. One row
+  // is raised: the page you're on. On one of a job's other pages, the job keeps its gold
+  // pictogram and white label but not the raised row.
   const railItem = (job: Job) => {
     const current = jobCurrent(job, pathname)
     const Icon = job.icon
@@ -178,24 +182,31 @@ export default function AdminLayout() {
       <div key={job.to} className="grid gap-0.5">
         <Link to={job.to} aria-current={current}
           className={`flex items-center gap-3 min-h-12 px-2 rounded font-bold no-underline transition-colors ${
-            current ? 'bg-shell-raised text-on-shell' : 'text-on-shell-muted hover:bg-shell-raised hover:text-on-shell'}`}>
+            current === 'page' ? 'bg-shell-raised text-on-shell'
+              : current ? 'text-on-shell hover:bg-shell-raised'
+              : 'text-on-shell-muted hover:bg-shell-raised hover:text-on-shell'}`}>
           <span aria-hidden="true" className={`w-10 h-10 grid place-items-center rounded shrink-0 ${current ? 'bg-brand text-brand-on' : 'bg-shell-raised'}`}>
             <Icon size={22} strokeWidth={2.25} />
           </span>
           {job.label}
           {badge(job.to, 'border-on-shell-muted bg-shell-raised text-on-shell')}
         </Link>
-        {(job.more ?? []).map(p => {
-          const here = on(pathname, p.to)
-          return (
-            <Link key={p.to} to={p.to} aria-current={here ? 'page' : undefined}
-              className={`flex items-center gap-2 min-h-11 pl-[60px] pr-2 rounded no-underline transition-colors ${
-                here ? 'bg-shell-raised text-on-shell font-bold' : 'text-on-shell-muted font-semibold hover:bg-shell-raised hover:text-on-shell'}`}>
-              {p.label}
-              {badge(p.to, 'border-on-shell-muted/60 text-on-shell')}
-            </Link>
-          )
-        })}
+        {job.more?.length ? (
+          <div className="grid gap-0.5 ml-7 border-l border-white/15">
+            {job.more.map(p => {
+              const here = on(pathname, p.to)
+              return (
+                <Link key={p.to} to={p.to} aria-current={here ? 'page' : undefined}
+                  className={`relative flex items-center gap-2 min-h-11 pl-[31px] pr-2 rounded-r text-[0.9375rem] no-underline transition-colors ${
+                    here ? 'bg-shell-raised text-on-shell font-bold before:absolute before:-left-px before:inset-y-2 before:w-0.5 before:bg-on-shell'
+                      : 'text-on-shell-muted font-semibold hover:bg-shell-raised hover:text-on-shell'}`}>
+                  {p.label}
+                  {badge(p.to, 'border-on-shell-muted/60 text-on-shell')}
+                </Link>
+              )
+            })}
+          </div>
+        ) : null}
       </div>
     )
   }
