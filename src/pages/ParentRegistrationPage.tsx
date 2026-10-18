@@ -655,15 +655,10 @@ export default function ParentRegistrationPage() {
     <div className="max-w-lg mx-auto px-4 pt-8 pb-16">
         {/* Contextual back — the shell's top nav owns primary navigation now. */}
         <button
-          type="button"
-          onClick={() => {
-            // The autosave waits 400 ms after the last keystroke; save now so nothing typed is lost.
-            if (myDraftKey && !submitted && dirty.current) writeDraft(myDraftKey, form as unknown as Record<string, unknown>, step)
-            navigate('/parent')
-          }}
-          className="ui-btn ui-btn--text text-ink-muted font-semibold gap-1.5 mb-4"
+          onClick={() => navigate('/parent')}
+          className="inline-flex items-center gap-1.5 font-sans text-sm font-semibold text-ink-muted hover:text-ink transition mb-6"
         >
-          <ArrowLeft size={16} /> Save and exit
+          <ArrowLeft size={16} /> Back to dashboard
         </button>
         <StepDots current={step} total={5} />
         <p ref={stepRef} tabIndex={-1} className="text-center font-sans text-xs font-semibold text-ink-muted mb-6 focus:outline-none">Step {step} of 5: {STEP_NAMES[step - 1]}</p>
@@ -738,8 +733,8 @@ export default function ParentRegistrationPage() {
                 <div role="group" aria-labelledby="reg-ethnic" {...invalidProps('reg-ethnic')} className="flex flex-wrap gap-2">
                   {ETHNIC_OPTIONS.map(opt => (
                     <button key={opt} type="button" aria-pressed={form.ethnic_background.includes(opt)} onClick={() => toggleEthnic(opt)}
-                      className={`min-h-11 px-4 py-2 rounded-full text-sm font-semibold border-2 transition ${
-                        form.ethnic_background.includes(opt) ? 'bg-ink text-bg border-ink' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                        form.ethnic_background.includes(opt) ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
                       }`}>
                       {opt}
                     </button>
