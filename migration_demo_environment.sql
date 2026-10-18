@@ -311,6 +311,54 @@ BEGIN
     UPDATE volunteer_applications SET interview_confirmed = true WHERE id = app_id;
   END LOOP;
 
+  -- ── 5b. Onboarding, crew profiles and interview links (spec 35) ──
+  -- The crew was accepted in the spring and finished the checklist, except two juniors who still
+  -- haven't joined Remind or opened the shared folder (the admin's Overdue list). The demo volunteer
+  -- was accepted last night: two items done, two still due. The crew have preferred names, a
+  -- pronunciation where it helps and a short bio, so "Meet the teachers" has something to show.
+  -- No photos: those are uploaded files. Each interview slot gets a fictional meeting link.
+  IF to_regclass('public.volunteer_tasks') IS NOT NULL THEN
+    DELETE FROM onboarding_tasks;   -- a visitor's edits go; volunteer_tasks went with volunteers
+    INSERT INTO onboarding_tasks (key, label, help_url, due_hours_after_accept, sort_order, created_at) VALUES
+      ('profile', 'Fill in your volunteer profile: your names, a short bio and, if you like, a photo', '/volunteer/profile', 24, 1, now() - interval '200 days'),
+      ('discord', 'Join the crew Discord', 'https://discord.example.com/scc-denver-crew', 24, 2, now() - interval '200 days'),
+      ('remind', 'Join the Remind class for camp-day texts', 'https://remind.example.com/join/sccden', 24, 3, now() - interval '200 days'),
+      ('shared-folder', 'Open the shared volunteer folder and read the welcome doc', 'https://drive.example.com/scc-denver-volunteers', 48, 4, now() - interval '200 days');
+    UPDATE volunteers SET accepted_at = CASE WHEN id = demo_vol THEN now() - interval '5 hours' ELSE now() - interval '113 days' END;
+    INSERT INTO volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+    SELECT vo.id, ot.key, vo.accepted_at + interval '3 hours', CASE WHEN ot.key <> 'profile' THEN demo_admin END
+    FROM volunteers vo CROSS JOIN onboarding_tasks ot
+    WHERE vo.id IS DISTINCT FROM demo_vol
+      AND NOT (vo.id IN (vol_ids[14], vol_ids[17]) AND ot.key IN ('remind', 'shared-folder'));
+    IF demo_vol IS NOT NULL THEN
+      INSERT INTO volunteer_tasks (volunteer_id, task_key, done_at)
+      VALUES (demo_vol, 'profile', now() - interval '4 hours'), (demo_vol, 'discord', now() - interval '4 hours');
+    END IF;
+    UPDATE volunteers vo SET
+      legal_name = p.display_name,
+      preferred_name = CASE p.display_name WHEN 'Daniela Ruiz' THEN 'Dani' WHEN 'Isaiah Grant' THEN 'Zay'
+                         WHEN 'Elijah Foster' THEN 'Eli' ELSE split_part(p.display_name, ' ', 1) END,
+      pronunciation = CASE p.display_name WHEN 'Ravi Iyer' THEN 'RAH-vee EYE-er' WHEN 'Nadia Rahman' THEN 'NAH-dee-uh rah-MAHN'
+                        WHEN 'Sienna Cole' THEN 'see-EN-uh' WHEN 'Fiona Zhang' THEN 'fee-OH-nuh JAHNG'
+                        WHEN 'Oscar Lindqvist' THEN 'LIND-kvist' WHEN 'Sam Okafor' THEN 'oh-KAH-for' END,
+      bio = CASE WHEN vo.id = demo_vol
+              THEN 'I taught Python at a library coding club and I''m happiest when a younger coder gets their first program to run. Ask me about turtle graphics.'
+              ELSE (ARRAY[
+                'I started with Scratch in fifth grade and now build small games in Python. Ask me about my pixel-art platformer.',
+                'Robotics club captain. I like taking things apart to see how they work, and putting them back together (usually).',
+                'I tutor middle schoolers in math and love the moment a bug finally makes sense.',
+                'Second summer with Steel City Codes. Favorite language: JavaScript. Favorite snack: clementines.',
+                'I make websites for my friends'' bands and I''m learning to draw with CSS.',
+                'Future computer science major. I play cello and think music and code have a lot in common.',
+                'I like puzzles, chess and figuring out why a program does what it does.',
+                'Camp counselor last summer. Every kid can code, and I''m here to prove it.'])[1 + abs(hashtext(p.display_name)) % 8] END
+    FROM profiles p
+    WHERE p.id = vo.id AND (vo.id = ANY (vol_ids) OR vo.id = demo_vol);
+    INSERT INTO interview_slot_links (slot_id, meeting_url)
+    SELECT s.id, 'https://meet.example.com/scc-' || to_char(s.slot_datetime AT TIME ZONE 'America/Denver', 'MMDD-HH24MI')
+    FROM interview_slots s;
+  END IF;
+
   -- ── 6. Families and campers ──
   FOR fam IN 1..array_length(last_names, 1) LOOP
     ln := last_names[fam]; pf := parent_first[fam];
