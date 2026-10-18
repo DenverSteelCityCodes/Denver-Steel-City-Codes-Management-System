@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { CircleHelp, LogOut, Moon, UserRound } from 'lucide-react'
+import { CircleHelp, ClipboardList, LogOut, Moon, UserRound } from 'lucide-react'
 import wordmark from '../../assets/sccdenver.png'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
@@ -65,7 +65,9 @@ export default function VolunteerLayout() {
   return (
     <div className="group/shell min-h-dvh bg-bg">
       <header className={`md:sticky md:top-0 ${campDayStatic} z-40 h-14 md:h-16 bg-shell text-on-shell flex items-stretch gap-3 pl-4 pr-2 md:px-8 dark:shadow-[inset_0_-1px_0_var(--border)]`}>
-        <img src={wordmark} alt="Steel City Codes // Denver" className="self-center h-7 md:h-8 w-auto" />
+        <Link to="/volunteer" aria-label="Home" onClick={close} className="self-center h-11 flex items-center">
+          <img src={wordmark} alt="Steel City Codes // Denver" className="h-7 md:h-8 w-auto" />
+        </Link>
 
         {crew && (
           <nav aria-label="Volunteer" className="hidden md:flex ml-6">
@@ -91,9 +93,13 @@ export default function VolunteerLayout() {
                 <p className="font-bold break-words">{name}</p>
                 <p className="text-sm text-ink-muted break-all">{user?.email}</p>
               </div>
-              {crew && (
+              {crew ? (
                 <Link to="/volunteer/profile" onClick={close} className={itemCls}>
                   <UserRound size={20} strokeWidth={2.25} aria-hidden="true" /> My profile and availability
+                </Link>
+              ) : (
+                <Link to="/volunteer" onClick={close} className={itemCls}>
+                  <ClipboardList size={20} strokeWidth={2.25} aria-hidden="true" /> Your application
                 </Link>
               )}
               <Link to="/volunteer/help" onClick={close} className={itemCls}>

@@ -91,6 +91,7 @@ function InterviewStep({ interview, book }: { interview: Interview; book: (slotI
     ? [...slots, { id: current, slot_datetime: interview.slot_datetime, duration_minutes: interview.duration_minutes }]
     : slots
   const target = options?.find(s => s.id === value && s.id !== current)
+  const others = options?.filter(s => s.id !== current).length ?? 0
   const showPicker = choosing || !interview
 
   function close() { setChoosing(false); setPicked(''); setErr(null); focusSign() }
@@ -137,26 +138,33 @@ function InterviewStep({ interview, book }: { interview: Interview; book: (slotI
       {showPicker && options && (
         <section aria-labelledby="pick-h" className="mt-6">
           <h2 id="pick-h" tabIndex={-1} className={`${h2Cls} scroll-mt-6 focus:outline-none`}>{interview ? 'Pick a new time' : 'Pick a time'}</h2>
-          <div className="mt-2">
-            <InterviewSlotPicker slots={options} value={value} onChange={id => { setErr(null); setPicked(id) }} labelledBy="pick-h" currentId={current || undefined} />
-          </div>
+          {others === 0 ? (
+            // Nothing to pick: the only time listed would be the applicant's own.
+            <p className="mt-2 text-ink text-pretty">
+              {interview ? 'No other times are open right now.' : 'No interview times are open right now.'} New times show up here, so check back soon.
+            </p>
+          ) : (
+            <div className="mt-2">
+              <InterviewSlotPicker slots={options} value={value} onChange={id => { setErr(null); setPicked(id) }} labelledBy="pick-h" currentId={current || undefined} />
+            </div>
+          )}
           {err && (
             <p role="alert" className="mt-3 flex items-start gap-1.5 text-sm font-bold text-danger">
               <CircleAlert size={16} strokeWidth={2.5} className="shrink-0 mt-px" aria-hidden="true" />{err}
             </p>
           )}
-          {options.length > 0 && (
-            <div className="mt-4">
+          <div className="mt-4">
+            {others > 0 && (
               <button type="button" onClick={() => void save()} disabled={saving || !target} aria-busy={saving} className={`${primaryCls} w-full`}>
                 {saving ? 'Booking…'
                   : target ? `${interview ? 'Move to' : 'Book'} ${formatSlot(target.slot_datetime)}`
                     : interview ? 'Pick a new time above' : 'Pick a time above'}
               </button>
-              {interview && (
-                <button type="button" onClick={close} className={`${linkCls} mt-1`}>Keep {formatSlot(interview.slot_datetime)}</button>
-              )}
-            </div>
-          )}
+            )}
+            {interview && (
+              <button type="button" onClick={close} className={`${linkCls} ${others > 0 ? 'mt-1' : ''}`}>Keep {formatSlot(interview.slot_datetime)}</button>
+            )}
+          </div>
         </section>
       )}
     </div>
