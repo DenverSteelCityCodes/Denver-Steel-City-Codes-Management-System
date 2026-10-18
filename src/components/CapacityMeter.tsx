@@ -3,30 +3,15 @@ interface Props {
   capacity: number
 }
 
-// Seat meter (DESIGN.md › The Meaningful Red Rule): a full section is ink, partly full is muted ink.
-// Never red and never gold — a full class is good news, not an error.
+// Seat meter (DESIGN.md › The Meaningful Red Rule): a 4px bar, ink when the section is full, muted
+// ink while seats are left. Never red and never gold: a full class is good news, not an error. The
+// count beside it is the caller's words, so the bar is hidden from screen readers.
 export default function CapacityMeter({ registered, capacity }: Props) {
-  const pct = capacity === 0 ? 0 : Math.min(registered / capacity, 1)
-  const isFull = registered >= capacity
-  const isWarning = pct >= 0.9
-
+  const share = capacity > 0 ? Math.min(registered / capacity, 1) : 0
+  const full = capacity > 0 && registered >= capacity
   return (
-    <div className="space-y-1">
-      <div aria-hidden="true" className="h-1 rounded-[2px] bg-border overflow-hidden">
-        <div
-          className={`h-full transition-all ${isFull ? 'bg-ink' : 'bg-ink-muted'}`}
-          style={{ width: `${pct * 100}%` }}
-        />
-      </div>
-      <p className="text-sm font-sans font-medium text-ink-muted tabular-nums">
-        {registered} / {capacity}
-        {isFull && (
-          <span className="ml-2 text-ink font-extrabold">Full</span>
-        )}
-        {isWarning && !isFull && (
-          <span className="ml-2 text-ink font-bold">Almost full</span>
-        )}
-      </p>
-    </div>
+    <span aria-hidden="true" className="block h-1 mt-1.5 rounded-[2px] bg-border overflow-hidden">
+      <span className={`block h-full ${full ? 'bg-ink' : 'bg-ink-muted'}`} style={{ width: `${share * 100}%` }} />
+    </span>
   )
 }

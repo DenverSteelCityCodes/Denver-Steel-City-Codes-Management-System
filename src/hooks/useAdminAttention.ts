@@ -61,7 +61,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
   const { applications, loading: appsLoading, refetch: refetchApps } = useVolunteerApplications()
   const { slots, loading: interviewsLoading, refetch: refetchSlots } = useInterviews()
   // Polls on focus by itself (useRefetchOnFocus inside).
-  const { sections: boardSections, session: todaySession, loading: boardLoading } = useAttendanceBoard()
+  const { sections: boardSections, session: todaySession, loading: boardLoading, refetch: refetchBoard } = useAttendanceBoard()
   const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions()
   // Possible duplicate campers (same name, different accounts); an error just hides the item.
   const [dupes, setDupes] = useState<DuplicatePair[] | null>(null)
@@ -101,6 +101,8 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
   }, [loadExtras, applyExtras])
 
   async function refetch() {
+    // The roll-call board too, so the rail, the bell and Today agree right after a roll call.
+    refetchBoard()
     const [x] = await Promise.all([loadExtras(), refetchClasses(), refetchApps(), refetchSlots(), refetchSessions()])
     applyExtras(x)
   }

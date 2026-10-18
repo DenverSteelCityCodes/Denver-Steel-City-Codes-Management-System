@@ -13,41 +13,37 @@ interface Props {
   value: number | string
   icon: LucideIcon
   iconColor?: string
+  // Kept so existing callers compile; the figure no longer sits on a tinted tile.
   iconBg?: string
   delta?: Delta
 }
 
 const TONE: Record<DeltaTone, string> = {
   up: 'text-success',
-  warn: 'text-warning',
-  info: 'text-info',
+  warn: 'text-ink font-bold',
+  info: 'text-ink-muted',
   muted: 'text-ink-muted',
 }
 
-export default function StatCard({
-  label,
-  value,
-  icon: Icon,
-  iconColor = 'text-warning',
-  iconBg = 'bg-brand-soft',
-  delta,
-}: Props) {
+// A labelled figure (DESIGN.md: no cards, no icon tiles, no uppercase labels): a 2px ink rule, the
+// label with its drawn icon, then the number in tabular figures. Red only when the caller marks
+// the figure as a safety problem (iconColor "text-danger", e.g. campers unaccounted for).
+export default function StatCard({ label, value, icon: Icon, iconColor, delta }: Props) {
+  const danger = iconColor === 'text-danger'
   const DeltaIcon = delta?.icon
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm p-5 flex flex-col gap-3 min-w-0">
-      <div className={`w-9 h-9 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-        <Icon size={17} className={iconColor} />
-      </div>
-      <div className="min-w-0">
-        <p className="font-sans text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1 break-words">{label}</p>
-        <p className="font-sans font-bold text-3xl text-ink tabular-nums leading-none">{value}</p>
-        {delta && (
-          <p className={`mt-1.5 flex items-center gap-1 font-sans text-[12.5px] font-medium ${TONE[delta.tone ?? 'muted']}`}>
-            {DeltaIcon && <DeltaIcon size={14} className="shrink-0" />}
-            <span>{delta.text}</span>
-          </p>
-        )}
-      </div>
+    <div className="min-w-0 pt-3 border-t-2 border-ink">
+      <p className={`flex items-start gap-1.5 text-sm font-bold text-pretty ${danger ? 'text-danger' : 'text-ink-muted'}`}>
+        <Icon size={16} strokeWidth={2.5} aria-hidden="true" className="mt-0.5 shrink-0" />
+        <span>{label}</span>
+      </p>
+      <p className={`mt-1 text-[1.375rem] font-extrabold leading-[1.15] tabular-nums ${danger ? 'text-danger' : 'text-ink'}`}>{value}</p>
+      {delta && (
+        <p className={`mt-1.5 flex items-center gap-1.5 text-sm ${TONE[delta.tone ?? 'muted']}`}>
+          {DeltaIcon && <DeltaIcon size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />}
+          <span>{delta.text}</span>
+        </p>
+      )}
     </div>
   )
 }
