@@ -59,3 +59,19 @@ export function timeUntil(ms: number): string {
   if (minutes > 0) return unit(minutes, 'minute')
   return unit(s, 'second')
 }
+
+// "Sat, Feb 6"
+export function formatCampDay(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(iso))
+}
+
+// "7:00 PM"
+export function formatCampTime(iso: string | number): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
+}
+
+// True when both instants fall on the same calendar day in Denver.
+export function isSameCampDay(a: string | number, b: string | number): boolean {
+  const pa = zonedParts(new Date(a)), pb = zonedParts(new Date(b))
+  return pa.year === pb.year && pa.month === pb.month && pa.day === pb.day
+}

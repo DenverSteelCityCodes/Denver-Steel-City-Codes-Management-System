@@ -50,7 +50,7 @@ export default function AttentionBell() {
             </div>
           ) : items.length === 0 ? (
             <div className="px-4 pb-4 flex items-center gap-2 font-sans text-sm text-ink-muted">
-              <CheckCircle2 size={16} className="text-success" /> You're all caught up.
+              <CheckCircle2 size={16} className="text-success" /> Nothing needs you right now.
             </div>
           ) : (
             <ul className="pb-1.5">
@@ -63,7 +63,7 @@ export default function AttentionBell() {
                       onClick={() => setOpen(false)}
                       className="flex items-start gap-3 px-4 py-2.5 hover:bg-surface-sunken transition"
                     >
-                      <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${item.iconWrap}`}>
+                      <span className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${item.tone === 'danger' ? 'bg-alarm text-white' : 'bg-shell text-on-shell'}`}>
                         <Icon size={15} />
                       </span>
                       <span className="min-w-0">

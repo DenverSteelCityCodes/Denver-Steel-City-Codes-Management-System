@@ -1,7 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { fetchAll } from '../lib/fetchAll'
 import type { VolunteerApplication, ExperienceLevel } from '../types/database'
+
+// Paged past the API's 1,000-row cap (spec 18).
+function loadApplications() {
+  return fetchAll<VolunteerApplication>(async (from, to) => supabase
+    .from('volunteer_applications')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: true })
+    .range(from, to))
+}
 
 export function useVolunteerApplications() {
   const [applications, setApplications] = useState<VolunteerApplication[]>([])
@@ -9,13 +19,7 @@ export function useVolunteerApplications() {
 
   useEffect(() => {
     let cancelled = false
-    // Paged past the API's 1,000-row cap (spec 18).
-    fetchAll<VolunteerApplication>(async (from, to) => supabase
-      .from('volunteer_applications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: true })
-      .range(from, to))
+    loadApplications()
       .catch(() => [] as VolunteerApplication[])
       .then(data => {
         if (cancelled) return
@@ -23,6 +27,11 @@ export function useVolunteerApplications() {
         setLoading(false)
       })
     return () => { cancelled = true }
+  }, [])
+
+  // A quiet reload: the list stays on screen, and a failed reload keeps the last good copy.
+  const refetch = useCallback(async () => {
+    try { setApplications(await loadApplications()) } catch { /* keep what's shown */ }
   }, [])
 
   async function acceptApplication(app: VolunteerApplication, expLevel: ExperienceLevel) {
@@ -90,5 +99,5 @@ export function useVolunteerApplications() {
     )
   }
 
-  return { applications, loading, acceptApplication, rejectApplication }
+  return { applications, loading, acceptApplication, rejectApplication, refetch }
 }
