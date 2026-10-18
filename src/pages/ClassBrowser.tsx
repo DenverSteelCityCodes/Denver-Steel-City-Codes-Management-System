@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Search, Lock, CheckCircle, List, ShieldCheck, Info } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { Search, Lock, CheckCircle, List, ShieldCheck, Info } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import { useStudents } from '../hooks/useStudents'
@@ -115,7 +115,6 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
 // ── Main page ─────────────────────────────────────────────────
 
 export default function ClassBrowser() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
   // Keep "spots left" honest during the opening rush: refresh seat counts every 30 s and on focus (spec 16).
@@ -211,14 +210,6 @@ export default function ClassBrowser() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
-        {/* Contextual back — the shell's top nav owns primary navigation now. */}
-        <button
-          onClick={() => navigate('/parent')}
-          className="inline-flex items-center gap-1.5 font-sans text-sm font-semibold text-ink-muted hover:text-ink transition"
-        >
-          <ArrowLeft size={16} /> Back to dashboard
-        </button>
-
         {!registrationOpen && (
           <p role="status" className="font-sans text-sm text-ink bg-surface-sunken border border-border rounded-[10px] px-4 py-3">
             Camper registration is closed right now. Existing registrations are unchanged.

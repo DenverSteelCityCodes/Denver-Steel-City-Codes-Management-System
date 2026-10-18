@@ -1,96 +1,101 @@
 import { useEffect, useRef, useState } from 'react'
-import { CircleCheck, List, CircleX, Pencil, GraduationCap, Check, Sparkles } from 'lucide-react'
+import { Check, CircleAlert, CircleX, Clock, Hourglass } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { GRADES, gradeToAge, realNote } from '../lib/campers'
 import { formatTimeRange } from '../lib/campDay'
-import type { Student, RegistrationStatus } from '../types/database'
+import { CAMP_TIME_ZONE } from '../lib/denverTime'
+import { buttonClass } from '../lib/ui'
+import { camperFirstName, cancelledByCamp, holdsSeat, offerDeadline, type WeekLine } from '../lib/homeDecision'
+import type { Student } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import type { SwapOption } from '../hooks/useMyChanges'
-import MedicalFlag from './MedicalFlag'
-import InlineConfirm from './InlineConfirm'
+import { Input, Select } from './Field'
+import ParentConfirm from './ParentConfirm'
 import { focusOnMount } from '../lib/focus'
-
-// Human-friendly status copy (DS §7.5 Deep-on-Soft chips, §10 warm voice).
-// note: an optional reassuring sub-line shown beneath the chip.
-const STATUS_CONFIG: Record<
-  RegistrationStatus,
-  { label: string; className: string; Icon: LucideIcon; note: string | null }
-> = {
-  confirmed: { label: 'Confirmed', className: 'bg-success-soft text-success', Icon: CircleCheck, note: null },
-  // Registrations auto-confirm (spec 14); a legacy 'pending' row reads as confirmed.
-  pending: { label: 'Confirmed', className: 'bg-success-soft text-success', Icon: CircleCheck, note: null },
-  waitlisted: { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List, note: null },
-  cancelled: { label: 'Cancelled', className: 'bg-danger-soft text-danger', Icon: CircleX, note: null },
-  // A freed seat held for this camper (spec 10); the actions below say how long it's held.
-  offered: { label: 'Spot offered', className: 'bg-brand-soft text-warning', Icon: Sparkles, note: null },
-}
-
-// Rollup status badge (DS §7.5) that summarizes all of a camper's registrations
-// into a single at-a-glance signal — the "is my kid all set?" answer (§2).
-function rollupStatus(
-  registrations: RegistrationWithSection[],
-): { label: string; className: string; Icon: LucideIcon | null } {
-  const active = registrations.filter(r => r.status !== 'cancelled')
-  if (active.length === 0) {
-    return { label: 'Not enrolled', className: 'bg-surface-sunken text-ink-muted', Icon: null }
-  }
-  if (active.some(r => r.status === 'offered')) {
-    return { label: 'Spot offered', className: 'bg-brand-soft text-warning', Icon: Sparkles }
-  }
-  if (active.every(r => r.status === 'waitlisted')) {
-    return { label: 'On waitlist', className: 'bg-info-soft text-info', Icon: List }
-  }
-  if (active.some(r => r.status === 'waitlisted')) {
-    return { label: 'Partly waitlisted', className: 'bg-info-soft text-info', Icon: List }
-  }
-  return { label: 'All set', className: 'bg-success-soft text-success', Icon: CircleCheck }
-}
 
 type CamperPatch = Partial<Omit<Student, 'id' | 'parent_id' | 'created_at'>>
 
-interface Props {
-  student: Student
-  registrations: RegistrationWithSection[]
-  onSave?: (id: string, patch: CamperPatch) => Promise<void>
-  // Self-service changes (spec 11). Without these, the card is read-only.
-  changes?: {
-    deadlines: Map<string, string>
-    openRequests: Set<string>
-    cancelSpot: (registrationId: string) => Promise<void>
-    requestChange: (registrationId: string, message: string) => Promise<void>
-    acceptOffer: (registrationId: string) => Promise<void>
-    declineOffer: (registrationId: string) => Promise<void>
-    swapOptions: (registrationId: string) => Promise<SwapOption[]>
-    swapSpot: (registrationId: string, sectionId: string) => Promise<void>
-  }
+export interface CamperChanges {
+  deadlines: Map<string, string>
+  openRequests: Set<string>
+  cancelSpot: (registrationId: string) => Promise<void>
+  requestChange: (registrationId: string, message: string) => Promise<void>
+  acceptOffer: (registrationId: string) => Promise<void>
+  declineOffer: (registrationId: string) => Promise<void>
+  swapOptions: (registrationId: string) => Promise<SwapOption[]>
+  swapSpot: (registrationId: string, sectionId: string) => Promise<void>
 }
 
-// Cancel / leave waitlist before the change deadline; "Request a change" after it (spec 11).
-function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSection; camper: string; changes: NonNullable<Props['changes']> }) {
+interface Props {
+  student: Student
+  // One line per week (lib/homeDecision › weekLines).
+  lines: WeekLine[]
+  // The camper re-confirms their details for this camp year before registering (#42).
+  needsReconfirm?: boolean
+  // The offer shown in the sign band at the top of Home: the line points there instead of repeating it.
+  offerInSign?: string | null
+  onSave?: (id: string, patch: CamperPatch) => Promise<void>
+  // Self-service changes (spec 11). Without these, the block is read-only.
+  changes?: CamperChanges
+}
+
+// Text actions that still have a 44px target (DESIGN.md › Buttons › Text link).
+const textAction = buttonClass('text', 'text-ink-muted font-semibold')
+const textActionStrong = buttonClass('text')
+
+// One status per registration (DESIGN.md › Status Words): done is green, waiting is an ink frame,
+// danger is red, plain is muted with no box.
+function StatusWord({ tone, icon: Icon, children }: { tone: 'ok' | 'wait' | 'danger' | 'plain'; icon?: LucideIcon; children: string }) {
+  const cls = {
+    ok: 'bg-success-soft text-success px-2',
+    wait: 'text-ink shadow-[inset_0_0_0_2px_var(--color-ink)] px-2',
+    danger: 'bg-danger-soft text-danger px-2',
+    plain: 'text-ink-muted',
+  }[tone]
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded py-1.5 text-sm font-bold leading-none whitespace-nowrap ${cls}`}>
+      {Icon && <Icon size={16} strokeWidth={2.5} aria-hidden="true" />}
+      {children}
+    </span>
+  )
+}
+
+// "Oct 4", the last day online changes are open.
+const lastDayOf = (deadline: string) => new Date(new Date(deadline).getTime() - 1)
+  .toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: CAMP_TIME_ZONE })
+
+function Problem({ children }: { children: string }) {
+  return (
+    <p role="alert" className="mt-2 flex items-start gap-1.5 text-sm font-bold text-danger">
+      <CircleAlert size={16} strokeWidth={2.5} className="shrink-0 mt-0.5" aria-hidden="true" /> {children}
+    </p>
+  )
+}
+
+// What a parent can do with one registration: switch or cancel before the change deadline, leave a
+// waitlist, request a change after the deadline, or claim / decline an offer (specs 10–12).
+function RegistrationActions({ reg, camper, changes, offerInSign }: { reg: RegistrationWithSection; camper: string; changes: CamperChanges; offerInSign: boolean }) {
   const [mode, setMode] = useState<'idle' | 'confirm' | 'request' | 'switch'>('idle')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
-  // Closing a panel puts focus back on the row's first action instead of dropping it (L6a).
+  // Closing a panel puts focus back on the line's first action instead of dropping it (L6a).
   const idleRef = useRef<HTMLDivElement>(null)
   const prevMode = useRef(mode)
   useEffect(() => {
     if (mode === 'idle' && prevMode.current !== 'idle') idleRef.current?.querySelector('button')?.focus()
     prevMode.current = mode
   }, [mode])
-  if (reg.status === 'cancelled') return null
 
   const where = `${reg.sections?.classes?.name ?? 'this class'}${reg.sections?.week ? `, Week ${reg.sections.week}` : ''}`
   const deadline = changes.deadlines.get(reg.id)
-  const holdsSeat = reg.status === 'confirmed' || reg.status === 'pending'
-  // A seat can be cancelled online until the deadline; a waitlist place can always be left.
+  const seat = holdsSeat(reg)
+  // A seat can be changed online until the deadline; a waitlist place can always be left.
   // eslint-disable-next-line react-hooks/purity -- a render-time clock read is fine for a deadline label
-  const open = !holdsSeat || !deadline || Date.now() < new Date(deadline).getTime()
-  const lastDay = deadline
-    ? new Date(new Date(deadline).getTime() - 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/Denver' })
-    : null
+  const open = !seat || !deadline || Date.now() < new Date(deadline).getTime()
 
   async function run(fn: () => Promise<void>, after: () => void) {
     setBusy(true); setErr(null)
@@ -98,105 +103,89 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
     finally { setBusy(false) }
   }
 
-  // A waitlist offer: claim it (confirms at once) or decline it (passes it on). Spec 10.
+  // A waitlist offer (spec 10). The first one lives in the sign at the top of Home.
   if (reg.status === 'offered') {
-    const until = reg.offer_expires_at
-      ? new Date(reg.offer_expires_at).toLocaleString('en-US', { timeZone: 'America/Denver', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-      : null
+    const until = reg.offer_expires_at ? offerDeadline(reg.offer_expires_at) : null
     return (
-      <div className="mt-1.5 ml-1 rounded-[10px] border border-brand/40 bg-brand-soft/40 px-3 py-2">
-        <p className="text-sm font-sans text-ink">
-          <span className="font-semibold">A spot opened up for {camper}!</span>{until ? ` Claim it by ${until} (Denver time), or it goes to the next family.` : ''}
+      <div>
+        <p className="mt-1 text-sm text-ink-muted">
+          Held for {camper}{until ? ` until ${until}` : ''}. After that it goes to the next family on the waitlist.
         </p>
-        {mode === 'confirm' ? (
-          <div className="mt-2 rounded-[10px] overflow-hidden border border-border">
-            <InlineConfirm
-              message={`Decline the spot in ${where}? It goes to the next family, and ${camper} leaves this waitlist.`}
-              confirmLabel="Decline spot"
-              cancelLabel="Keep the offer"
-              busy={busy}
-              onConfirm={() => { void run(() => changes.declineOffer(reg.id), () => setMode('idle')) }}
-              onCancel={() => { setMode('idle'); setErr(null) }}
-            />
-          </div>
+        {offerInSign ? (
+          <a href="#offer" className={textActionStrong}>Claim or decline it</a>
+        ) : mode === 'confirm' ? (
+          <ParentConfirm
+            message={`Decline the spot in ${where}? It goes to the next family on the waitlist.`}
+            confirmLabel="Decline the spot" cancelLabel="Keep the offer" busy={busy}
+            onConfirm={() => { void run(() => changes.declineOffer(reg.id), () => setMode('idle')) }}
+            onCancel={() => { setMode('idle'); setErr(null) }}
+          />
         ) : (
-          <div className="mt-2 flex gap-2">
-            <button type="button" disabled={busy} onClick={() => { void run(() => changes.acceptOffer(reg.id), () => setMode('idle')) }}
-              className="ui-btn ui-btn--primary">
-              {busy ? 'Claiming…' : 'Claim the spot'}
+          <div ref={idleRef} className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button type="button" disabled={busy} onClick={() => { void run(() => changes.acceptOffer(reg.id), () => setMode('idle')) }} className={buttonClass('ink')}>
+              {busy ? 'Claiming…' : `Claim ${camper}'s spot`}
             </button>
-            <button type="button" disabled={busy} onClick={() => setMode('confirm')}
-              className="h-10 px-4 rounded-[8px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition">
-              Decline
-            </button>
+            <button type="button" disabled={busy} onClick={() => setMode('confirm')} className={textAction}>Decline</button>
           </div>
         )}
-        {err && <p role="alert" className="mt-1 text-xs font-sans text-danger">{err}</p>}
+        {err && <Problem>{err}</Problem>}
       </div>
     )
   }
 
   if (sent || changes.openRequests.has(reg.id)) {
-    return <p role="status" className="mt-1 ml-1 text-xs font-sans text-ink-muted">Change request sent. The camp will email you.</p>
+    return (
+      <p role="status" className="mt-2 flex items-start gap-1.5 text-sm font-bold">
+        <Check size={16} strokeWidth={2.5} className="shrink-0 mt-0.5 text-success" aria-hidden="true" /> Change request sent. The camp will email you.
+      </p>
+    )
   }
 
   return (
-    <div className="mt-1.5 ml-1">
+    <div>
+      {seat && deadline && mode === 'idle' && (
+        <p className="mt-1 text-sm text-ink-muted">
+          {open ? `You can switch or cancel online until ${lastDayOf(deadline)}.` : `Online changes closed ${lastDayOf(deadline)}.`}
+        </p>
+      )}
+      {!seat && mode === 'idle' && (
+        <p className="mt-1 text-sm text-ink-muted text-pretty">If a seat opens, we hold it for {camper} and it shows here with a time to claim it by.</p>
+      )}
       {mode === 'idle' && (
-        <div ref={idleRef} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {open && holdsSeat && (
-            <button type="button" onClick={() => setMode('switch')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-ink underline-offset-2 hover:underline">
-              Switch class
-            </button>
-          )}
-          {open ? (
-            <button type="button" onClick={() => setMode('confirm')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-danger underline-offset-2 hover:underline">
-              {holdsSeat ? 'Cancel this spot' : 'Leave the waitlist'}
-            </button>
-          ) : (
-            <button type="button" onClick={() => setMode('request')} className="min-h-6 text-xs font-sans font-semibold text-ink-muted hover:text-ink underline-offset-2 hover:underline">
-              Request a change
-            </button>
-          )}
-          {holdsSeat && lastDay && (
-            <span className="text-xs font-sans text-ink-faint">
-              {open ? `You can switch or cancel online until ${lastDay}.` : `Online changes closed after ${lastDay}.`}
-            </span>
-          )}
+        <div ref={idleRef} className="flex flex-wrap items-center gap-x-5">
+          {open && seat && <button type="button" onClick={() => setMode('switch')} className={textAction}>Switch class</button>}
+          {open
+            ? <button type="button" onClick={() => setMode('confirm')} className={textAction}>{seat ? 'Cancel this spot' : 'Leave the waitlist'}</button>
+            : <button type="button" onClick={() => setMode('request')} className={textActionStrong}>Request a change</button>}
         </div>
       )}
       {mode === 'confirm' && (
-        <div className="mt-1 rounded-[10px] overflow-hidden border border-border">
-          <InlineConfirm
-            message={holdsSeat
-              ? `Cancel ${camper}'s spot in ${where}? The seat goes to the next family on the waitlist. You can sign up again later if spots are left.`
-              : `Take ${camper} off the waitlist for ${where}?`}
-            confirmLabel={holdsSeat ? 'Cancel spot' : 'Leave waitlist'}
-            cancelLabel={holdsSeat ? 'Keep spot' : 'Stay on it'}
-            busy={busy}
-            onConfirm={() => { void run(() => changes.cancelSpot(reg.id), () => setMode('idle')) }}
-            onCancel={() => { setMode('idle'); setErr(null) }}
-          />
-        </div>
+        <ParentConfirm
+          message={seat
+            ? `Cancel ${camper}'s spot in ${where}? The seat goes to the next family on the waitlist. You can sign up again later if seats are left.`
+            : `Take ${camper} off the waitlist for ${where}? Their place in line goes to the next family.`}
+          confirmLabel={seat ? 'Cancel the spot' : 'Leave the waitlist'}
+          cancelLabel={seat ? 'Keep the spot' : 'Keep their place'}
+          busy={busy}
+          onConfirm={() => { void run(() => changes.cancelSpot(reg.id), () => setMode('idle')) }}
+          onCancel={() => { setMode('idle'); setErr(null) }}
+        />
       )}
-      {mode === 'switch' && (
-        <SwitchClass reg={reg} camper={camper} changes={changes} onDone={() => setMode('idle')} />
-      )}
+      {mode === 'switch' && <SwitchClass reg={reg} camper={camper} changes={changes} onDone={() => setMode('idle')} />}
       {mode === 'request' && (
         <form
           onSubmit={e => { e.preventDefault(); void run(() => changes.requestChange(reg.id, message), () => { setSent(true); setMode('idle') }) }}
-          className="mt-1 space-y-2"
+          className="mt-3"
         >
-          <label htmlFor={`req-${reg.id}`} className="block text-xs font-sans font-semibold text-ink-muted">What would you like to change about {where}?</label>
-          <textarea id={`req-${reg.id}`} rows={2} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
-            className="ui-input" />
-          <div className="flex gap-2 justify-end">
-            <button type="button" onClick={() => setMode('idle')} className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Cancel</button>
-            <button type="submit" disabled={busy || !message.trim()} className="ui-btn ui-btn--primary">{busy ? 'Sending…' : 'Send to the camp'}</button>
+          <label htmlFor={`req-${reg.id}`} className="block font-bold mb-1.5">What would you like to change about {where}?</label>
+          <textarea id={`req-${reg.id}`} rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus className="ui-input" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="submit" disabled={busy || !message.trim()} className={buttonClass('ink')}>{busy ? 'Sending…' : 'Send to the camp'}</button>
+            <button type="button" onClick={() => setMode('idle')} className={buttonClass('secondary')}>Cancel</button>
           </div>
         </form>
       )}
-      {err && <p role="alert" className="mt-1 text-xs font-sans text-danger">{err}</p>}
+      {err && <Problem>{err}</Problem>}
     </div>
   )
 }
@@ -204,7 +193,7 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
 // Switch a held seat to another class the same week (spec 12). Only classes with a free seat
 // can be picked: a camper holding a seat can't join another waitlist that week (Q-W4).
 function SwitchClass({ reg, camper, changes, onDone }: {
-  reg: RegistrationWithSection; camper: string; changes: NonNullable<Props['changes']>; onDone: () => void
+  reg: RegistrationWithSection; camper: string; changes: CamperChanges; onDone: () => void
 }) {
   const [options, setOptions] = useState<SwapOption[] | null>(null)
   const [loadErr, setLoadErr] = useState<string | null>(null)
@@ -218,7 +207,7 @@ function SwitchClass({ reg, camper, changes, onDone }: {
   }, [picked])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const current = `${reg.sections?.classes?.name ?? 'this class'}${reg.sections?.label ? ` ${reg.sections.label}` : ''}`
+  const current = reg.sections?.classes?.name ?? 'this class'
 
   // Load once when the panel opens; spots are counted fresh from the server each time.
   useEffect(() => {
@@ -238,31 +227,32 @@ function SwitchClass({ reg, camper, changes, onDone }: {
     finally { setBusy(false) }
   }
 
-  const name = (o: SwapOption) => `${o.class_name} ${o.label}`
   return (
-    <div className="mt-1 rounded-[10px] border border-border bg-surface px-3 py-2.5">
-      <p ref={focusOnMount} tabIndex={-1} className="text-xs font-sans font-semibold text-ink-muted mb-2 focus:outline-none">Switch {camper} from {current} to another class{reg.sections?.week ? ` in Week ${reg.sections.week}` : ''}:</p>
-      {loadErr && <p role="alert" className="text-xs font-sans text-danger">{loadErr}</p>}
-      {!options && !loadErr && <div className="h-10 bg-surface-sunken rounded-[8px] animate-pulse" />}
+    <div className="mt-3 p-4 border-2 border-ink rounded">
+      <p ref={focusOnMount} tabIndex={-1} className="font-bold focus:outline-none">
+        Switch {camper} from {current} to another class{reg.sections?.week ? ` in Week ${reg.sections.week}` : ''}
+      </p>
+      {loadErr && <Problem>{loadErr}</Problem>}
+      {!options && !loadErr && <div className="mt-3 h-12 bg-surface-sunken rounded animate-pulse" />}
       {options && options.length === 0 && (
-        <p className="text-sm font-sans text-ink-muted">No other class that week fits {camper}'s age and grade.</p>
+        <p className="mt-2 text-ink-muted">No other class that week fits {camper}'s grade.</p>
       )}
       {options && options.length > 0 && !picked && (
-        <ul ref={listRef} className="space-y-1.5">
+        <ul ref={listRef} className="mt-3 grid gap-2">
           {options.map(o => {
             const when = [o.days, formatTimeRange(o.start_time, o.end_time), o.room].filter(Boolean).join(' · ')
             return (
               <li key={o.section_id}>
                 {o.spots_left > 0 ? (
                   <button type="button" data-section={o.section_id} onClick={() => { setPicked(o); setErr(null) }}
-                    className="w-full text-left rounded-[8px] border border-border-strong px-3 py-2 hover:bg-surface-sunken transition">
-                    <span className="block text-sm font-sans font-semibold text-ink">{name(o)}</span>
-                    <span className="block text-xs font-sans text-ink-muted">{when}{when ? ' · ' : ''}{o.spots_left} {o.spots_left === 1 ? 'spot' : 'spots'} left</span>
+                    className="w-full min-h-[52px] text-left px-4 py-2 bg-surface border-2 border-border hover:border-ink rounded transition-colors">
+                    <span className="block font-bold">{o.class_name}</span>
+                    <span className="block text-sm text-ink-muted">{when}{when ? ' · ' : ''}{o.spots_left} {o.spots_left === 1 ? 'spot' : 'spots'} left</span>
                   </button>
                 ) : (
-                  <div className="rounded-[8px] border border-border px-3 py-2 bg-surface-sunken">
-                    <span className="block text-sm font-sans font-semibold text-ink-muted">{name(o)} · Full</span>
-                    <span className="block text-xs font-sans text-ink-faint">To join its waitlist you'd need to cancel {camper}'s spot in {current} first.</span>
+                  <div className="px-4 py-2 border-2 border-dashed border-border-strong rounded">
+                    <span className="block font-bold">{o.class_name} · Full</span>
+                    <span className="block text-sm text-ink-muted">To join its waitlist you'd need to cancel {camper}'s spot in {current} first.</span>
                   </div>
                 )}
               </li>
@@ -271,27 +261,25 @@ function SwitchClass({ reg, camper, changes, onDone }: {
         </ul>
       )}
       {picked && (
-        <div className="rounded-[10px] overflow-hidden border border-border">
-          <InlineConfirm
-            tone="neutral"
-            message={`Move ${camper} from ${current} to ${name(picked)}? The old seat goes to the next family on that waitlist.`}
-            confirmLabel={busy ? 'Switching…' : 'Switch class'}
-            cancelLabel="Back"
-            busy={busy}
-            onConfirm={() => { void confirm() }}
-            onCancel={() => setPicked(null)}
-          />
-        </div>
+        <ParentConfirm
+          tone="neutral"
+          message={`Move ${camper} from ${current} to ${picked.class_name}? The old seat goes to the next family on that waitlist.`}
+          confirmLabel={busy ? 'Switching…' : 'Switch class'}
+          cancelLabel="Back"
+          busy={busy}
+          onConfirm={() => { void confirm() }}
+          onCancel={() => setPicked(null)}
+        />
       )}
-      {err && <p role="alert" className="mt-1 text-xs font-sans text-danger">{err}</p>}
+      {err && <Problem>{err}</Problem>}
       {!picked && (
-        <div className="mt-2 flex justify-end">
-          <button type="button" onClick={onDone} className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Keep {current}</button>
-        </div>
+        <button type="button" onClick={onDone} className={buttonClass('secondary', 'mt-3')}>Keep {current}</button>
       )}
     </div>
   )
 }
+
+const fieldLabel = 'block font-bold mb-1.5'
 
 // Inline editor for the details parents actually change mid-year (name, grade, health, emergency
 // contact). The full yearly review still happens in the registration flow.
@@ -310,11 +298,12 @@ function CamperEditor({ student, onSave, onDone }: { student: Student; onSave: P
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const name = camperFirstName(student)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.first_name.trim() || !form.last_name.trim()) { setErr("Your camper's first and last name are required"); return }
-    if (!form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim()) { setErr('An emergency contact name and phone are required'); return }
+    if (!form.first_name.trim() || !form.last_name.trim()) { setErr(`Enter ${name}'s first and last name.`); return }
+    if (!form.emergency_contact_name.trim() || !form.emergency_contact_phone.trim()) { setErr("Enter an emergency contact's name and phone."); return }
     setSaving(true)
     setErr(null)
     try {
@@ -339,158 +328,149 @@ function CamperEditor({ student, onSave, onDone }: { student: Student; onSave: P
     }
   }
 
-  const input = 'ui-input'
-  const label = 'block font-sans text-xs font-semibold text-ink-muted mb-1'
   const id = (k: string) => `camper-${student.id}-${k}`
+  const pair = 'grid gap-5 min-[480px]:grid-cols-2 min-[480px]:gap-4'
 
   return (
-    <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') onDone() }} className="px-5 py-4 bg-surface-sunken border-t border-border space-y-3">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div><label htmlFor={id('first')} className={label}>First name</label><input id={id('first')} autoFocus className={input} value={form.first_name} onChange={e => set('first_name', e.target.value)} /></div>
-        <div><label htmlFor={id('last')} className={label}>Last name</label><input id={id('last')} className={input} value={form.last_name} onChange={e => set('last_name', e.target.value)} /></div>
-        <div>
-          <label htmlFor={id('grade')} className={label}>Grade (entering fall)</label>
-          <select id={id('grade')} className={input} value={form.grade} onChange={e => set('grade', e.target.value)}>
-            <option value="">Select…</option>
-            {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-          </select>
-        </div>
+    <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') onDone() }} aria-label={`Edit ${name}'s details`} className="mt-3 pt-4 pb-2 border-t border-border grid gap-5">
+      <div className={pair}>
+        <div><label htmlFor={id('first')} className={fieldLabel}>First name</label><Input id={id('first')} autoFocus autoComplete="off" value={form.first_name} onChange={e => set('first_name', e.target.value)} /></div>
+        <div><label htmlFor={id('last')} className={fieldLabel}>Last name</label><Input id={id('last')} autoComplete="off" value={form.last_name} onChange={e => set('last_name', e.target.value)} /></div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div><label htmlFor={id('allergies')} className={label}>Allergies / dietary restrictions</label><input id={id('allergies')} className={input} placeholder="None" value={form.allergies} onChange={e => set('allergies', e.target.value)} /></div>
-        <div><label htmlFor={id('medical')} className={label}>Medical conditions</label><input id={id('medical')} className={input} placeholder="None" value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} /></div>
+      <div>
+        <label htmlFor={id('grade')} className={fieldLabel}>Grade this fall</label>
+        <Select id={id('grade')} value={form.grade} onChange={e => set('grade', e.target.value)}>
+          <option value="">Select…</option>
+          {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+        </Select>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div><label htmlFor={id('ec-name')} className={label}>Emergency contact</label><input id={id('ec-name')} className={input} value={form.emergency_contact_name} onChange={e => set('emergency_contact_name', e.target.value)} /></div>
-        <div><label htmlFor={id('ec-phone')} className={label}>Their phone</label><input id={id('ec-phone')} type="tel" className={input} value={form.emergency_contact_phone} onChange={e => set('emergency_contact_phone', e.target.value)} /></div>
-        <div><label htmlFor={id('ec-rel')} className={label}>Relationship</label><input id={id('ec-rel')} className={input} value={form.emergency_contact_relation} onChange={e => set('emergency_contact_relation', e.target.value)} /></div>
+      <div>
+        <label htmlFor={id('allergies')} className={fieldLabel}>Allergies or dietary needs</label>
+        <p id={id('allergies-h')} className="-mt-1 mb-1.5 text-sm text-ink-muted">Write None if there aren't any.</p>
+        <Input id={id('allergies')} aria-describedby={id('allergies-h')} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
       </div>
-      {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={onDone} className="h-10 px-4 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Cancel</button>
-        <button type="submit" disabled={saving} className="ui-btn ui-btn--primary">
-          <Check size={15} /> {saving ? 'Saving…' : 'Save changes'}
-        </button>
+      <div>
+        <label htmlFor={id('medical')} className={fieldLabel}>Medical conditions</label>
+        <p id={id('medical-h')} className="-mt-1 mb-1.5 text-sm text-ink-muted">Write None if there aren't any.</p>
+        <Input id={id('medical')} aria-describedby={id('medical-h')} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
+      </div>
+      <div><label htmlFor={id('ec-name')} className={fieldLabel}>Emergency contact</label><Input id={id('ec-name')} autoComplete="off" value={form.emergency_contact_name} onChange={e => set('emergency_contact_name', e.target.value)} /></div>
+      <div className={pair}>
+        <div><label htmlFor={id('ec-phone')} className={fieldLabel}>Their phone</label><Input id={id('ec-phone')} type="tel" autoComplete="off" value={form.emergency_contact_phone} onChange={e => set('emergency_contact_phone', e.target.value)} /></div>
+        <div><label htmlFor={id('ec-rel')} className={fieldLabel}>Relationship</label><Input id={id('ec-rel')} autoComplete="off" value={form.emergency_contact_relation} onChange={e => set('emergency_contact_relation', e.target.value)} /></div>
+      </div>
+      {err && <Problem>{err}</Problem>}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <button type="submit" disabled={saving} className={buttonClass('ink')}>{saving ? 'Saving…' : `Save ${name}'s details`}</button>
+        <button type="button" onClick={onDone} className={textAction}>Cancel</button>
       </div>
     </form>
   )
 }
 
-export default function StudentCard({ student, registrations, onSave, changes }: Props) {
-  const [editing, setEditing] = useState(false)
-  const medicalNote = [
-    realNote(student.allergies) && `Allergies: ${realNote(student.allergies)}`,
-    (realNote(student.medical_conditions) ?? realNote(student.medical_info)) && `Medical: ${realNote(student.medical_conditions) ?? realNote(student.medical_info)}`,
-  ].filter(Boolean).join(' · ')
-  const initials = student.full_name
-    .split(/\s+/)
-    .map(n => n.match(/\p{L}/u)?.[0] ?? '')
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || '?'
+// One week line: the week, one status word, then class · days and time · room, then its actions.
+function Line({ line, student, needsReconfirm, offerInSign, changes }: {
+  line: WeekLine; student: Student; needsReconfirm: boolean; offerInSign: string | null; changes?: CamperChanges
+}) {
+  const name = camperFirstName(student)
+  const reg = line.reg
+  const pick = `/parent/classes?camper=${student.id}`
+  if (!reg) {
+    return (
+      <li className="grid grid-cols-[5rem_1fr] gap-x-3 py-1 border-t border-border items-center">
+        <span className="text-sm font-extrabold whitespace-nowrap">{line.label}</span>
+        <div className="flex flex-wrap items-center justify-between gap-x-4">
+          <StatusWord tone="plain">Not registered</StatusWord>
+          <Link to={pick} className={textActionStrong}>{needsReconfirm ? `Review ${name}'s details` : `Register ${name}`}</Link>
+        </div>
+      </li>
+    )
+  }
+  const sec = reg.sections
+  const camp = cancelledByCamp(reg)
+  const status = camp
+    ? <StatusWord tone="danger" icon={CircleX}>Cancelled by camp</StatusWord>
+    : holdsSeat(reg) ? <StatusWord tone="ok" icon={Check}>Confirmed</StatusWord>
+    : reg.status === 'offered' ? <StatusWord tone="wait" icon={Clock}>Spot offered</StatusWord>
+    : <StatusWord tone="wait" icon={Hourglass}>On the waitlist</StatusWord>
+  // The line wraps between pieces, never inside the time: "Web Development · Mon–Fri 9:00 AM – 3:00 PM
+  // · Room 202" stays readable on a 375px screen.
+  const range = sec?.start_time ? formatTimeRange(sec.start_time, sec.end_time) : ''
+  const parts: ReactNode[] = [
+    sec?.classes?.name ?? 'Class',
+    range ? <>{sec.days} <span className="whitespace-nowrap">{range}</span></> : null,
+    sec?.room ? <span className="whitespace-nowrap">{sec.room}</span> : null,
+  ].filter(Boolean)
+  return (
+    <li className="grid grid-cols-[5rem_1fr] gap-x-3 pt-3 pb-1 border-t border-border">
+      <span className="text-sm font-extrabold whitespace-nowrap pt-1.5">{line.label}</span>
+      <div className="min-w-0">
+        {status}
+        <p className="mt-1.5">
+          {parts.map((p, i) => (
+            <span key={i}>{p}{i < parts.length - 1 && <span className="text-ink-muted px-[0.35em]">·</span>}{i < parts.length - 1 ? ' ' : ''}</span>
+          ))}
+        </p>
+        {camp ? (
+          <>
+            <p className="mt-1 text-sm text-ink-muted text-pretty">Sorry, the camp cancelled this class. You're first in line for that week's waitlists.</p>
+            <Link to={pick} className={textActionStrong}>Pick another class</Link>
+          </>
+        ) : changes ? (
+          <RegistrationActions reg={reg} camper={name} changes={changes} offerInSign={offerInSign === reg.id} />
+        ) : <div className="pb-2" />}
+      </div>
+    </li>
+  )
+}
 
-  const rollup = rollupStatus(registrations)
-  const RollupIcon = rollup.Icon
+// A camper on Home (DESIGN.md › Camper block with its week strip): name, grade, health on file, then
+// one line per week. No avatar disc, no rollup badge: each week says its own status once.
+export default function StudentCard({ student, lines, needsReconfirm = false, offerInSign = null, onSave, changes }: Props) {
+  const [editing, setEditing] = useState(false)
+  const [healthOpen, setHealthOpen] = useState(false)
+  const name = camperFirstName(student)
+  const allergies = realNote(student.allergies)
+  const medical = realNote(student.medical_conditions) ?? realNote(student.medical_info)
+  const healthId = `camper-${student.id}-health`
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-role-parent-soft flex items-center justify-center shrink-0">
-            <span className="font-sans font-semibold text-sm text-role-parent">{initials}</span>
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-2 justify-between">
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <h3 className="font-sans font-semibold text-base text-ink truncate">{student.full_name}</h3>
-                <span className="text-xs font-sans text-ink-muted shrink-0">Age {student.age}</span>
-                {medicalNote && <MedicalFlag info={medicalNote} />}
-              </div>
-              {/* Rollup status badge: confirmed → All set, waitlisted → On waitlist, none → Not enrolled */}
-              <span
-                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${rollup.className}`}
-              >
-                {RollupIcon && <RollupIcon size={13} />}
-                {rollup.label}
-              </span>
-            </div>
-
-            {registrations.length === 0 ? (
-              <p className="text-sm font-sans text-ink-muted mt-1">Not enrolled in any class yet</p>
-            ) : (
-              <ul className="mt-3 space-y-2.5">
-                {registrations.map(reg => {
-                  // A class the camp cancelled reads differently from one the family dropped.
-                  const byCamp = reg.status === 'cancelled' && reg.cancel_reason === 'section_cancelled'
-                  const cfg = byCamp ? { ...STATUS_CONFIG.cancelled, label: 'Cancelled by camp' } : STATUS_CONFIG[reg.status]
-                  const Icon = cfg.Icon
-                  const week = reg.sections?.week
-                  return (
-                    <li key={reg.id}>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.className}`}
-                        >
-                          <Icon size={13} />
-                          {cfg.label}
-                        </span>
-                        <span className="text-sm font-sans text-ink-muted truncate">
-                          {reg.sections?.classes?.name ?? '—'}
-                          {reg.sections?.label ? ` · ${reg.sections.label}` : ''}
-                          {week ? ` · Week ${week}` : ''}
-                        </span>
-                      </div>
-                      {(reg.sections?.start_time || reg.sections?.room) && (
-                        <p className="mt-0.5 ml-1 text-xs font-sans text-ink-muted">
-                          {[reg.sections.start_time && `${reg.sections.days} · ${formatTimeRange(reg.sections.start_time, reg.sections.end_time)}`, reg.sections.room]
-                            .filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                      {cfg.note && (
-                        <p className="mt-0.5 ml-1 text-xs font-sans text-ink-faint">{cfg.note}</p>
-                      )}
-                      {changes && <RegistrationActions reg={reg} camper={student.first_name ?? student.full_name.split(' ')[0]} changes={changes} />}
-                      {byCamp && (
-                        <p className="mt-0.5 ml-1 text-xs font-sans text-ink-muted">
-                          Sorry, this class was cancelled.{' '}
-                          <Link to={`/parent/classes?camper=${student.id}`} className="font-semibold text-ink hover:underline">
-                            Pick another class
-                          </Link>{' '}
-                          (you're first in line for that week's waitlists).
-                        </p>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
+    <li id={`camper-${student.id}`} className="pt-4 pb-1 border-t-2 border-ink scroll-mt-32 md:scroll-mt-24">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-bold leading-[1.3]">{student.full_name}</h3>
+          <p className="flex flex-wrap items-center text-sm text-ink-muted">
+            <span>{student.grade ? `Entering ${student.grade}` : `Age ${student.age}`}</span>
+            {(allergies || medical) && (
+              <>
+                <span className="px-[0.35em]" aria-hidden="true">·</span>
+                <button type="button" onClick={() => setHealthOpen(o => !o)} aria-expanded={healthOpen} aria-controls={healthId}
+                  className="inline-flex items-center min-h-11 underline underline-offset-[3px] decoration-1">
+                  Health info on file
+                </button>
+              </>
             )}
-          </div>
+          </p>
         </div>
-      </div>
-
-      {/* Footer: per-camper actions (DS §7.1). Ghost Edit + secondary Register; the single gold
-          primary (Add camper) lives in the dashboard header. */}
-      {editing && <CamperEditor student={student} onSave={onSave} onDone={() => setEditing(false)} />}
-
-      <div className="bg-surface-sunken border-t border-border px-4 sm:px-5 py-3 flex flex-wrap items-center justify-end gap-2">
         {onSave && !editing && (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            aria-expanded={editing}
-            className="h-10 px-3 text-sm font-sans font-semibold text-ink-muted rounded-[8px] hover:bg-surface hover:text-ink flex items-center gap-1.5 transition"
-          >
-            <Pencil size={14} /> Edit camper
+          <button type="button" onClick={() => setEditing(true)} aria-expanded={editing} className={`${textAction} -mt-2.5 min-w-11 justify-end`}>
+            Edit<span className="sr-only"> {name}'s details</span>
           </button>
         )}
-        <Link
-          to={`/parent/classes?camper=${student.id}`}
-          className="h-10 px-3.5 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[8px] hover:bg-surface-sunken flex items-center gap-1.5 transition shadow-sm"
-        >
-          <GraduationCap size={14} /> {registrations.some(r => r.status !== 'cancelled') ? 'Register for another class' : 'Register for a class'}
-        </Link>
       </div>
-    </div>
+      {healthOpen && (allergies || medical) && (
+        <div id={healthId} className="mb-2">
+          {allergies && <p><b>Allergies:</b> {allergies}</p>}
+          {medical && <p><b>Medical:</b> {medical}</p>}
+          <p className="mt-1 text-sm text-ink-muted">Shared with your camper's volunteers and camp admins only.</p>
+        </div>
+      )}
+      {editing && <CamperEditor student={student} onSave={onSave} onDone={() => setEditing(false)} />}
+      <ul className="mt-1">
+        {lines.map(line => (
+          <Line key={line.key} line={line} student={student} needsReconfirm={needsReconfirm} offerInSign={offerInSign} changes={changes} />
+        ))}
+      </ul>
+    </li>
   )
 }

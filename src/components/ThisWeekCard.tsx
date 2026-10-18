@@ -1,113 +1,90 @@
-import { CalendarDays, MapPin, Clock, User } from 'lucide-react'
-import { useSessions, formatSessionDates } from '../hooks/useSessions'
+import { ChevronDown } from 'lucide-react'
 import { useScheduleItems } from '../hooks/useScheduleItems'
 import { useSectionLeadNames } from '../hooks/useSectionLeadNames'
-import DailySchedule, { ScheduleHeading } from './DailySchedule'
-import { localDateISO, parseLocalDate, formatTimeRange, firstName, sessionOnDay } from '../lib/campDay'
-import type { Student } from '../types/database'
+import DailySchedule from './DailySchedule'
+import { firstName, sessionDays, sessionOnDay } from '../lib/campDay'
+import { daysBetween, relativeDay } from '../lib/volunteerHome'
+import { holdsSeat, scheduleSpan, sessionsOf } from '../lib/homeDecision'
+import type { Session, Student } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import type { ReactNode } from 'react'
 
 interface Props {
   students: Student[]
   registrations: RegistrationWithSection[]
-  // Optional per-camper status line (today's roll calls), rendered under the schedule line.
+  sessions: Session[]
+  // The camp year's weeks (campSessions), to place a section that only knows its week number.
+  weeks: Session[]
+  today: string
+  // Today's roll calls for a camper, shown on camp days only.
   renderStatus?: (student: Student, reg: RegistrationWithSection) => ReactNode
 }
 
-// Parent "this week" card: which session is on (or next), each camper's class · time · room ·
-// lead, and the day's schedule. Replaces the old session strip once camp is near.
-export default function ThisWeekCard({ students, registrations, renderStatus }: Props) {
-  const { sessions, loading } = useSessions()
+// "Oct 19–23"
+function shortDates(s: Session): string {
+  const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T12:00:00`).toLocaleDateString('en-US', o)
+  const sameMonth = s.start_date.slice(0, 7) === s.end_date.slice(0, 7)
+  return `${fmt(s.start_date, { month: 'short', day: 'numeric' })}–${fmt(s.end_date, sameMonth ? { day: 'numeric' } : { month: 'short', day: 'numeric' })}`
+}
+
+// This week on parent Home: shown only during a week one of the campers is in, or in the 7 days
+// before it. Each camper's class, room and lead; today's roll calls on camp days; the daily
+// schedule folded behind one line.
+export default function ThisWeekCard({ students, registrations, sessions, weeks, today, renderStatus }: Props) {
   const { items } = useScheduleItems()
   const leadNames = useSectionLeadNames()
-  if (loading) return null
 
-  const today = localDateISO()
-  const upcoming = sessions
-    .filter(s => s.is_active && s.end_date >= today)
-    .sort((a, b) => a.start_date.localeCompare(b.start_date))
-  const current = sessionOnDay(sessions, today) ?? upcoming[0] ?? null
+  const seats = registrations.filter(holdsSeat)
+  const inSession = (r: RegistrationWithSection, s: Session) => sessionsOf(r, sessions, weeks).some(x => x.id === s.id)
+  const running = sessionOnDay(sessions, today)
+  const current = running && seats.some(r => inSession(r, running))
+    ? running
+    : sessions
+      .filter(s => s.start_date > today && daysBetween(today, s.start_date) <= 7 && seats.some(r => inSession(r, s)))
+      .sort((a, b) => a.start_date.localeCompare(b.start_date))[0]
   if (!current) return null
 
-  const msPerDay = 86_400_000
-  const daysToStart = Math.round((parseLocalDate(current.start_date).getTime() - parseLocalDate(today).getTime()) / msPerDay)
-  const chip = daysToStart > 0
-    ? { label: daysToStart === 1 ? 'Starts tomorrow' : `Starts in ${daysToStart} days`, cls: 'bg-info-soft text-info' }
-    : { label: 'Happening now', cls: 'bg-success-soft text-success' }
-
-  const inSession = (r: RegistrationWithSection, s: typeof current) =>
-    r.sections?.session_id ? r.sections.session_id === s.id : r.sections?.week === upcoming.indexOf(s) + 1
-  const active = registrations.filter(r => r.status === 'confirmed' || r.status === 'pending')
-  const later = upcoming.filter(s => s.id !== current.id)
+  const campDay = sessionDays(current).indexOf(today)
+  const when = current.start_date > today
+    ? `starts ${relativeDay(today, current.start_date)}`
+    : campDay >= 0 ? `day ${campDay + 1} of ${sessionDays(current).length}` : 'this week'
+  const rows = seats.filter(r => inSession(r, current))
   const schedule = items.filter(i => i.session_id === current.id)
+  const span = scheduleSpan(schedule)
 
   return (
-    <section aria-labelledby="this-week-heading" className="bg-surface border border-border rounded-xl shadow-sm mb-8 overflow-hidden">
-      <div className="p-4 sm:p-5 flex items-center gap-4">
-        <div className="w-11 h-11 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
-          <CalendarDays size={20} className="text-warning" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 id="this-week-heading" className="font-sans font-semibold text-base text-ink">
-            {daysToStart > 0 ? 'Next up' : 'This week'} · {current.name}
-          </h2>
-          <p className="font-slab text-sm text-ink-muted">{formatSessionDates(current)}</p>
-        </div>
-        <span className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${chip.cls}`}>{chip.label}</span>
-      </div>
-
-      <ul className="border-t border-border divide-y divide-border">
-        {students.map(st => {
-          const reg = active.find(r => r.student_id === st.id && inSession(r, current))
-          const wait = registrations.find(r => r.student_id === st.id && r.status === 'waitlisted' && inSession(r, current))
-          const sec = reg?.sections
-          const lead = reg ? leadNames.get(reg.section_id) : undefined
+    <section aria-labelledby="this-week-h" id="this-week" className="scroll-mt-32 md:scroll-mt-24">
+      <h2 id="this-week-h" className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">This week</h2>
+      <p className="mt-1 text-sm text-ink-muted">
+        {current.name}<span className="px-[0.35em]">·</span>{shortDates(current)}<span className="px-[0.35em]">·</span>{when}
+      </p>
+      <ul className="mt-3 border-y-2 border-ink">
+        {rows.map(reg => {
+          const st = students.find(s => s.id === reg.student_id)
+          if (!st) return null
+          const sec = reg.sections
+          const lead = leadNames.get(reg.section_id)
+          const where = [sec?.room, lead && `Lead ${lead}`].filter(Boolean).join(' · ')
           return (
-            <li key={st.id} className="px-4 sm:px-5 py-3">
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="font-sans font-semibold text-sm text-ink">{firstName(st.full_name)}</span>
-                {sec ? (
-                  <span className="font-sans text-sm text-ink">{sec.classes?.name}{sec.label ? ` · ${sec.label}` : ''}</span>
-                ) : wait ? (
-                  <span className="font-sans text-sm text-ink-muted">on the waitlist for {wait.sections?.classes?.name ?? 'a class'}</span>
-                ) : (
-                  <span className="font-sans text-sm text-ink-muted">not registered for {current.name}</span>
-                )}
+            <li key={reg.id} className="py-3 border-t border-border first:border-t-0">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                <span><b>{firstName(st.full_name)}</b><span className="text-ink-muted px-[0.35em]">·</span>{sec?.classes?.name}</span>
+                <span className={where ? '' : 'text-sm text-ink-muted'}>{where || 'Room and lead will be posted here.'}</span>
               </div>
-              {sec && (
-                <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-sans text-xs text-ink-muted">
-                  {sec.start_time && <span className="inline-flex items-center gap-1"><Clock size={12} /> {sec.days} · {formatTimeRange(sec.start_time, sec.end_time)}</span>}
-                  {sec.room && <span className="inline-flex items-center gap-1"><MapPin size={12} /> {sec.room}</span>}
-                  {lead && <span className="inline-flex items-center gap-1"><User size={12} /> Lead: {lead}</span>}
-                  {!sec.start_time && !sec.room && !lead && <span>Times and room will be posted here.</span>}
-                </p>
-              )}
-              {reg && renderStatus?.(st, reg)}
+              {campDay >= 0 && renderStatus?.(st, reg)}
             </li>
           )
         })}
       </ul>
-
-      {later.length > 0 && (
-        <ul className="border-t border-border px-4 sm:px-5 py-2.5 space-y-0.5">
-          {later.flatMap(s => active.filter(r => inSession(r, s)).map(r => {
-            const st = students.find(x => x.id === r.student_id)
-            return (
-              <li key={r.id} className="font-sans text-xs text-ink-muted">
-                {firstName(st?.full_name)} is also in {r.sections?.classes?.name} · {s.name} ({formatSessionDates(s, false)})
-              </li>
-            )
-          }))}
-        </ul>
-      )}
-
-      <div className="border-t border-border bg-surface-sunken/60 px-4 sm:px-5 py-3">
-        <ScheduleHeading>{daysToStart > 0 ? 'Daily schedule' : "Today's schedule"}</ScheduleHeading>
-        <div className="mt-1">
+      <details className="group mt-2">
+        <summary className="flex items-center gap-2 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+          <span>{campDay >= 0 ? "Today's schedule" : 'Daily schedule'}{span && <span className="font-normal text-ink-muted"><span className="px-[0.35em]">·</span>{span}</span>}</span>
+          <ChevronDown size={20} strokeWidth={2.25} aria-hidden="true" className="ml-auto transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="mt-1 mb-2">
           <DailySchedule items={schedule} emptyText="The daily schedule will be posted here before camp starts." />
         </div>
-      </div>
+      </details>
     </section>
   )
 }
