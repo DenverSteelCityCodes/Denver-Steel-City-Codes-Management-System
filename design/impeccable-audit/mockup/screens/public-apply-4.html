@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteer application, step 4 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Volunteer application, 2026</h1>
+    </div>
+  </div>
+
+  <section class="sign" aria-labelledby="step-h">
+    <h2 class="steplabel" id="step-h" aria-live="polite">Step 4 of 5 · Waiver</h2>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span><span></span></div>
+  </section>
+
+  <form class="fstack mt-8" data-next="public-apply-5.html" novalidate>
+    <section class="legal" aria-labelledby="waiver-h">
+      <h3 id="waiver-h">Volunteer waiver and release</h3>
+      <p class="notice mt-3"><i data-lucide="file-pen-line"></i><span><b>Placeholder text.</b> Steel City Codes national's official volunteer waiver replaces this section before applications open. Nothing below is legal wording.</span></p>
+      <div class="mt-4">
+        <p><b>Waiver and release.</b> This clause will say which claims a volunteer releases Steel City Codes from.</p>
+        <p><b>Insurance.</b> This clause will say what insurance and benefits Steel City Codes does and doesn't provide to volunteers.</p>
+        <p><b>Medical treatment.</b> This clause will cover first aid or other medical help given in an emergency while volunteering.</p>
+        <p><b>Assumption of risk.</b> This clause will describe the risks of volunteering that a volunteer accepts.</p>
+        <p><b>Photo release.</b> This clause will cover photos, video and audio of volunteers made at camp.</p>
+        <p><b>Governing law.</b> This clause will name the state law the waiver follows.</p>
+      </div>
+    </section>
+
+    <h3>Sign</h3>
+    <div class="field">
+      <label for="a-sig">Your signature</label>
+      <p class="hint" id="a-sig-hint">Type your full legal name. This is your signature.</p>
+      <input class="input" id="a-sig" type="text" autocomplete="name" value="Riya Shah" aria-describedby="a-sig-hint">
+    </div>
+    <div class="field">
+      <label for="a-guardian">Parent or guardian signature</label>
+      <p class="hint" id="a-guardian-hint">Needed because you're under 18. Your parent or guardian types their own full name.</p>
+      <input class="input" id="a-guardian" type="text" aria-describedby="a-guardian-hint">
+    </div>
+    <div class="formnav">
+      <a class="btn btn--secondary" href="public-apply-3.html"><i data-lucide="chevron-left"></i>Back</a>
+      <button class="btn btn--primary" type="submit">Next: Interview<i data-lucide="chevron-right"></i></button>
+    </div>
+  </form>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script></body>
+</html>

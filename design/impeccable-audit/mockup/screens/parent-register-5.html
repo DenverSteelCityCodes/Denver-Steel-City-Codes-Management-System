@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register a new camper, step 5 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <a class="link link--muted" href="parent-home.html"><i data-lucide="chevron-left" class="icon-sm"></i>Save and exit</a>
+  <h1 class="mt-1">Register a new camper</h1>
+
+  <section class="sign mt-4" aria-labelledby="step-h">
+    <span class="ctx">Sam Brooks · Intro to Python, Week 1</span>
+    <h2 class="msg" id="step-h"><span class="sr-only">Step 5 of 5: </span>Review and sign</h2>
+    <span class="sub">Nothing is registered until you tap Register.</span>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span></div>
+  </section>
+
+  <form class="mt-6" action="parent-register-done.html" novalidate>
+    <ul class="rows rows--framed">
+      <li class="row"><div class="grow"><b>Camper</b><p>Sam Brooks, entering 6th<br>Campus Middle School</p></div><a class="link link--muted" href="parent-register-1.html">Edit<span class="sr-only"> camper</span></a></li>
+      <li class="row"><div class="grow"><b>Week and class</b><p>Intro to Python, Week 1<br><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 102</span></p></div><a class="link link--muted" href="parent-register-2.html">Edit<span class="sr-only"> week and class</span></a></li>
+      <li class="row"><div class="grow"><b>Contacts</b><p>Taylor Brooks, <span class="nw">303-555-0199</span><br>Emergency: Morgan Brooks (Aunt), <span class="nw">720-555-0199</span></p></div><a class="link link--muted" href="parent-register-3.html">Edit<span class="sr-only"> contacts</span></a></li>
+      <li class="row"><div class="grow"><b>Health</b><p>Allergies: none<br>Medical: none<br>Free or reduced lunch: no</p></div><a class="link link--muted" href="parent-register-4.html">Edit<span class="sr-only"> health</span></a></li>
+    </ul>
+
+    <section class="mt-8" aria-labelledby="waiver-h">
+      <h3 id="waiver-h">Participant waiver</h3>
+      <div class="placeholder">
+        <p class="note"><i data-lucide="file-pen-line"></i>Placeholder text. Steel City Codes national is writing the official waiver, and it will replace this.</p>
+        <p><b>Release of liability.</b> <span class="meta">Official wording to come from SCC national.</span></p>
+        <p><b>Assumption of risk.</b> <span class="meta">Official wording to come from SCC national.</span></p>
+        <p><b>Medical authorization.</b> <span class="meta">Official wording to come from SCC national.</span></p>
+        <p><b>Photo and media release.</b> <span class="meta">Official wording to come from SCC national.</span></p>
+      </div>
+    </section>
+
+    <div class="field mt-8"><label for="r-sig-camper">Type Sam's full legal name</label><span class="hint" id="r-sig-camper-h">This is Sam's electronic signature.</span><input class="input" id="r-sig-camper" aria-describedby="r-sig-camper-h" autocomplete="off"></div>
+    <div class="field"><label for="r-sig-you">Type your full legal name</label><span class="hint" id="r-sig-you-h">This signs for you as Sam's parent or guardian.</span><input class="input" id="r-sig-you" aria-describedby="r-sig-you-h" autocomplete="name"></div>
+    <div class="wiznav">
+      <a class="link" href="parent-register-4.html"><i data-lucide="chevron-left" class="icon-sm"></i>Back</a>
+      <a class="btn btn--primary btn--block btn--long" href="parent-register-done.html">Register Sam for Intro to Python, Week 1</a>
+    </div>
+  </form>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

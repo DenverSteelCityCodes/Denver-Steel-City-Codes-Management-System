@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteers · Crew · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html" aria-current="page">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html" aria-current="page"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Volunteers</h1></div>
+      <div class="act"><a class="btn btn--secondary" href="#"><i data-lucide="download"></i>Export CSV</a></div>
+    </div>
+    <nav class="subtabs" aria-label="Volunteers">
+  <a href="admin-volunteers.html">Applications <span class="n">5</span></a>
+  <a href="admin-volunteers-interviews.html">Interviews</a>
+  <a href="admin-volunteers-crew.html" aria-current="page">Crew</a>
+  <a href="admin-volunteers-duties.html">Duties</a>
+</nav>
+
+    <form class="toolbar" onsubmit="return false" aria-labelledby="fill-h">
+      <div class="field field--fit" style="flex-basis:auto">
+        <p class="label" id="fill-h">Fill open spots</p>
+        <p class="hint">Pairs a free senior lead and a free junior support for each open spot. Existing assignments are kept.</p>
+      </div>
+      <div class="field field--fit"><label for="fill-wk">Week</label><select class="select" id="fill-wk"><option>Week 1 · 0 open spots</option><option selected>Week 2 · 1 open lead spot</option></select></div>
+      <button class="btn btn--primary" type="submit">Preview matches</button>
+    </form>
+
+    <div class="table-wrap static">
+      <table class="data reflow crew">
+        <caption class="sr-only">Accepted volunteers and their assignment each week</caption>
+        <thead><tr><th scope="col">Name</th><th scope="col">Level</th><th scope="col">Week 1 · Oct 19–23</th><th scope="col">Week 2 · Oct 26–30</th></tr></thead>
+        <tbody>
+          <tr><td><b>Aiden Brooks</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline">Free</td><td data-label="Week 2" class="inline"><span class="meta">Not available</span></td></tr>
+          <tr><td><b>Bella Nguyen</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline">Free</td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Cameron Ortiz</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline"><b>JAVA-1 lead</b></td><td data-label="Week 2" class="inline"><b>JAVA-1 lead</b></td></tr>
+          <tr><td><b>Daniela Ruiz</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline"><b>MC-1 lead</b></td><td data-label="Week 2" class="inline"><b>MC-1 lead</b></td></tr>
+          <tr><td><b>Elijah Foster</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline"><span class="meta">Not available</span></td><td data-label="Week 2" class="inline"><span class="meta">Not available</span></td></tr>
+          <tr><td><b>Fiona Zhang</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline"><b>WEB-1 lead</b></td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Gabe Holloway</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline">Free</td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Haanie Mohammed</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline">Free</td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Harper Ito</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline"><b>PY-A lead</b></td><td data-label="Week 2" class="inline"><b>PY-A lead</b></td></tr>
+          <tr><td><b>Isaiah Grant</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><b>JAVA-1 support</b></td><td data-label="Week 2" class="inline"><span class="meta">Not available</span></td></tr>
+          <tr><td><b>Jasmine Kaur</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><span class="meta">Not available</span></td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Kevin Osei</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><b>PY-A support</b></td><td data-label="Week 2" class="inline"><b>PY-A support</b></td></tr>
+          <tr><td><b>Lily Moreau</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><b>PY-B support</b></td><td data-label="Week 2" class="inline"><b>PY-A support</b></td></tr>
+          <tr><td><b>Marcus Bell</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><b>PY-A support</b></td><td data-label="Week 2" class="inline"><span class="meta">Not available</span></td></tr>
+          <tr><td><b>Nadia Rahman</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline">Free</td><td data-label="Week 2" class="inline"><b>PY-B support</b></td></tr>
+          <tr><td><b>Oscar Lindqvist</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><span class="meta">Not available</span></td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Paige Morgan</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline">Free</td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Quinn Alvarez</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><b>PY-B support</b></td><td data-label="Week 2" class="inline"><span class="meta">Not available</span></td></tr>
+          <tr><td><b>Ravi Iyer</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline">Free</td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Sam Okafor</b></td><td data-label="Level" class="inline">Senior</td><td data-label="Week 1" class="inline"><b>PY-B lead</b></td><td data-label="Week 2" class="inline">Free</td></tr>
+          <tr><td><b>Sienna Cole</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><b>MC-1 support</b></td><td data-label="Week 2" class="inline"><b>PY-B support</b></td></tr>
+          <tr><td><b>Tyler Washington</b></td><td data-label="Level" class="inline">Junior</td><td data-label="Week 1" class="inline"><span class="meta">Not available</span></td><td data-label="Week 2" class="inline"><b>JAVA-1 support</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="meta mt-3">22 accepted volunteers · 10 seniors, 12 juniors. Only admins assign; volunteers set their weeks and course choices.</p>
+  </main>
+</div>
+</body>
+</html>

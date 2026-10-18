@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Today · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body class="campday">
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="volunteer-today.html" aria-current="page">Today</a>
+      <a href="volunteer-class.html">Class</a>
+      <a href="volunteer-duties.html">Duties</a>
+      <a href="volunteer-updates.html">Updates</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="SO, account menu">SO</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <a href="volunteer-today.html" aria-current="page">Today</a>
+    <a href="volunteer-class.html">Class</a>
+    <a href="volunteer-duties.html">Duties</a>
+    <a href="volunteer-updates.html">Updates</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Sam Okafor</b><span>demo.volunteer@example.com</span></div>
+    <a href="volunteer-profile.html"><i data-lucide="user-round"></i>Profile and availability</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page">
+  <h1 class="sr-only">Today: roll call done</h1>
+  <p class="dateline"><b>Mon, Oct 19</b> · Day 1 of 5 · <b>PY-B, Room 102</b> · you lead · also on Morning Check-In</p>
+
+  <div class="cols">
+    <section class="rollcall" aria-labelledby="rc-h">
+      <div class="sign sign--ink sign--sticky rollbar">
+        <h2 class="sr-only" id="rc-h">Arrival roll call, done</h2>
+        <div class="seg" role="tablist" aria-label="Roll call" data-seg>
+          <button role="tab" id="t-arr" aria-selected="true" aria-controls="roll"><i data-lucide="check" class="icon-sm"></i>Arrival<span class="sr-only">, done</span></button>
+          <button role="tab" id="t-lun" aria-selected="false" aria-controls="roll">After lunch</button>
+          <button role="tab" id="t-dis" aria-selected="false" aria-controls="roll">Dismissal</button>
+        </div>
+        <p class="fig" role="status"><i data-lucide="check"></i><span class="flap" data-count>9/9</span><small>· 9:05</small></p>
+      </div>
+      <p class="settled"><i data-lucide="circle-check"></i>Arrival roll call done</p>
+      <p class="meta">All 9 present at 9:05. Next roll call: after lunch, 12:45.</p>
+
+      <ul class="roll" id="roll" role="tabpanel" aria-labelledby="t-arr">
+        <li data-camper data-state="present">
+          <p class="cname" id="n1">Andre Tran</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n1"><i data-lucide="check"></i> Present</button>
+          <p class="health"><i data-lucide="heart-pulse" class="icon-sm"></i><span><b>Allergy:</b> peanuts<br><b>Medical:</b> Type 1 diabetes, checks levels at lunch</span></p>
+          <a class="call callline" href="tel:+17205550137"><i data-lucide="phone" class="icon-sm"></i><span>Call Grandpa Tran (emergency) · <span class="nw">720-555-0137</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n2">Bodhi Novak</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n2"><i data-lucide="check"></i> Present</button>
+          <a class="call callline" href="tel:+17205550130"><i data-lucide="phone" class="icon-sm"></i><span>Call Aunt Novak (emergency) · <span class="nw">720-555-0130</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n3">Dante Ali</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n3"><i data-lucide="check"></i> Present</button>
+          <a class="call callline" href="tel:+17205550118"><i data-lucide="phone" class="icon-sm"></i><span>Call Aunt Ali (emergency) · <span class="nw">720-555-0118</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n4">Isaac Ibrahim</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n4"><i data-lucide="check"></i> Present</button>
+          <a class="call callline" href="tel:+17205550134"><i data-lucide="phone" class="icon-sm"></i><span>Call Aunt Ibrahim (emergency) · <span class="nw">720-555-0134</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n5">Kai Lopez</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n5"><i data-lucide="check"></i> Present</button>
+          <p class="health"><i data-lucide="heart-pulse" class="icon-sm"></i><span><b>Medical:</b> Type 1 diabetes, checks levels at lunch</span></p>
+          <a class="call callline" href="tel:+17205550114"><i data-lucide="phone" class="icon-sm"></i><span>Call Aunt Lopez (emergency) · <span class="nw">720-555-0114</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n6">Noah Park</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n6"><i data-lucide="check"></i> Present</button>
+          <a class="call callline" href="tel:+17205550145"><i data-lucide="phone" class="icon-sm"></i><span>Call Grandpa Park (emergency) · <span class="nw">720-555-0145</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n7">Nora Lopez</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n7"><i data-lucide="check"></i> Present</button>
+          <a class="call callline" href="tel:+17205550114"><i data-lucide="phone" class="icon-sm"></i><span>Call Aunt Lopez (emergency) · <span class="nw">720-555-0114</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n8">Priya Martinez</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n8"><i data-lucide="check"></i> Present</button>
+          <a class="call callline" href="tel:+17205550107"><i data-lucide="phone" class="icon-sm"></i><span>Call Uncle Martinez (emergency) · <span class="nw">720-555-0107</span></span></a>
+        </li>
+        <li data-camper data-state="present">
+          <p class="cname" id="n9">Priya Park</p>
+          <button class="btn mark mark--present" data-mark="present" aria-describedby="n9"><i data-lucide="check"></i> Present</button>
+          <a class="call callline" href="tel:+17205550145"><i data-lucide="phone" class="icon-sm"></i><span>Call Grandpa Park (emergency) · <span class="nw">720-555-0145</span></span></a>
+        </li>
+      </ul>
+      <p class="meta rollmeta">Updated 9:06 · <a class="link" href="volunteer-today-done.html">Refresh</a></p>
+    </section>
+
+    <aside>
+      <section aria-labelledby="day-h">
+        <h2 id="day-h">Today's schedule</h2>
+        <details class="more mt-2" data-open-wide>
+          <summary><span class="grow"><b>Now:</b> Morning session, classrooms, until 10:30</span><span class="meta">Full day</span><i data-lucide="chevron-down" class="chev"></i></summary>
+          <div class="timetable mt-2">
+            <span class="t">8:30</span><span class="b" style="--min:30">Drop-off · front lobby</span>
+            <span class="t now">9:00<span class="nowword">Now</span></span><span class="b now" style="--min:90">Morning session · classrooms<span class="rc">Arrival roll call</span></span>
+            <span class="t">10:30</span><span class="b" style="--min:15">Snack break · courtyard</span>
+            <span class="t">10:45</span><span class="b" style="--min:75">Morning session continues</span>
+            <span class="t">12:00</span><span class="b" style="--min:45">Lunch · cafeteria</span>
+            <span class="t">12:45</span><span class="b" style="--min:105">Afternoon session · classrooms<span class="rc">After lunch roll call</span></span>
+            <span class="t">2:30</span><span class="b" style="--min:30">Show and tell · classrooms</span>
+            <span class="t">3:00</span><span class="b" style="--min:30">Pickup · front lobby<span class="rc">Dismissal roll call</span></span>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" aria-labelledby="latest-h">
+        <h2 id="latest-h">Latest from camp</h2>
+        <a class="latest latest--one mt-3" href="volunteer-updates.html">
+          <span class="meta">Jordan Rivera · to volunteers · Sun 7:30 PM</span>
+          <span>Crew huddle at 8:15 each morning by the check-in table. Roll calls happen at arrival, after lunch and at dismissal.</span>
+          <span class="link">All updates <i data-lucide="arrow-right" class="icon-sm"></i></span>
+        </a>
+      </section>
+    </aside>
+  </div>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>document.querySelectorAll('[data-open-wide]').forEach(function (d) { if (matchMedia('(min-width: 1024px)').matches) d.open = true; });</script>
+</body>
+</html>

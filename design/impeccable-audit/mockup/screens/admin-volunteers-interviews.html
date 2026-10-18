@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteers · Interviews · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html" aria-current="page">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html" aria-current="page"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Volunteers</h1></div>
+      
+    </div>
+    <nav class="subtabs" aria-label="Volunteers">
+  <a href="admin-volunteers.html">Applications <span class="n">5</span></a>
+  <a href="admin-volunteers-interviews.html" aria-current="page">Interviews</a>
+  <a href="admin-volunteers-crew.html">Crew</a>
+  <a href="admin-volunteers-duties.html">Duties</a>
+</nav>
+
+    <p class="meta">3 booked · 17 open · 15 minutes each</p>
+
+    <section class="section" style="margin-top:var(--s5)" aria-labelledby="need-h">
+      <h2 id="need-h">Needs a time (2)</h2>
+      <p class="meta mt-2">Pending applicants with no interview booked. Booking sends them the time.</p>
+      <ul class="rows rows--framed mt-3">
+        <li>
+          <div class="toolbar" style="margin-bottom:0">
+            <div class="grow needwho"><p class="name">Avery Johnson</p><p class="meta">Smoky Hill High School · 12th · Weeks 1, 2 · applied 4 days ago</p></div>
+            <div class="field needslot"><label for="slot-avery">Interview time for Avery</label>
+              <select class="select" id="slot-avery"><option value="">Choose an open time…</option><optgroup label="This week"><option>Mon Oct 19, 4:00 PM</option><option>Mon Oct 19, 4:30 PM</option><option>Wed Oct 21, 4:30 PM</option><option>Thu Oct 22, 4:00 PM</option><option>Thu Oct 22, 4:30 PM</option><option>Fri Oct 23, 4:00 PM</option><option>Fri Oct 23, 4:30 PM</option></optgroup><optgroup label="Next week"><option>Mon Oct 26, 4:00 PM</option><option>Mon Oct 26, 4:30 PM</option><option>Tue Oct 27, 4:00 PM</option><option>Tue Oct 27, 4:30 PM</option><option>Wed Oct 28, 4:00 PM</option><option>Wed Oct 28, 4:30 PM</option><option>Thu Oct 29, 4:00 PM</option><option>Thu Oct 29, 4:30 PM</option><option>Fri Oct 30, 4:00 PM</option><option>Fri Oct 30, 4:30 PM</option></optgroup></select></div>
+            <button class="btn btn--secondary needbtn" type="button">Book Avery</button>
+          </div>
+        </li>
+        <li>
+          <div class="toolbar" style="margin-bottom:0">
+            <div class="grow needwho"><p class="name">Mila Novak</p><p class="meta">Eaglecrest High School · 10th · Week 1 · applied 2 days ago</p></div>
+            <div class="field needslot"><label for="slot-mila">Interview time for Mila</label>
+              <select class="select" id="slot-mila"><option value="">Choose an open time…</option><optgroup label="This week"><option>Mon Oct 19, 4:00 PM</option><option>Mon Oct 19, 4:30 PM</option><option>Wed Oct 21, 4:30 PM</option><option>Thu Oct 22, 4:00 PM</option><option>Thu Oct 22, 4:30 PM</option><option>Fri Oct 23, 4:00 PM</option><option>Fri Oct 23, 4:30 PM</option></optgroup><optgroup label="Next week"><option>Mon Oct 26, 4:00 PM</option><option>Mon Oct 26, 4:30 PM</option><option>Tue Oct 27, 4:00 PM</option><option>Tue Oct 27, 4:30 PM</option><option>Wed Oct 28, 4:00 PM</option><option>Wed Oct 28, 4:30 PM</option><option>Thu Oct 29, 4:00 PM</option><option>Thu Oct 29, 4:30 PM</option><option>Fri Oct 30, 4:00 PM</option><option>Fri Oct 30, 4:30 PM</option></optgroup></select></div>
+            <button class="btn btn--secondary needbtn" type="button">Book Mila</button>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="slots-h">
+      <div class="sechead"><h2 id="slots-h">Slots</h2></div>
+      <form class="toolbar" onsubmit="return false" aria-label="Add an interview slot">
+        <div class="field field--fit"><label for="ns-date">Date</label><input class="input" id="ns-date" type="date" value="2026-10-24"></div>
+        <div class="field field--fit"><label for="ns-time">Time</label><input class="input" id="ns-time" type="time" value="16:00"></div>
+        <button class="btn btn--secondary" type="submit"><i data-lucide="plus"></i>Add slot</button>
+      </form>
+      <h3 class="h3 mt-6">This week · Oct 19–23</h3>
+      <div class="mt-2"><div class="table-wrap static">
+            <table class="data reflow slots">
+              <caption class="sr-only">Interview slots, Oct 19 to 23</caption>
+              <thead><tr><th scope="col">Time</th><th scope="col">Applicant</th><th scope="col">Notes</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                <tr class="group"><th colspan="4" scope="colgroup">Monday, Oct 19</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Monday, Oct 19, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Monday, Oct 19, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Monday, Oct 19, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Monday, Oct 19, 4:30 PM slot</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Tuesday, Oct 20</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><b>Riley Chen</b></td>
+                  <td data-label="Notes" class="inline"><span class="meta">No notes yet</span></td>
+                  <td class="nowrap"><button class="link" type="button">Notes<span class="sr-only"> for Riley Chen</span></button> <span class="sep"></span><button class="link link--muted" type="button">Unbook<span class="sr-only"> Riley Chen</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><b>Sofia Haddad</b></td>
+                  <td data-label="Notes" class="inline">Asked to keep it short, has practice at 5</td>
+                  <td class="nowrap"><button class="link" type="button">Notes<span class="sr-only"> for Sofia Haddad</span></button> <span class="sep"></span><button class="link link--muted" type="button">Unbook<span class="sr-only"> Sofia Haddad</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Wednesday, Oct 21</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><b>Jalen Price</b></td>
+                  <td data-label="Notes" class="inline"><span class="meta">No notes yet</span></td>
+                  <td class="nowrap"><button class="link" type="button">Notes<span class="sr-only"> for Jalen Price</span></button> <span class="sep"></span><button class="link link--muted" type="button">Unbook<span class="sr-only"> Jalen Price</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Wednesday, Oct 21, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Wednesday, Oct 21, 4:30 PM slot</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Thursday, Oct 22</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Thursday, Oct 22, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Thursday, Oct 22, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Thursday, Oct 22, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Thursday, Oct 22, 4:30 PM slot</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Friday, Oct 23</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Friday, Oct 23, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Friday, Oct 23, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Friday, Oct 23, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Friday, Oct 23, 4:30 PM slot</span></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div></div>
+      <details class="more mt-4">
+        <summary>Next week · Oct 26–30 · 10 open slots <i data-lucide="chevron-down" class="chev"></i></summary>
+        <div class="table-wrap static">
+            <table class="data reflow slots">
+              <caption class="sr-only">Interview slots, Oct 26 to 30</caption>
+              <thead><tr><th scope="col">Time</th><th scope="col">Applicant</th><th scope="col">Notes</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                <tr class="group"><th colspan="4" scope="colgroup">Monday, Oct 26</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Monday, Oct 26, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Monday, Oct 26, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Monday, Oct 26, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Monday, Oct 26, 4:30 PM slot</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Tuesday, Oct 27</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Tuesday, Oct 27, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Tuesday, Oct 27, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Tuesday, Oct 27, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Tuesday, Oct 27, 4:30 PM slot</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Wednesday, Oct 28</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Wednesday, Oct 28, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Wednesday, Oct 28, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Wednesday, Oct 28, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Wednesday, Oct 28, 4:30 PM slot</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Thursday, Oct 29</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Thursday, Oct 29, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Thursday, Oct 29, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Thursday, Oct 29, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Thursday, Oct 29, 4:30 PM slot</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Friday, Oct 30</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Friday, Oct 30, 4:00 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Friday, Oct 30, 4:00 PM slot</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><span class="meta">Open</span></td>
+                  <td data-label="Notes" class="inline"></td>
+                  <td class="nowrap"><button class="link" type="button">Book<span class="sr-only"> Friday, Oct 30, 4:30 PM</span></button> <span class="sep"></span><button class="link link--muted" type="button">Delete<span class="sr-only"> Friday, Oct 30, 4:30 PM slot</span></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+      </details>
+      <details class="more">
+        <summary>Past days · Oct 14–15 · 4 interviews <i data-lucide="chevron-down" class="chev"></i></summary>
+        <div class="table-wrap static">
+            <table class="data reflow slots">
+              <caption class="sr-only">Past interviews</caption>
+              <thead><tr><th scope="col">Time</th><th scope="col">Applicant</th><th scope="col">Notes</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                <tr class="group"><th colspan="4" scope="colgroup">Wednesday, Oct 14</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><b>Ravi Iyer</b></td>
+                  <td data-label="Notes" class="inline">Accepted</td>
+                  <td class="nowrap"><button class="link" type="button">Notes<span class="sr-only"> for Ravi Iyer</span></button> <span class="sep"></span><button class="link link--muted" type="button">Unbook<span class="sr-only"> Ravi Iyer</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><b>Paige Morgan</b></td>
+                  <td data-label="Notes" class="inline">Accepted</td>
+                  <td class="nowrap"><button class="link" type="button">Notes<span class="sr-only"> for Paige Morgan</span></button> <span class="sep"></span><button class="link link--muted" type="button">Unbook<span class="sr-only"> Paige Morgan</span></button></td>
+                </tr>
+                <tr class="group"><th colspan="4" scope="colgroup">Thursday, Oct 15</th></tr>
+                <tr>
+                  <td class="nowrap"><b>4:00 PM</b></td>
+                  <td data-label="Applicant" class="inline"><b>Oscar Lindqvist</b></td>
+                  <td data-label="Notes" class="inline">Accepted</td>
+                  <td class="nowrap"><button class="link" type="button">Notes<span class="sr-only"> for Oscar Lindqvist</span></button> <span class="sep"></span><button class="link link--muted" type="button">Unbook<span class="sr-only"> Oscar Lindqvist</span></button></td>
+                </tr>
+                <tr>
+                  <td class="nowrap"><b>4:30 PM</b></td>
+                  <td data-label="Applicant" class="inline"><b>Jasmine Kaur</b></td>
+                  <td data-label="Notes" class="inline">Accepted</td>
+                  <td class="nowrap"><button class="link" type="button">Notes<span class="sr-only"> for Jasmine Kaur</span></button> <span class="sep"></span><button class="link link--muted" type="button">Unbook<span class="sr-only"> Jasmine Kaur</span></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+      </details>
+    </section>
+  </main>
+</div>
+</body>
+</html>

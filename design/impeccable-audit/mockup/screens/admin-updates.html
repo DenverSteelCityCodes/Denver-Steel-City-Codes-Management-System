@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Updates · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html" aria-current="page">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html" aria-current="page"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Updates</h1><p class="lede">Posts appear on parent and volunteer dashboards and in their bells.</p></div>
+    </div>
+    <nav class="subtabs" aria-label="Updates">
+  <a href="admin-updates.html" aria-current="page">Post</a>
+  <a href="admin-updates-emails.html">Sent emails</a>
+</nav>
+
+    <div class="w-720">
+      <form aria-labelledby="new-h" onsubmit="return false">
+        <h2 id="new-h" class="sr-only">New update</h2>
+        <div class="field">
+          <label for="to">Send to</label>
+          <select class="select" id="to" aria-describedby="to-hint">
+            <option>Everyone this season (parents and volunteers)</option>
+            <option>This season’s parents</option>
+            <option>All volunteers</option>
+            <optgroup label="One section’s families">
+              <option>JAVA-1 · Week 1</option><option>JAVA-1 · Week 2</option>
+              <option>PY-A · Week 1</option><option>PY-A · Week 2</option>
+              <option>PY-B · Week 1</option><option>PY-B · Week 2</option>
+              <option>MC-1 · Week 1</option><option>MC-1 · Week 2</option>
+              <option>WEB-1 · Week 1</option>
+            </optgroup>
+          </select>
+          <p class="hint" id="to-hint">Reaches this season’s parents and every volunteer.</p>
+        </div>
+        <div class="field">
+          <label for="msg">Message</label>
+          <textarea class="textarea" id="msg" maxlength="2000" rows="5"></textarea>
+        </div>
+        <label class="choice mt-4" for="email">
+          <input type="checkbox" id="email">
+          <span class="grow"><b>Also email</b><span class="meta">Opens your mail app with everyone’s address in BCC.</span></span>
+        </label>
+        <button class="btn btn--primary mt-4" type="submit"><i data-lucide="send"></i>Post update</button>
+      </form>
+
+      <section class="section" aria-labelledby="posted-h">
+        <h2 id="posted-h">Posted</h2>
+        <ul class="rows rows--framed mt-3">
+          <li class="post">
+            <div class="row"><b>Fiona Zhang</b><span class="meta">Web Development · WEB-1 · Week 1 families · just now</span></div>
+            <p class="body">Great first day in Web Dev! Everyone built their first page with a heading, a photo and a link. Tomorrow we add colour with CSS — no homework, just bring your ideas.</p>
+            <div class="do">
+              <a class="link" href="mailto:?bcc=">Email it<span class="sr-only"> (Fiona Zhang, just now)</span></a>
+              <button class="link link--muted" type="button" data-toggle="del-0">Delete<span class="sr-only"> (Fiona Zhang, just now)</span></button>
+            </div>
+            <div class="confirm" id="del-0" role="group" aria-label="Delete this update" hidden>
+              <p>Delete this update? It disappears from every dashboard and bell. Emails already sent stay sent.</p>
+              <div class="do"><button class="btn btn--secondary" type="button" data-toggle="del-0" autofocus>Keep it</button><button class="btn btn--danger" type="button">Delete update</button></div>
+            </div>
+          </li>
+          <li class="post">
+            <div class="row"><b>Jordan Rivera</b><span class="meta">Parents · 1 h ago</span></div>
+            <p class="body">Reminder: Friday is show-and-tell at 2:30. Families are welcome to come early and see what the campers built this week.</p>
+            <div class="do">
+              <a class="link" href="mailto:?bcc=">Email it<span class="sr-only"> (Jordan Rivera, 1 h ago)</span></a>
+              <button class="link link--muted" type="button" data-toggle="del-1">Delete<span class="sr-only"> (Jordan Rivera, 1 h ago)</span></button>
+            </div>
+            <div class="confirm" id="del-1" role="group" aria-label="Delete this update" hidden>
+              <p>Delete this update? It disappears from every dashboard and bell. Emails already sent stay sent.</p>
+              <div class="do"><button class="btn btn--secondary" type="button" data-toggle="del-1" autofocus>Keep it</button><button class="btn btn--danger" type="button">Delete update</button></div>
+            </div>
+          </li>
+          <li class="post">
+            <div class="row"><b>Jordan Rivera</b><span class="meta">Volunteers · 2 h ago</span></div>
+            <p class="body">Crew huddle at 8:15 each morning by the check-in table. Roll calls happen at arrival, after lunch and at dismissal — take them on your phone from the dashboard.</p>
+            <div class="do">
+              <a class="link" href="mailto:?bcc=">Email it<span class="sr-only"> (Jordan Rivera, 2 h ago)</span></a>
+              <button class="link link--muted" type="button" data-toggle="del-2">Delete<span class="sr-only"> (Jordan Rivera, 2 h ago)</span></button>
+            </div>
+            <div class="confirm" id="del-2" role="group" aria-label="Delete this update" hidden>
+              <p>Delete this update? It disappears from every dashboard and bell. Emails already sent stay sent.</p>
+              <div class="do"><button class="btn btn--secondary" type="button" data-toggle="del-2" autofocus>Keep it</button><button class="btn btn--danger" type="button">Delete update</button></div>
+            </div>
+          </li>
+          <li class="post">
+            <div class="row"><b>Jordan Rivera</b><span class="meta">Everyone · 5 h ago</span></div>
+            <p class="body">Welcome to Week 1! Drop-off is 8:30–9:00 in the front lobby and pickup starts at 3:00. Please send a water bottle and a labelled laptop charger each day.</p>
+            <div class="do">
+              <a class="link" href="mailto:?bcc=">Email it<span class="sr-only"> (Jordan Rivera, 5 h ago)</span></a>
+              <button class="link link--muted" type="button" data-toggle="del-3">Delete<span class="sr-only"> (Jordan Rivera, 5 h ago)</span></button>
+            </div>
+            <div class="confirm" id="del-3" role="group" aria-label="Delete this update" hidden>
+              <p>Delete this update? It disappears from every dashboard and bell. Emails already sent stay sent.</p>
+              <div class="do"><button class="btn btn--secondary" type="button" data-toggle="del-3" autofocus>Keep it</button><button class="btn btn--danger" type="button">Delete update</button></div>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Updates · Sent emails · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html" aria-current="page">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html" aria-current="page"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Updates</h1><p class="lede">Posts appear on parent and volunteer dashboards and in their bells.</p></div>
+    </div>
+    <nav class="subtabs" aria-label="Updates">
+  <a href="admin-updates.html">Post</a>
+  <a href="admin-updates-emails.html" aria-current="page">Sent emails</a>
+</nav>
+
+    <div class="w-720">
+      <div class="notice" role="note">
+        <i data-lucide="mail-warning"></i>
+        <p><b>The email service isn’t connected yet.</b> Confirmations, waitlist and change emails wait here and go out to families once it is. Addresses at example.com (the demo) are always skipped.</p>
+      </div>
+      <h2 class="h3">Waiting to send (5)</h2>
+      <div class="table-wrap static mt-3">
+        <table class="data reflow">
+          <caption class="sr-only">Emails waiting to send</caption>
+          <thead><tr><th scope="col">Email</th><th scope="col">To</th><th scope="col">Queued</th></tr></thead>
+          <tbody>
+            <tr><td><b>Cancelled by camp</b><span class="sub">Clara Price · MC-1 Week 1</span></td><td data-label="To" class="inline">Hannah Price</td><td data-label="Queued" class="inline nowrap">Oct 2, 10:15 AM</td></tr>
+            <tr><td><b>Waitlist place</b><span class="sub">Mia Thompson · MC-1 Week 1</span></td><td data-label="To" class="inline">Robert Thompson</td><td data-label="Queued" class="inline nowrap">Sep 12, 7:06 PM</td></tr>
+            <tr><td><b>Waitlist place</b><span class="sub">Eli Brooks · PY-A Week 1</span></td><td data-label="To" class="inline">Taylor Brooks</td><td data-label="Queued" class="inline nowrap">Sep 12, 7:04 PM</td></tr>
+            <tr><td><b>Registration confirmed</b><span class="sub">Maya Brooks · WEB-1 Week 1</span></td><td data-label="To" class="inline">Taylor Brooks</td><td data-label="Queued" class="inline nowrap">Sep 12, 7:02 PM</td></tr>
+            <tr><td><b>Registration confirmed</b><span class="sub">Andre Tran · PY-B Week 1</span></td><td data-label="To" class="inline">Linh Tran</td><td data-label="Queued" class="inline nowrap">Sep 12, 7:02 PM</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="meta mt-3">Sent emails will list here with their delivery status. Nothing has been sent yet.</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>

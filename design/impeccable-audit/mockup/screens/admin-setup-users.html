@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Setup · Users & roles · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html" aria-current="page">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html" aria-current="page"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page page--mid" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Setup</h1><p class="lede">Role changes apply the next time the person loads a page.</p></div>
+    </div>
+    <nav class="subtabs" aria-label="Setup">
+  <a href="admin-setup.html">Season</a>
+  <a href="admin-setup-forms.html">Forms</a>
+  <a href="admin-setup-users.html" aria-current="page">Users &amp; roles</a>
+</nav>
+
+    <div class="toolbar">
+      <div class="field">
+        <label class="sr-only" for="user-q">Search people by name or email</label>
+        <div class="inputicon"><i data-lucide="search"></i><input class="input" id="user-q" type="search" placeholder="Search people by name or email"></div>
+      </div>
+      <div class="seg" role="group" aria-label="Role" data-seg>
+        <button type="button" aria-pressed="false" data-show="users-admins">Admins 2</button>
+        <button type="button" aria-pressed="true" data-show="users-vols">Volunteers 28</button>
+        <button type="button" aria-pressed="false" data-show="users-parents">Parents 46</button>
+      </div>
+    </div>
+
+    <ul class="rows rows--framed" id="users-admins" hidden>
+          <li><div class="row"><div class="grow"><p><b>Jordan Rivera</b> <span class="meta">(you)</span></p><p class="meta">demo.admin@example.com · joined Sep 30 · two-step sign-in not set up</p></div><span class="meta">You can’t change your own role</span></div></li>
+          <li><div class="row"><div class="grow"><p><b>Haanie Mohammed</b></p><p class="meta">No email on file · joined Jun 5 · two-step sign-in not set up</p></div><button class="link" type="button">Reset two-step<span class="sr-only"> for Haanie Mohammed</span></button><button class="link" type="button">Change role<span class="sr-only"> for Haanie Mohammed</span></button></div></li>
+    </ul>
+    <ul class="rows rows--framed" id="users-vols">
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Aiden Brooks</b></p><p class="meta">aiden.brooks@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Aiden Brooks</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Avery Johnson</b></p><p class="meta">applicant2@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Avery Johnson</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Bella Nguyen</b></p><p class="meta">bella.nguyen@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Bella Nguyen</span></button>
+            </div>
+          </li>
+          <li class="is-open">
+            <div class="row">
+              <div class="grow"><p><b>Cameron Ortiz</b></p><p class="meta">cameron.ortiz@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" data-toggle="role-cameron">Change role<span class="sr-only"> for Cameron Ortiz</span></button>
+            </div>
+            <div id="role-cameron" class="mt-2">
+              <div class="field" style="max-width:320px">
+                <label for="role-sel">Role for Cameron Ortiz</label>
+                <select class="select" id="role-sel"><option>Admin</option><option>Volunteer</option><option>Parent</option></select>
+              </div>
+              <div class="confirm" role="group" aria-labelledby="role-q">
+                <p id="role-q">Make Cameron Ortiz an admin? Cameron will see every admin page, including campers’ health notes, the next time they load a page.</p>
+                <div class="do"><button class="btn btn--secondary" type="button" data-toggle="role-cameron">Keep as volunteer</button><button class="btn btn--ink" type="button">Make Cameron an admin</button></div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Daniela Ruiz</b></p><p class="meta">daniela.ruiz@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Daniela Ruiz</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Eli Grant</b></p><p class="meta">applicant6@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Eli Grant</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Elijah Foster</b></p><p class="meta">elijah.foster@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Elijah Foster</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Fiona Zhang</b></p><p class="meta">fiona.zhang@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Fiona Zhang</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Gabe Holloway</b></p><p class="meta">gabe.holloway@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Gabe Holloway</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Haanie Mohammed</b></p><p class="meta">No email on file · joined Jun 5</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Haanie Mohammed</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Harper Ito</b></p><p class="meta">harper.ito@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Harper Ito</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Isaiah Grant</b></p><p class="meta">isaiah.grant@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Isaiah Grant</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Jalen Price</b></p><p class="meta">applicant4@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Jalen Price</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Jasmine Kaur</b></p><p class="meta">jasmine.kaur@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Jasmine Kaur</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Kevin Osei</b></p><p class="meta">kevin.osei@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Kevin Osei</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Lily Moreau</b></p><p class="meta">lily.moreau@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Lily Moreau</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Marcus Bell</b></p><p class="meta">marcus.bell@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Marcus Bell</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Mila Novak</b></p><p class="meta">applicant3@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Mila Novak</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Nadia Rahman</b></p><p class="meta">nadia.rahman@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Nadia Rahman</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Oscar Lindqvist</b></p><p class="meta">oscar.lindqvist@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Oscar Lindqvist</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Paige Morgan</b></p><p class="meta">paige.morgan@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Paige Morgan</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Quinn Alvarez</b></p><p class="meta">quinn.alvarez@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Quinn Alvarez</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Ravi Iyer</b></p><p class="meta">ravi.iyer@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Ravi Iyer</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Riley Chen</b></p><p class="meta">demo.applicant@example.com · joined Sep 30</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Riley Chen</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Sam Okafor</b></p><p class="meta">demo.volunteer@example.com · joined Sep 30</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Sam Okafor</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Sienna Cole</b></p><p class="meta">sienna.cole@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Sienna Cole</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Sofia Haddad</b></p><p class="meta">applicant5@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Sofia Haddad</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Tyler Washington</b></p><p class="meta">tyler.washington@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Tyler Washington</span></button>
+            </div>
+          </li>
+    </ul>
+    <ul class="rows rows--framed" id="users-parents" hidden>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Aisha Garcia</b></p><p class="meta">aisha.garcia@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Aisha Garcia</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Ana Hernandez</b></p><p class="meta">ana.hernandez@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Ana Hernandez</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Anjali Shah</b></p><p class="meta">anjali.shah@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Anjali Shah</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Ben Novak</b></p><p class="meta">ben.novak@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Ben Novak</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Carlos Okafor</b></p><p class="meta">carlos.okafor@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Carlos Okafor</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Carmen Castillo</b></p><p class="meta">carmen.castillo@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Carmen Castillo</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Chris Clarke</b></p><p class="meta">chris.clarke@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Chris Clarke</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Daniel Lopez</b></p><p class="meta">daniel.lopez@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Daniel Lopez</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>David Patel</b></p><p class="meta">david.patel@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for David Patel</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Diana Romero</b></p><p class="meta">diana.romero@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Diana Romero</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Elena Williams</b></p><p class="meta">elena.williams@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Elena Williams</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Erik Larsen</b></p><p class="meta">erik.larsen@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Erik Larsen</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Fatima Rivera</b></p><p class="meta">fatima.rivera@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Fatima Rivera</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Gabriela Diaz</b></p><p class="meta">gabriela.diaz@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Gabriela Diaz</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Grace Mensah</b></p><p class="meta">grace.mensah@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Grace Mensah</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Hannah Price</b></p><p class="meta">hannah.price@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Hannah Price</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Hassan Ali</b></p><p class="meta">hassan.ali@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Hassan Ali</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Hiroshi Yamamoto</b></p><p class="meta">hiroshi.yamamoto@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Hiroshi Yamamoto</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>James Johnson</b></p><p class="meta">james.johnson@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for James Johnson</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Javier Ortiz</b></p><p class="meta">javier.ortiz@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Javier Ortiz</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Jin Park</b></p><p class="meta">jin.park@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Jin Park</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Kareem Ahmed</b></p><p class="meta">kareem.ahmed@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Kareem Ahmed</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Kwame Chen</b></p><p class="meta">kwame.chen@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Kwame Chen</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Laura Brown</b></p><p class="meta">laura.brown@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Laura Brown</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Linh Tran</b></p><p class="meta">linh.tran@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Linh Tran</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Lucia Moreno</b></p><p class="meta">lucia.moreno@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Lucia Moreno</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Luis Flores</b></p><p class="meta">luis.flores@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Luis Flores</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Maria Nguyen</b></p><p class="meta">maria.nguyen@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Maria Nguyen</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Mark Bennett</b></p><p class="meta">mark.bennett@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Mark Bennett</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Mei Kim</b></p><p class="meta">mei.kim@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Mei Kim</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Michael Haddad</b></p><p class="meta">michael.haddad@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Michael Haddad</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Molly Sullivan</b></p><p class="meta">molly.sullivan@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Molly Sullivan</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Nadia Robinson</b></p><p class="meta">nadia.robinson@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Nadia Robinson</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Paul Cooper</b></p><p class="meta">paul.cooper@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Paul Cooper</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Peter Kowalski</b></p><p class="meta">peter.kowalski@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Peter Kowalski</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Priya Singh</b></p><p class="meta">priya.singh@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Priya Singh</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Rachel Davis</b></p><p class="meta">rachel.davis@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Rachel Davis</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Robert Thompson</b></p><p class="meta">robert.thompson@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Robert Thompson</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Rosa Vargas</b></p><p class="meta">rosa.vargas@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Rosa Vargas</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Rose Begay</b></p><p class="meta">rose.begay@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Rose Begay</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Sarah Martinez</b></p><p class="meta">sarah.martinez@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Sarah Martinez</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Sean Walsh</b></p><p class="meta">sean.walsh@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Sean Walsh</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Sofia Reyes</b></p><p class="meta">sofia.reyes@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Sofia Reyes</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Taylor Brooks</b></p><p class="meta">demo.parent@example.com · joined Sep 30</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Taylor Brooks</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Tom Fischer</b></p><p class="meta">tom.fischer@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Tom Fischer</span></button>
+            </div>
+          </li>
+          <li>
+            <div class="row">
+              <div class="grow"><p><b>Yusuf Ibrahim</b></p><p class="meta">yusuf.ibrahim@example.com · joined Oct 17</p></div>
+              <button class="link" type="button" aria-expanded="false">Change role<span class="sr-only"> for Yusuf Ibrahim</span></button>
+            </div>
+          </li>
+    </ul>
+  </main>
+</div>
+</body>
+</html>

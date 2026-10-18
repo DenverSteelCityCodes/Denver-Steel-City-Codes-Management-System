@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Today · camp day · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today-camp.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today-camp.html" aria-label="Needs attention, 5 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today-camp.html" aria-current="page">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today-camp.html" aria-current="page"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>2<span class="sr-only"> items need you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead"><div class="grow"><h1>Today</h1><p class="lede">Week 1 · Monday, Oct 19 · 47 campers in 5 sections · next roll call after lunch, 12:45</p></div></div>
+
+    <div class="sign sign--alarm" role="status">
+      <span class="ctx">Arrival roll call · Updated 8:55 · refreshes every minute</span>
+      <span class="fig flap">3</span>
+      <span class="msg">campers unaccounted</span>
+      <span class="sub">Marked absent at Arrival in PY-A and WEB-1. Their families’ numbers are below.</span>
+    </div>
+
+    <div class="cols mt-8">
+      <div>
+        <section aria-labelledby="un-h">
+          <h2 id="un-h">Unaccounted now</h2>
+          <ul class="unacc rows--framed mt-3">
+      <li>
+        <div class="row"><div class="grow"><h3 class="name">Ivy Moreno</h3><p class="meta">10 · Web Development, WEB-1 · Room 202 · Lead Fiona Zhang</p></div><span class="status status--danger">Missed Arrival · 8:49</span></div>
+        <p class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Bee stings — EpiPen in backpack</p>
+        <div class="calls"><a class="call" href="tel:+13035550123"><i data-lucide="phone"></i><span><b>Call Lucia Moreno</b> · parent · <span class="nowrap">(303) 555-0123</span></span></a><a class="call" href="tel:+13035550151"><i data-lucide="phone"></i><span><b>Call Marco Moreno</b> · uncle, emergency contact · <span class="nowrap">(303) 555-0151</span></span></a></div>
+      </li>
+      <li>
+        <div class="row"><div class="grow"><h3 class="name">Ava Nguyen</h3><p class="meta">10 · Intro to Python, PY-A · Room 101 · Lead Harper Ito</p></div><span class="status status--danger">Missed Arrival · 8:47</span></div>
+        <p class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Allergy: peanuts</p>
+        <div class="calls"><a class="call" href="tel:+13035550131"><i data-lucide="phone"></i><span><b>Call Maria Nguyen</b> · parent · <span class="nowrap">(303) 555-0131</span></span></a><a class="call" href="tel:+13035550152"><i data-lucide="phone"></i><span><b>Call Thanh Nguyen</b> · grandfather, emergency contact · <span class="nowrap">(303) 555-0152</span></span></a></div>
+      </li>
+      <li>
+        <div class="row"><div class="grow"><h3 class="name">Ethan Kim</h3><p class="meta">9 · Intro to Python, PY-A · Room 101 · Lead Harper Ito</p></div><span class="status status--danger">Missed Arrival · 8:47</span></div>
+        <p class="meta mt-2">No allergies or medical notes</p>
+        <div class="calls"><a class="call" href="tel:+13035550117"><i data-lucide="phone"></i><span><b>Call Mei Kim</b> · parent · <span class="nowrap">(303) 555-0117</span></span></a><a class="call" href="tel:+13035550153"><i data-lucide="phone"></i><span><b>Call Joon Kim</b> · uncle, emergency contact · <span class="nowrap">(303) 555-0153</span></span></a></div>
+      </li>
+    </ul>
+        </section>
+
+        <section class="section" aria-labelledby="norc-h">
+          <h2 id="norc-h">2 sections have no roll call yet</h2>
+          <ul class="rows rows--framed mt-3">
+            <li class="row"><span class="grow"><b>MC-1</b> · Microcontrollers<span class="meta line">Maker Lab · Lead Daniela Ruiz</span></span><span class="calls"><a class="call" href="tel:+13035550163"><i data-lucide="phone"></i><span><b>Call Daniela</b> · lead · <span class="nowrap">(303) 555-0163</span></span></a></span></li>
+            <li class="row"><span class="grow"><b>JAVA-1</b> · Intro to Java<span class="meta line">Room 104 · Lead Cameron Ortiz</span></span><span class="calls"><a class="call" href="tel:+13035550162"><i data-lucide="phone"></i><span><b>Call Cameron</b> · lead · <span class="nowrap">(303) 555-0162</span></span></a></span></li>
+          </ul>
+        </section>
+
+      </div>
+
+      <aside class="todo" aria-labelledby="todo-h">
+        <h2 id="todo-h">To do</h2>
+        <ul class="decisions decisions--todo mt-3">
+      <li>
+        <span class="picto"><i data-lucide="utensils"></i></span>
+        <div><p class="what">Lunch Duty today has 1 open spot</p><p class="why">Lily Moreau is on it alone, 12:00–12:45 in the cafeteria.</p></div>
+        <div class="do"><a class="link" href="admin-volunteers-duties.html">Fill the spot <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+      <li>
+        <span class="picto"><i data-lucide="user-round-x"></i></span>
+        <div><p class="what">PY-B Week 2 has no lead</p><p class="why">Starts next Monday, Oct 26 · Room 102. Sam Okafor is free that week.</p></div>
+        <div class="do"><a class="link" href="admin-classes.html#py-b-w2">Assign a lead <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+      <li>
+        <span class="picto"><i data-lucide="message-square-text"></i></span>
+        <div><p class="what">2 families asked for a change</p><p class="why">Taylor Brooks and Hannah Price. Oldest is 2 days old.</p></div>
+        <div class="do"><a class="link" href="admin-campers.html#requests">Review requests <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+      <li>
+        <span class="picto"><i data-lucide="inbox"></i></span>
+        <div><p class="what">5 volunteer applications pending</p><p class="why">Oldest is 5 days old.</p></div>
+        <div class="do"><a class="link" href="admin-volunteers.html">Review applications <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+    </ul>
+      </aside>
+    </div>
+
+        <section class="section" aria-labelledby="all-h">
+          <div class="sechead"><h2 id="all-h">All sections</h2><span class="meta">Problems first</span></div>
+          <div class="table-wrap static">
+            <table class="data reflow">
+              <caption class="sr-only">Roll calls by section, problems first</caption>
+              <thead><tr><th scope="col">Section</th><th scope="col">Arrival</th><th scope="col">After lunch</th><th scope="col">Dismissal</th></tr></thead>
+              <tbody>
+                <tr class="open">
+                  <td><button class="namebtn" type="button" data-toggle="marks-pya">PY-A<i data-lucide="chevron-down"></i></button><span class="sub">Room 101 · Harper Ito</span></td>
+                  <td data-label="Arrival" class="inline"><span class="rc-bad">8/10 · 2 unaccounted</span><span class="sub">8:47</span></td>
+                  <td data-label="After lunch" class="meta upcoming">12:45</td>
+                  <td data-label="Dismissal" class="meta upcoming">3:00</td>
+                </tr>
+                <tr class="detailrow" id="marks-pya"><td colspan="4">
+                  <p class="meta">Arrival roll call by Harper Ito, 8:47</p>
+                  <ul class="marks">
+                    <li class="is-out"><i data-lucide="x"></i>Ava Nguyen<span class="sr-only">, absent</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Ethan Ahmed<span class="sr-only">, present</span></li>
+                    <li class="is-out"><i data-lucide="x"></i>Ethan Kim<span class="sr-only">, absent</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Ezra Brown<span class="sr-only">, present</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Hugo Bennett<span class="sr-only">, present</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Jonah Thompson<span class="sr-only">, present</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Leo Castillo<span class="sr-only">, present</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Malik Clarke<span class="sr-only">, present</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Mason Mensah<span class="sr-only">, present</span></li>
+                    <li class="is-in"><i data-lucide="check"></i>Samir Diaz<span class="sr-only">, present</span></li>
+                  </ul>
+                </td></tr>
+                <tr>
+                  <td><button class="namebtn" type="button" aria-expanded="false">WEB-1<i data-lucide="chevron-down"></i></button><span class="sub">Room 202 · Fiona Zhang</span></td>
+                  <td data-label="Arrival" class="inline"><span class="rc-bad">11/12 · 1 unaccounted</span><span class="sub">8:49</span></td>
+                  <td data-label="After lunch" class="meta upcoming">12:45</td>
+                  <td data-label="Dismissal" class="meta upcoming">3:00</td>
+                </tr>
+                <tr>
+                  <td><button class="namebtn" type="button" aria-expanded="false">MC-1<i data-lucide="chevron-down"></i></button><span class="sub">Maker Lab · Daniela Ruiz</span></td>
+                  <td data-label="Arrival" class="inline"><span class="flag"><i data-lucide="clock-alert"></i>No roll call yet</span></td>
+                  <td data-label="After lunch" class="meta upcoming">12:45</td>
+                  <td data-label="Dismissal" class="meta upcoming">3:00</td>
+                </tr>
+                <tr>
+                  <td><button class="namebtn" type="button" aria-expanded="false">JAVA-1<i data-lucide="chevron-down"></i></button><span class="sub">Room 104 · Cameron Ortiz</span></td>
+                  <td data-label="Arrival" class="inline"><span class="flag"><i data-lucide="clock-alert"></i>No roll call yet</span></td>
+                  <td data-label="After lunch" class="meta upcoming">12:45</td>
+                  <td data-label="Dismissal" class="meta upcoming">3:00</td>
+                </tr>
+                <tr>
+                  <td><button class="namebtn" type="button" aria-expanded="false">PY-B<i data-lucide="chevron-down"></i></button><span class="sub">Room 102 · Sam Okafor</span></td>
+                  <td data-label="Arrival" class="inline"><span class="rc-ok"><i data-lucide="check" class="icon-sm"></i>All 9 accounted for</span><span class="sub">8:44</span></td>
+                  <td data-label="After lunch" class="meta upcoming">12:45</td>
+                  <td data-label="Dismissal" class="meta upcoming">3:00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <details class="more section">
+          <summary>Week export <i data-lucide="chevron-down" class="chev"></i></summary>
+          <p class="meta">One row per camper per camp day, with each roll call. A Friday job.</p>
+          <div class="toolbar mt-3">
+            <div class="field field--fit"><label for="exp-week">Week</label><select class="select" id="exp-week"><option>Week 1 · Oct 19–23</option><option>Week 2 · Oct 26–30</option></select></div>
+            <button class="btn btn--secondary" type="button"><i data-lucide="download"></i>Download attendance CSV</button>
+          </div>
+        </details>
+  </main>
+</div>
+</body>
+</html>

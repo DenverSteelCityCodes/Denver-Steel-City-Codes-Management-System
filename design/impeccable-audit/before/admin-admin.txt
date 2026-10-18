@@ -1,0 +1,114 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Good evening, Jordan
+
+Manage classes, volunteers, and registrations.
+
+STUDENTS
+
+73
+
+CLASSES
+
+4
+
+VOLUNTEERS
+
+22
+
+5 pending review
+
+CONFIRMED
+
+87
+
+92% of registrations
+
+WAITLISTED
+
+3
+
+Awaiting open seats
+
+NEEDS ATTENTION
+2 sections are at capacity
+Full
+
+Microcontrollers · MC-1 — 10/10, 2 waitlisted · 1 more full · 1 nearly full
+
+Review classes
+1 section has no lead
+
+Microcontrollers · MC-1 (Week 2)
+
+Assign a lead
+5 volunteer applications pending
+
+Awaiting review — oldest is 5 days old
+
+Review applications
+2 applicants have no interview yet
+
+They haven't picked a time — post more slots or book them in
+
+Open interviews
+JUMP TO
+Attendance
+
+Today's roll calls and who's unaccounted for.
+
+Updates
+
+Post to families, volunteers or one section.
+
+Classes
+
+Create, edit, set capacity.
+
+Volunteers
+
+Roster, assignments, applications.
+
+Students
+
+Manage registrations and rosters.
+
+Users & roles
+
+Promote, demote, manage accounts.
+
+Sessions
+
+Manage camp sessions and dates.
+
+Duty schedule
+
+Daily volunteer duty slots.
+
+Interviews
+
+Schedule and record notes.
+
+Form editor
+
+Configure fields and labels.

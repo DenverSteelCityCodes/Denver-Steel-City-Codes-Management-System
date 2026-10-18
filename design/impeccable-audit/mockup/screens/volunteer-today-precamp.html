@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Today · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="volunteer-today-precamp.html" aria-current="page">Today</a>
+      <a href="volunteer-class.html">Class</a>
+      <a href="volunteer-duties.html">Duties</a>
+      <a href="volunteer-updates.html">Updates</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="SO, account menu">SO</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <a href="volunteer-today-precamp.html" aria-current="page">Today</a>
+    <a href="volunteer-class.html">Class</a>
+    <a href="volunteer-duties.html">Duties</a>
+    <a href="volunteer-updates.html">Updates</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Sam Okafor</b><span>demo.volunteer@example.com</span></div>
+    <a href="volunteer-profile.html"><i data-lucide="user-round"></i>Profile and availability</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page">
+  <h1 class="sr-only">Today, Saturday, October 17</h1>
+
+  <section class="sign" aria-labelledby="start-h">
+    <span class="ctx">Saturday, Oct 17 · Intro to Python, PY-B</span>
+    <span class="fig">8:30<small>AM</small></span>
+    <h2 class="msg" id="start-h">Week 1 starts Monday</h2>
+    <span class="sub">Your first day is Monday, October 19, in Room 102. Roll calls open that morning, right here.</span>
+  </section>
+
+  <div class="cols mt-8">
+    <section aria-labelledby="week-h">
+      <h2 id="week-h">Your week</h2>
+      <ul class="decisions mt-3">
+        <li>
+          <span class="picto"><i data-lucide="users"></i></span>
+          <div>
+            <p class="what">Intro to Python, PY-B</p>
+            <p class="why">Room 102 · Mon–Fri 9:00–3:00 · Weeks 1 and 2 · Lead</p>
+          </div>
+          <div class="do"><a class="link" href="volunteer-class.html">See the roster and health notes <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+        </li>
+        <li>
+          <span class="picto"><i data-lucide="clipboard-check"></i></span>
+          <div>
+            <p class="what">Morning Check-In, Monday Oct 19</p>
+            <p class="why">Welcome campers and check them in at arrival. Crew huddle at 8:15 by the check-in table.</p>
+          </div>
+          <div class="do"><a class="link" href="volunteer-duties.html">Find more duties <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+        </li>
+      </ul>
+    </section>
+
+    <aside>
+      <section aria-labelledby="day-h">
+        <h2 id="day-h" class="sr-only">Daily schedule</h2>
+        <details class="more" data-open-wide>
+          <summary><span class="grow"><b>Daily schedule</b> · starts 8:30 at the front lobby</span><i data-lucide="chevron-down" class="chev"></i></summary>
+          <div class="timetable mt-2">
+            <span class="t">8:30</span><span class="b" style="--min:30">Drop-off · front lobby</span>
+            <span class="t">9:00</span><span class="b" style="--min:90">Morning session · classrooms<span class="rc">Arrival roll call</span></span>
+            <span class="t">10:30</span><span class="b" style="--min:15">Snack break · courtyard</span>
+            <span class="t">10:45</span><span class="b" style="--min:75">Morning session continues</span>
+            <span class="t">12:00</span><span class="b" style="--min:45">Lunch · cafeteria</span>
+            <span class="t">12:45</span><span class="b" style="--min:105">Afternoon session · classrooms<span class="rc">After lunch roll call</span></span>
+            <span class="t">2:30</span><span class="b" style="--min:30">Show and tell · classrooms</span>
+            <span class="t">3:00</span><span class="b" style="--min:30">Pickup · front lobby<span class="rc">Dismissal roll call</span></span>
+          </div>
+        </details>
+      </section>
+
+      <section class="mt-6" aria-labelledby="latest-h">
+        <h2 id="latest-h" class="sr-only">Latest from camp</h2>
+        <a class="latest latest--one" href="volunteer-updates.html">
+          <span class="meta">Latest · Jordan Rivera · to volunteers · just now</span>
+          <span>Crew huddle at 8:15 each morning by the check-in table. Roll calls happen at arrival, after lunch and at dismissal.</span>
+          <span class="link">All updates <i data-lucide="arrow-right" class="icon-sm"></i></span>
+        </a>
+      </section>
+    </aside>
+  </div>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>document.querySelectorAll('[data-open-wide]').forEach(function (d) { if (matchMedia('(min-width: 1024px)').matches) d.open = true; });</script>
+</body>
+</html>

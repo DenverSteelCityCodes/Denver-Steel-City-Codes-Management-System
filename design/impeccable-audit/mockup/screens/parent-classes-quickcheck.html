@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register for a class · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow"><h1>Register for a class</h1></div>
+  </div>
+
+  <div class="field">
+        <span class="label" id="camper-l">Camper</span>
+        <div class="seg seg--block" role="group" aria-labelledby="camper-l">
+          <a href="parent-classes.html#maya">Maya</a><a href="parent-classes.html#eli">Eli</a><a href="parent-classes-quickcheck.html" aria-current="true">Noor</a>
+        </div>
+        <p class="hint">New camper? <a class="link" href="parent-register-1.html">Register a new camper</a></p>
+      </div>
+
+  <section class="mt-8" aria-labelledby="qc-h">
+    <h2 id="qc-h">Confirm Noor's details for 2026</h2>
+    <p class="lede">Camp needs current details every summer. Change anything that's different, then re-sign.</p>
+    <ul class="decisions decisions--plain mt-4">
+      <li class="group">
+        <div>
+          <div class="row"><h3 class="what grow">Camper</h3><button class="link" type="button" data-toggle="qc-camper">Change<span class="sr-only"> camper details</span></button></div>
+          <dl class="facts">
+            <dt>Name</dt><dd>Noor Brooks</dd>
+            <dt>Grade this fall</dt><dd>8th</dd>
+            <dt>Shirt size</dt><dd>L</dd>
+            <dt>Laptop each day</dt><dd>Yes</dd>
+          </dl>
+          <div class="group-edit" id="qc-camper" hidden>
+            <div class="field"><label for="qc-name">Camper's full name</label><input class="input" id="qc-name" value="Noor Brooks" autocomplete="off"></div>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="qc-grade">Grade this fall</label><select class="select" id="qc-grade"><option>4th</option><option>5th</option><option>6th</option><option>7th</option><option selected>8th</option><option>9th</option></select></div>
+              <div class="field"><label for="qc-shirt">Shirt size</label><select class="select" id="qc-shirt"><option>XS</option><option>S</option><option>M</option><option selected>L</option><option>XL</option></select></div>
+            </div>
+            <div class="field"><span class="label" id="qc-laptop-l">Can Noor bring a laptop each day?</span>
+              <div class="seg" data-seg role="group" aria-labelledby="qc-laptop-l"><button type="button" aria-pressed="true">Yes</button><button type="button" aria-pressed="false">No</button></div></div>
+          </div>
+        </div>
+      </li>
+      <li class="group">
+        <div>
+          <div class="row"><h3 class="what grow">Contacts</h3><button class="link" type="button" data-toggle="qc-contacts">Change<span class="sr-only"> contacts</span></button></div>
+          <dl class="facts">
+            <dt>Parent</dt><dd>Taylor Brooks, <span class="nw">303-555-0199</span></dd>
+            <dt>Emergency</dt><dd>Morgan Brooks (Aunt), <span class="nw">720-555-0199</span></dd>
+          </dl>
+          <div class="group-edit" id="qc-contacts" hidden>
+            <div class="grid2">
+              <div class="field"><label for="qc-pname">Parent or guardian</label><input class="input" id="qc-pname" value="Taylor Brooks" autocomplete="name"></div>
+              <div class="field"><label for="qc-pphone">Their phone</label><input class="input" id="qc-pphone" type="tel" value="303-555-0199" autocomplete="tel"></div>
+            </div>
+            <div class="field"><label for="qc-ec">Emergency contact</label><input class="input" id="qc-ec" value="Morgan Brooks" autocomplete="off"></div>
+            <div class="grid2 grid2--pair">
+              <div class="field"><label for="qc-ec-phone">Their phone</label><input class="input" id="qc-ec-phone" type="tel" value="720-555-0199" autocomplete="off"></div>
+              <div class="field"><label for="qc-ec-rel">Relationship</label><input class="input" id="qc-ec-rel" value="Aunt" autocomplete="off"></div>
+            </div>
+          </div>
+        </div>
+      </li>
+      <li class="group">
+        <div>
+          <div class="row"><h3 class="what grow">Health</h3><button class="link" type="button" data-toggle="qc-health">Done<span class="sr-only"> with health</span></button></div>
+          <p class="why">One question needs an answer this year.</p>
+          <dl class="facts">
+            <dt>Allergies</dt><dd>None</dd>
+            <dt>Medical</dt><dd>Asthma, inhaler in backpack</dd>
+            <dt>Free or reduced lunch</dt><dd>Not answered</dd>
+          </dl>
+          <div class="group-edit" id="qc-health">
+            <div class="field"><label for="qc-allergies">Allergies or dietary needs</label><span class="hint" id="qc-allergies-h">Write None if there aren't any.</span><input class="input" id="qc-allergies" aria-describedby="qc-allergies-h" value="None"></div>
+            <div class="field"><label for="qc-medical">Medical conditions or learning needs</label><span class="hint" id="qc-medical-h">Write None if there aren't any.</span><input class="input" id="qc-medical" aria-describedby="qc-medical-h" value="Asthma, inhaler in backpack"></div>
+            <div class="field"><span class="label" id="qc-lunch-l">Does Noor qualify for free or reduced lunch?</span><span class="hint">Not answered yet.</span>
+              <div class="seg" data-seg role="group" aria-labelledby="qc-lunch-l"><button type="button" aria-pressed="false">Yes</button><button type="button" aria-pressed="false">No</button></div></div>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <div class="field mt-8"><label for="qc-sign">Type your full legal name to re-sign as Noor's guardian</label><input class="input" id="qc-sign" autocomplete="name"></div>
+    <label class="choice mt-4"><input type="checkbox"><span class="grow">I confirm Noor's information is accurate and up to date for the 2026 Steel City Codes summer camp.</span></label>
+    <div class="row mt-6">
+      <a class="btn btn--primary" href="parent-classes.html#noor">Details are right</a>
+      <a class="link link--muted" href="parent-home.html">Not now</a>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="wait-h">
+    <h2 id="wait-h">Noor's class</h2>
+    <p class="meta mt-2">Opens when you confirm Noor's details above.</p>
+    <div class="waiting mt-4" inert>
+      <p class="label">Week 1 <span class="sep">·</span> Mon–Fri, Oct 19–23</p>
+      <div class="choices mt-3">
+        <label class="choice"><input type="radio" name="wait" value="java" data-class="Intro to Java"><span class="grow"><span class="top"><b>Intro to Java</b><span class="seats">8 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 201</span></span></span></label>
+        <label class="choice"><input type="radio" name="wait" value="python" data-class="Intro to Python"><span class="grow"><span class="top"><b>Intro to Python</b><span class="seats">7 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 102</span></span></span></label>
+        <label class="choice"><input type="radio" name="wait" value="micro" data-class="Microcontrollers" data-full><span class="grow"><span class="top"><b>Microcontrollers</b><span class="seats">Full · you'll join the waitlist</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Maker Lab</span></span></span></label>
+        <label class="choice"><input type="radio" name="wait" value="web" data-class="Web Development"><span class="grow"><span class="top"><b>Web Development</b><span class="seats">6 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 202</span></span></span></label>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

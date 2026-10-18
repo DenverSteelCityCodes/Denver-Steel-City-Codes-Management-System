@@ -1,0 +1,24 @@
+Try the demo
+
+Explore a fictional summer camp from any seat. Nothing here is real, and the data resets every night.
+
+Camp admin
+Run the camp: classes, rosters, volunteers, interviews.
+Parent
+Three campers: one confirmed, one waitlisted, one to re-confirm.
+Volunteer
+Lead a section: take attendance, see allergies, pick duties.
+Volunteer applicant
+Application under review, with an interview you can reschedule.
+Welcome back
+
+Sign in to your account
+
+Email
+Password
+Forgot password?
+Sign in
+
+Don't have an account? Sign up
+
+Want to volunteer? Apply here

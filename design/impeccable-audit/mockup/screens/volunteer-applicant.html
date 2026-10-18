@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Your application · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-applicant.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="RC, account menu">RC</button>
+  </div>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Riley Chen</b><span>demo.applicant@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead"><div class="grow"><h1>Your application</h1></div></div>
+
+  <section class="sign" aria-labelledby="iv-h">
+    <span class="ctx">Step 2 of 4 · your interview</span>
+    <span class="fig">4:00<small>PM</small></span>
+    <h2 class="msg" id="iv-h">Tuesday, October 20</h2>
+    <span class="sub">15 minutes, online.</span>
+    <div class="actions"><a class="btn btn--secondary" href="volunteer-applicant-change.html"><i data-lucide="calendar-clock"></i>Change time</a></div>
+  </section>
+
+  <h2 class="sr-only" id="steps-h">Application steps</h2>
+  <ol class="stepper mt-6" aria-labelledby="steps-h">
+    <li class="is-done"><span class="num"><i data-lucide="check"></i><span class="sr-only">Done</span></span><div><p class="what">Application received</p><p class="meta">Friday, October 16</p></div></li>
+    <li class="is-now" aria-current="step"><span class="num">2</span><div><p class="what">Interview</p><p>Tue, Oct 20, 4:00 PM</p></div></li>
+    <li><span class="num">3</span><div><p class="what">Decision</p><p class="meta">We email everyone after interviews wrap up.</p></div></li>
+    <li><span class="num">4</span><div><p class="what">Your class</p><p class="meta">An admin will assign you to a section before camp starts.</p></div></li>
+  </ol>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

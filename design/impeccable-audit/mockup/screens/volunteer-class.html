@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Class · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="volunteer-today.html">Today</a>
+      <a href="volunteer-class.html" aria-current="page">Class</a>
+      <a href="volunteer-duties.html">Duties</a>
+      <a href="volunteer-updates.html">Updates</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="SO, account menu">SO</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <a href="volunteer-today.html">Today</a>
+    <a href="volunteer-class.html" aria-current="page">Class</a>
+    <a href="volunteer-duties.html">Duties</a>
+    <a href="volunteer-updates.html">Updates</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Sam Okafor</b><span>demo.volunteer@example.com</span></div>
+    <a href="volunteer-profile.html"><i data-lucide="user-round"></i>Profile and availability</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page">
+  <div class="classhead">
+    <div>
+      <div class="seg" role="group" aria-label="Week" data-seg>
+        <button aria-pressed="true">Week 1, Oct 19</button>
+        <button aria-pressed="false">Week 2, Oct 26</button>
+      </div>
+      <h1 class="mt-6">Intro to Python, PY-B</h1>
+      <p class="lede">You lead · Room 102 · Mon–Fri 9:00–3:00 · ages 11–13</p>
+      <div class="formrow">
+        <a class="btn btn--secondary" href="volunteer-print-roster.html"><i data-lucide="printer"></i>Paper roster</a>
+        <a class="link" href="volunteer-today.html">Take today's roll call on Today <i data-lucide="arrow-right" class="icon-sm"></i></a>
+      </div>
+    </div>
+
+    <section class="section" aria-labelledby="roster-h">
+      <h2 id="roster-h">9 campers</h2>
+      <p class="notes-line"><i data-lucide="heart-pulse" class="icon-sm"></i> Health notes: <a href="#c-andre">Andre Tran</a>, <a href="#c-kai">Kai Lopez</a></p>
+      <div class="roster-frame">
+        <table class="data roster">
+          <caption class="sr-only">PY-B, Week 1: campers, health notes and who to call</caption>
+          <thead><tr><th scope="col">Camper</th><th class="h-col" scope="col">Health</th><th scope="col">Call</th></tr></thead>
+          <tbody>
+            <tr id="c-andre">
+              <td class="cname">Andre Tran</td>
+              <td><p class="health"><i data-lucide="heart-pulse" class="icon-sm"></i><span><b>Allergy:</b> peanuts<br><b>Medical:</b> Type 1 diabetes, checks levels at lunch</span></p></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550137"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Grandpa Tran (emergency) · <span class="nw">720-555-0137</span></span></a><a class="call" href="tel:+13035550137"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Linh Tran (parent) · <span class="nw">303-555-0137</span></span></a></div></td>
+            </tr>
+            <tr id="c-bodhi">
+              <td class="cname">Bodhi Novak</td>
+              <td></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550130"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Aunt Novak (emergency) · <span class="nw">720-555-0130</span></span></a><a class="call" href="tel:+13035550130"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Ben Novak (parent) · <span class="nw">303-555-0130</span></span></a></div></td>
+            </tr>
+            <tr id="c-dante">
+              <td class="cname">Dante Ali</td>
+              <td></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550118"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Aunt Ali (emergency) · <span class="nw">720-555-0118</span></span></a><a class="call" href="tel:+13035550118"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Hassan Ali (parent) · <span class="nw">303-555-0118</span></span></a></div></td>
+            </tr>
+            <tr id="c-isaac">
+              <td class="cname">Isaac Ibrahim</td>
+              <td></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550134"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Aunt Ibrahim (emergency) · <span class="nw">720-555-0134</span></span></a><a class="call" href="tel:+13035550134"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Yusuf Ibrahim (parent) · <span class="nw">303-555-0134</span></span></a></div></td>
+            </tr>
+            <tr id="c-kai">
+              <td class="cname">Kai Lopez</td>
+              <td><p class="health"><i data-lucide="heart-pulse" class="icon-sm"></i><span><b>Medical:</b> Type 1 diabetes, checks levels at lunch</span></p></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550114"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Aunt Lopez (emergency) · <span class="nw">720-555-0114</span></span></a><a class="call" href="tel:+13035550114"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Daniel Lopez (parent) · <span class="nw">303-555-0114</span></span></a></div></td>
+            </tr>
+            <tr id="c-noah">
+              <td class="cname">Noah Park</td>
+              <td></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550145"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Grandpa Park (emergency) · <span class="nw">720-555-0145</span></span></a><a class="call" href="tel:+13035550145"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Jin Park (parent) · <span class="nw">303-555-0145</span></span></a></div></td>
+            </tr>
+            <tr id="c-nora">
+              <td class="cname">Nora Lopez</td>
+              <td></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550114"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Aunt Lopez (emergency) · <span class="nw">720-555-0114</span></span></a><a class="call" href="tel:+13035550114"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Daniel Lopez (parent) · <span class="nw">303-555-0114</span></span></a></div></td>
+            </tr>
+            <tr id="c-priyam">
+              <td class="cname">Priya Martinez</td>
+              <td></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550107"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Uncle Martinez (emergency) · <span class="nw">720-555-0107</span></span></a><a class="call" href="tel:+13035550107"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Sarah Martinez (parent) · <span class="nw">303-555-0107</span></span></a></div></td>
+            </tr>
+            <tr id="c-priyap">
+              <td class="cname">Priya Park</td>
+              <td></td>
+              <td><div class="calls"><a class="call" href="tel:+17205550145"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Grandpa Park (emergency) · <span class="nw">720-555-0145</span></span></a><a class="call" href="tel:+13035550145"><i data-lucide="phone" class="icon-sm"></i><span><span class="sr-only">Call </span>Jin Park (parent) · <span class="nw">303-555-0145</span></span></a></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register a new camper, step 4 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <a class="link link--muted" href="parent-home.html"><i data-lucide="chevron-left" class="icon-sm"></i>Save and exit</a>
+  <h1 class="mt-1">Register a new camper</h1>
+
+  <section class="sign mt-4" aria-labelledby="step-h">
+    <span class="ctx">Sam Brooks · Intro to Python, Week 1</span>
+    <h2 class="msg" id="step-h"><span class="sr-only">Step 4 of 5: </span>Health and a few questions</h2>
+    <span class="sub">Shared only with Sam's volunteers and camp admins.</span>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span><span></span></div>
+  </section>
+
+  <form class="mt-6" action="parent-register-5.html" novalidate>
+    <div class="field"><label for="r-allergies">Allergies or dietary needs</label><span class="hint" id="r-allergies-h">Write None if there aren't any.</span><input class="input" id="r-allergies" aria-describedby="r-allergies-h" value="None"></div>
+    <div class="field"><label for="r-medical">Medical conditions or learning needs</label><span class="hint" id="r-medical-h">Write None if there aren't any.</span><input class="input" id="r-medical" aria-describedby="r-medical-h" value="None"></div>
+    <div class="field"><label for="r-other">Anything else camp should know about Sam?</label><span class="hint" id="r-other-h">Optional.</span><textarea class="textarea" id="r-other" aria-describedby="r-other-h" rows="3"></textarea></div>
+    <div class="field"><span class="label" id="r-lunch-l">Does Sam qualify for free or reduced lunch?</span>
+      <div class="seg" data-seg role="group" aria-labelledby="r-lunch-l"><button type="button" aria-pressed="false">Yes</button><button type="button" aria-pressed="true">No</button></div></div>
+
+    <h3 class="mt-8">A few more questions</h3>
+    <div class="field mt-3"><label for="r-heard">How did you hear about Steel City Codes?</label><select class="select" id="r-heard"><option>School announcement</option><option>Teacher/counselor</option><option selected>Friend or family</option><option>Social media</option><option>Flyer</option><option>Returning camper</option><option>Other</option></select></div>
+    <div class="field"><span class="label" id="r-prev-l">Did Sam take part in Steel City Codes last year?</span>
+      <div class="seg" data-seg role="group" aria-labelledby="r-prev-l"><button type="button" aria-pressed="false">Yes</button><button type="button" aria-pressed="true">No</button></div></div>
+    <label class="choice mt-5"><input type="checkbox" checked><span class="grow">Sam may have small candy treats during camp activities.</span></label>
+    <div class="wiznav">
+      <a class="link" href="parent-register-3.html"><i data-lucide="chevron-left" class="icon-sm"></i>Back</a>
+      <a class="btn btn--primary" href="parent-register-5.html">Next: Review and sign <i data-lucide="arrow-right"></i></a>
+    </div>
+  </form>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

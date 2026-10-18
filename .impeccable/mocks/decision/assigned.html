@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>Camp Shirt — parent home</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Josefin+Sans:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1B1712;--paper:#FFFFFF;--gold:#F1C446;--red:#B3261E;--green:#1E6B3A;--rule:#1B1712;--mute:#5B5248;--wash:#F3F1EE}
+*{box-sizing:border-box;margin:0}
+html,body{width:390px;height:844px;overflow:hidden;background:var(--paper);color:var(--ink);font:400 16px/1.45 "Atkinson Hyperlegible Next",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.bar{background:var(--ink);color:#fff;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.mark{font:700 17px/1 "Josefin Sans";letter-spacing:.02em;color:var(--gold)}
+.mark small{display:block;font-size:9px;letter-spacing:.12em;text-align:right;margin-top:2px}
+.av{width:36px;height:36px;border-radius:50%;background:var(--gold);color:var(--ink);font:800 14px/36px "Atkinson Hyperlegible Next";text-align:center}
+.tabs{display:flex;background:var(--ink);padding:0 8px}
+.tabs a{flex:1;text-align:center;color:#CFC8BE;font-weight:600;font-size:15px;padding:10px 0 12px;text-decoration:none}
+.tabs a[aria-current]{color:#fff;box-shadow:inset 0 -4px 0 var(--gold)}
+main{padding:20px 16px 0}
+h1{font:700 28px/1.1 "Josefin Sans";letter-spacing:-.01em}
+.lede{margin-top:6px;color:var(--mute)}
+.kid{margin-top:20px;border-top:3px solid var(--ink)}
+.kid:first-of-type{margin-top:18px}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px}
+.name{font-weight:800;font-size:20px}
+.age{color:var(--mute);font-size:15px;margin-left:6px;font-weight:400}
+.ink{font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.ok{background:var(--green);color:#fff}
+.wait{border:2px solid var(--ink)}
+.need{background:var(--gold);color:var(--ink)}
+.flag{color:var(--red);font-weight:700;font-size:14px;margin-top:4px;display:flex;gap:6px;align-items:center}
+.flag:before{content:"";width:10px;height:10px;background:var(--red);border-radius:2px}
+.back{margin-top:10px;display:grid;grid-template-columns:44px 1fr auto;column-gap:10px;row-gap:2px;align-items:baseline}
+.back b{font-weight:800;font-size:13px;letter-spacing:.06em}
+.back .when{font-weight:700}
+.back .where{grid-column:2/4;color:var(--mute);font-size:15px}
+.back .wk{grid-row:span 2;font:700 13px/1 "Atkinson Hyperlegible Next";letter-spacing:.06em;padding-top:4px}
+.back.now .wk{background:var(--gold);padding:6px 6px;border-radius:4px;text-align:center}
+.next{margin-top:12px;display:flex;gap:8px}
+.btn{height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;color:var(--ink)}
+.pri{background:var(--gold)}
+.sec{border:2px solid var(--ink)}
+.note{font-size:14px;color:var(--mute);margin-top:8px}
+</style></head><body>
+<header class="bar"><span class="mark">{STEEL CITY CODES}<small>//DENVER</small></span><span class="av">TB</span></header>
+<nav class="tabs"><a aria-current="page">Home</a><a>Classes</a><a>Updates</a></nav>
+<main>
+<h1>Hi Taylor</h1>
+<p class="lede">Week 1 starts Monday. Noor still needs a class.</p>
+
+<section class="kid">
+  <div class="row"><span class="name">Maya<span class="age">12</span></span><span class="ink ok">Confirmed</span></div>
+  <div class="flag">Medical note on file</div>
+  <div class="back now"><span class="wk">WK 1</span><span class="when">Mon Oct 19 – Fri 23</span><b>WEB-1</b><span class="where">Web Development · Room 202 · 9:00–3:00 · Lead Fiona</span></div>
+  <p class="note">Changes closed Oct 4. Need one? <a href="#">Ask the camp</a></p>
+</section>
+
+<section class="kid">
+  <div class="row"><span class="name">Eli<span class="age">9</span></span><span class="ink wait">Waitlist</span></div>
+  <div class="back"><span class="wk">WK 1</span><span class="when">Mon Oct 19 – Fri 23</span><b>PY-A</b><span class="where">Intro to Python · Room 101 · 9:00–3:00</span></div>
+  <p class="note">If a seat opens you'll get an email and 48 hours to take it.</p>
+</section>
+
+<section class="kid">
+  <div class="row"><span class="name">Noor<span class="age">13</span></span><span class="ink need">Needs a class</span></div>
+  <div class="flag">Medical note on file</div>
+  <div class="next"><a class="btn pri">Choose a class for Noor</a></div>
+</section>
+</main>
+</body></html>

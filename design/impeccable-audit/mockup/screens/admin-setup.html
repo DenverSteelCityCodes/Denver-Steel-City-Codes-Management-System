@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Setup · Season · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html" aria-current="page">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html" aria-current="page"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page page--mid" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Setup</h1><p class="lede">Season 2026. Registration opens and closes here, and only here.</p></div>
+    </div>
+    <nav class="subtabs" aria-label="Setup">
+  <a href="admin-setup.html" aria-current="page">Season</a>
+  <a href="admin-setup-forms.html">Forms</a>
+  <a href="admin-setup-users.html">Users &amp; roles</a>
+</nav>
+
+    <section class="block" id="registration" aria-labelledby="reg-h">
+      <h2 id="reg-h">Registration</h2>
+      <label class="switchrow" for="reg-on">
+        <span class="grow"><b>Families can register</b><span class="meta">Open since Sat, Sep 12, 7:00 PM · 38 seats left · 9 waitlisted</span></span>
+        <input class="switch" type="checkbox" role="switch" id="reg-on" checked aria-describedby="close-q">
+      </label>
+      <div class="confirm" id="close-reg" role="group" aria-labelledby="close-q">
+        <p id="close-q">Close registration now? Families can’t register or join a waitlist until you open it again. Registrations already made stay as they are.</p>
+        <div class="do"><button class="btn btn--secondary" type="button" data-toggle="close-reg">Keep it open</button><button class="btn btn--danger" type="button">Close registration</button></div>
+      </div>
+
+      <form class="mt-6" onsubmit="return false" aria-label="Registration settings">
+        <div class="field">
+          <label for="opens">Opening time (Denver)</label>
+          <input class="input" id="opens" type="datetime-local" value="2026-09-12T19:00" style="max-width:320px" aria-describedby="opens-h">
+          <p class="hint" id="opens-h">Registration opens by itself at this time. Leave it empty to open it with the switch.</p>
+        </div>
+        <div class="field">
+          <label for="deadline">Change deadline</label>
+          <div class="suffix"><input class="input" id="deadline" type="number" inputmode="numeric" value="14" aria-describedby="deadline-h"><span id="deadline-h">days before the week starts</span></div>
+          <p class="hint">Until then, parents cancel or switch classes themselves. After it, they send a change request.</p>
+        </div>
+        <div class="grid2 mt-5">
+          <div class="field">
+            <label for="offer">Offer window</label>
+            <div class="suffix"><input class="input" id="offer" type="number" inputmode="numeric" value="48"><span>hours</span></div>
+          </div>
+          <div class="field">
+            <label for="offer-last">Offer window in the final week</label>
+            <div class="suffix"><input class="input" id="offer-last" type="number" inputmode="numeric" value="12"><span>hours</span></div>
+          </div>
+        </div>
+        <button class="btn btn--primary mt-6" type="submit" aria-disabled="true">Save settings</button>
+        <p class="meta mt-2">Nothing changed yet.</p>
+      </form>
+    </section>
+
+    <section class="block" aria-labelledby="apps-h">
+      <h2 id="apps-h">Volunteer applications</h2>
+      <div class="row">
+        <p class="grow"><b>Open</b> at scc.haanie.com/apply · 5 pending</p>
+        <a class="link" href="admin-volunteers.html">Open or close them in Volunteers <i data-lucide="arrow-right" class="icon-sm"></i></a>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="weeks-h">
+      <div class="sechead"><h2 id="weeks-h">Weeks</h2><button class="btn btn--secondary" type="button"><i data-lucide="plus"></i>Add a week</button></div>
+      <p class="meta">Each week is one camp session.</p>
+      <ul class="rows mt-3">
+        <li>
+          <div class="row">
+            <div class="grow"><h3 class="name">Week 1</h3><p class="meta">Oct 19–23 · visible to families</p></div>
+            <button class="link link--muted" type="button">Edit<span class="sr-only"> Week 1</span></button>
+            <button class="link link--muted" type="button">Remove<span class="sr-only"> Week 1</span></button>
+          </div>
+          <details class="more">
+            <summary>Daily schedule · 8 blocks · 8:30 AM–3:30 PM <i data-lucide="chevron-down" class="chev"></i></summary>
+            <div class="timetable mt-2">
+              <span class="t">8:30</span><span class="b" style="--min:30">Drop-off · front lobby</span>
+              <span class="t">9:00</span><span class="b" style="--min:90">Morning session · classrooms</span>
+              <span class="t">10:30</span><span class="b" style="--min:15">Snack break · courtyard</span>
+              <span class="t">10:45</span><span class="b" style="--min:75">Morning session continues · classrooms</span>
+              <span class="t">12:00</span><span class="b" style="--min:45">Lunch · cafeteria</span>
+              <span class="t">12:45</span><span class="b" style="--min:105">Afternoon session · classrooms</span>
+              <span class="t">2:30</span><span class="b" style="--min:30">Show and tell · classrooms</span>
+              <span class="t">3:00</span><span class="b" style="--min:30">Pickup · front lobby</span>
+            </div>
+            <button class="link mt-2" type="button"><i data-lucide="plus" class="icon-sm"></i>Add a time block<span class="sr-only"> to Week 1</span></button>
+          </details>
+        </li>
+        <li>
+          <div class="row">
+            <div class="grow"><h3 class="name">Week 2</h3><p class="meta">Oct 26–30 · visible to families</p></div>
+            <button class="link link--muted" type="button">Edit<span class="sr-only"> Week 2</span></button>
+            <button class="link link--muted" type="button">Remove<span class="sr-only"> Week 2</span></button>
+          </div>
+          <details class="more">
+            <summary>Daily schedule · 8 blocks · 8:30 AM–3:30 PM <i data-lucide="chevron-down" class="chev"></i></summary>
+            <div class="timetable mt-2">
+              <span class="t">8:30</span><span class="b" style="--min:30">Drop-off · front lobby</span>
+              <span class="t">9:00</span><span class="b" style="--min:90">Morning session · classrooms</span>
+              <span class="t">10:30</span><span class="b" style="--min:15">Snack break · courtyard</span>
+              <span class="t">10:45</span><span class="b" style="--min:75">Morning session continues · classrooms</span>
+              <span class="t">12:00</span><span class="b" style="--min:45">Lunch · cafeteria</span>
+              <span class="t">12:45</span><span class="b" style="--min:105">Afternoon session · classrooms</span>
+              <span class="t">2:30</span><span class="b" style="--min:30">Show and tell · classrooms</span>
+              <span class="t">3:00</span><span class="b" style="--min:30">Pickup · front lobby</span>
+            </div>
+            <button class="link mt-2" type="button"><i data-lucide="plus" class="icon-sm"></i>Add a time block<span class="sr-only"> to Week 2</span></button>
+          </details>
+        </li>
+      </ul>
+    </section>
+  </main>
+</div>
+</body>
+</html>

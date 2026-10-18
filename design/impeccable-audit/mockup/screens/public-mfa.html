@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Set up two-step sign-in · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1 tabindex="-1">Set up two-step sign-in</h1>
+      <p class="lede">Admins can see every camper's medical details, so admin accounts need a second step. It takes about a minute.</p>
+    </div>
+  </div>
+
+  <form data-next="admin-today.html" novalidate>
+    <ol class="decisions">
+      <li>
+        <span class="stepnum" aria-hidden="true">1</span>
+        <div>
+          <h2 class="what">Scan this code with an authenticator app</h2>
+          <p class="why">Google Authenticator, Microsoft Authenticator or 1Password all work.</p>
+          <div class="qr mt-4" role="img" aria-label="QR code for your authenticator app (a placeholder in this mockup)"><span class="finder"></span>QR code</div>
+          <p class="meta mt-4">Can't scan? Enter this key in the app instead:</p>
+          <code class="key">JBSW Y3DP EHPK 3PXP</code>
+        </div>
+      </li>
+      <li>
+        <span class="stepnum" aria-hidden="true">2</span>
+        <div>
+          <h2 class="what"><label for="code">Enter the 6-digit code the app shows</label></h2>
+          <p class="why" id="code-hint">It changes every 30 seconds. Use the one on screen now.</p>
+          <input class="input input--code mt-3" id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" aria-describedby="code-hint">
+          <div class="mt-4"><button class="btn btn--primary" type="submit">Turn on two-step sign-in</button></div>
+        </div>
+      </li>
+    </ol>
+  </form>
+
+  <p class="mt-4"><a class="link link--muted" href="public-login.html"><i data-lucide="log-out" class="icon-sm"></i>Sign out</a></p>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script></body>
+</html>

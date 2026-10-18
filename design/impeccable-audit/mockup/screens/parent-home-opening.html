@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html" aria-current="page">Home</a>
+      <a href="parent-classes.html">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html" aria-current="page">Home</a>
+      <a href="parent-classes.html">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Hi, Taylor</h1>
+      <p class="lede">Registration opens today at 7:00 PM. Maya, Eli and Noor aren't registered yet.</p>
+    </div>
+  </div>
+
+  <section class="sign" aria-labelledby="open-h">
+    <span class="ctx">Registration opens today · Denver time</span>
+    <span class="fig">7:00<small>PM</small></span>
+    <h2 class="msg" id="open-h">Opens in 2 hours</h2>
+    <span class="sub">Seats are first come, first served. Have each camper's grade, school, allergies and an emergency contact ready.</span>
+  </section>
+
+  <div class="cols mt-8">
+    <div>
+      <section aria-labelledby="ready-h">
+        <h2 id="ready-h">Get ready now</h2>
+        <ul class="decisions mt-3">
+          <li>
+            <span class="picto"><i data-lucide="user-plus"></i></span>
+            <div>
+              <p class="what">Fill in a new camper's registration</p>
+              <p class="why">Every step can be done now. Only the last button, Register, waits for 7:00 PM.</p>
+            </div>
+            <div class="do"><a class="btn btn--ink" href="parent-register-1.html">Start a new camper</a></div>
+          </li>
+          <li>
+            <span class="picto"><i data-lucide="clipboard-check"></i></span>
+            <div>
+              <p class="what">Confirm Noor's details for 2026</p>
+              <p class="why">Camp needs current details every summer. Do it now, and at 7:00 Noor only needs a class.</p>
+            </div>
+            <div class="do"><a class="btn btn--ink" href="parent-classes-quickcheck.html">Review Noor's details</a></div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section" aria-labelledby="kids-h">
+        <h2 id="kids-h">Your campers</h2>
+        <p class="meta mt-2">At 7:00, pick each camper's classes from Classes.</p>
+        <ul class="rows rows--framed mt-3">
+          <li class="row"><div class="grow"><h3 class="name">Maya Brooks</h3><p class="meta">Entering 7th · health info on file</p></div><a class="link link--muted" href="parent-contact.html#maya">Edit<span class="sr-only"> Maya's details</span></a></li>
+          <li class="row"><div class="grow"><h3 class="name">Eli Brooks</h3><p class="meta">Entering 4th</p></div><a class="link link--muted" href="parent-contact.html#eli">Edit<span class="sr-only"> Eli's details</span></a></li>
+          <li class="row"><div class="grow"><h3 class="name">Noor Brooks</h3><p class="meta">Entering 8th · yearly check due</p></div><a class="link link--muted" href="parent-contact.html#noor">Edit<span class="sr-only"> Noor's details</span></a></li>
+        </ul>
+      </section>
+    </div>
+
+    <aside>
+      <section aria-labelledby="summer-h">
+        <h2 id="summer-h">This summer</h2>
+        <ul class="rows rows--framed mt-3">
+          <li class="row"><span class="grow"><b>Week 1</b> <span class="sep">·</span> Mon–Fri, Oct 19–23</span></li>
+          <li class="row"><span class="grow"><b>Week 2</b> <span class="sep">·</span> Mon–Fri, Oct 26–30</span></li>
+        </ul>
+        <details class="more mt-3">
+          <summary>Which classes fit which campers <i data-lucide="chevron-down" class="chev"></i></summary>
+          <ul class="rows mt-2">
+            <li><b>Intro to Python</b><p class="meta">Ages 9–10 and 11–13 groups <span class="sep">·</span> Weeks 1, 2</p></li>
+            <li><b>Intro to Java</b><p class="meta">Ages 11–14 <span class="sep">·</span> Weeks 1, 2</p></li>
+            <li><b>Web Development</b><p class="meta">Ages 10–13 <span class="sep">·</span> Week 1 only</p></li>
+            <li><b>Microcontrollers</b><p class="meta">Entering grades 7–9 <span class="sep">·</span> Weeks 1, 2</p></li>
+          </ul>
+        </details>
+      </section>
+    </aside>
+  </div>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

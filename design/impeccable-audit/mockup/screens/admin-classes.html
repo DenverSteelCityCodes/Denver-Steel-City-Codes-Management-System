@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Classes · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html" aria-current="page">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html" aria-current="page"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead">
+      <div class="grow"><h1>Classes</h1><p class="lede">4 classes · 9 sections · 38 seats left · 9 waitlisted</p></div>
+      <div class="act"><a class="btn btn--secondary" href="#"><i data-lucide="plus"></i>New class</a></div>
+    </div>
+
+    <div class="table-wrap static">
+      <table class="tt reflow">
+        <caption class="sr-only">Sections by class and week. PY-B Week 2 is open below Intro to Python.</caption>
+        <colgroup><col class="c-class"><col><col></colgroup>
+        <thead><tr><th scope="col">Class</th><th scope="col">Week 1 <span class="meta">· Oct 19–23</span></th><th scope="col">Week 2 <span class="meta">· Oct 26–30</span></th></tr></thead>
+        <tbody>
+          <tr>
+            <th scope="row">
+              <span class="cname">Intro to Java</span>
+              <span class="cmeta">Ages 11–14</span>
+              <span class="cmeta cdesc">Object-oriented programming fundamentals in Java.</span>
+              <span class="cmeta"><a class="link link--muted" href="#">Edit<span class="sr-only"> Intro to Java</span></a></span>
+            </th>
+            <td data-label="Week 1"><a class="sec" id="java-1-w1" href="#java-1-w1" aria-expanded="false">
+              <span class="top"><span class="code">JAVA-1</span><span class="when">Mon–Fri 9:00–3:00 · Room 104</span></span>
+              <span class="fill">6/14</span>
+              <span class="meter" aria-hidden="true"><span style="--w:43%"></span></span>
+              <span class="crew">Cameron Ortiz <span class="meta">+1 support</span></span>
+            </a></td>
+            <td data-label="Week 2"><a class="sec" id="java-1-w2" href="#java-1-w2" aria-expanded="false">
+              <span class="top"><span class="code">JAVA-1</span><span class="when">Mon–Fri 9:00–3:00 · Room 104</span></span>
+              <span class="fill"><b>14/14</b> full · 3 waitlisted</span>
+              <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+              <span class="crew">Cameron Ortiz <span class="meta">+1 support</span></span>
+            </a></td>
+          </tr>
+          <tr>
+            <th scope="row">
+              <span class="cname">Intro to Python</span>
+              <span class="cmeta">Ages 9–13</span>
+              <span class="cmeta cdesc">Variables, loops and functions, building small games and art.</span>
+              <span class="cmeta"><a class="link link--muted" href="#">Edit<span class="sr-only"> Intro to Python</span></a></span>
+            </th>
+            <td data-label="Week 1"><a class="sec" id="py-a-w1" href="#py-a-w1" aria-expanded="false">
+              <span class="top"><span class="code">PY-A</span><span class="when">Mon–Fri 9:00–3:00 · Room 101</span></span>
+              <span class="fill"><b>10/10</b> full · 1 waitlisted</span>
+              <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+              <span class="crew">Harper Ito <span class="meta">+2 supports</span></span>
+            </a>
+            <a class="sec" id="py-b-w1" href="#py-b-w1" aria-expanded="false">
+              <span class="top"><span class="code">PY-B</span><span class="when">Mon–Fri 9:00–3:00 · Room 102</span></span>
+              <span class="fill">9/16</span>
+              <span class="meter" aria-hidden="true"><span style="--w:56%"></span></span>
+              <span class="crew">Sam Okafor <span class="meta">+2 supports</span></span>
+            </a></td>
+            <td data-label="Week 2"><a class="sec" id="py-a-w2" href="#py-a-w2" aria-expanded="false">
+              <span class="top"><span class="code">PY-A</span><span class="when">Mon–Fri 9:00–3:00 · Room 101</span></span>
+              <span class="fill">9/14</span>
+              <span class="meter" aria-hidden="true"><span style="--w:64%"></span></span>
+              <span class="crew">Harper Ito <span class="meta">+2 supports</span></span>
+            </a>
+            <a class="sec" href="#py-b-w2" aria-expanded="true" aria-controls="py-b-w2">
+              <span class="top"><span class="code">PY-B</span><span class="when">Mon–Fri 9:00–3:00 · Room 102</span></span>
+              <span class="fill">4/16</span>
+              <span class="meter" aria-hidden="true"><span style="--w:25%"></span></span>
+              <span class="crew"><span class="flag"><i data-lucide="user-round-x"></i>No lead</span> <span class="meta">· 2 supports</span></span>
+            </a></td>
+          </tr>
+          <tr class="panel"><td colspan="3" id="py-b-w2" tabindex="-1" aria-labelledby="pyb-h">
+            <div class="panelhead">
+              <div class="grow">
+                <h2 class="h3" id="pyb-h">Intro to Python · PY-B · Week 2</h2>
+                <p class="meta">Oct 26–30 · Mon–Fri 9:00–3:00 · Room 102 · Ages 11–13 · 4 of 16 seats</p>
+              </div>
+              <a class="link link--muted" href="admin-classes.html">Close<span class="sr-only"> PY-B Week 2</span></a>
+            </div>
+            <div class="seg mt-4" role="tablist" aria-label="PY-B Week 2" data-seg>
+              <button type="button" role="tab" aria-selected="false" data-show="pyb-roster" aria-controls="pyb-roster">Roster · 4</button>
+              <button type="button" role="tab" aria-selected="true" data-show="pyb-edit" aria-controls="pyb-edit">Edit</button>
+              <button type="button" role="tab" aria-selected="false" data-show="pyb-history" aria-controls="pyb-history">History</button>
+            </div>
+
+            <form id="pyb-edit" role="tabpanel" aria-label="Edit PY-B Week 2" onsubmit="return false">
+              <div class="groups">
+                <fieldset>
+                  <legend>Who</legend>
+                  <div class="field">
+                    <label for="pyb-lead">Lead</label>
+                    <select class="select" id="pyb-lead" aria-describedby="pyb-lead-hint">
+                      <option value="">No lead yet</option>
+                      <optgroup label="Free seniors in Week 2">
+                        <option selected>Sam Okafor · senior · free Week 2 · leads PY-B Week 1</option>
+                        <option>Bella Nguyen · senior · free Week 2</option>
+                        <option>Fiona Zhang · senior · free Week 2 · leads WEB-1 Week 1</option>
+                        <option>Gabe Holloway · senior · free Week 2</option>
+                        <option>Haanie Mohammed · senior · free Week 2</option>
+                      </optgroup>
+                      <optgroup label="Already leading in Week 2">
+                        <option>Cameron Ortiz · senior · leads JAVA-1 Week 2</option>
+                        <option>Daniela Ruiz · senior · leads MC-1 Week 2</option>
+                        <option>Harper Ito · senior · leads PY-A Week 2</option>
+                      </optgroup>
+                      <optgroup label="Not available in Week 2">
+                        <option disabled>Aiden Brooks · senior · Week 1 only</option>
+                        <option disabled>Elijah Foster · senior · not available</option>
+                      </optgroup>
+                    </select>
+                    <p class="hint" id="pyb-lead-hint">5 seniors are free in Week 2; they’re listed first. Not saved yet.</p>
+                  </div>
+                  <div class="field">
+                    <span class="label" id="pyb-sup-l">Supports</span>
+                    <div class="chips" role="group" aria-labelledby="pyb-sup-l">
+                      <span class="chip">Nadia Rahman<button type="button" aria-label="Remove Nadia Rahman"><i data-lucide="x"></i></button></span>
+                      <span class="chip">Sienna Cole<button type="button" aria-label="Remove Sienna Cole"><i data-lucide="x"></i></button></span>
+                    </div>
+                    <label class="sr-only" for="pyb-sup">Add a support</label>
+                    <select class="select mt-2" id="pyb-sup">
+                      <option>Add a support…</option>
+                      <optgroup label="Free juniors in Week 2">
+                        <option>Jasmine Kaur · junior · free Week 2</option>
+                        <option>Oscar Lindqvist · junior · free Week 2</option>
+                        <option>Paige Morgan · junior · free Week 2</option>
+                        <option>Ravi Iyer · junior · free Week 2</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>When and where</legend>
+                  <div class="field">
+                    <span class="label" id="pyb-wk-l">Week</span>
+                    <div class="seg" role="group" aria-labelledby="pyb-wk-l" data-seg>
+                      <button type="button" aria-pressed="false">Any</button>
+                      <button type="button" aria-pressed="false">Week 1</button>
+                      <button type="button" aria-pressed="true">Week 2</button>
+                    </div>
+                  </div>
+                  <div class="field"><label for="pyb-days">Days</label><input class="input" id="pyb-days" value="Mon–Fri"></div>
+                  <div class="pair">
+                    <div class="field"><label for="pyb-start">Starts</label><input class="input" id="pyb-start" type="time" value="09:00"></div>
+                    <div class="field"><label for="pyb-end">Ends</label><input class="input" id="pyb-end" type="time" value="15:00"></div>
+                  </div>
+                  <div class="field"><label for="pyb-room">Room</label><input class="input" id="pyb-room" value="Room 102"></div>
+                </fieldset>
+                <fieldset>
+                  <legend>Seats</legend>
+                  <div class="field"><label for="pyb-label">Section label</label><input class="input" id="pyb-label" value="PY-B"></div>
+                  <div class="field"><label for="pyb-cap">Capacity</label><input class="input" id="pyb-cap" type="number" inputmode="numeric" value="16"></div>
+                  <div class="pair">
+                    <div class="field"><label for="pyb-amin">Youngest age</label><input class="input" id="pyb-amin" type="number" inputmode="numeric" value="11"></div>
+                    <div class="field"><label for="pyb-amax">Oldest age</label><input class="input" id="pyb-amax" type="number" inputmode="numeric" value="13"></div>
+                  </div>
+                </fieldset>
+              </div>
+              <div class="panelfoot">
+                <button class="btn btn--primary" type="submit"><i data-lucide="check"></i>Save PY-B Week 2</button>
+                <a class="btn btn--secondary" href="admin-classes.html">Cancel</a>
+                <span class="spacer"></span>
+                <a class="link" href="#"><i data-lucide="printer" class="icon-sm"></i>Print roster</a>
+                <button class="link link--danger" type="button" data-toggle="pyb-remove">Remove section</button>
+              </div>
+              <div class="confirm" id="pyb-remove" role="group" aria-labelledby="pyb-remove-q" hidden>
+                <p id="pyb-remove-q">Remove PY-B Week 2? Its 4 campers will be taken out and their families see “Cancelled by camp” with a link to pick another class. Registrations are kept as cancelled.</p>
+                <div class="do"><button class="btn btn--secondary" type="button" data-toggle="pyb-remove" autofocus>Keep the section</button><button class="btn btn--danger" type="button">Remove PY-B Week 2</button></div>
+              </div>
+            </form>
+
+            <div id="pyb-roster" role="tabpanel" aria-label="PY-B Week 2 roster" hidden>
+              <div class="table-wrap static mt-5">
+                <table class="data reflow">
+                  <thead><tr><th scope="col">Camper</th><th scope="col">Age</th><th scope="col">Health</th><th scope="col">Parent</th></tr></thead>
+                  <tbody>
+                    <tr><td><b>Arjun Davis</b></td><td data-label="Age" class="inline">11</td><td class="none"><span class="sr-only">No health notes</span></td><td data-label="Parent" class="inline">Rachel Davis</td></tr>
+                    <tr><td><b>Leila Haddad</b></td><td data-label="Age" class="inline">12</td><td class="none"><span class="sr-only">No health notes</span></td><td data-label="Parent" class="inline">Michael Haddad</td></tr>
+                    <tr><td><b>Liam Patel</b></td><td data-label="Age" class="inline">11</td><td class="none"><span class="sr-only">No health notes</span></td><td data-label="Parent" class="inline">David Patel</td></tr>
+                    <tr><td><b>Priya Park</b></td><td data-label="Age" class="inline">12</td><td class="none"><span class="sr-only">No health notes</span></td><td data-label="Parent" class="inline">Jin Park</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <a class="link mt-3" href="#"><i data-lucide="printer" class="icon-sm"></i>Print roster</a>
+            </div>
+
+            <div id="pyb-history" role="tabpanel" aria-label="PY-B Week 2 history" hidden>
+              <ul class="rows rows--framed mt-5">
+                <li class="row"><span class="grow"><b>Supports: added Nadia Rahman, Sienna Cole</b><span class="meta"> · Oct 17, 3:00 AM · Jordan Rivera</span></span><button class="link" type="button"><i data-lucide="undo-2" class="icon-sm"></i>Revert</button></li>
+                <li class="row"><span class="grow"><b>Created</b><span class="meta"> · Oct 17, 3:00 AM · System</span></span></li>
+              </ul>
+            </div>
+          </td></tr>
+          <tr>
+            <th scope="row">
+              <span class="cname">Microcontrollers</span>
+              <span class="cmeta">Ages 12–14</span>
+              <span class="cmeta cdesc">LEDs, sensors and buttons with CircuitPython.</span>
+              <span class="cmeta"><a class="link link--muted" href="#">Edit<span class="sr-only"> Microcontrollers</span></a></span>
+            </th>
+            <td data-label="Week 1"><a class="sec" id="mc-1-w1" href="#mc-1-w1" aria-expanded="false">
+              <span class="top"><span class="code">MC-1</span><span class="when">Mon–Fri 9:00–3:00 · Maker Lab</span></span>
+              <span class="fill"><b>10/10</b> full · 2 waitlisted</span>
+              <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+              <span class="crew">Daniela Ruiz <span class="meta">+1 support</span></span>
+            </a></td>
+            <td data-label="Week 2"><a class="sec" id="mc-1-w2" href="#mc-1-w2" aria-expanded="false">
+              <span class="top"><span class="code">MC-1</span><span class="when">Mon–Fri 9:00–3:00 · Maker Lab</span></span>
+              <span class="fill"><b>10/10</b> full · 3 waitlisted</span>
+              <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+              <span class="crew">Daniela Ruiz</span>
+            </a></td>
+          </tr>
+          <tr>
+            <th scope="row">
+              <span class="cname">Web Development</span>
+              <span class="cmeta">Ages 10–13</span>
+              <span class="cmeta cdesc">A personal website with HTML, CSS and a little JavaScript.</span>
+              <span class="cmeta"><a class="link link--muted" href="#">Edit<span class="sr-only"> Web Development</span></a></span>
+            </th>
+            <td data-label="Week 1"><a class="sec" id="web-1-w1" href="#web-1-w1" aria-expanded="false">
+              <span class="top"><span class="code">WEB-1</span><span class="when">Mon–Fri 9:00–3:00 · Room 202</span></span>
+              <span class="fill">12/18</span>
+              <span class="meter" aria-hidden="true"><span style="--w:67%"></span></span>
+              <span class="crew">Fiona Zhang</span>
+            </a></td>
+            <td data-label="Week 2"><a class="addsec link" href="#"><i data-lucide="plus" class="icon-sm"></i>Add a Week 2 section<span class="sr-only"> to Web Development</span></a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>

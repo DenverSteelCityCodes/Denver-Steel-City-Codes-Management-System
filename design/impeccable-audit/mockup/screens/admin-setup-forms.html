@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Setup · Forms · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html" aria-current="page">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html" aria-current="page"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page page--mid" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Setup</h1><p class="lede">Rename questions, hide optional ones and choose what’s required. Changes apply to the live forms immediately.</p></div>
+    </div>
+    <nav class="subtabs" aria-label="Setup">
+  <a href="admin-setup.html">Season</a>
+  <a href="admin-setup-forms.html" aria-current="page">Forms</a>
+  <a href="admin-setup-users.html">Users &amp; roles</a>
+</nav>
+
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Form" data-seg>
+        <button type="button" aria-pressed="true" data-show="form-vol">Volunteer<span class="hide-sm"> application</span></button>
+        <button type="button" aria-pressed="false" data-show="form-camp">Camper<span class="hide-sm"> registration</span></button>
+      </div>
+      <p class="meta">Open at /apply · <a class="link" href="public-apply-1.html">Preview<span class="sr-only"> the volunteer application</span> <i data-lucide="external-link" class="icon-sm"></i></a></p>
+    </div>
+
+    <div class="table-wrap static" id="form-vol">
+        <table class="data reflow fields">
+          <caption class="sr-only">Volunteer application questions</caption>
+          <colgroup><col class="c-show"><col><col class="c-answer"></colgroup>
+          <thead><tr><th scope="col">Show</th><th scope="col">Question</th><th scope="col">Answer</th></tr></thead>
+          <tbody>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-0">Question 1</label><input class="rename" id="vol-0" value="First name"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-1">Question 2</label><input class="rename" id="vol-1" value="Last name"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-2">Question 3</label><input class="rename" id="vol-2" value="Email"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-3">Question 4</label><input class="rename" id="vol-3" value="Phone number"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-4">Question 5</label><input class="rename" id="vol-4" value="Age"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-5">Question 6</label><input class="rename" id="vol-5" value="Current grade"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-6">Question 7</label><input class="rename" id="vol-6" value="School"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-7">Question 8</label><input class="rename" id="vol-7" value="Shirt size"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-8">Question 9</label><input class="rename" id="vol-8" value="Which weeks can you attend?"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-9">Question 10</label><input class="rename" id="vol-9" value="Why do you want to volunteer with Steel City Codes?"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="vol-10-s" aria-label="Show “Have you volunteered at a previous Steel City Codes activity?”"></td><td><label class="sr-only" for="vol-10">Question 11</label><input class="rename" id="vol-10" value="Have you volunteered at a previous Steel City Codes activity?"></td><td><div class="seg" role="group" aria-label="Answer for “Have you volunteered at a previous Steel City Codes activity?”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="vol-11-s" aria-label="Show “CS languages you know”"></td><td><label class="sr-only" for="vol-11">Question 12</label><input class="rename" id="vol-11" value="CS languages you know"></td><td><div class="seg" role="group" aria-label="Answer for “CS languages you know”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="vol-12-s" aria-label="Show “CS classes you've taken”"></td><td><label class="sr-only" for="vol-12">Question 13</label><input class="rename" id="vol-12" value="CS classes you've taken"></td><td><div class="seg" role="group" aria-label="Answer for “CS classes you've taken”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="vol-13-s" aria-label="Show “Experience working with children or volunteering”"></td><td><label class="sr-only" for="vol-13">Question 14</label><input class="rename" id="vol-13" value="Experience working with children or volunteering"></td><td><div class="seg" role="group" aria-label="Answer for “Experience working with children or volunteering”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="vol-14-s" aria-label="Show “Skill levels”"></td><td><label class="sr-only" for="vol-14">Question 15</label><input class="rename" id="vol-14" value="Skill levels"></td><td><div class="seg" role="group" aria-label="Answer for “Skill levels”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-15">Question 16</label><input class="rename" id="vol-15" value="First choice course"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-16">Question 17</label><input class="rename" id="vol-16" value="Second choice course"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="vol-17-s" aria-label="Show “Other curricula you could teach”"></td><td><label class="sr-only" for="vol-17">Question 18</label><input class="rename" id="vol-17" value="Other curricula you could teach"></td><td><div class="seg" role="group" aria-label="Answer for “Other curricula you could teach”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-18">Question 19</label><input class="rename" id="vol-18" value="Volunteer electronic signature"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="vol-19">Question 20</label><input class="rename" id="vol-19" value="Parent / guardian electronic signature"></td><td><span class="meta">As needed</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    <div class="table-wrap static" id="form-camp" hidden>
+        <table class="data reflow fields">
+          <caption class="sr-only">Camper registration questions</caption>
+          <colgroup><col class="c-show"><col><col class="c-answer"></colgroup>
+          <thead><tr><th scope="col">Show</th><th scope="col">Question</th><th scope="col">Answer</th></tr></thead>
+          <tbody>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-0">Question 1</label><input class="rename" id="camp-0" value="First name"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-1">Question 2</label><input class="rename" id="camp-1" value="Last name"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-2-s" aria-label="Show “Camper's preferred email”"></td><td><label class="sr-only" for="camp-2">Question 3</label><input class="rename" id="camp-2" value="Camper's preferred email"></td><td><div class="seg" role="group" aria-label="Answer for “Camper's preferred email”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-3-s" aria-label="Show “School district”"></td><td><label class="sr-only" for="camp-3">Question 4</label><input class="rename" id="camp-3" value="School district"></td><td><div class="seg" role="group" aria-label="Answer for “School district”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-4-s" aria-label="Show “School name”"></td><td><label class="sr-only" for="camp-4">Question 5</label><input class="rename" id="camp-4" value="School name"></td><td><div class="seg" role="group" aria-label="Answer for “School name”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-5">Question 6</label><input class="rename" id="camp-5" value="Grade (entering fall)"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-6-s" aria-label="Show “Shirt size”"></td><td><label class="sr-only" for="camp-6">Question 7</label><input class="rename" id="camp-6" value="Shirt size"></td><td><div class="seg" role="group" aria-label="Answer for “Shirt size”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-7-s" aria-label="Show “Does your camper have access to a personal laptop?”"></td><td><label class="sr-only" for="camp-7">Question 8</label><input class="rename" id="camp-7" value="Does your camper have access to a personal laptop?"></td><td><div class="seg" role="group" aria-label="Answer for “Does your camper have access to a personal laptop?”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-8-s" aria-label="Show “Ethnic background”"></td><td><label class="sr-only" for="camp-8">Question 9</label><input class="rename" id="camp-8" value="Ethnic background"></td><td><div class="seg" role="group" aria-label="Answer for “Ethnic background”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-9-s" aria-label="Show “Gender”"></td><td><label class="sr-only" for="camp-9">Question 10</label><input class="rename" id="camp-9" value="Gender"></td><td><div class="seg" role="group" aria-label="Answer for “Gender”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-10">Question 11</label><input class="rename" id="camp-10" value="Parent / guardian name"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-11">Question 12</label><input class="rename" id="camp-11" value="Parent email"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-12">Question 13</label><input class="rename" id="camp-12" value="Parent phone"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-13">Question 14</label><input class="rename" id="camp-13" value="Emergency contact name"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-14">Question 15</label><input class="rename" id="camp-14" value="Emergency phone"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-15">Question 16</label><input class="rename" id="camp-15" value="Relationship"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-16">Question 17</label><input class="rename" id="camp-16" value="Allergies / dietary restrictions"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-17">Question 18</label><input class="rename" id="camp-17" value="Medical conditions, learning disabilities, etc."></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-18-s" aria-label="Show “Other information about participant”"></td><td><label class="sr-only" for="camp-18">Question 19</label><input class="rename" id="camp-18" value="Other information about participant"></td><td><div class="seg" role="group" aria-label="Answer for “Other information about participant”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-19-s" aria-label="Show “Is your camper eligible for free / reduced lunch?”"></td><td><label class="sr-only" for="camp-19">Question 20</label><input class="rename" id="camp-19" value="Is your camper eligible for free / reduced lunch?"></td><td><div class="seg" role="group" aria-label="Answer for “Is your camper eligible for free / reduced lunch?”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-20-s" aria-label="Show “I would like Steel City Codes to provide lunch for my camper.”"></td><td><label class="sr-only" for="camp-20">Question 21</label><input class="rename" id="camp-20" value="I would like Steel City Codes to provide lunch for my camper."></td><td><div class="seg" role="group" aria-label="Answer for “I would like Steel City Codes to provide lunch for my camper.”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-21-s" aria-label="Show “How did you hear about Steel City Codes?”"></td><td><label class="sr-only" for="camp-21">Question 22</label><input class="rename" id="camp-21" value="How did you hear about Steel City Codes?"></td><td><div class="seg" role="group" aria-label="Answer for “How did you hear about Steel City Codes?”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-22-s" aria-label="Show “Did your camper take part in Steel City Codes last year?”"></td><td><label class="sr-only" for="camp-22">Question 23</label><input class="rename" id="camp-22" value="Did your camper take part in Steel City Codes last year?"></td><td><div class="seg" role="group" aria-label="Answer for “Did your camper take part in Steel City Codes last year?”" data-seg><button type="button" aria-pressed="true">Required</button><button type="button" aria-pressed="false">Optional</button></div></td></tr>
+            <tr><td><input class="switch" type="checkbox" role="switch" checked id="camp-23-s" aria-label="Show “I consent to my camper receiving small candy treats during camp activities.”"></td><td><label class="sr-only" for="camp-23">Question 24</label><input class="rename" id="camp-23" value="I consent to my camper receiving small candy treats during camp activities."></td><td><div class="seg" role="group" aria-label="Answer for “I consent to my camper receiving small candy treats during camp activities.”" data-seg><button type="button" aria-pressed="false">Required</button><button type="button" aria-pressed="true">Optional</button></div></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-24">Question 25</label><input class="rename" id="camp-24" value="Camper / registrant signature"></td><td><span class="meta">Always required</span></td></tr>
+            <tr><td><span class="lock" title="Locked"><i data-lucide="lock"></i><span class="sr-only">Always shown</span></span></td><td><label class="sr-only" for="camp-25">Question 26</label><input class="rename" id="camp-25" value="Parent / guardian signature"></td><td><span class="meta">Always required</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    <p class="meta mt-3"><i data-lucide="lock" class="icon-sm" style="vertical-align:-3px"></i> Locked questions can be renamed but not hidden or made optional: the database, camp safety or eligibility checks depend on them.</p>
+  </main>
+</div>
+</body>
+</html>

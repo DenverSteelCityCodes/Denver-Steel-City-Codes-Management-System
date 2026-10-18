@@ -1,0 +1,92 @@
+window.SCC_SCREENS = window.SCC_SCREENS || [];
+window.SCC_SCREENS.push(
+  { file: 'admin-today.html', role: 'Admin', title: 'Today', state: 'Registration night, 7:14 PM', replaces: '/admin',
+    notes: [
+      'A-admin P0: registration status was invisible and split across Forms and Sessions. The sign now says it in one place: open since 7:00 PM, 38 seats left, 84 campers placed, 9 waitlisted, updated 7:14.',
+      'A-admin P1 (Home is a launcher): cut the greeting, the five stat cards, the 10-tile Jump-to grid and the eyebrows. To do starts right under the sign.',
+      'To do is a decision list sorted by severity, one text action each. "Assign a lead" now deep-links to the section (Classes #py-b-w2) instead of the generic Classes page (A-admin P1, cover is a recall exercise).',
+      'Seats is the week × class mini-grid. A full section is ink with its waitlist count, not a red danger card (A-admin P1, alarm spent on non-alarms). "No lead" is bold ink, not red.',
+      'Rail has 5 jobs + Setup instead of 11 items in 4 noun groups (A-admin P2). Badges: Today and Volunteers only.',
+    ] },
+  { file: 'admin-today-camp.html', role: 'Admin', title: 'Today: camp day', state: 'Camp Monday, 8:55 AM', replaces: '/admin/attendance',
+    notes: [
+      'A-admin P1 (camp board not sorted by trouble): the alarm sign holds the one number that matters, 3 campers unaccounted. Attendance merges into Today on camp days.',
+      'Unaccounted list across all sections first: name, age, section, room, missed roll call, health line, and call lines with name, relationship and number always visible.',
+      '"No roll call taken yet — call the lead" now names the lead and room and gives the number (A-admin §7 persona).',
+      'All sections sorted by trouble; the fine section is one line. Four stat cards and the alphabetical card stack are gone.',
+      'The end-of-week export moved from a gold primary to a secondary button in a "Week export" disclosure at the bottom (A-admin §3, single focus).',
+    ] },
+  { file: 'admin-campers.html', role: 'Admin', title: 'Campers', state: 'Two days before Week 1 (demo: 73 campers)', replaces: '/admin/students',
+    notes: [
+      '"Students" becomes "Campers" everywhere (A-admin §2 heuristic 2).',
+      'Change requests (2) sit first under the header as decisions with Reply, Mark done and Decline, instead of above the h1.',
+      'Classes are plain text; only exceptions (Waitlisted, Cancelled, Not registered) get a status word. 70 green "Confirmed" pills were a noise floor.',
+      'Health wraps in red and is never truncated (A-admin P2). Initial discs cut. 50 per page instead of 100.',
+      'Expanded row: facts with tel: links, then per registration a Status select (Cancelled replaces the duplicate "Remove registration") and a Move select whose options show seats and ages.',
+    ] },
+  { file: 'admin-classes.html', role: 'Admin', title: 'Classes', state: 'Registration night, PY-B Week 2 open', replaces: '/admin/classes',
+    notes: [
+      'A-admin P1 (sections hidden in class accordions): the week × class timetable grid is the signature. Every section is visible at once with time, room, seats, waitlist and crew.',
+      'The class-level aggregate meter is cut: it showed 39/56 while PY-A Week 1 was full. Full = ink meter, never red.',
+      'Crew in text ("Harper Ito +2 supports") instead of initial discs with names only in a title; "No lead" is a bold ink flag.',
+      'One inline panel at a time, spanning the row, with Roster · Edit · History. Four 26px row icons moved into it; Remove section sits at the bottom with an inline confirm.',
+      'Lead options carry level and availability ("Sam Okafor · senior · free Week 2 · leads PY-B Week 1"), free seniors first. Selected week segment is ink, not gold.',
+    ] },
+  { file: 'admin-volunteers.html', role: 'Admin', title: 'Volunteers: Applications', state: 'Applications open, 5 pending', replaces: '/admin/volunteers (Applications tab)',
+    notes: [
+      'One h1 "Volunteers" with underline tabs Applications · Interviews · Crew · Duties: one pipeline, merged from three pages (A-admin §9).',
+      'The open/closed control lives here only, as a status sentence with Copy link and Close applications (inline confirm). The duplicate "Close form" in Form editor is gone (A-admin P0 pattern).',
+      'Pending is the default filter; each row says its interview state, with "No interview yet" in bold ink.',
+      'Gold-on-gold initials (1.4:1) cut (A-admin P1). Accept is the one gold button; Reject is a text button with a confirm.',
+    ] },
+  { file: 'admin-volunteers-interviews.html', role: 'Admin', title: 'Volunteers: Interviews', state: 'Saturday before Week 1', replaces: '/admin/interviews',
+    notes: [
+      '"Needs a time (2)" comes first, applicant-first, with a slot select and Book (A-admin §7, Alex).',
+      'The three stat tiles become one line: 3 booked · 17 open · 15 minutes each.',
+      'Slots are one day-grouped table. "Available" in warning yellow is now plain "Open"; 17 gold Book buttons are text buttons.',
+      'Next week and past days are folded, so the page is one screen of this week.',
+    ] },
+  { file: 'admin-volunteers-crew.html', role: 'Admin', title: 'Volunteers: Crew', state: 'Week 2 has one open lead spot', replaces: '/admin/volunteers (Roster tab)',
+    notes: [
+      'Auto-assign moved from under a 22-row table to the toolbar: Fill open spots · Week · Preview matches (A-admin §7, Alex).',
+      'Name | Level | Week 1 | Week 2: each week cell is the assignment, "Free" or "Not available", merging the ✓ columns and "Assigned to".',
+      'Senior is plain text, not a gold pill. The repeated Notes column is cut from the table.',
+    ] },
+  { file: 'admin-volunteers-duties.html', role: 'Admin', title: 'Volunteers: Duties', state: 'Week 1, 8 open spots', replaces: '/admin/duties',
+    notes: [
+      'A 3,260px list sorted by duty name becomes one duty × day grid per week, rows in time-of-day order (A-admin P2).',
+      'Only the gap is marked ("1 open" in bold ink); "Full" in green and "Open" in warning are cut.',
+      'Add-slot is a toolbar row; the duty types list folds into "Duty types (4)" because it is set once a season.',
+      'On a phone the grid scrolls inside a focusable region with the duty column pinned.',
+    ] },
+  { file: 'admin-updates.html', role: 'Admin', title: 'Updates', state: 'Week 1 posts', replaces: '/admin/updates',
+    notes: [
+      'Composer without the card, eyebrow and megaphone; Post update is the one gold button.',
+      'Posted list with dividers instead of a card of icon tiles; Delete has an inline confirm.',
+      'The email log moved to its own Sent emails tab.',
+    ] },
+  { file: 'admin-updates-emails.html', role: 'Admin', title: 'Updates: Sent emails', state: 'Email service not connected', replaces: '/admin/updates (Emails the app sent)',
+    notes: [
+      '"…the email provider isn’t set up yet (spec 02)" becomes a plain notice: the email service isn’t connected yet.',
+      'Queued emails list with who, what and when. Red is kept for a failed send only; none have failed.',
+    ] },
+  { file: 'admin-setup.html', role: 'Admin', title: 'Setup: Season', state: 'Closing registration, confirm open', replaces: '/admin/sessions + Forms on/off switch',
+    notes: [
+      'A-admin P0: the registration on/off switch moved here from Form editor, next to the opening time, change deadline and offer windows. Closing a live registration now needs an inline confirm.',
+      'Long labels shortened: "Change deadline · days before the week starts", "Offer window in the final week · hours".',
+      'Volunteer applications show their status and point to the one control in Volunteers.',
+      'Each week’s 8-row daily schedule folds to one line, so the duplicate schedule no longer doubles the page (A-admin P2).',
+    ] },
+  { file: 'admin-setup-forms.html', role: 'Admin', title: 'Setup: Forms', state: 'Volunteer application', replaces: '/admin/forms',
+    notes: [
+      'Gold pill tabs become one ink segmented control. "Close form" is gone (it lives in Season and Volunteers).',
+      'Columns are Show | Question | Answer. Required / Optional is a segmented control; locked rows say "Always required" in plain text, not a red pill that reads as an error.',
+      'The rename affordance (dashed underline) shows on hover and focus only.',
+    ] },
+  { file: 'admin-setup-users.html', role: 'Admin', title: 'Setup: Users & roles', state: 'Making a volunteer an admin', replaces: '/admin/users',
+    notes: [
+      'An 80-row, 5,440px wall gets search plus Admins · Volunteers · Parents tabs (A-admin P2).',
+      'The 80 role selects and "Role" labels become one "Change role" text button that opens the select and an inline confirm.',
+      'Initial discs and the wrong graduation-cap icon are cut.',
+    ] }
+);

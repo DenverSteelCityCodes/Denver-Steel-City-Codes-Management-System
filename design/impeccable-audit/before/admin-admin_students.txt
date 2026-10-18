@@ -1,0 +1,599 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Students
+Export CSV
+All (73)
+Confirmed (62)
+Offered (0)
+Waitlisted (3)
+Cancelled (4)
+Unregistered (7)
+STUDENT
+AGE
+PARENT
+REGISTRATIONS
+MEDICAL
+A
+Aaliyah Singh
+10
+Priya Singh
+Web Development W1 ·
+Confirmed
+Gluten
+A
+Amara Okafor
+10
+Carlos Okafor
+Web Development W1 ·
+Confirmed
+Tree nuts
+A
+Amara Sullivan
+10
+Molly Sullivan
+Web Development W1 ·
+Confirmed
+Bee stings — EpiPen in backpack
+A
+Andre Tran
+13
+Linh Tran
+Intro to Python W1 ·
+Confirmed
+Type 1 diabetes — checks levels at lunch
+A
+Arjun Davis
+11
+Rachel Davis
+Intro to Python W2 ·
+Confirmed
+—
+A
+Ava Diaz
+10
+Gabriela Diaz
+Web Development W1 ·
+Confirmed
+Shellfish
+A
+Ava Nguyen
+10
+Maria Nguyen
+Intro to Python W1 ·
+Confirmed
+Peanuts
+B
+Bodhi Novak
+13
+Ben Novak
+Intro to Python W1 ·
+Confirmed
+—
+C
+Caleb Rivera
+13
+Fatima Rivera
+Intro to Java W1 ·
+Confirmed
+—
+C
+Chloe Ali
+12
+Hassan Ali
+Web Development W1 ·
+Confirmed
+Microcontrollers W2 ·
+Confirmed
+—
+C
+Clara Price
+12
+Hannah Price
+Microcontrollers W1 ·
+Cancelled
+Intro to Python W2 ·
+Cancelled
+—
+D
+Dante Ali
+13
+Hassan Ali
+Intro to Python W1 ·
+Confirmed
+—
+D
+Diego Chen
+9
+Kwame Chen
+Not registered
+—
+E
+Elena Brown
+14
+Laura Brown
+Microcontrollers W2 ·
+Confirmed
+Microcontrollers W1 ·
+Confirmed
+—
+E
+Eli Brooks
+9
+Taylor Brooks
+Intro to Python W1 ·
+Waitlisted
+—
+E
+Esme Shah
+14
+Anjali Shah
+Intro to Java W2 ·
+Confirmed
+—
+E
+Ethan Ahmed
+9
+Kareem Ahmed
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+E
+Ethan Kim
+9
+Mei Kim
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+E
+Ezra Brown
+9
+Laura Brown
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+F
+Felix Fischer
+13
+Tom Fischer
+Intro to Java W1 ·
+Cancelled
+Microcontrollers W1 ·
+Confirmed
+—
+F
+Freya Hernandez
+14
+Ana Hernandez
+Intro to Java W2 ·
+Confirmed
+Microcontrollers W1 ·
+Confirmed
+—
+G
+Grace Kowalski
+10
+Peter Kowalski
+Not registered
+Peanuts
+H
+Hana Williams
+10
+Elena Williams
+Web Development W1 ·
+Confirmed
+Dairy
+H
+Hugo Bennett
+9
+Mark Bennett
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+I
+Imani Castillo
+14
+Carmen Castillo
+Intro to Java W2 ·
+Confirmed
+Microcontrollers W1 ·
+Confirmed
+—
+I
+Isaac Ibrahim
+13
+Yusuf Ibrahim
+Intro to Python W1 ·
+Confirmed
+—
+I
+Isla Martinez
+14
+Sarah Martinez
+Microcontrollers W2 ·
+Confirmed
+—
+I
+Ivy Moreno
+10
+Lucia Moreno
+Web Development W1 ·
+Confirmed
+Bee stings — EpiPen in backpack
+J
+Jada Robinson
+14
+Nadia Robinson
+Microcontrollers W2 ·
+Confirmed
+—
+J
+Jonah Thompson
+9
+Robert Thompson
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+J
+June Novak
+14
+Ben Novak
+Microcontrollers W2 ·
+Confirmed
+Microcontrollers W1 ·
+Waitlisted
+—
+K
+Kai Lopez
+13
+Daniel Lopez
+Intro to Python W1 ·
+Confirmed
+Type 1 diabetes — checks levels at lunch
+K
+Kenji Price
+11
+Hannah Price
+Intro to Java W2 ·
+Confirmed
+—
+L
+Leila Haddad
+12
+Michael Haddad
+Microcontrollers W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+L
+Lena Walsh
+12
+Sean Walsh
+Intro to Java W1 ·
+Confirmed
+Microcontrollers W2 ·
+Confirmed
+—
+L
+Leo Castillo
+9
+Carmen Castillo
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+L
+Liam Larsen
+11
+Erik Larsen
+Not registered
+—
+L
+Liam Patel
+11
+David Patel
+Intro to Python W2 ·
+Confirmed
+—
+L
+Lucas Okafor
+11
+Carlos Okafor
+Intro to Java W2 ·
+Confirmed
+—
+L
+Lucas Vargas
+11
+Rosa Vargas
+Intro to Python W2 ·
+Cancelled
+—
+L
+Lucia Moreno
+12
+Lucia Moreno
+Intro to Java W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+M
+Malik Clarke
+9
+Chris Clarke
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+M
+Mason Mensah
+9
+Grace Mensah
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+M
+Mateo Ahmed
+13
+Kareem Ahmed
+Intro to Java W1 ·
+Confirmed
+—
+M
+Mateo Garcia
+13
+Aisha Garcia
+Microcontrollers W1 ·
+Confirmed
+Asthma — inhaler in backpack
+M
+Maya Brooks
+12
+Taylor Brooks
+Web Development W1 ·
+Confirmed
+Peanuts
+M
+Maya Yamamoto
+10
+Hiroshi Yamamoto
+Not registered
+Shellfish
+M
+Mia Thompson
+14
+Robert Thompson
+Intro to Java W2 ·
+Cancelled
+Microcontrollers W1 ·
+Waitlisted
+—
+M
+Miles Walsh
+11
+Sean Walsh
+Intro to Python W2 ·
+Confirmed
+—
+N
+Nia Bennett
+10
+Mark Bennett
+Web Development W1 ·
+Confirmed
+Tree nuts
+N
+Noah Martinez
+13
+Sarah Martinez
+Web Development W1 ·
+Confirmed
+—
+N
+Noah Park
+13
+Jin Park
+Intro to Python W1 ·
+Confirmed
+—
+N
+Noor Brooks
+13
+Taylor Brooks
+Not registered
+Asthma — inhaler in backpack
+N
+Nora Lopez
+12
+Daniel Lopez
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+O
+Omar Kowalski
+9
+Peter Kowalski
+Not registered
+—
+O
+Owen Williams
+11
+Elena Williams
+Intro to Java W2 ·
+Confirmed
+—
+P
+Priya Martinez
+12
+Sarah Martinez
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+P
+Priya Park
+12
+Jin Park
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+R
+Rafael Bennett
+11
+Mark Bennett
+Intro to Python W2 ·
+Confirmed
+—
+R
+Rohan Moreno
+11
+Lucia Moreno
+Intro to Java W2 ·
+Confirmed
+—
+R
+Ruby Cooper
+14
+Paul Cooper
+Intro to Java W2 ·
+Confirmed
+—
+S
+Saanvi Castillo
+10
+Carmen Castillo
+Web Development W1 ·
+Confirmed
+Gluten
+S
+Samir Diaz
+9
+Gabriela Diaz
+Intro to Python W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+S
+Santiago Shah
+13
+Anjali Shah
+Web Development W1 ·
+Confirmed
+Asthma — inhaler in backpack
+S
+Sofia Garcia
+12
+Aisha Garcia
+Intro to Java W1 ·
+Confirmed
+Intro to Java W2 ·
+Confirmed
+—
+S
+Sofia Romero
+12
+Diana Romero
+Microcontrollers W1 ·
+Confirmed
+Intro to Python W2 ·
+Confirmed
+—
+T
+Talia Reyes
+12
+Sofia Reyes
+Intro to Java W1 ·
+Confirmed
+Intro to Java W2 ·
+Confirmed
+—
+T
+Tariq Begay
+11
+Rose Begay
+Intro to Java W2 ·
+Confirmed
+—
+T
+Theo Lopez
+11
+Daniel Lopez
+Intro to Python W2 ·
+Confirmed
+—
+W
+Wren Ortiz
+12
+Javier Ortiz
+Microcontrollers W1 ·
+Confirmed
+Microcontrollers W2 ·
+Confirmed
+—
+Y
+Yara Flores
+10
+Luis Flores
+Not registered
+Dairy
+Z
+Zoe Ahmed
+14
+Kareem Ahmed
+Microcontrollers W2 ·
+Confirmed
+Microcontrollers W1 ·
+Confirmed
+—
+Z
+Zoe Johnson
+14
+James Johnson
+Microcontrollers W2 ·
+Confirmed
+Microcontrollers W1 ·
+Confirmed
+—
+
+73 students shown · select a student for details and registrations
