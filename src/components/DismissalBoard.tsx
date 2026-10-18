@@ -3,7 +3,7 @@ import { h2Class } from './AdminPageHead'
 import CallLink from './CallLink'
 import StatusWord from './StatusWord'
 import { useDismissalBoard } from '../hooks/useDismissalBoard'
-import { leaveVerb, summarizeDismissal, type DismissalRow } from '../lib/pickups'
+import { leaveInfinitive, summarizeDismissal, type DismissalRow } from '../lib/pickups'
 
 const clock = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ''
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
@@ -89,14 +89,14 @@ function Waiting({ row: r }: { row: DismissalRow }) {
     <li className="py-3 border-t border-border first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
         <p className="text-lg font-bold leading-[1.3] [overflow-wrap:anywhere]">{r.full_name}</p>
-        <StatusWord tone="waiting" icon={Clock}>{r.present === null ? 'Not marked at dismissal' : 'Waiting in the room'}</StatusWord>
+        <StatusWord tone="waiting" icon={Clock}>{r.present == null ? 'Not marked at dismissal' : 'Waiting in the room'}</StatusWord>
       </div>
       <p className="text-sm text-ink-muted">
         {r.section_label} · {r.class_name}{r.room ? ` · ${r.room}` : ''} · {r.lead_name ? `Lead ${r.lead_name}` : 'No lead assigned'}
       </p>
       <p className="mt-1 text-pretty">
         <b className="font-bold">May go with:</b> {may}.{' '}
-        {r.may_leave_alone ? `Their parent says they ${leaveVerb(r.leave_alone_mode)} on their own today.` : 'Not on their own today.'}
+        {r.may_leave_alone ? `Their parent says they may ${leaveInfinitive(r.leave_alone_mode)} on their own today.` : 'Not on their own today.'}
       </p>
       <div className="flex flex-wrap gap-x-6">
         {r.parent_phone && <CallLink call={{ who: `${r.parent_name ?? 'Parent'} (parent)`, number: r.parent_phone }} verb />}

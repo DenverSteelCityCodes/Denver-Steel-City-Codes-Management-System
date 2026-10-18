@@ -29,6 +29,14 @@ export function leaveVerb(mode: LeaveMode | string | null | undefined): string {
   return 'leaves'
 }
 
+// "walk home", for "they may walk home on their own".
+export function leaveInfinitive(mode: LeaveMode | string | null | undefined): string {
+  if (mode === 'walk') return 'walk home'
+  if (mode === 'bike') return 'bike home'
+  if (mode === 'transit') return 'take transit home'
+  return 'leave'
+}
+
 // The crew's one-tap label for a camper allowed to go on their own today.
 export function leaveChip(mode: LeaveMode | string | null | undefined): string {
   if (mode === 'walk') return 'Walking home'
@@ -180,7 +188,7 @@ export function summarizeDismissal(rows: DismissalRow[]): DismissalSummary {
       id: first.section_id, label: first.section_label, className: first.class_name,
       room: first.room, leadName: first.lead_name, campers: list.length,
     }
-    if (list.some(r => r.present !== null)) {
+    if (list.some(r => r.present != null)) {
       started.push(sec)
       waiting.push(...list.filter(r => r.present !== false && !r.released_mode))
     } else {

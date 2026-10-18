@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  daysAhead, daysPhrase, leaveChip, onDay, openWeeks, pickupDraftError, releaseCell, releaseLine,
+  daysAhead, daysPhrase, leaveChip, leaveInfinitive, onDay, openWeeks, pickupDraftError, releaseCell, releaseLine,
   summarizeDismissal, type DismissalRow,
 } from '../pickups'
 import type { Session } from '../../types/database'
@@ -42,6 +42,10 @@ describe('release wording', () => {
     expect(releaseCell('admin_ok', 'Aunt May')).toBe('Aunt May (admin OK)')
     expect(releaseCell('alone', 'On their own (bike)')).toBe('On their own (bike)')
     expect(releaseCell(null, null)).toBe('')
+  })
+  it('says how the camper may go home', () => {
+    expect(leaveInfinitive('bike')).toBe('bike home')
+    expect(leaveInfinitive('other')).toBe('leave')
   })
   it('labels the walk-home tap by how the camper gets home', () => {
     expect(leaveChip('walk')).toBe('Walking home')
