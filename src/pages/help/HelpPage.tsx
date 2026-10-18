@@ -35,15 +35,22 @@ export default function HelpPage({ guide, framed = false }: { guide: HelpGuide; 
     .filter(s => s.topics.length > 0)
   const found = shownSections.reduce((n, s) => n + s.topics.length, 0)
 
-  // A link to /…/help#topic (from the contents, a tip or another topic) opens it and brings it
-  // into view; a #section link just scrolls.
+  // A link to /…/help#topic (from the contents, a tip or another topic) opens it, clearing any
+  // search, while rendering (keyed on the navigation, so following the same link twice works);
+  // the effect then brings it, or a #section, into view.
+  const [seenKey, setSeenKey] = useState<string | null>(null)
+  if (seenKey !== key) {
+    setSeenKey(key)
+    const id = decodeURIComponent(hash.slice(1))
+    if (index.has(id)) {
+      if (query) setQuery('')
+      if (!open.has(id)) setOpen(new Set(open).add(id))
+    }
+  }
+
   useEffect(() => {
     const id = decodeURIComponent(hash.slice(1))
     if (!id) return
-    if (index.has(id)) {
-      setQuery('')
-      setOpen(prev => (prev.has(id) ? prev : new Set(prev).add(id)))
-    }
     const frame = requestAnimationFrame(() => {
       const el = document.getElementById(id)
       if (!el) return
@@ -52,7 +59,7 @@ export default function HelpPage({ guide, framed = false }: { guide: HelpGuide; 
       target.focus({ preventScroll: true })
     })
     return () => cancelAnimationFrame(frame)
-  }, [hash, key, index])
+  }, [hash, key])
 
   function toggle(id: string, isOpen: boolean) {
     setOpen(prev => {

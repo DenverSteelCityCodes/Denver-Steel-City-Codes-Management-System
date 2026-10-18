@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
@@ -12,12 +10,13 @@ import { pageKeysIn, parseHelpText } from '../markup'
 import type { HelpBlock, HelpGuide, HelpRole, HelpTip } from '../types'
 import HelpPage from '../../../pages/help/HelpPage'
 import HowItWorks from '../../../components/HowItWorks'
+// App.tsx as text (Vite's ?raw import), so the routes are read from the real file.
+import appSource from '../../../App.tsx?raw'
 
 // Every link in the in-app help (guides, playbook and tips) must land on a real route, in the
 // area of the role reading it, and every "#topic" on a real topic. Routes come from App.tsx
 // itself, so removing or renaming a route without updating the help fails here.
 
-const appSource = readFileSync(fileURLToPath(new URL('../../../App.tsx', import.meta.url)), 'utf8')
 const routes = [...appSource.matchAll(/path="([^"]+)"/g)].map(m => m[1]).filter(p => p !== '*')
 const routeMatchers = routes.map(r => new RegExp(`^${r.replace(/:[^/]+/g, '[^/]+')}$`))
 const isRoute = (path: string) => routeMatchers.some(m => m.test(path))
@@ -32,7 +31,7 @@ const AREA: Record<HelpRole, (path: string) => boolean> = {
   volunteer: p => p === '/volunteer' || p.startsWith('/volunteer/') || p.startsWith('/print/') || PUBLIC.includes(p),
 }
 
-const blockStrings = (b: HelpBlock) => (b.kind === 'p' ? [b.text] : [...(b.heading ? [b.heading] : []), ...b.items])
+const blockStrings = (b: HelpBlock) => (b.kind === 'p' ? [b.text] : [...('heading' in b && b.heading ? [b.heading] : []), ...b.items])
 function guideStrings(g: HelpGuide): string[] {
   return [g.intro, ...g.sections.flatMap(s => [s.title, s.intro ?? '', ...s.topics.flatMap(t => [t.title, ...t.body.flatMap(blockStrings)])])]
 }
