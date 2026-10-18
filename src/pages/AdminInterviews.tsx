@@ -8,6 +8,7 @@ import Button from '../components/Button'
 import { Input, Select, Textarea } from '../components/Field'
 import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
 import { supabase } from '../lib/supabase'
+import { closeAndFocus, focusFirst } from '../lib/focus'
 import { campDateKey, campInputToISO, formatCampSlot, formatCampTime, isSameCampDay } from '../lib/denverTime'
 import { validMeetingUrl } from '../lib/onboarding'
 import { mondayOf, shortRange } from '../lib/weekRange'
@@ -208,6 +209,7 @@ function NeedsTime({
   lastNudge,
   onNudge,
   now,
+  nextId,
 }: {
   app: VolunteerApplication
   openSlots: InterviewSlot[]
@@ -216,6 +218,9 @@ function NeedsTime({
   lastNudge: string | null
   onNudge: () => Promise<void>
   now: number
+  // The next applicant in the list (null on the last row): focus moves there after a nudge or a
+  // booking, since this row's button rests (or the row leaves the list); else to the list heading.
+  nextId: string | null
 }) {
   const [slotId, setSlotId] = useState('')
   const [saving, setSaving] = useState(false)
@@ -225,7 +230,10 @@ function NeedsTime({
 
   async function nudge() {
     setNudging(true); setErr(null)
-    try { await onNudge() } catch (e) {
+    try {
+      await onNudge()
+      focusFirst(nextId && `nudge-${nextId}`, nextId && `need-${nextId}`, 'need-heading')
+    } catch (e) {
       setErr(`Couldn't nudge ${app.first_name}: ${e instanceof Error ? e.message : 'unknown error'}. Try again.`)
     } finally { setNudging(false) }
   }
@@ -242,6 +250,7 @@ function NeedsTime({
     setErr(null)
     try {
       await onBook(chosen)
+      focusFirst(nextId && `need-${nextId}`, 'need-heading')
     } catch (e) {
       setErr(`Couldn't book ${app.first_name}: ${e instanceof Error ? e.message : 'unknown error'}. Try again.`)
       setSaving(false)
@@ -271,7 +280,7 @@ function NeedsTime({
           {saving ? 'Booking…' : `Book ${app.first_name}`}
         </Button>
         {/* Spec 35: an email asking them to pick a time; one a day. */}
-        <button type="button" onClick={() => void nudge()} disabled={nudging || nudgedToday} aria-busy={nudging}
+        <button type="button" id={`nudge-${app.id}`} onClick={() => void nudge()} disabled={nudging || nudgedToday} aria-busy={nudging}
           className="ui-btn ui-btn--text disabled:no-underline">
           {nudging ? 'Nudging…' : nudgedToday ? 'Nudged today' : `Nudge ${app.first_name}`}
           {!nudgedToday && <span className="sr-only"> by email to pick a time</span>}
@@ -344,12 +353,12 @@ export default function AdminInterviews() {
     }
   }
 
-  async function run(action: () => Promise<void>, failMsg: string) {
+  async function run(action: () => Promise<void>, failMsg: string, focusAfter: string[]) {
     setBusy(true)
     setActionError(null)
     try {
       await action()
-      setPanel(null)
+      closeAndFocus(() => setPanel(null), ...focusAfter)
     } catch (e) {
       setActionError(`${failMsg}: ${e instanceof Error ? e.message : 'unknown error'}`)
     } finally {
@@ -382,7 +391,7 @@ export default function AdminInterviews() {
   }, {}))
 
   const th = 'px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap'
-  const linkBtn = 'min-h-11 font-bold underline underline-offset-[3px] cursor-pointer'
+  const linkBtn = 'min-h-11 min-w-11 font-bold underline underline-offset-[3px] cursor-pointer'
 
   function slotTable(dayKeys: string[], caption: string) {
     return (
@@ -437,26 +446,26 @@ export default function AdminInterviews() {
                         <span className="inline-flex flex-wrap gap-x-4">
                           {slot.booking ? (
                             <>
-                              <button type="button" className={linkBtn} aria-expanded={kind === 'notes'}
+                              <button type="button" id={`iv-notes-${slot.id}`} className={linkBtn} aria-expanded={kind === 'notes'}
                                 onClick={() => setPanel(kind === 'notes' ? null : { kind: 'notes', slotId: slot.id })}>
                                 Notes<span className="sr-only"> for {name}</span>
                               </button>
-                              <button type="button" className={`${linkBtn} text-ink-muted`} aria-expanded={kind === 'unbook'}
+                              <button type="button" id={`iv-unbook-${slot.id}`} className={`${linkBtn} text-ink-muted`} aria-expanded={kind === 'unbook'}
                                 onClick={() => setPanel({ kind: 'unbook', slotId: slot.id })}>
                                 Unbook<span className="sr-only"> {name}</span>
                               </button>
                             </>
                           ) : (
-                            <button type="button" className={linkBtn} aria-expanded={kind === 'book'}
+                            <button type="button" id={`iv-book-${slot.id}`} className={linkBtn} aria-expanded={kind === 'book'}
                               onClick={() => setPanel(kind === 'book' ? null : { kind: 'book', slotId: slot.id })}>
                               Book<span className="sr-only"> {when}</span>
                             </button>
                           )}
-                          <button type="button" className={linkBtn} aria-expanded={kind === 'link'}
+                          <button type="button" id={`iv-link-${slot.id}`} className={linkBtn} aria-expanded={kind === 'link'}
                             onClick={() => setPanel(kind === 'link' ? null : { kind: 'link', slotId: slot.id })}>
                             Link<span className="sr-only"> for the {when} slot</span>
                           </button>
-                          <button type="button" className={`${linkBtn} text-ink-muted`} aria-expanded={kind === 'delete'}
+                          <button type="button" id={`iv-delete-${slot.id}`} className={`${linkBtn} text-ink-muted`} aria-expanded={kind === 'delete'}
                             onClick={() => setPanel({ kind: 'delete', slotId: slot.id })}>
                             Delete<span className="sr-only"> the {when} slot</span>
                           </button>
@@ -469,24 +478,24 @@ export default function AdminInterviews() {
                           {kind === 'book' && (
                             <BookPanel
                               bookedAppIds={bookedAppIds}
-                              onCancel={() => setPanel(null)}
-                              onBook={async (appId, notes) => { await bookSlot(slot.id, appId, notes); setPanel(null) }}
+                              onCancel={() => closeAndFocus(() => setPanel(null), `iv-book-${slot.id}`)}
+                              onBook={async (appId, notes) => { await bookSlot(slot.id, appId, notes); closeAndFocus(() => setPanel(null), `iv-notes-${slot.id}`, `iv-link-${slot.id}`) }}
                             />
                           )}
                           {kind === 'link' && (
                             <LinkPanel
                               when={when}
                               initialUrl={slot.meeting_url ?? ''}
-                              onCancel={() => setPanel(null)}
-                              onSave={async url => { await setLink(slot.id, url); setPanel(null) }}
+                              onCancel={() => closeAndFocus(() => setPanel(null), `iv-link-${slot.id}`)}
+                              onSave={async url => { await setLink(slot.id, url); closeAndFocus(() => setPanel(null), `iv-link-${slot.id}`) }}
                             />
                           )}
                           {kind === 'notes' && slot.booking && (
                             <NotesPanel
                               name={name ?? 'this applicant'}
                               initialNotes={slot.booking.admin_notes ?? ''}
-                              onCancel={() => setPanel(null)}
-                              onSave={async notes => { await updateNotes(slot.booking!.id, notes); setPanel(null) }}
+                              onCancel={() => closeAndFocus(() => setPanel(null), `iv-notes-${slot.id}`)}
+                              onSave={async notes => { await updateNotes(slot.booking!.id, notes); closeAndFocus(() => setPanel(null), `iv-notes-${slot.id}`) }}
                             />
                           )}
                           {kind === 'unbook' && slot.booking && (
@@ -496,8 +505,8 @@ export default function AdminInterviews() {
                               confirmLabel="Cancel booking"
                               cancelLabel="Keep booking"
                               busy={busy}
-                              onConfirm={() => run(() => unbookSlot(slot.booking!.id), "Couldn't cancel the booking")}
-                              onCancel={() => setPanel(null)}
+                              onConfirm={() => run(() => unbookSlot(slot.booking!.id), "Couldn't cancel the booking", [`iv-book-${slot.id}`, 'slots-heading'])}
+                              onCancel={() => closeAndFocus(() => setPanel(null), `iv-unbook-${slot.id}`)}
                             />
                           )}
                           {kind === 'delete' && (
@@ -509,8 +518,8 @@ export default function AdminInterviews() {
                               confirmLabel="Delete slot"
                               cancelLabel="Keep it"
                               busy={busy}
-                              onConfirm={() => run(() => deleteSlot(slot.id), "Couldn't delete the slot")}
-                              onCancel={() => setPanel(null)}
+                              onConfirm={() => run(() => deleteSlot(slot.id), "Couldn't delete the slot", ['slots-heading'])}
+                              onCancel={() => closeAndFocus(() => setPanel(null), `iv-delete-${slot.id}`)}
                             />
                           )}
                         </td>
@@ -536,7 +545,7 @@ export default function AdminInterviews() {
       {actionError && <p role="alert" className="mb-4 text-sm font-bold text-danger text-pretty">{actionError}</p>}
 
       <section aria-labelledby="need-heading">
-        <h2 id="need-heading" className={h2Class}>Needs a time{appsLoading ? '' : ` (${needsTime.length})`}</h2>
+        <h2 id="need-heading" tabIndex={-1} className={`${h2Class} focus:outline-none`}>Needs a time{appsLoading ? '' : ` (${needsTime.length})`}</h2>
         <p className="mt-1 text-sm text-ink-muted text-pretty">Pending applicants with no interview booked yet. Adding slots emails them that new times are open (once a day); <b className="font-bold">Nudge</b> sends one a reminder to pick a time.</p>
         {appsLoading || loading ? (
           <div aria-busy="true" aria-label="Loading applicants" className="mt-3 border-y-2 border-ink">
@@ -550,8 +559,8 @@ export default function AdminInterviews() {
               <p className="mt-3 font-bold">No open times left. Add a slot below, then book them.</p>
             )}
             <ul className="mt-3 border-y-2 border-ink">
-              {needsTime.map(app => (
-                <NeedsTime key={app.id} app={app} openSlots={openAhead}
+              {needsTime.map((app, i) => (
+                <NeedsTime key={app.id} app={app} openSlots={openAhead} nextId={needsTime[i + 1]?.id ?? null}
                   onBook={slotId => bookSlot(slotId, app.id, '')}
                   lastNudge={nudges.get(app.id) ?? null}
                   now={now}
@@ -567,7 +576,7 @@ export default function AdminInterviews() {
       </section>
 
       <section aria-labelledby="slots-heading" className="mt-10">
-        <h2 id="slots-heading" className={h2Class}>Slots</h2>
+        <h2 id="slots-heading" tabIndex={-1} className={`${h2Class} focus:outline-none`}>Slots</h2>
         <form onSubmit={handleAddSlot} aria-label="Add an interview slot" className="mt-3 flex flex-wrap items-end gap-3">
           <div>
             <label htmlFor="slot-date" className={label}>Date</label>

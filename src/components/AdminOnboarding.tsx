@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, CircleCheck, Clock3 } from 'lucide-react'
 import { useAdminOnboarding, type OnboardingVolunteer, type OverdueItem } from '../hooks/useAdminOnboarding'
 import { formatCampSlot } from '../lib/denverTime'
+import { closeAndFocus, controlsAfter, focusFirst } from '../lib/focus'
 import { hoursLabel, validHelpUrl } from '../lib/onboarding'
 import { supabase } from '../lib/supabase'
 import type { OnboardingTask, VolunteerTask } from '../types/database'
@@ -15,7 +16,7 @@ import StatusWord from './StatusWord'
 // then every volunteer's checklist, the checklist items themselves, and who was removed this season.
 // Overdue is ink with a clock, never red (DESIGN.md › The Meaningful Red Rule); removal is the one
 // destructive action and confirms inline with a reason that goes in the email and in History.
-const h2 = 'text-lg font-bold leading-[1.3]'
+const h2 = 'text-lg font-bold leading-[1.3] focus:outline-none'
 const label = 'block font-bold mb-1.5'
 const textBtn = 'ui-btn ui-btn--text'
 
@@ -35,9 +36,17 @@ function ItemsFor({ volunteer, tasks, done, onlyKeys, actions }: {
   const [err, setErr] = useState<string | null>(null)
   const [now] = useState(() => Date.now())
 
-  async function act(key: string, fn: () => Promise<void>, fail: string) {
+  // The tapped button rests while it saves and then leaves (Mark done becomes Undo; an overdue
+  // item leaves the Overdue list), so focus moves on to the next item's action in this list, or
+  // else the list heading.
+  async function act(key: string, fn: () => Promise<void>, fail: string, btn: HTMLElement) {
+    const section = btn.closest('section')
+    const next = controlsAfter(btn, section, '[data-ob-act]')
     setBusy(key); setErr(null)
-    try { await fn() } catch (e) { setErr(`${fail}: ${e instanceof Error ? e.message : 'unknown error'}`) } finally { setBusy(null) }
+    try {
+      await fn()
+      focusFirst(...next, section?.querySelector<HTMLElement>('h2[tabindex]'))
+    } catch (e) { setErr(`${fail}: ${e instanceof Error ? e.message : 'unknown error'}`) } finally { setBusy(null) }
   }
 
   return (
@@ -57,20 +66,20 @@ function ItemsFor({ volunteer, tasks, done, onlyKeys, actions }: {
                     ? (late ? <StatusWord tone="waiting" icon={Clock3}>Due {formatCampSlot(due)}</StatusWord> : <span className="text-sm text-ink-muted">Due {formatCampSlot(due)}</span>)
                     : <span className="text-sm text-ink-muted">Not done</span>}
                 {!row && (
-                  <button type="button" className={textBtn} disabled={busy === t.key} aria-busy={busy === t.key}
-                    onClick={() => void act(t.key, () => actions.markDone(volunteer.id, t.key), "Couldn't mark it done")}>
+                  <button type="button" data-ob-act className={textBtn} disabled={busy === t.key} aria-busy={busy === t.key}
+                    onClick={e => void act(t.key, () => actions.markDone(volunteer.id, t.key), "Couldn't mark it done", e.currentTarget)}>
                     Mark done<span className="sr-only">: {t.label}, for {volunteer.name}</span>
                   </button>
                 )}
                 {row && !row.verified_by && (
-                  <button type="button" className={textBtn} disabled={busy === t.key} aria-busy={busy === t.key}
-                    onClick={() => void act(t.key, () => actions.markDone(volunteer.id, t.key), "Couldn't confirm it")}>
+                  <button type="button" data-ob-act className={textBtn} disabled={busy === t.key} aria-busy={busy === t.key}
+                    onClick={e => void act(t.key, () => actions.markDone(volunteer.id, t.key), "Couldn't confirm it", e.currentTarget)}>
                     Confirm<span className="sr-only">: {t.label}, for {volunteer.name}</span>
                   </button>
                 )}
                 {row && (
                   <button type="button" className={`${textBtn} text-ink-muted`} disabled={busy === t.key} aria-busy={busy === t.key}
-                    onClick={() => void act(t.key, () => actions.undo(volunteer.id, t.key), "Couldn't undo it")}>
+                    onClick={e => void act(t.key, () => actions.undo(volunteer.id, t.key), "Couldn't undo it", e.currentTarget)}>
                     Undo<span className="sr-only">: {t.label}, for {volunteer.name}</span>
                   </button>
                 )}
@@ -208,25 +217,30 @@ export default function AdminOnboarding() {
 
   async function remove(v: OnboardingVolunteer, reason: string) {
     const freed = await actions.removeFromSeason(v.id, reason)
-    setRemoving(null)
-    setNote(`${v.name} is off this season's crew and has been emailed.${freed > 0 ? ` ${freed} crew ${freed === 1 ? 'spot is' : 'spots are'} open again: fill ${freed === 1 ? 'it' : 'them'} on the Crew tab.` : ''}`)
+    // Their row leaves the lists; focus lands on the note saying it's done.
+    closeAndFocus(() => {
+      setRemoving(null)
+      setNote(`${v.name} is off this season's crew and has been emailed.${freed > 0 ? ` ${freed} crew ${freed === 1 ? 'spot is' : 'spots are'} open again: fill ${freed === 1 ? 'it' : 'them'} on the Crew tab.` : ''}`)
+    }, 'ob-note', 'everyone-h')
   }
 
-  const removeControl = (v: OnboardingVolunteer) => removing === v.id
-    ? <RemovePanel volunteer={v} onRemove={reason => remove(v, reason)} onCancel={() => setRemoving(null)} />
+  // Shown in Overdue and in Every volunteer, so the opener's id names the list it's in.
+  const removeControl = (v: OnboardingVolunteer, where: 'overdue' | 'all') => removing === v.id
+    ? <RemovePanel volunteer={v} onRemove={reason => remove(v, reason)}
+        onCancel={() => closeAndFocus(() => setRemoving(null), `ob-remove-${where}-${v.id}`)} />
     : (
-      <button type="button" onClick={() => { setNote(null); setRemoving(v.id) }} className={`${textBtn} text-danger`}>
+      <button type="button" id={`ob-remove-${where}-${v.id}`} onClick={() => { setNote(null); setRemoving(v.id) }} className={`${textBtn} text-danger`}>
         Remove from the season<span className="sr-only">: {v.name}</span>
       </button>
     )
 
   return (
     <div className="space-y-10">
-      {note && <p role="status" className="flex items-start gap-1.5 font-bold text-success text-pretty"><CircleCheck size={18} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />{note}</p>}
+      {note && <p id="ob-note" role="status" tabIndex={-1} className="focus:outline-none flex items-start gap-1.5 font-bold text-success text-pretty"><CircleCheck size={18} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />{note}</p>}
 
       {/* ── Overdue ── */}
       <section aria-labelledby="overdue-h">
-        <h2 id="overdue-h" className={h2}>Overdue ({overdue.length})</h2>
+        <h2 id="overdue-h" tabIndex={-1} className={h2}>Overdue ({overdue.length})</h2>
         <p className="mt-1 text-sm text-ink-muted text-pretty">Checklist items past their due time. Each is due a set number of hours after the volunteer was accepted.</p>
         {overdueBy.size === 0 ? (
           <p className="mt-3 py-4 border-y-2 border-ink font-bold">Nothing overdue. Everyone is on track.</p>
@@ -239,7 +253,7 @@ export default function AdminOnboarding() {
                 <li key={vid} className="py-4 border-t border-border first:border-t-0">
                   <p className="text-lg font-bold leading-[1.3]">{v.name} <span className="font-normal text-base text-ink-muted">· {items.length} overdue</span></p>
                   <ItemsFor volunteer={v} tasks={tasks} done={doneBy.get(vid) ?? new Map()} onlyKeys={new Set(items.map(i => i.task_key))} actions={actions} />
-                  {removeControl(v)}
+                  {removeControl(v, 'overdue')}
                 </li>
               )
             })}
@@ -249,7 +263,7 @@ export default function AdminOnboarding() {
 
       {/* ── Everyone ── */}
       <section aria-labelledby="everyone-h">
-        <h2 id="everyone-h" className={h2}>Every volunteer</h2>
+        <h2 id="everyone-h" tabIndex={-1} className={h2}>Every volunteer</h2>
         {current.length === 0 ? (
           <p className="mt-3 py-4 border-y-2 border-ink font-bold">No volunteers yet. Accepted applicants show up here.</p>
         ) : (
@@ -281,7 +295,7 @@ export default function AdminOnboarding() {
                         ? <p className="text-sm text-ink-muted">Accepted {formatCampSlot(v.accepted_at)}{tasks.some(t => actions.dueAt.get(`${v.id}:${t.key}`)) ? '' : ', in an earlier season, so nothing is due'}</p>
                         : <p className="text-sm text-ink-muted">Accepted before checklists, so nothing is due.</p>}
                       <ItemsFor volunteer={v} tasks={tasks} done={mine} actions={actions} />
-                      {removeControl(v)}
+                      {removeControl(v, 'all')}
                     </div>
                   )}
                 </li>
@@ -293,17 +307,17 @@ export default function AdminOnboarding() {
 
       {/* ── The checklist itself ── */}
       <section aria-labelledby="items-h">
-        <h2 id="items-h" className={h2}>Checklist items</h2>
+        <h2 id="items-h" tabIndex={-1} className={h2}>Checklist items</h2>
         <p className="mt-1 text-sm text-ink-muted text-pretty">What every accepted volunteer does, each within a set time of being accepted. They tick items off on their Today page, and the welcome email lists them.</p>
         {tasks.length === 0
           ? <p className="mt-3 py-4 border-y-2 border-ink font-bold">No checklist items. Add one below.</p>
           : (
             <ol className="mt-3 border-y-2 border-ink">
-              {tasks.map(t => (
+              {tasks.map((t, i) => (
                 <li key={t.key} className="py-3 border-t border-border first:border-t-0">
                   {editing === t.key ? (
-                    <TaskForm initial={t} submitLabel="Save item" onCancel={() => setEditing(null)}
-                      onSubmit={async patch => { await actions.updateTask(t.key, patch); setEditing(null) }} />
+                    <TaskForm initial={t} submitLabel="Save item" onCancel={() => closeAndFocus(() => setEditing(null), `ob-task-edit-${t.key}`)}
+                      onSubmit={async patch => { await actions.updateTask(t.key, patch); closeAndFocus(() => setEditing(null), `ob-task-edit-${t.key}`) }} />
                   ) : (
                     <>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -312,17 +326,20 @@ export default function AdminOnboarding() {
                           <p className="text-sm text-ink-muted break-all">Within {hoursLabel(t.due_hours_after_accept)}{t.help_url ? ` · ${t.help_url}` : ' · no link'}</p>
                         </div>
                         <span className="inline-flex gap-x-4">
-                          <button type="button" className={textBtn} onClick={() => { setDeleting(null); setEditing(t.key) }}>Edit<span className="sr-only">: {t.label}</span></button>
-                          <button type="button" className={`${textBtn} text-ink-muted`} aria-expanded={deleting === t.key} onClick={() => setDeleting(t.key)}>Delete<span className="sr-only">: {t.label}</span></button>
+                          <button type="button" id={`ob-task-edit-${t.key}`} className={textBtn} onClick={() => { setDeleting(null); setEditing(t.key) }}>Edit<span className="sr-only">: {t.label}</span></button>
+                          <button type="button" id={`ob-task-delete-${t.key}`} className={`${textBtn} text-ink-muted`} aria-expanded={deleting === t.key} onClick={() => setDeleting(t.key)}>Delete<span className="sr-only">: {t.label}</span></button>
                         </span>
                       </div>
                       {deleting === t.key && (
                         <div className="mt-2">
                           <InlineConfirm message={`Delete "${t.label}"? It leaves every volunteer's checklist, with their ticks.`} confirmLabel="Delete item" cancelLabel="Keep it" busy={busy}
-                            onCancel={() => setDeleting(null)}
+                            onCancel={() => closeAndFocus(() => setDeleting(null), `ob-task-delete-${t.key}`)}
                             onConfirm={async () => {
                               setBusy(true); setTaskErr(null)
-                              try { await actions.deleteTask(t.key); setDeleting(null) } catch (e) { setTaskErr(`Couldn't delete it: ${e instanceof Error ? e.message : 'unknown error'}`) } finally { setBusy(false) }
+                              try {
+                                await actions.deleteTask(t.key)
+                                closeAndFocus(() => setDeleting(null), tasks[i + 1] && `ob-task-edit-${tasks[i + 1].key}`, 'items-h')
+                              } catch (e) { setTaskErr(`Couldn't delete it: ${e instanceof Error ? e.message : 'unknown error'}`) } finally { setBusy(false) }
                             }} />
                         </div>
                       )}

@@ -518,10 +518,10 @@ export default function AdminStudents() {
         </Button>
       </div>
 
-      <AdminChangeRequests onResolved={() => { void refetchStudents() }} />
+      <AdminChangeRequests onResolved={() => { void refetchStudents() }} focusWhenEmpty="all-campers" />
 
       <section aria-labelledby="all-campers" className="scroll-mt-32 lg:scroll-mt-20">
-        <h2 id="all-campers" className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em] scroll-mt-32 lg:scroll-mt-20">All campers</h2>
+        <h2 id="all-campers" tabIndex={-1} className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em] scroll-mt-32 lg:scroll-mt-20 focus:outline-none">All campers</h2>
         <div className="mt-3 mb-4 flex flex-wrap items-end gap-x-4 gap-y-3">
           <div className="relative flex-[1_1_240px] min-w-0 max-w-[420px]">
             <label htmlFor="camper-q" className="sr-only">Search campers or parents</label>
