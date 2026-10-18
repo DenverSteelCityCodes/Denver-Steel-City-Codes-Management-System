@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: utilities follow the app's theme toggle (.dark on <html>), not the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ── Design system CSS variables ─────────────────────────── */
 :root {
   /* surfaces */
