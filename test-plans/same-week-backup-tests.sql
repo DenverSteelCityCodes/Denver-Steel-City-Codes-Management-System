@@ -13,12 +13,17 @@ begin
   select r.student_id, st.parent_id, st.age, s.week, r.section_id into held
     from registrations r join sections s on s.id=r.section_id join students st on st.id=r.student_id
    where r.status in ('confirmed','pending') and s.week is not null
-     and exists (select 1 from sections o where o.week = s.week and o.id <> s.id and st.age between o.age_min and o.age_max and o.cancelled_at is null)
-     and exists (select 1 from sections o where o.week is not null and o.week <> s.week and st.age between o.age_min and o.age_max and o.cancelled_at is null)
+     and exists (select 1 from sections o where o.week = s.week and o.id <> s.id and st.age between o.age_min and o.age_max and o.cancelled_at is null and private.course_rule_block(r.student_id, o.id) is null)
+     and exists (select 1 from sections o where o.week is not null and o.week <> s.week and st.age between o.age_min and o.age_max and o.cancelled_at is null and private.course_rule_block(r.student_id, o.id) is null)
+     -- free in the other week, so joining a waitlist there is allowed
+     and not exists (select 1 from registrations r2 join sections s2 on s2.id = r2.section_id
+                      where r2.student_id = r.student_id and r2.id <> r.id and r2.status in ('confirmed','pending')
+                        and (s2.week is null or s2.week <> s.week))
    limit 1;
   if held.student_id is null then raise exception 'RESULTS: no suitable camper in the seed (test needs updating)'; end if;
-  select id into other_w from sections o where o.week = held.week and o.id <> held.section_id and held.age between o.age_min and o.age_max and o.cancelled_at is null limit 1;
-  select id into other_x from sections o where o.week is not null and o.week <> held.week and held.age between o.age_min and o.age_max and o.cancelled_at is null limit 1;
+  -- Classes the camper's grade and prerequisites allow (spec 31), so only the week rule is tested.
+  select id into other_w from sections o where o.week = held.week and o.id <> held.section_id and held.age between o.age_min and o.age_max and o.cancelled_at is null and private.course_rule_block(held.student_id, o.id) is null limit 1;
+  select id into other_x from sections o where o.week is not null and o.week <> held.week and held.age between o.age_min and o.age_max and o.cancelled_at is null and private.course_rule_block(held.student_id, o.id) is null limit 1;
   -- Make both targets full, so a sign-up would be a waitlist entry.
   update sections set capacity = greatest(1, (select count(*) from registrations where section_id = sections.id and status in ('confirmed','pending'))) where id in (other_w, other_x);
   insert into registrations (student_id, section_id, status)

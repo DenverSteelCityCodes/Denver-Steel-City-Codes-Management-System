@@ -98,7 +98,10 @@ export function useAdminClasses() {
     return fill !== null
   }
 
-  async function createClass(payload: Pick<Class, 'name'> & { description?: string }) {
+  // Course rules (spec 31) save with the class: grades_allowed, requires_class_id, requirement_note, next_class_id.
+  type ClassPayload = Pick<Class, 'name'> & Partial<Pick<Class, 'description' | 'grades_allowed' | 'requires_class_id' | 'requirement_note' | 'next_class_id'>>
+
+  async function createClass(payload: ClassPayload) {
     const { data, error } = await supabase
       .from('classes')
       .insert(payload)
@@ -109,10 +112,16 @@ export function useAdminClasses() {
     return data
   }
 
-  async function updateClass(id: string, payload: Partial<Pick<Class, 'name' | 'description'>>) {
+  async function updateClass(id: string, payload: Partial<ClassPayload>) {
     const original = classes.find(c => c.id === id)
     try {
-      if (original) await guardedUpdate('classes', { id, updated_at: original.updated_at, name: original.name, description: original.description }, payload)
+      if (original) {
+        await guardedUpdate('classes', {
+          id, updated_at: original.updated_at, name: original.name, description: original.description,
+          grades_allowed: original.grades_allowed ?? null, requires_class_id: original.requires_class_id ?? null,
+          requirement_note: original.requirement_note ?? null, next_class_id: original.next_class_id ?? null,
+        }, payload)
+      }
       else {
         const { error } = await supabase.from('classes').update(payload).eq('id', id)
         if (error) throw new Error(error.message)

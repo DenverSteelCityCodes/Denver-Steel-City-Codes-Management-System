@@ -16,8 +16,12 @@
 -- Closing the camper registration form (Forms → Close form) is enforced here too, so it also
 -- stops registrations from the class browser, not just the wizard.
 --
+-- Course rules (spec 31): a class's grade limit and prerequisite are checked here too, through
+-- private.course_rule_block() from migration_course_rules.sql, once that file has created it.
+--
 -- Apply after migration_security_hardening.sql, and re-apply after migration_soft_cancel.sql
--- (the cancelled-section check reads sections.cancelled_at) and after migration_season_settings.sql.
+-- (the cancelled-section check reads sections.cancelled_at), after migration_season_settings.sql
+-- and after migration_course_rules.sql.
 
 -- ── 1. sections.session_id follows sections.week ──────────────
 
@@ -64,6 +68,7 @@ DECLARE
   taken   INT;
   clash   TEXT;
   opens   TIMESTAMPTZ;
+  why     TEXT;
 BEGIN
   -- Row lock serializes concurrent sign-ups for the same section so capacity can't be overrun.
   SELECT * INTO sec FROM sections WHERE id = NEW.section_id FOR UPDATE;
@@ -100,6 +105,17 @@ BEGIN
 
   IF (SELECT (config->>'enabled')::boolean FROM form_configs WHERE form_key = 'student_registration') IS FALSE THEN
     RAISE EXCEPTION 'Camper registration is closed right now' USING ERRCODE = 'P0001';
+  END IF;
+
+  -- Course rules (spec 31): the class's grades and prerequisite, before the age band so the
+  -- family hears the real reason. A prerequisite taken in an earlier week counts even when it is
+  -- inserted by the same statement (the wizard sends Week 1 before Week 2). The hint lets the app
+  -- offer "Request an exception". Skipped until migration_course_rules.sql has run.
+  IF to_regprocedure('private.course_rule_block(uuid,uuid)') IS NOT NULL THEN
+    why := private.course_rule_block(NEW.student_id, sec.id);
+    IF why IS NOT NULL THEN
+      RAISE EXCEPTION '% Request an exception?', why USING ERRCODE = 'P0001', HINT = 'course_rule';
+    END IF;
   END IF;
 
   SELECT age INTO stu_age FROM students WHERE id = NEW.student_id;

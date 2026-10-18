@@ -38,6 +38,7 @@ export default function ParentDashboard() {
     ...myChanges,
     cancelSpot: async (id: string) => { await myChanges.cancelSpot(id); await refetch() },
     swapSpot: async (id: string, sectionId: string) => { await myChanges.swapSpot(id, sectionId); await refetch() },
+    setPlaceWith: async (id: string, placeWith: string) => { await myChanges.setPlaceWith(id, placeWith); await refetch() },
   }
   // Loaner laptops per camper-week (spec 29); reloads with the registrations.
   const laptops = useMyLaptops(registrations, students.length > 0)

@@ -50,7 +50,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [19](19-load-test-runbook-dry-run.md) | #88 | Load test, restore drill, PITR, runbooks, dry run | P0 | M | 01–18, L1–L3, L5, L6a | B |
 | 🟨 | [29](29-laptop-loans.md) | #149 | Laptop loans per camper-week: cap per session, queue, roster column | P0 | M | 09 | B |
 | 🟨 | [30](30-public-camp-page.md) | #150 | Public camp page (status, dates, location, courses, FAQ) + notify-me list | P1 | M | 09, 13 | B |
-| ⬜ | [31](31-course-rules-in-the-db.md) | #151 | Course rules in the DB: grades, prerequisites, repeat warning, "place with" | P0 | M | 05 | B |
+| 🟨 | [31](31-course-rules-in-the-db.md) | #151 | Course rules in the DB: grades, prerequisites, repeat warning, "place with" | P0 | M | 05 | B |
 | ⬜ | [32](32-admin-register-on-behalf.md) | #152 | Admin register-on-behalf with named, logged overrides | P1 | M | 05, 31 | B |
 | ⬜ | [33](33-health-and-accommodations.md) | #153 | Structured allergies, accommodations, lunch list | P0 | M | 04, L2 | B |
 | ⬜ | [34](34-urgent-announcements-and-incidents.md) | #154 | Urgent announcements, week audiences, incident log, roll-call notes | P1 | M | 09 follow-up | B |

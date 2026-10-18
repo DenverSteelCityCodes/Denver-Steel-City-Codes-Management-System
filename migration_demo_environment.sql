@@ -1,6 +1,6 @@
 -- Migration: demo / test environment (applied to rdckxazvoeixgwtjhrlf via MCP on 2026-09-30)
 --
--- private.reset_demo() wipes all camp data and reseeds a realistic summer: 4 courses across
+-- private.reset_demo() wipes all camp data and reseeds a realistic summer: 5 courses across
 -- Week 1/2, ~45 families / ~60 campers, ~20 volunteers with crews and duties, applications in
 -- every state, interview slots relative to "now", and four one-click demo accounts.
 -- It runs nightly (pg_cron) so public demo visitors can't break it for the next person.
@@ -89,7 +89,7 @@ DECLARE
   allergy TEXT[] := ARRAY['Peanuts','Tree nuts','Dairy','Gluten','Shellfish','Bee stings — EpiPen in backpack'];
   medical TEXT[] := ARRAY['Asthma — inhaler in backpack','ADHD — does best with movement breaks','Type 1 diabetes — checks levels at lunch','Wears glasses; needs to sit near the front'];
   w1 UUID; w2 UUID;
-  c_py UUID; c_java UUID; c_web UUID; c_micro UUID;
+  c_py UUID; c_java UUID; c_web UUID; c_micro UUID; c_ipy UUID;
   sec RECORD; s_id UUID;
   fam INT; kid INT := 0; nkids INT; k INT;
   parent_id UUID; student_id UUID; g TEXT; age INT; yr INT; ln TEXT; pf TEXT;
@@ -101,7 +101,7 @@ DECLARE
   -- Monday of the current week, or of next week when it's already the weekend.
   w1_start DATE := date_trunc('week', today)::date + CASE WHEN extract(isodow FROM today) >= 6 THEN 7 ELSE 0 END;
   w1_end DATE; w2_start DATE; w2_end DATE; camp_year INT;
-  reg RECORD; rc TEXT; absent BOOLEAN; author UUID;
+  reg RECORD; rc TEXT; absent BOOLEAN; author UUID; risk_absent UUID;
 BEGIN
   -- Refuse to run anywhere that hasn't been set up as a demo. This function deletes every
   -- camper, registration and login it wasn't told to keep, and it is scheduled nightly below;
@@ -164,8 +164,16 @@ BEGIN
     'Object-oriented programming fundamentals in Java. Recommended for campers who have tried some coding before.') RETURNING id INTO c_java;
   INSERT INTO classes (name, description) VALUES ('Web Development',
     'Build and publish a personal website with HTML, CSS and a little JavaScript.') RETURNING id INTO c_web;
+  INSERT INTO classes (name, description) VALUES ('Intermediate Python',
+    'Lists, dictionaries and files, then a bigger project of your own. For campers who know the Python basics.') RETURNING id INTO c_ipy;
   INSERT INTO classes (name, description) VALUES ('Microcontrollers',
-    'Program real hardware — LEDs, sensors and buttons — with CircuitPython. For campers entering grades 7–9 with some Python experience.') RETURNING id INTO c_micro;
+    'Program real hardware — LEDs, sensors and buttons — with CircuitPython.') RETURNING id INTO c_micro;
+  -- Course rules (spec 31): Microcontrollers is for grades 7–9 this fall, after Intermediate
+  -- Python; a camper repeating a Python course is pointed at the next one.
+  UPDATE classes SET grades_allowed = ARRAY['7th', '8th', '9th'], requires_class_id = c_ipy,
+         requirement_note = 'Taking Intermediate Python in Week 1 counts.' WHERE id = c_micro;
+  UPDATE classes SET next_class_id = c_ipy WHERE id = c_py;
+  UPDATE classes SET next_class_id = c_micro WHERE id = c_ipy;
 
   INSERT INTO sections (class_id, label, age_min, age_max, capacity, week, session_id, start_time, end_time, room) VALUES
     (c_py,    'PY-A',              9, 10, 12, 1, w1, '09:00', '15:00', 'Room 101'),
@@ -175,6 +183,8 @@ BEGIN
     (c_java,  'JAVA-1',           11, 14, 14, 1, w1, '09:00', '15:00', 'Room 201'),
     (c_java,  'JAVA-1',           11, 14, 14, 2, w2, '09:00', '15:00', 'Room 201'),
     (c_web,   'WEB-1',            10, 13, 18, 1, w1, '09:00', '15:00', 'Room 202'),
+    (c_ipy,   'IP-1',             11, 14, 14, 1, w1, '09:00', '15:00', 'Room 103'),
+    (c_ipy,   'IP-1',             11, 14, 14, 2, w2, '09:00', '15:00', 'Room 103'),
     (c_micro, 'MC-1',             12, 14, 10, 1, w1, '09:00', '15:00', 'Maker Lab'),
     (c_micro, 'MC-1',             12, 14, 10, 2, w2, '09:00', '15:00', 'Maker Lab');
 
@@ -239,7 +249,9 @@ BEGIN
       WHERE v2.experience_level = 'senior'
         AND CASE WHEN sec.week = 1 THEN v2.availability_week_1 ELSE v2.availability_week_2 END
         AND NOT EXISTS (SELECT 1 FROM sections s2 WHERE s2.lead_id = v2.id AND s2.week = sec.week)
-      -- the demo volunteer leads Python B; fictional seniors before the owner's own account
+        -- the demo volunteer leads Python B and nothing else
+        AND (v2.id IS DISTINCT FROM demo_vol OR (sec.name = 'Intro to Python' AND sec.label = 'PY-B'))
+      -- fictional seniors before the owner's own account
       ORDER BY (v2.id = demo_vol AND sec.name = 'Intro to Python' AND sec.label = 'PY-B') DESC,
                (v2.id IN (SELECT id FROM private.demo_keep_users)), v2.created_at, v2.id LIMIT 1)
     WHERE id = sec.id;
@@ -340,7 +352,9 @@ BEGIN
       FOR wk IN SELECT unnest(CASE WHEN kid % 3 = 0 THEN ARRAY[1, 2] WHEN kid % 3 = 2 THEN ARRAY[2] ELSE ARRAY[1] END) LOOP
         SELECT s.id, s.capacity INTO s_id, cap FROM sections s JOIN classes c ON c.id = s.class_id
         WHERE s.week = wk AND age BETWEEN s.age_min AND s.age_max
-          AND (c.name <> 'Microcontrollers' OR g IN ('7th','8th','9th'))
+          -- course rules (spec 31): the class's grades, and its prerequisite in an earlier week
+          AND (c.grades_allowed IS NULL OR g = ANY (c.grades_allowed))
+          AND (c.requires_class_id IS NULL OR private.prerequisite_met(student_id, c.requires_class_id, camp_year, wk))
         ORDER BY (SELECT count(*) FROM registrations r WHERE r.section_id = s.id)::numeric / s.capacity
                  + abs(hashtext(student_id::text || c.name) % 5) / 25.0
         LIMIT 1;
@@ -357,7 +371,9 @@ BEGIN
 
   -- The demo parent: one camper set, one waitlisted, one returning camper to confirm.
   -- Popular sections fill up: Python A and Microcontrollers in Week 1 are full with a waitlist.
-  FOR sec IN SELECT s.id, s.capacity, s.age_min, s.age_max, c.name FROM sections s JOIN classes c ON c.id = s.class_id
+  -- (Week 1 Microcontrollers campers count as having taken Intermediate Python last summer: the
+  -- demo has no past years, so this seed places them past the prerequisite, as an admin could.)
+  FOR sec IN SELECT s.id, s.capacity, s.age_min, s.age_max, c.name, c.grades_allowed FROM sections s JOIN classes c ON c.id = s.class_id
              WHERE s.week = 1 AND ((c.name = 'Intro to Python' AND s.label = 'PY-A') OR c.name = 'Microcontrollers') LOOP
     FOR k IN 1..(sec.capacity + 3) LOOP
       SELECT count(*) INTO taken FROM registrations WHERE section_id = sec.id AND status IN ('confirmed','pending');
@@ -365,7 +381,7 @@ BEGIN
       EXIT WHEN taken >= sec.capacity AND cap >= 2;
       SELECT st2.id INTO student_id FROM students st2
       WHERE st2.age BETWEEN sec.age_min AND sec.age_max AND st2.registration_year = camp_year
-        AND (sec.name <> 'Microcontrollers' OR st2.grade IN ('7th','8th','9th'))
+        AND (sec.grades_allowed IS NULL OR st2.grade = ANY (sec.grades_allowed))
         -- not already booked anywhere in Week 1 (a camper can't be in two rooms at once)
         AND NOT EXISTS (SELECT 1 FROM registrations r JOIN sections s4 ON s4.id = r.section_id
                         WHERE r.student_id = st2.id AND s4.week = 1 AND r.status <> 'cancelled')
@@ -406,6 +422,40 @@ BEGIN
     SELECT st2.id, s.id, 'waitlisted' FROM students st2, sections s JOIN classes c ON c.id = s.class_id
     WHERE st2.parent_id = demo_parent AND st2.first_name = 'Eli' AND c.name = 'Intro to Python' AND s.label = 'PY-A' AND s.week = 1;
   END IF;
+
+  -- Course rules (spec 31). "Prerequisite at risk" on the admin's list: a Week 2 Microcontrollers
+  -- camper whose Week 1 Intermediate Python spot was then cancelled, and one who missed every
+  -- Week 1 arrival roll call so far (marked in step 8). "Place with": a few families asked for a
+  -- sibling or a friend (the demo parent's Maya among them).
+  FOR reg IN SELECT r.id, r.student_id, row_number() OVER (ORDER BY st2.full_name) AS n FROM registrations r
+               JOIN sections s ON s.id = r.section_id JOIN students st2 ON st2.id = r.student_id
+              WHERE s.class_id = c_ipy AND s.week = 1 AND r.status = 'confirmed' AND st2.grade IN ('7th', '8th', '9th')
+                AND NOT EXISTS (SELECT 1 FROM registrations r2 JOIN sections s2 ON s2.id = r2.section_id
+                                 WHERE r2.student_id = r.student_id AND s2.week = 2)
+              ORDER BY st2.full_name LIMIT 2 LOOP
+    INSERT INTO registrations (student_id, section_id, status, created_at)
+    SELECT reg.student_id, s.id, 'confirmed', now() - interval '20 days' FROM sections s WHERE s.class_id = c_micro AND s.week = 2;
+    IF reg.n = 1 THEN
+      UPDATE registrations SET status = 'cancelled', cancel_reason = 'parent_cancel' WHERE id = reg.id;
+    ELSE
+      risk_absent := reg.student_id;
+    END IF;
+  END LOOP;
+  UPDATE registrations r SET place_with = 'Same class as ' || sib.first_name || ', please'
+    FROM students st2, students sib
+   WHERE st2.id = r.student_id AND sib.parent_id = st2.parent_id AND sib.id <> st2.id
+     AND st2.parent_id IS DISTINCT FROM demo_parent
+     AND r.status = 'confirmed' AND abs(hashtext(r.id::text)) % 4 = 0;
+  UPDATE registrations r SET place_with = 'Same room as her friend Ava Nguyen, please'
+    FROM students st2 WHERE st2.id = r.student_id AND st2.parent_id = demo_parent AND st2.first_name = 'Maya';
+  -- An exception request waiting in the admins' queue: a 6th grader asking for Microcontrollers.
+  INSERT INTO change_requests (student_id, section_id, requested_by, kind, message, created_at)
+  SELECT st2.id, s.id, st2.parent_id, 'exception',
+         'They finished the Python unit at school this spring and build with a Raspberry Pi at home.', now() - interval '2 days'
+    FROM students st2, sections s
+   WHERE s.class_id = c_micro AND s.week = 2 AND st2.grade = '6th' AND st2.registration_year = camp_year
+     AND st2.parent_id IS DISTINCT FROM demo_parent
+   ORDER BY st2.full_name LIMIT 1;
 
   -- ── 7. Duty schedule: four duties each camp day; volunteers have claimed most spots ──
   FOR d IN SELECT gs::date FROM generate_series(w1_start, w2_end, interval '1 day') gs LOOP
@@ -449,6 +499,10 @@ BEGIN
       END LOOP;
     END LOOP;
   END LOOP;
+
+  -- The "prerequisite at risk" camper from step 6 has missed Intermediate Python all week so far.
+  UPDATE roll_call_marks m SET present = false
+    FROM sections s WHERE s.id = m.section_id AND s.class_id = c_ipy AND m.student_id = risk_absent;
 
   -- ── 9. Updates: a welcome from the admin, a note to the crew, and a lead's end-of-day post ──
   author := coalesce(demo_admin, (SELECT id FROM profiles WHERE role = 'admin' ORDER BY created_at LIMIT 1));

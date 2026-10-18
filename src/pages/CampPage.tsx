@@ -15,7 +15,7 @@ import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import { Schedule, Sect, StatusWord, framedCls, h2Cls, rowCls } from './parent/parts'
 import { ageSpan, listNames, sameSchedule, weekDates } from '../lib/campInfo'
 import type { CampCourse, CampInfo, CampWeek } from '../lib/campInfo'
-import { courseConstraint } from '../lib/courseConstraints'
+import { ruleSummary } from '../lib/courseRules'
 import { formatTimeRange } from '../lib/campDay'
 import { CONTACT_EMAIL, GENERIC_ERROR, emailProblem } from '../lib/authErrors'
 import { focusOnMount } from '../lib/focus'
@@ -284,7 +284,8 @@ function Courses({ courses, weekCount }: { courses: CampCourse[]; weekCount: num
     <Sect title="Classes" id="classes-h">
       <ul className={framedCls}>
         {courses.map(c => {
-          const note = courseConstraint(c.name)?.requirementNote
+          // The course's rules from the database, in the words the flyers use (spec 31).
+          const note = [ruleSummary(c.grades_allowed, c.requires), c.requirement_note?.trim()].filter(Boolean).join(' ')
           const names = listNames(c.weeks.map(w => w.week))
           const full = c.weeks.filter(w => w.full)
           return (

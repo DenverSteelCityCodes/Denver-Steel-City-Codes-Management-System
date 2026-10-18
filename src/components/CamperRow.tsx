@@ -1,24 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChevronDown, ChevronRight, GraduationCap } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, GraduationCap, Lock, Repeat } from 'lucide-react'
 import InlineConfirm from './InlineConfirm'
+import ExceptionRequest from './ExceptionRequest'
 import LaptopLoanLine from './LaptopLoanLine'
 import { focusOnMount } from '../lib/focus'
 import { formatTimeRange } from '../lib/campDay'
 import { buttonClass } from '../lib/ui'
 import { byCamp, camperFirstName, holdsSeat, rollup, weekName, type Tone } from '../lib/parentHome'
-import { ErrorLine, StatusWord, labelCls, rowCls, type StatusTone } from '../pages/parent/parts'
+import { isCourseRuleError, repeatNote } from '../lib/courseRules'
+import { ErrorLine, StatusWord, hintCls, labelCls, rowCls, type StatusTone } from '../pages/parent/parts'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
-import type { SwapOption } from '../hooks/useMyChanges'
+import { exceptionKey, type SwapOption } from '../hooks/useMyChanges'
 import type { Laptops } from '../hooks/useMyLaptops'
 import type { Session, Student } from '../types/database'
 
-// Parent self-service changes (spec 11, 12, 10). Each call refetches the registrations after.
+// Parent self-service changes (spec 11, 12, 10, 31). Each call refetches the registrations after.
 export interface Changes {
   deadlines: Map<string, string>
   openRequests: Set<string>
+  // Open exception requests, as exceptionKey(student, section) (spec 31).
+  exceptions: Set<string>
   cancelSpot: (registrationId: string) => Promise<void>
   requestChange: (registrationId: string, message: string) => Promise<void>
+  requestException: (studentId: string, sectionId: string, message: string) => Promise<void>
+  setPlaceWith: (registrationId: string, placeWith: string) => Promise<void>
   swapOptions: (registrationId: string) => Promise<SwapOption[]>
   swapSpot: (registrationId: string, sectionId: string) => Promise<void>
 }
@@ -73,7 +79,8 @@ export default function CamperRow({ student, regs, sessions, leadNames, changes,
       {open && (
         <div id={panelId} className="pb-4">
           {regs.map(r => (
-            <RegistrationBlock key={r.id} reg={r} camper={first} studentId={student.id} sessions={sessions} changes={changes} laptops={laptops} showName={regs.length > 1} />
+            <RegistrationBlock key={r.id} reg={r} others={regs.filter(o => o.id !== r.id)} camper={first} studentId={student.id}
+              sessions={sessions} changes={changes} laptops={laptops} showName={regs.length > 1} />
           ))}
           <Link to={`/parent/classes?camper=${student.id}`} className={`${btnCls} mt-3`}>
             <GraduationCap size={20} strokeWidth={2.25} aria-hidden="true" /> {regs.length ? 'Add another week' : `Find a class for ${first}`}
@@ -84,8 +91,8 @@ export default function CamperRow({ student, regs, sessions, leadNames, changes,
   )
 }
 
-function RegistrationBlock({ reg, camper, studentId, sessions, changes, laptops, showName }: {
-  reg: RegistrationWithSection; camper: string; studentId: string; sessions: Session[]; changes: Changes; laptops?: Laptops; showName: boolean
+function RegistrationBlock({ reg, others, camper, studentId, sessions, changes, laptops, showName }: {
+  reg: RegistrationWithSection; others: RegistrationWithSection[]; camper: string; studentId: string; sessions: Session[]; changes: Changes; laptops?: Laptops; showName: boolean
 }) {
   const sec = reg.sections
   const where = `${sec?.classes?.name ?? 'this class'}, ${weekName(reg, sessions)}`
@@ -105,7 +112,10 @@ function RegistrationBlock({ reg, camper, studentId, sessions, changes, laptops,
           {holdsSeat(reg)
             ? <p className="text-ink-muted mt-0.5">{[sec?.label, time].filter(Boolean).join(', ')}{!time ? '. Times and room will be posted here.' : ''}</p>
             : <p className="text-ink-muted mt-0.5">We'll email you if a spot opens.</p>}
-          <RegistrationActions reg={reg} camper={camper} where={where} changes={changes} />
+          {reg.place_with && (
+            <p className="text-ink-muted mt-0.5 text-pretty">Placement request: <span className="font-bold text-ink">{reg.place_with}</span></p>
+          )}
+          <RegistrationActions reg={reg} others={others} camper={camper} where={where} changes={changes} />
           {holdsSeat(reg) && laptops && <LaptopLoanLine registrationId={reg.id} camper={camper} where={where} laptops={laptops} />}
         </>
       )}
@@ -114,8 +124,9 @@ function RegistrationBlock({ reg, camper, studentId, sessions, changes, laptops,
 }
 
 // Cancel / leave the waitlist before the change deadline; "Request a change" after it (spec 11).
-function RegistrationActions({ reg, camper, where, changes }: { reg: RegistrationWithSection; camper: string; where: string; changes: Changes }) {
-  const [mode, setMode] = useState<'idle' | 'confirm' | 'request' | 'switch'>('idle')
+// The "place with" request can be changed until the deadline too (spec 31).
+function RegistrationActions({ reg, others, camper, where, changes }: { reg: RegistrationWithSection; others: RegistrationWithSection[]; camper: string; where: string; changes: Changes }) {
+  const [mode, setMode] = useState<'idle' | 'confirm' | 'request' | 'switch' | 'place'>('idle')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -128,11 +139,15 @@ function RegistrationActions({ reg, camper, where, changes }: { reg: Registratio
     prevMode.current = mode
   }, [mode])
 
+  const [placeWith, setPlaceWith] = useState('')
   const deadline = changes.deadlines.get(reg.id)
   const seat = holdsSeat(reg)
   // A seat can be cancelled online until the deadline; a waitlist place can always be left.
   // eslint-disable-next-line react-hooks/purity -- a render-time clock read is fine for a deadline label
   const open = !seat || !deadline || Date.now() < new Date(deadline).getTime()
+  // The "place with" request follows the change deadline for every live spot (spec 31).
+  // eslint-disable-next-line react-hooks/purity -- a render-time clock read is fine for a deadline label
+  const placeOpen = !deadline || Date.now() < new Date(deadline).getTime()
   const lastDay = deadline
     ? new Date(new Date(deadline).getTime() - 1).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Denver' })
     : null
@@ -160,6 +175,11 @@ function RegistrationActions({ reg, camper, where, changes }: { reg: Registratio
             {open
               ? <button type="button" onClick={() => setMode('confirm')} className={textBtn}>{seat ? 'Cancel this spot' : 'Leave the waitlist'}</button>
               : <button type="button" onClick={() => setMode('request')} className={textBtn}>Request a change</button>}
+            {placeOpen && (
+              <button type="button" onClick={() => { setPlaceWith(reg.place_with ?? ''); setMode('place') }} className={textBtn}>
+                {reg.place_with ? 'Change placement request' : 'Ask to be placed with someone'}
+              </button>
+            )}
           </div>
           {seat && lastDay && (
             <p className="text-sm text-ink-muted">
@@ -183,7 +203,22 @@ function RegistrationActions({ reg, camper, where, changes }: { reg: Registratio
           />
         </div>
       )}
-      {mode === 'switch' && <SwitchClass reg={reg} camper={camper} changes={changes} onDone={() => setMode('idle')} />}
+      {mode === 'switch' && <SwitchClass reg={reg} others={others} camper={camper} changes={changes} onDone={() => setMode('idle')} />}
+      {mode === 'place' && (
+        <form
+          onSubmit={e => { e.preventDefault(); void run(() => changes.setPlaceWith(reg.id, placeWith), () => setMode('idle')) }}
+          className="mt-2 space-y-2"
+        >
+          <label htmlFor={`place-${reg.id}`} className={labelCls}>A friend or sibling to place {camper} with</label>
+          <p id={`place-${reg.id}-hint`} className={hintCls}>Their name. The camp reads every request but can't promise a placement. Leave it blank to remove it.</p>
+          <input id={`place-${reg.id}`} type="text" maxLength={100} value={placeWith} onChange={e => setPlaceWith(e.target.value)} autoFocus
+            aria-describedby={`place-${reg.id}-hint`} className="ui-input" />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => { setMode('idle'); setErr(null) }} className={btnCls}>Cancel</button>
+            <button type="submit" disabled={busy} className={buttonClass('ink')}>{busy ? 'Saving…' : 'Save request'}</button>
+          </div>
+        </form>
+      )}
       {mode === 'request' && (
         <form
           onSubmit={e => { e.preventDefault(); void run(() => changes.requestChange(reg.id, message), () => { setSent(true); setMode('idle') }) }}
@@ -204,8 +239,10 @@ function RegistrationActions({ reg, camper, where, changes }: { reg: Registratio
 }
 
 // Switch a held seat to another class the same week (spec 12). Only classes with a free seat can be
-// picked: a camper holding a seat can't join another waitlist that week (Q-W4).
-function SwitchClass({ reg, camper, changes, onDone }: { reg: RegistrationWithSection; camper: string; changes: Changes; onDone: () => void }) {
+// picked: a camper holding a seat can't join another waitlist that week (Q-W4). Classes the camper
+// doesn't fit stay in the list, greyed out with the reason; when it's the class's own rules (grade,
+// prerequisite) the family can ask for an exception instead (spec 31).
+function SwitchClass({ reg, others, camper, changes, onDone }: { reg: RegistrationWithSection; others: RegistrationWithSection[]; camper: string; changes: Changes; onDone: () => void }) {
   const [options, setOptions] = useState<SwapOption[] | null>(null)
   const [loadErr, setLoadErr] = useState<string | null>(null)
   const [picked, setPicked] = useState<SwapOption | null>(null)
@@ -218,6 +255,8 @@ function SwitchClass({ reg, camper, changes, onDone }: { reg: RegistrationWithSe
   }, [picked])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // The class the database refused under its own rules (a race with an admin's edit), if any.
+  const [ruleRefused, setRuleRefused] = useState<SwapOption | null>(null)
   const current = `${reg.sections?.classes?.name ?? 'this class'}${reg.sections?.label ? ` ${reg.sections.label}` : ''}`
 
   // Load once when the panel opens; spots are counted fresh from the server each time.
@@ -232,11 +271,30 @@ function SwitchClass({ reg, camper, changes, onDone }: { reg: RegistrationWithSe
 
   async function confirm() {
     if (!picked) return
-    setBusy(true); setErr(null)
+    setBusy(true); setErr(null); setRuleRefused(null)
     try { await changes.swapSpot(reg.id, picked.section_id); onDone() }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong'); setPicked(null) }
+    catch (e) {
+      setErr(e instanceof Error ? e.message : 'Something went wrong')
+      if (isCourseRuleError(e)) setRuleRefused(picked)
+      setPicked(null)
+    }
     finally { setBusy(false) }
   }
+
+  // Same course in the camper's other week this year: a warning, never a block (spec 31).
+  const repeatFor = (o: SwapOption) => {
+    const same = others.find(x => holdsSeat(x) && x.year === reg.year && x.sections?.class_id === o.class_id &&
+      x.sections.week != null && x.sections.week !== reg.sections?.week)
+    return same?.sections?.week ? repeatNote(o.class_name, same.sections.week, o.next_class_name) : null
+  }
+  const exceptionUI = (o: SwapOption) => (
+    <ExceptionRequest camper={camper} className={o.class_name} idPrefix={`swap-exc-${o.section_id}`}
+      sent={changes.exceptions.has(exceptionKey(reg.student_id, o.section_id))}
+      onSend={m => changes.requestException(reg.student_id, o.section_id, m)} />
+  )
+  // Classes that can be picked first, then full ones, then the ones the camper doesn't fit.
+  const rank = (o: SwapOption) => (o.blocked_reason ? 2 : o.spots_left > 0 ? 0 : 1)
+  const sorted = options ? [...options].sort((a, b) => rank(a) - rank(b)) : null
 
   const name = (o: SwapOption) => `${o.class_name}, ${o.label}`
   return (
@@ -246,21 +304,38 @@ function SwitchClass({ reg, camper, changes, onDone }: { reg: RegistrationWithSe
       </p>
       {loadErr && <ErrorLine>{loadErr}</ErrorLine>}
       {!options && !loadErr && <div className="h-14 bg-surface-sunken rounded animate-pulse" />}
-      {options && options.length === 0 && (
-        <p className="text-ink-muted">No other class that week fits {camper}'s age and grade.</p>
+      {sorted && sorted.length === 0 && (
+        <p className="text-ink-muted">No other class runs that week.</p>
       )}
-      {options && options.length > 0 && !picked && (
+      {sorted && sorted.length > 0 && !picked && (
         <ul ref={listRef} className="border-y-2 border-ink">
-          {options.map(o => {
+          {sorted.map(o => {
             const when = [o.room, o.start_time && formatTimeRange(o.start_time, o.end_time)].filter(Boolean).join(', ')
+            const repeat = repeatFor(o)
             return (
               <li key={o.section_id} className={rowCls}>
-                {o.spots_left > 0 ? (
-                  <button type="button" data-section={o.section_id} onClick={() => { setPicked(o); setErr(null) }}
+                {o.blocked_reason ? (
+                  <div className="py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 min-w-0">
+                        <span className="block font-bold text-ink-muted">{name(o)}</span>
+                        <span className="block text-sm text-ink-muted text-pretty">{o.blocked_reason}</span>
+                      </span>
+                      <Lock size={16} strokeWidth={2.5} aria-hidden="true" className="text-ink-muted shrink-0" />
+                    </div>
+                    {o.rule_blocked && exceptionUI(o)}
+                  </div>
+                ) : o.spots_left > 0 ? (
+                  <button type="button" data-section={o.section_id} onClick={() => { setPicked(o); setErr(null); setRuleRefused(null) }}
                     className="w-full text-left flex items-center gap-2 py-2.5 min-h-14 hover:bg-ink/[0.04] transition-colors">
                     <span className="flex-1 min-w-0">
                       <span className="block font-bold">{name(o)}</span>
                       <span className="block text-sm text-ink-muted">{when}{when ? ', ' : ''}{o.spots_left} {o.spots_left === 1 ? 'spot' : 'spots'} left</span>
+                      {repeat && (
+                        <span className="mt-1 flex items-start gap-1.5 text-sm font-bold text-pretty">
+                          <Repeat size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0 mt-px" />{repeat}
+                        </span>
+                      )}
                     </span>
                     <ChevronRight size={20} strokeWidth={2.25} aria-hidden="true" className="text-ink-muted shrink-0" />
                   </button>
@@ -290,6 +365,7 @@ function SwitchClass({ reg, camper, changes, onDone }: { reg: RegistrationWithSe
         </div>
       )}
       {err && <ErrorLine className="mt-2">{err}</ErrorLine>}
+      {ruleRefused && exceptionUI(ruleRefused)}
       {!picked && (
         <button type="button" onClick={onDone} className={`${btnCls} mt-3`}>Keep {current}</button>
       )}

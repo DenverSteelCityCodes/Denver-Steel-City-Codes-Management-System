@@ -11,7 +11,7 @@ npm test          # Vitest: src/lib/__tests__/*.test.ts
 npm run build
 ```
 
-- Unit tests cover the pure helpers: the volunteer matcher, CSV export (including formula defusing), grade → age and the course grade rule, camp-day formatting, Denver time (both DST sides, any device zone) and registration drafts (signatures never stored).
+- Unit tests cover the pure helpers: the volunteer matcher, CSV export (including formula defusing), grade → age, the course rules (grades, prerequisites, the repeat warning; `courseRules.ts`), camp-day formatting, Denver time (both DST sides, any device zone) and registration drafts (signatures never stored).
 - CI runs them with `TZ=Asia/Tokyo`, so a Denver-time bug can't hide behind a Denver machine.
 - Add a test next to any new helper in `src/lib/`.
 

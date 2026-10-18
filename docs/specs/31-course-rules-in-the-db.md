@@ -1,6 +1,6 @@
 # 31: Course rules in the database: grades, prerequisites, repeat courses, "place with"
 
-**Status:** ⬜ not started · **Issue:** #151 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in review ([PR #194](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/194)) · **Issue:** #151 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 05 · **Unblocks:** 23 (makes these rules per region), 32
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1–2; plan Q-P2; takes over the grade-rule half of spec 23
 

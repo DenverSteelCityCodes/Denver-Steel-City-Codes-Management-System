@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   TriangleAlert, Armchair, Inbox, CalendarClock, ListChecks, ClipboardList, UserRoundX, Copy, MailWarning,
-  MessageSquareText, CalendarX,
+  MessageSquareText, CalendarX, BookAlert,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
@@ -17,6 +17,10 @@ interface DuplicatePair { a_id: string; a_name: string; a_parent: string | null;
 
 // A crew member's upcoming absence and a section it leaves short (spec 25).
 interface CrewAbsence { absence_id: string; volunteer_name: string; from_date: string; to_date: string; class_name: string; section_label: string; week: number | null; is_lead: boolean; suggestions: string[] }
+
+// A registration whose earlier-week prerequisite was cancelled, or whose camper missed every arrival
+// roll call in it so far (admin_prerequisite_at_risk(), spec 31).
+interface PrereqAtRisk { registration_id: string; student_id: string; camper_name: string; class_name: string; section_label: string; week: number | null; status: string; required_class_name: string; reason: 'cancelled' | 'absent'; missed_arrivals: number }
 
 // How much an item matters (DESIGN.md › The Meaningful Red Rule):
 //  danger    — safety or a failure: campers unaccounted for, emails that never went out. Red.
@@ -71,19 +75,23 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
   const [openRequests, setOpenRequests] = useState(0)
   // Volunteers who can't make it (spec 25).
   const [absences, setAbsences] = useState<CrewAbsence[]>([])
+  // Campers who may not have the class their next class needs (spec 31).
+  const [atRisk, setAtRisk] = useState<PrereqAtRisk[]>([])
 
   const loadExtras = useCallback(async () => {
-    const [abs, dup, failed, requests] = await Promise.all([
+    const [abs, dup, failed, requests, risk] = await Promise.all([
       supabase.rpc('admin_crew_absences'),
       supabase.rpc('possible_duplicate_campers'),
       supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3),
       supabase.from('change_requests').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+      supabase.rpc('admin_prerequisite_at_risk'),
     ])
     return {
       absences: abs.error ? null : ((abs.data ?? []) as CrewAbsence[]),
       dupes: dup.error ? [] : ((dup.data ?? []) as DuplicatePair[]),
       failed: failed.count ?? 0,
       requests: requests.count ?? 0,
+      atRisk: risk.error ? null : ((risk.data ?? []) as PrereqAtRisk[]),
     }
   }, [])
 
@@ -92,6 +100,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
     setDupes(x.dupes)
     setFailedEmails(x.failed)
     setOpenRequests(x.requests)
+    if (x.atRisk) setAtRisk(x.atRisk)
   }, [])
 
   useEffect(() => {
@@ -156,7 +165,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       title: `${failedEmails} ${plural(failedEmails, "email couldn't", "emails couldn't")} be sent`,
       detail: 'Families may not know about a confirmation or change. Check the email log.',
       ctaLabel: 'Open email log',
-      to: '/admin/updates',
+      to: '/admin/updates?tab=emails',
     })
   }
 
@@ -212,9 +221,29 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       icon: MessageSquareText,
       tone: 'attention',
       title: `${openRequests} open change ${plural(openRequests, 'request', 'requests')}`,
-      detail: 'Families past the online deadline, or volunteers asking to switch sections.',
+      detail: 'Families past the online deadline or asking for an exception, or volunteers asking to switch sections.',
       ctaLabel: 'Review requests',
       to: '/admin/students#requests',
+    })
+  }
+
+  // ── Prerequisite at risk (spec 31) ──────────────────────────────────────
+  if (atRisk.length > 0) {
+    const first = atRisk[0]
+    const why = first.reason === 'cancelled'
+      ? `their ${first.required_class_name} spot was cancelled`
+      : `absent at ${first.missed_arrivals === 1 ? 'the' : `all ${first.missed_arrivals}`} ${first.required_class_name} arrival roll ${plural(first.missed_arrivals, 'call', 'calls')} so far`
+    items.push({
+      key: 'prereq-at-risk',
+      icon: BookAlert,
+      tone: 'attention',
+      title: atRisk.length === 1
+        ? `${first.camper_name} may not be ready for ${first.class_name}`
+        : `${atRisk.length} campers may not have the class their next class needs`,
+      detail: `${first.camper_name} · ${first.class_name} ${first.section_label}${first.week ? ` (Week ${first.week})` : ''} needs ${first.required_class_name}: ${why}`
+        + (atRisk.length > 1 ? ` · ${atRisk.length - 1} more` : ''),
+      ctaLabel: 'Review camper',
+      to: `/admin/students?q=${encodeURIComponent(first.camper_name)}`,
     })
   }
 

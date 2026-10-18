@@ -11,6 +11,8 @@ export interface StudentRegistration {
   section_week: 1 | 2 | null
   class_name: string
   class_id: string
+  // The family's "place with a friend or sibling" request (spec 31).
+  place_with: string | null
 }
 
 // Row shape of the students → parent profile / registrations → section → class select.
@@ -75,6 +77,8 @@ export function useAdminStudents() {
     // never overlap or skip.
     let data: unknown[] | null = null
     let error: { message: string } | null = null
+    // Placement requests aren't readable directly (spec 31); admins get them from admin_place_with().
+    const placedPromise = supabase.rpc('admin_place_with')
     try {
       data = await fetchAll(async (from, to) => supabase
         .from('students')
@@ -104,6 +108,8 @@ export function useAdminStudents() {
       return
     }
 
+    const placed = await placedPromise
+    const placeWith = new Map(((placed.data ?? []) as { registration_id: string; place_with: string }[]).map(p => [p.registration_id, p.place_with]))
     const shaped: AdminStudent[] = ((data ?? []) as unknown as RawStudent[]).map(s => ({
       id: s.id,
       full_name: s.full_name,
@@ -129,6 +135,7 @@ export function useAdminStudents() {
         section_week: r.sections?.week ?? null,
         class_name: r.sections?.classes?.name ?? '—',
         class_id: r.sections?.class_id ?? '',
+        place_with: placeWith.get(r.id) ?? null,
       })),
     }))
 

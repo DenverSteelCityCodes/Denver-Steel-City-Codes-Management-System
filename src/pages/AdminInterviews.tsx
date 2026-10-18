@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, Calendar, User, FileText, X, Check } from 'lucide-react'
-import { useInterviews } from '../hooks/useInterviews'
-import { ActionError } from '../components/ActionError'
+import { Fragment, useCallback, useState, useEffect } from 'react'
+import { ChevronDown, Plus } from 'lucide-react'
+import { useInterviews, type InterviewSlot } from '../hooks/useInterviews'
+import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
+import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import InlineConfirm from '../components/InlineConfirm'
+import Button from '../components/Button'
+import { Input, Select, Textarea } from '../components/Field'
+import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
 import { supabase } from '../lib/supabase'
 import { campDateKey, campInputToISO, formatCampTime } from '../lib/denverTime'
+import { mondayOf, shortRange } from '../lib/weekRange'
+import type { VolunteerApplication } from '../types/database'
 
 interface Application {
   id: string
@@ -15,12 +21,15 @@ interface Application {
   interview_confirmed: boolean
 }
 
-const inputCls = 'ui-input'
-const textareaCls = 'ui-input resize-none'
-const cancelCls = 'h-9 px-4 font-sans text-sm font-semibold text-ink bg-surface border border-border-strong rounded-[8px] hover:bg-surface-sunken transition'
-const saveCls = 'h-9 px-4 font-sans text-sm font-semibold bg-brand text-brand-on rounded-[8px] hover:bg-brand-hover transition disabled:opacity-50 flex items-center gap-1.5'
+const label = 'block font-bold mb-1.5'
+const dayLabel = (key: string) =>
+  new Date(key + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+const shortDay = (key: string) =>
+  new Date(key + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+const weeksText = (w1: boolean, w2: boolean) =>
+  w1 && w2 ? 'Weeks 1, 2' : w1 ? 'Week 1' : w2 ? 'Week 2' : 'No weeks picked'
 
-// Inline panel under a free slot: pick an applicant and book.
+// Inline panel under an open slot: pick any applicant without an interview and book.
 function BookPanel({
   bookedAppIds,
   onBook,
@@ -70,40 +79,34 @@ function BookPanel({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
-      className="px-4 py-4 bg-surface-sunken border-t border-border space-y-3"
-    >
+    <form onSubmit={handleSubmit} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="book-applicant" className="block font-sans text-sm font-semibold text-ink mb-1.5">Applicant</label>
-          <select id="book-applicant" autoFocus value={selectedId} onChange={e => setSelectedId(e.target.value)} className={inputCls}>
-            <option value="">{appsError ? "Couldn't load applicants" : unbooked === null ? 'Loading…' : 'Select applicant…'}</option>
+          <label htmlFor="book-applicant" className={label}>Applicant</label>
+          <Select id="book-applicant" autoFocus value={selectedId} onChange={e => setSelectedId(e.target.value)}>
+            <option value="">{appsError ? "Couldn't load applicants" : unbooked === null ? 'Loading…' : 'Choose an applicant…'}</option>
             {(unbooked ?? []).map(a => (
-              <option key={a.id} value={a.id}>{a.first_name} {a.last_name} — {a.email}</option>
+              <option key={a.id} value={a.id}>{a.first_name} {a.last_name} · {a.email}</option>
             ))}
-          </select>
+          </Select>
           {appsError ? (
-            <p role="alert" className="mt-1 font-sans text-xs text-danger">
-              Couldn't load applicants: {appsError}.{' '}
-              <button type="button" onClick={() => setReloadKey(k => k + 1)} className="font-semibold hover:underline">Retry</button>
+            <p role="alert" className="mt-1.5 text-sm font-bold text-danger">
+              Couldn't load applicants.{' '}
+              <button type="button" title={appsError} onClick={() => setReloadKey(k => k + 1)} className="min-h-11 underline underline-offset-[3px]">Try again</button>
             </p>
           ) : unbooked?.length === 0 && (
-            <p className="mt-1 font-sans text-xs text-ink-muted">Every applicant already has an interview booked.</p>
+            <p className="mt-1.5 text-sm text-ink-muted">Every applicant already has an interview booked.</p>
           )}
         </div>
         <div>
-          <label htmlFor="book-notes" className="block font-sans text-sm font-semibold text-ink mb-1.5">Notes <span className="font-normal text-ink-muted">(optional)</span></label>
-          <input id="book-notes" value={notes} onChange={e => setNotes(e.target.value)} className={inputCls} placeholder="Pre-interview notes…" />
+          <label htmlFor="book-notes" className={label}>Notes <span className="font-normal text-ink-muted">(optional)</span></label>
+          <Input id="book-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Before the interview" />
         </div>
       </div>
-      {err && <p role="alert" className="text-danger text-sm font-sans">{err}</p>}
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className={cancelCls}>Cancel</button>
-        <button type="submit" disabled={saving} className={saveCls}>
-          <Check size={14} /> {saving ? 'Booking…' : 'Book slot'}
-        </button>
+      {err && <p role="alert" className="text-sm font-bold text-danger">{err}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button type="submit" variant="ink" disabled={saving}>{saving ? 'Booking…' : 'Book this time'}</Button>
       </div>
     </form>
   )
@@ -111,10 +114,12 @@ function BookPanel({
 
 // Inline notes editor under a booked slot.
 function NotesPanel({
+  name,
   initialNotes,
   onSave,
   onCancel,
 }: {
+  name: string
   initialNotes: string
   onSave: (notes: string) => Promise<void>
   onCancel: () => void
@@ -136,22 +141,75 @@ function NotesPanel({
   }
 
   return (
-    <form
-      onSubmit={handleSave}
-      onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
-      className="px-4 py-4 bg-surface-sunken border-t border-border space-y-3"
-    >
-      <label htmlFor="interview-notes" className="block font-sans text-sm font-semibold text-ink">Interview notes</label>
-      <textarea id="interview-notes" autoFocus value={notes} onChange={e => setNotes(e.target.value)}
-        rows={4} className={textareaCls} placeholder="How did it go? Strengths, concerns, recommended experience level…" />
-      {err && <p role="alert" className="text-danger text-sm font-sans">{err}</p>}
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className={cancelCls}>Cancel</button>
-        <button type="submit" disabled={saving} className={saveCls}>
-          <Check size={14} /> {saving ? 'Saving…' : 'Save notes'}
-        </button>
+    <form onSubmit={handleSave} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} className="space-y-3 max-w-[640px]">
+      <label htmlFor="interview-notes" className={label}>Interview notes for {name}</label>
+      <Textarea id="interview-notes" autoFocus value={notes} onChange={e => setNotes(e.target.value)}
+        rows={4} className="resize-y" placeholder="How did it go? Strengths, concerns, the level you'd suggest" />
+      {err && <p role="alert" className="text-sm font-bold text-danger">{err}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button type="submit" variant="ink" disabled={saving}>{saving ? 'Saving…' : 'Save notes'}</Button>
       </div>
     </form>
+  )
+}
+
+// "Needs a time": one pending applicant with no booking, an open time to pick and Book.
+function NeedsTime({
+  app,
+  openSlots,
+  onBook,
+}: {
+  app: VolunteerApplication
+  openSlots: InterviewSlot[]
+  onBook: (slotId: string) => Promise<void>
+}) {
+  const [slotId, setSlotId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const byDay = openSlots.reduce<Record<string, InterviewSlot[]>>((acc, s) => {
+    ;(acc[campDateKey(s.slot_datetime)] ??= []).push(s)
+    return acc
+  }, {})
+  // A slot booked in the meantime drops out of the list; don't keep pointing at it.
+  const chosen = openSlots.some(s => s.id === slotId) ? slotId : ''
+
+  async function book() {
+    if (!chosen) { setErr(`Choose a time for ${app.first_name} first.`); return }
+    setSaving(true)
+    setErr(null)
+    try {
+      await onBook(chosen)
+    } catch (e) {
+      setErr(`Couldn't book ${app.first_name}: ${e instanceof Error ? e.message : 'unknown error'}. Try again.`)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <li className="py-4 border-t border-border first:border-t-0">
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+        <div className="flex-[1_1_18rem] min-w-0 self-center">
+          <p className="text-lg font-bold leading-[1.3]">{app.first_name} {app.last_name}</p>
+          <p className="text-sm text-ink-muted text-pretty">{app.school} · {app.grade} · {weeksText(app.availability_week_1, app.availability_week_2)}</p>
+        </div>
+        <div className="flex-[1_1_16rem] md:flex-[0_0_18rem] min-w-0">
+          <label htmlFor={`need-${app.id}`} className="block text-sm font-bold mb-1.5">Interview time for {app.first_name}</label>
+          <Select id={`need-${app.id}`} value={chosen} onChange={e => { setSlotId(e.target.value); setErr(null) }} disabled={openSlots.length === 0}>
+            <option value="">{openSlots.length === 0 ? 'No open times' : 'Choose an open time…'}</option>
+            {Object.entries(byDay).map(([day, list]) => (
+              <optgroup key={day} label={dayLabel(day)}>
+                {list.map(s => <option key={s.id} value={s.id}>{shortDay(day)}, {formatCampTime(s.slot_datetime)}</option>)}
+              </optgroup>
+            ))}
+          </Select>
+        </div>
+        <Button onClick={book} disabled={saving || openSlots.length === 0} className="md:min-w-[9rem]">
+          {saving ? 'Booking…' : `Book ${app.first_name}`}
+        </Button>
+      </div>
+      {err && <p role="alert" className="mt-2 text-sm font-bold text-danger text-pretty">{err}</p>}
+    </li>
   )
 }
 
@@ -164,6 +222,7 @@ type Panel =
 
 export default function AdminInterviews() {
   const { slots, loading, error: loadError, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, refetch } = useInterviews()
+  const { applications, loading: appsLoading } = useVolunteerApplications()
 
   const [slotForm, setSlotForm] = useState({ date: '', time: '', duration: '15' })
   const [addingSlot, setAddingSlot] = useState(false)
@@ -171,6 +230,11 @@ export default function AdminInterviews() {
   const [panel, setPanel] = useState<Panel>(null)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  // The clock that decides which slots are still ahead (bookable) and which days are past. It ticks
+  // every minute and when the tab comes back, so a slot that starts while the page is open drops out.
+  const [now, setNow] = useState(() => Date.now())
+  const tick = useCallback(() => setNow(Date.now()), [])
+  useRefetchOnFocus(tick, 60_000)
 
   async function handleAddSlot(e: React.FormEvent) {
     e.preventDefault()
@@ -204,206 +268,263 @@ export default function AdminInterviews() {
     }
   }
 
-  const grouped = slots.reduce<Record<string, typeof slots>>((acc, s) => {
-    const date = campDateKey(s.slot_datetime)
-    acc[date] = acc[date] ?? []
-    acc[date].push(s)
+  const today = campDateKey(new Date(now).toISOString())
+  const grouped = slots.reduce<Record<string, InterviewSlot[]>>((acc, s) => {
+    ;(acc[campDateKey(s.slot_datetime)] ??= []).push(s)
     return acc
   }, {})
+  const days = Object.keys(grouped).sort()
+  const upcomingDays = days.filter(d => d >= today)
+  const pastDays = days.filter(d => d < today)
 
   const booked = slots.filter(s => s.booking)
   const bookedAppIds = new Set(booked.map(s => s.booking!.application_id))
-  const available = slots.filter(s => !s.booking)
-  const iconBtn = 'p-1.5 rounded-[6px] transition'
+  const open = slots.filter(s => !s.booking)
+  // Times an applicant can still be booked into: open, and not already over.
+  const openAhead = open.filter(s => new Date(s.slot_datetime).getTime() > now)
+  const durations = new Set(slots.map(s => s.duration_minutes))
+  const oneDuration = durations.size === 1 ? [...durations][0] : null
+  const needsTime = applications.filter(a => a.status === 'pending' && !bookedAppIds.has(a.id))
+  const pastCount = pastDays.reduce((n, d) => n + grouped[d].filter(s => s.booking).length, 0)
+  // Upcoming days by week: the nearest week stays open, later weeks fold to one line each.
+  const upcomingWeeks = Object.values(upcomingDays.reduce<Record<string, string[]>>((acc, d) => {
+    ;(acc[mondayOf(d)] ??= []).push(d)
+    return acc
+  }, {}))
+
+  const th = 'px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap'
+  const linkBtn = 'min-h-11 font-bold underline underline-offset-[3px] cursor-pointer'
+
+  function slotTable(dayKeys: string[], caption: string) {
+    return (
+      <table className="w-full bg-surface border-y-2 border-ink max-md:block">
+        <caption className="sr-only">{caption}</caption>
+        <thead className="max-md:sr-only">
+          <tr>
+            <th scope="col" className={`${th} w-28`}>Time</th>
+            <th scope="col" className={th}>Applicant</th>
+            <th scope="col" className={th}>Notes</th>
+            <th scope="col" className={th}><span className="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody className="max-md:block">
+          {dayKeys.map(day => (
+            <Fragment key={day}>
+              <tr className="max-md:block">
+                <th scope="colgroup" colSpan={4} className="px-3 pt-5 pb-2 text-left font-extrabold border-b border-ink max-md:block max-md:px-0 [tr:first-child>&]:pt-3">
+                  {dayLabel(day)}
+                </th>
+              </tr>
+              {grouped[day].map(slot => {
+                const time = formatCampTime(slot.slot_datetime)
+                const name = slot.booking?.application
+                  ? `${slot.booking.application.first_name} ${slot.booking.application.last_name}`
+                  : slot.booking ? 'An applicant' : null
+                const kind = panel?.slotId === slot.id ? panel.kind : null
+                const when = `${dayLabel(day)}, ${time}`
+                return (
+                  <Fragment key={slot.id}>
+                    <tr className="border-t border-border [tr:has(>th)+&]:border-t-0 max-md:block max-md:py-2">
+                      <td className="px-3 py-2.5 align-middle whitespace-nowrap max-md:inline max-md:p-0">
+                        <b className="font-bold">{time}</b>
+                        {oneDuration === null && <span className="text-sm text-ink-muted"> · {slot.duration_minutes} min</span>}
+                      </td>
+                      <td className="px-3 py-2.5 align-middle max-md:inline max-md:p-0 max-md:before:content-['_·_']">
+                        {name ? <b className="font-bold">{name}</b> : <span className="text-ink-muted">Open</span>}
+                      </td>
+                      <td className="px-3 py-2.5 align-middle max-md:block max-md:p-0 max-md:empty:hidden">
+                        {slot.booking && kind !== 'notes' && (
+                          slot.booking.admin_notes
+                            ? <span className="line-clamp-2 text-pretty">{slot.booking.admin_notes}</span>
+                            : <span className="text-sm text-ink-muted">No notes yet</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 align-middle whitespace-nowrap max-md:block max-md:p-0">
+                        <span className="inline-flex flex-wrap gap-x-4">
+                          {slot.booking ? (
+                            <>
+                              <button type="button" className={linkBtn} aria-expanded={kind === 'notes'}
+                                onClick={() => setPanel(kind === 'notes' ? null : { kind: 'notes', slotId: slot.id })}>
+                                Notes<span className="sr-only"> for {name}</span>
+                              </button>
+                              <button type="button" className={`${linkBtn} text-ink-muted`} aria-expanded={kind === 'unbook'}
+                                onClick={() => setPanel({ kind: 'unbook', slotId: slot.id })}>
+                                Unbook<span className="sr-only"> {name}</span>
+                              </button>
+                            </>
+                          ) : (
+                            <button type="button" className={linkBtn} aria-expanded={kind === 'book'}
+                              onClick={() => setPanel(kind === 'book' ? null : { kind: 'book', slotId: slot.id })}>
+                              Book<span className="sr-only"> {when}</span>
+                            </button>
+                          )}
+                          <button type="button" className={`${linkBtn} text-ink-muted`} aria-expanded={kind === 'delete'}
+                            onClick={() => setPanel({ kind: 'delete', slotId: slot.id })}>
+                            Delete<span className="sr-only"> the {when} slot</span>
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                    {kind && (
+                      <tr className="max-md:block">
+                        <td colSpan={4} className="px-3 pb-4 pt-1 max-md:block max-md:px-0">
+                          {kind === 'book' && (
+                            <BookPanel
+                              bookedAppIds={bookedAppIds}
+                              onCancel={() => setPanel(null)}
+                              onBook={async (appId, notes) => { await bookSlot(slot.id, appId, notes); setPanel(null) }}
+                            />
+                          )}
+                          {kind === 'notes' && slot.booking && (
+                            <NotesPanel
+                              name={name ?? 'this applicant'}
+                              initialNotes={slot.booking.admin_notes ?? ''}
+                              onCancel={() => setPanel(null)}
+                              onSave={async notes => { await updateNotes(slot.booking!.id, notes); setPanel(null) }}
+                            />
+                          )}
+                          {kind === 'unbook' && slot.booking && (
+                            <InlineConfirm
+                              frame
+                              message={`Cancel ${name}'s interview? The slot opens up again${slot.booking.admin_notes ? ' and the notes on this booking are deleted' : ''}.`}
+                              confirmLabel="Cancel booking"
+                              cancelLabel="Keep booking"
+                              busy={busy}
+                              onConfirm={() => run(() => unbookSlot(slot.booking!.id), "Couldn't cancel the booking")}
+                              onCancel={() => setPanel(null)}
+                            />
+                          )}
+                          {kind === 'delete' && (
+                            <InlineConfirm
+                              frame
+                              message={slot.booking
+                                ? `Delete this slot? ${name}'s booking and its notes are deleted too. This can't be undone.`
+                                : "Delete this slot? This can't be undone."}
+                              confirmLabel="Delete slot"
+                              cancelLabel="Keep it"
+                              busy={busy}
+                              onConfirm={() => run(() => deleteSlot(slot.id), "Couldn't delete the slot")}
+                              onCancel={() => setPanel(null)}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
 
   return (
-    <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div>
-        <h1 className="font-display font-bold text-2xl text-ink mb-1">Interviews</h1>
-        <p className="font-sans text-sm text-ink-muted">Open interview slots, book applicants into them, and keep notes.</p>
-      </div>
+    <div className={pageClass}>
+      <AdminPageHead
+        title="Interviews"
+        lede={loading || loadError ? 'All times Denver.' : `${booked.length} booked · ${open.length} open${oneDuration !== null ? ` · ${oneDuration} minutes each` : ''} · all times Denver`}
+      />
 
-      <ActionError message={actionError} onDismiss={() => setActionError(null)} />
+      {actionError && <p role="alert" className="mb-4 text-sm font-bold text-danger text-pretty">{actionError}</p>}
 
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
-        {[
-          { label: 'Total slots', value: slots.length },
-          { label: 'Booked', value: booked.length },
-          { label: 'Available', value: available.length },
-        ].map(s => (
-          <div key={s.label} className="bg-surface border border-border rounded-[14px] p-4">
-            <p className="font-sans text-xs text-ink-muted uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="font-sans font-bold text-3xl text-ink tabular-nums">{s.value}</p>
+      <section aria-labelledby="need-heading">
+        <h2 id="need-heading" className={h2Class}>Needs a time{appsLoading ? '' : ` (${needsTime.length})`}</h2>
+        <p className="mt-1 text-sm text-ink-muted text-pretty">Pending applicants with no interview booked yet.</p>
+        {appsLoading || loading ? (
+          <div aria-busy="true" aria-label="Loading applicants" className="mt-3 border-y-2 border-ink">
+            {[1, 2].map(i => <div key={i} className="h-14 my-2 rounded bg-surface-sunken animate-pulse" />)}
           </div>
-        ))}
-      </div>
+        ) : needsTime.length === 0 ? (
+          <p className="mt-3 py-4 border-y-2 border-ink font-bold">Every pending applicant has an interview booked.</p>
+        ) : (
+          <>
+            {openAhead.length === 0 && !loadError && (
+              <p className="mt-3 font-bold">No open times left. Add a slot below, then book them.</p>
+            )}
+            <ul className="mt-3 border-y-2 border-ink">
+              {needsTime.map(app => (
+                <NeedsTime key={app.id} app={app} openSlots={openAhead}
+                  onBook={slotId => bookSlot(slotId, app.id, '')} />
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
 
-      <div className="bg-surface border border-border rounded-[14px] p-4 sm:p-5 space-y-3">
-        <p className="font-sans font-semibold text-sm text-ink">Add interview slot</p>
-        <form onSubmit={handleAddSlot} className="flex flex-wrap gap-3 items-end">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="slot-date" className="font-sans text-xs text-ink-muted">Date</label>
-            <input id="slot-date" type="date" value={slotForm.date} onChange={e => setSlotForm(f => ({ ...f, date: e.target.value }))} className={`${inputCls} w-auto`} />
+      <section aria-labelledby="slots-heading" className="mt-10">
+        <h2 id="slots-heading" className={h2Class}>Slots</h2>
+        <form onSubmit={handleAddSlot} aria-label="Add an interview slot" className="mt-3 flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="slot-date" className={label}>Date</label>
+            <Input id="slot-date" type="date" value={slotForm.date} onChange={e => setSlotForm(f => ({ ...f, date: e.target.value }))} className="w-auto" />
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="slot-time" className="font-sans text-xs text-ink-muted">Time (Denver)</label>
-            <input id="slot-time" type="time" value={slotForm.time} onChange={e => setSlotForm(f => ({ ...f, time: e.target.value }))} className={`${inputCls} w-auto`} />
+          <div>
+            <label htmlFor="slot-time" className={label}>Time (Denver)</label>
+            <Input id="slot-time" type="time" value={slotForm.time} onChange={e => setSlotForm(f => ({ ...f, time: e.target.value }))} className="w-auto" />
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="slot-duration" className="font-sans text-xs text-ink-muted">Minutes</label>
-            <input id="slot-duration" type="number" min={5} max={120} value={slotForm.duration} onChange={e => setSlotForm(f => ({ ...f, duration: e.target.value }))} className={`${inputCls} w-24`} />
+          <div>
+            <label htmlFor="slot-duration" className={label}>Minutes</label>
+            <Input id="slot-duration" type="number" inputMode="numeric" min={5} max={120} value={slotForm.duration} onChange={e => setSlotForm(f => ({ ...f, duration: e.target.value }))} className="w-[6.5rem]" />
           </div>
-          <button type="submit" disabled={addingSlot}
-            className="h-10 px-4 bg-brand text-brand-on font-sans font-semibold text-sm rounded-[8px] flex items-center gap-2 hover:bg-brand-hover transition disabled:opacity-50">
-            {addingSlot ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Plus size={15} />}
+          <Button type="submit" variant="primary" disabled={addingSlot}>
+            {addingSlot
+              ? <span aria-hidden="true" className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              : <Plus size={18} strokeWidth={2.5} aria-hidden="true" />}
             Add slot
-          </button>
+          </Button>
         </form>
-        {err && <p role="alert" className="text-danger text-sm font-sans">{err}</p>}
-      </div>
+        {err && <p role="alert" className="mt-2 text-sm font-bold text-danger">{err}</p>}
 
-      {loadError && (
-        <div role="alert" className="flex items-center justify-between gap-3 px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">
-          <span>Couldn't load interview slots: {loadError}</span>
-          <button type="button" onClick={() => void refetch()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
+        {loadError && (
+          <div role="alert" className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <p title={loadError} className="flex-1 min-w-[min(100%,16rem)] font-bold text-danger">Couldn't load the interview slots. Check your connection, then try again.</p>
+            <Button onClick={() => void refetch()}>Try again</Button>
+          </div>
+        )}
+
+        <div className="mt-6">
+          {loading ? (
+            <div aria-busy="true" aria-label="Loading slots" className="border-y-2 border-ink">
+              {[1, 2, 3].map(i => <div key={i} className="h-12 my-1 rounded bg-surface-sunken animate-pulse" />)}
+            </div>
+          ) : slots.length === 0 ? (loadError ? null : (
+            <p className="py-4 border-y-2 border-ink">
+              <b className="font-bold">No interview slots yet.</b> <span className="text-ink-muted">Add a few times above, then book applicants into them.</span>
+            </p>
+          )) : (
+            <>
+              {upcomingWeeks.length > 0
+                ? slotTable(upcomingWeeks[0], `Interview slots, ${shortRange(upcomingWeeks[0][0], upcomingWeeks[0][upcomingWeeks[0].length - 1])}`)
+                : <p className="py-4 border-y-2 border-ink font-bold">No upcoming slots. Add a time above.</p>}
+              {upcomingWeeks.slice(1).map(weekDays => {
+                const list = weekDays.flatMap(d => grouped[d])
+                const range = shortRange(weekDays[0], weekDays[weekDays.length - 1])
+                const nBooked = list.filter(s => s.booking).length
+                return (
+                  <details key={weekDays[0]} className="group mt-4">
+                    <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                      {range} · {list.length - nBooked} open{nBooked ? `, ${nBooked} booked` : ''}
+                      <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="mt-2">{slotTable(weekDays, `Interview slots, ${range}`)}</div>
+                  </details>
+                )
+              })}
+              {pastDays.length > 0 && (
+                <details className="group mt-4">
+                  <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                    Past days · {shortDay(pastDays[0])}{pastDays.length > 1 ? ` – ${shortDay(pastDays[pastDays.length - 1])}` : ''} · {pastCount} interview{pastCount === 1 ? '' : 's'}
+                    <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-2">{slotTable(pastDays, 'Past interview slots')}</div>
+                </details>
+              )}
+            </>
+          )}
         </div>
-      )}
-
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-16 bg-surface border border-border rounded-[14px] animate-pulse" />)}
-        </div>
-      ) : slots.length === 0 ? (loadError ? null : (
-        <div className="bg-surface border border-border rounded-[14px] p-12 text-center">
-          <Calendar size={24} className="text-ink-muted mx-auto mb-3" />
-          <p className="font-sans font-semibold text-ink mb-1">No interview slots yet</p>
-          <p className="font-sans text-sm text-ink-muted">Add a few times above, then book applicants into them.</p>
-        </div>
-      )) : (
-        <div className="space-y-6">
-          {Object.entries(grouped)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([date, daySlots]) => (
-              <div key={date}>
-                <h2 className="font-sans font-semibold text-sm text-ink-muted mb-2">
-                  {new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                </h2>
-                <div className="bg-surface border border-border rounded-[14px] overflow-hidden divide-y divide-border">
-                  {daySlots.map(slot => {
-                    const time = formatCampTime(slot.slot_datetime)
-                    const applicantName = slot.booking?.application
-                      ? `${slot.booking.application.first_name} ${slot.booking.application.last_name}`
-                      : null
-                    const open = panel?.slotId === slot.id ? panel.kind : null
-                    return (
-                      <div key={slot.id}>
-                        <div className="flex items-center gap-3 sm:gap-4 px-4 py-3.5">
-                          <div className="w-16 sm:w-20 shrink-0">
-                            <p className="font-sans font-semibold text-sm text-ink">{time}</p>
-                            <p className="font-sans text-xs text-ink-muted">{slot.duration_minutes} min</p>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            {slot.booking ? (
-                              <div>
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <User size={13} className="text-ink-muted shrink-0" />
-                                  <p className="font-sans font-semibold text-sm text-ink truncate">{applicantName}</p>
-                                  <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-success-soft text-success shrink-0">Booked</span>
-                                </div>
-                                {slot.booking.admin_notes && open !== 'notes' && (
-                                  <p className="font-sans text-xs text-ink-muted mt-0.5 ml-[21px] truncate">{slot.booking.admin_notes}</p>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-warning-soft text-warning">Available</span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {slot.booking ? (
-                              <>
-                                <button
-                                  onClick={() => setPanel(open === 'notes' ? null : { kind: 'notes', slotId: slot.id })}
-                                  aria-expanded={open === 'notes'}
-                                  aria-label={`Notes for ${applicantName}`}
-                                  title="Interview notes"
-                                  className={`${iconBtn} ${open === 'notes' ? 'text-ink bg-brand-soft' : 'text-ink-muted hover:text-ink hover:bg-brand-soft'}`}
-                                >
-                                  <FileText size={14} />
-                                </button>
-                                <button
-                                  onClick={() => setPanel({ kind: 'unbook', slotId: slot.id })}
-                                  aria-label={`Cancel ${applicantName}'s booking`}
-                                  title="Cancel booking"
-                                  className={`${iconBtn} text-ink-muted hover:text-danger hover:bg-danger-soft`}
-                                >
-                                  <X size={14} />
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                onClick={() => setPanel(open === 'book' ? null : { kind: 'book', slotId: slot.id })}
-                                aria-expanded={open === 'book'}
-                                className="h-8 px-3 text-xs font-semibold font-sans bg-brand text-brand-on rounded-[8px] hover:bg-brand-hover transition flex items-center gap-1.5"
-                              >
-                                <Check size={12} /> Book
-                              </button>
-                            )}
-                            <button
-                              onClick={() => setPanel({ kind: 'delete', slotId: slot.id })}
-                              aria-label={`Delete ${time} slot`}
-                              title="Delete slot"
-                              className={`${iconBtn} text-ink-muted hover:text-danger hover:bg-danger-soft`}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {open === 'book' && (
-                          <BookPanel
-                            bookedAppIds={bookedAppIds}
-                            onCancel={() => setPanel(null)}
-                            onBook={async (appId, notes) => { await bookSlot(slot.id, appId, notes); setPanel(null) }}
-                          />
-                        )}
-                        {open === 'notes' && slot.booking && (
-                          <NotesPanel
-                            initialNotes={slot.booking.admin_notes ?? ''}
-                            onCancel={() => setPanel(null)}
-                            onSave={async notes => { await updateNotes(slot.booking!.id, notes); setPanel(null) }}
-                          />
-                        )}
-                        {open === 'unbook' && slot.booking && (
-                          <InlineConfirm
-                            message={`Cancel ${applicantName}'s interview? The slot opens up again${slot.booking.admin_notes ? ' and the notes on this booking are deleted' : ''}.`}
-                            confirmLabel="Cancel booking"
-                            cancelLabel="Keep booking"
-                            busy={busy}
-                            onConfirm={() => run(() => unbookSlot(slot.booking!.id), "Couldn't cancel the booking")}
-                            onCancel={() => setPanel(null)}
-                          />
-                        )}
-                        {open === 'delete' && (
-                          <InlineConfirm
-                            message={slot.booking
-                              ? `Delete this slot? ${applicantName}'s booking and its notes are deleted too. This can't be undone.`
-                              : "Delete this slot? This can't be undone."}
-                            confirmLabel="Delete slot"
-                            busy={busy}
-                            onConfirm={() => run(() => deleteSlot(slot.id), "Couldn't delete the slot")}
-                            onCancel={() => setPanel(null)}
-                          />
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
+      </section>
     </div>
   )
 }
