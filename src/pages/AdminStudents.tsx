@@ -114,7 +114,7 @@ function CamperDetail({
     setDrafts(d => ({ ...d, [reg.id]: { ...(fresh(reg, d[reg.id]) ? d[reg.id] : {}), ...patch, ...base(reg) } }))
   const clearDraft = (regId: string) => setDrafts(d => { const n = { ...d }; delete n[regId]; return n })
   // Focus goes back to the select that started it once the change is saved or dropped.
-  const refocus = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus())
+  const refocus = (id: string) => document.getElementById(id)?.focus()
 
   async function run(reg: StudentRegistration, back: string, fn: () => Promise<void>) {
     if (busy) return

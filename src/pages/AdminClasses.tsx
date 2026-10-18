@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, Fragment } from 'react'
+import { flushSync } from 'react-dom'
 import type { ReactNode } from 'react'
 import { useSearchParams, useLocation, Link } from 'react-router-dom'
 import { Plus, X, Printer, UserRoundX, HeartPulse, Check } from 'lucide-react'
@@ -688,7 +689,7 @@ export default function AdminClasses() {
       if (target.kind === 'section') openSection(null)
       else setPendingDelete(null)
       // The thing that held focus is gone or closed; land on its class.
-      requestAnimationFrame(() => document.getElementById(`class-${classId}`)?.focus())
+      document.getElementById(`class-${classId}`)?.focus()
     } catch (e) {
       setActionError(`Couldn't ${mode === 'delete' ? 'delete' : 'cancel'}: ${e instanceof Error ? e.message : 'unknown error'}`)
     } finally {
@@ -698,7 +699,7 @@ export default function AdminClasses() {
 
   function closePanel(sectionId: string) {
     openSection(null)
-    requestAnimationFrame(() => document.getElementById(`sec-${sectionId}`)?.focus())
+    document.getElementById(`sec-${sectionId}`)?.focus()
   }
 
   // Weeks as columns, with their dates. A section with no week runs in both and gets its own column.
@@ -892,7 +893,7 @@ export default function AdminClasses() {
                 cancelLabel="Keep section"
                 busy={deleting}
                 onConfirm={confirmDelete}
-                onCancel={() => { setPendingDelete(null); requestAnimationFrame(() => document.getElementById(`remove-${s.id}`)?.focus()) }}
+                onCancel={() => { flushSync(() => setPendingDelete(null)); document.getElementById(`remove-${s.id}`)?.focus() }}
               />
             </div>
           )}

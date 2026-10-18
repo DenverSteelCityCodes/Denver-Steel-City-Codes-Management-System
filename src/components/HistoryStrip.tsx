@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Undo2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { FIELD_LABELS } from '../lib/editConflict'
@@ -160,7 +161,7 @@ export default function HistoryStrip({
                       cancelLabel="Keep"
                       busy={busy}
                       onConfirm={() => { void revert(e.id) }}
-                      onCancel={() => { setConfirming(null); requestAnimationFrame(() => document.getElementById(`revert-${e.id}`)?.focus()) }}
+                      onCancel={() => { flushSync(() => setConfirming(null)); document.getElementById(`revert-${e.id}`)?.focus() }}
                     />
                   </div>
                 )}
