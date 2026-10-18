@@ -2,8 +2,10 @@ import type { UpdateWithSection } from '../hooks/useUpdates'
 
 // Who a post went to, as words that follow "to": "everyone", "volunteers",
 // "families in Intro to Python PY-B, Week 1". Read as a sentence instead of a dot-joined run.
-export function audienceText(u: Pick<UpdateWithSection, 'audience' | 'sections'>): string {
+export function audienceText(u: Pick<UpdateWithSection, 'audience' | 'sections' | 'sessions'>): string {
   switch (u.audience) {
+    case 'week_families': return `families in ${u.sessions?.name ?? 'one week'}`
+    case 'week_crew': return `the crew in ${u.sessions?.name ?? 'one week'}`
     case 'everyone': return 'everyone'
     case 'parents': return 'parents'
     case 'volunteers': return 'volunteers'

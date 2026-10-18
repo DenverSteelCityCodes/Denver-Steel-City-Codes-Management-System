@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   TriangleAlert, Armchair, Inbox, CalendarClock, ListChecks, ClipboardList, UserRoundX, Copy, MailWarning,
-  MessageSquareText, CalendarX, BookAlert, ClipboardCheck,
+  MessageSquareText, CalendarX, BookAlert, FileWarning, ClipboardCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
@@ -77,16 +77,21 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
   const [absences, setAbsences] = useState<CrewAbsence[]>([])
   // Campers who may not have the class their next class needs (spec 31).
   const [atRisk, setAtRisk] = useState<PrereqAtRisk[]>([])
+  // Incidents with a camper and no word to the family a day later (spec 34).
+  const [untold, setUntold] = useState(0)
   // Onboarding checklist items past due (spec 35).
   const [lateOnboarding, setLateOnboarding] = useState<{ volunteer_id: string; volunteer_name: string; task_label: string }[]>([])
 
   const loadExtras = useCallback(async () => {
-    const [abs, dup, failed, requests, risk, onboarding] = await Promise.all([
+    const [abs, dup, failed, requests, risk, incidents, onboarding] = await Promise.all([
       supabase.rpc('admin_crew_absences'),
       supabase.rpc('possible_duplicate_campers'),
       supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3),
       supabase.from('change_requests').select('id', { count: 'exact', head: true }).eq('status', 'open'),
       supabase.rpc('admin_prerequisite_at_risk'),
+      supabase.from('incidents').select('id', { count: 'exact', head: true })
+        .not('student_id', 'is', null).is('parent_notified_at', null)
+        .lt('created_at', new Date(Date.now() - 24 * 3600_000).toISOString()),
       supabase.rpc('admin_onboarding_overdue'),
     ])
     return {
@@ -95,6 +100,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       failed: failed.count ?? 0,
       requests: requests.count ?? 0,
       atRisk: risk.error ? null : ((risk.data ?? []) as PrereqAtRisk[]),
+      untold: incidents.count ?? 0,
       onboarding: onboarding.error ? null : ((onboarding.data ?? []) as { volunteer_id: string; volunteer_name: string; task_label: string }[]),
     }
   }, [])
@@ -105,6 +111,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
     setFailedEmails(x.failed)
     setOpenRequests(x.requests)
     if (x.atRisk) setAtRisk(x.atRisk)
+    setUntold(x.untold)
     if (x.onboarding) setLateOnboarding(x.onboarding)
   }, [])
 
@@ -171,6 +178,19 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       detail: 'Families may not know about a confirmation or change. Check the email log.',
       ctaLabel: 'Open email log',
       to: '/admin/updates?tab=emails',
+    })
+  }
+
+  // ── Incidents a family hasn't heard about (spec 34) ─────────────────────
+  if (untold > 0) {
+    items.push({
+      key: 'incidents-untold',
+      icon: FileWarning,
+      tone: 'attention',
+      title: `${untold} ${plural(untold, 'incident', 'incidents')} with no word to the family`,
+      detail: 'Logged more than a day ago about a camper. Tell the family, or check with the crew first.',
+      ctaLabel: 'Open the incident log',
+      to: '/admin/attendance#incidents',
     })
   }
 

@@ -2,7 +2,9 @@
 -- profile, "meet the teachers" (spec 35, #155)
 -- Apply in Supabase Dashboard > SQL Editor (or via MCP / the Management API). Safe to re-run.
 -- Order: after migration_interview_slots_private.sql, migration_notifications.sql,
--- migration_volunteer_role_gate.sql and migration_audit_log.sql (it uses private.set_reason(),
+-- migration_volunteer_role_gate.sql, migration_current_season_audiences.sql,
+-- migration_urgent_and_incidents.sql (section 11 redefines their audience functions) and
+-- migration_audit_log.sql (it uses private.set_reason(),
 -- audit.log_change(), private.enqueue_notification() and pg_cron). Deploy send-notifications first:
 -- templates.ts gains seven templates and the sender attaches the interview's .ics file. Then
 -- re-apply migration_demo_environment.sql on the demo project.
@@ -842,3 +844,107 @@ CREATE TRIGGER audit_log_change AFTER INSERT OR UPDATE OR DELETE ON onboarding_t
 DROP TRIGGER IF EXISTS audit_log_change ON volunteer_tasks;
 CREATE TRIGGER audit_log_change AFTER INSERT OR UPDATE OR DELETE ON volunteer_tasks
     FOR EACH ROW EXECUTE FUNCTION audit.log_change('volunteer_id,task_key');
+
+-- ── 11. Removed volunteers leave the volunteer email audiences ─
+-- update_recipient_emails() (migration_current_season_audiences.sql) and spec 34's
+-- update_audience_profiles() (migration_urgent_and_incidents.sql), each with removed volunteers
+-- left out of "volunteers", "everyone" and a week's crew. Grants unchanged.
+CREATE OR REPLACE FUNCTION public.update_recipient_emails(p_audience TEXT, p_section_id UUID DEFAULT NULL)
+RETURNS TEXT[] LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
+DECLARE
+  -- coalesce: a signed-in user with no profile row has a NULL role, and NOT (NULL OR false) is
+  -- NULL, which would skip both permission checks below.
+  is_admin BOOLEAN := coalesce(private.auth_user_role() = 'admin', false);
+  parents  TEXT[];
+  vols     TEXT[];
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Sign in first' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_audience = 'section' THEN
+    IF p_section_id IS NULL THEN
+      RAISE EXCEPTION 'Pick a section' USING ERRCODE = 'P0001';
+    END IF;
+    IF NOT (is_admin OR coalesce(private.auth_volunteer_has_section(p_section_id), false)) THEN
+      RAISE EXCEPTION 'Only this section''s crew or an admin can email its families' USING ERRCODE = '42501';
+    END IF;
+    RETURN ARRAY(
+      SELECT DISTINCT lower(coalesce(pp.email, u.email))
+      FROM registrations r
+      JOIN students st ON st.id = r.student_id
+      JOIN auth.users u ON u.id = st.parent_id
+      LEFT JOIN parent_profiles pp ON pp.id = st.parent_id
+      WHERE r.section_id = p_section_id AND r.status IN ('confirmed', 'pending')
+        AND coalesce(pp.email, u.email) IS NOT NULL
+      ORDER BY 1);
+  END IF;
+
+  IF NOT is_admin THEN
+    RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
+  END IF;
+
+  -- This season's families only (#145): last year's families aren't "parents" for this year's mail.
+  parents := ARRAY(
+    SELECT DISTINCT lower(coalesce(pp.email, u.email))
+    FROM students st
+    JOIN auth.users u ON u.id = st.parent_id
+    LEFT JOIN parent_profiles pp ON pp.id = st.parent_id
+    WHERE coalesce(pp.email, u.email) IS NOT NULL
+      AND EXISTS (SELECT 1 FROM registrations r WHERE r.student_id = st.id AND r.status IN ('confirmed', 'pending')
+                    AND r.year >= private.current_camp_year())
+    ORDER BY 1);
+  -- Only people who are volunteers now: a demoted volunteer keeps their volunteers row, and a
+  -- volunteer removed from the season (spec 35) is off the list.
+  vols := ARRAY(
+    SELECT DISTINCT lower(u.email) FROM volunteers v
+    JOIN profiles p ON p.id = v.id AND p.role = 'volunteer'
+    JOIN auth.users u ON u.id = v.id
+    WHERE u.email IS NOT NULL AND v.removed_at IS NULL ORDER BY 1);
+
+  RETURN CASE p_audience
+    WHEN 'parents'    THEN parents
+    WHEN 'volunteers' THEN vols
+    WHEN 'everyone'   THEN ARRAY(SELECT DISTINCT e FROM unnest(parents || vols) e ORDER BY e)
+    ELSE NULL
+  END;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION private.update_audience_profiles(p_audience TEXT, p_section_id UUID, p_session_id UUID)
+RETURNS TABLE (profile_id UUID) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private AS $$
+BEGIN
+  IF p_audience IN ('parents', 'everyone') THEN
+    RETURN QUERY
+      SELECT DISTINCT st.parent_id FROM students st JOIN registrations r ON r.student_id = st.id
+      WHERE r.status IN ('confirmed', 'pending') AND r.year >= private.current_camp_year() AND st.parent_id IS NOT NULL;
+  END IF;
+  IF p_audience IN ('volunteers', 'everyone') THEN
+    RETURN QUERY
+      SELECT v.id FROM volunteers v JOIN profiles p ON p.id = v.id AND p.role = 'volunteer'
+      WHERE v.removed_at IS NULL;
+  END IF;
+  IF p_audience = 'section' THEN
+    RETURN QUERY
+      SELECT DISTINCT st.parent_id FROM registrations r JOIN students st ON st.id = r.student_id
+      WHERE r.section_id = p_section_id AND r.status IN ('confirmed', 'pending') AND st.parent_id IS NOT NULL;
+  END IF;
+  IF p_audience = 'week_families' THEN
+    RETURN QUERY
+      SELECT DISTINCT st.parent_id FROM registrations r
+      JOIN students st ON st.id = r.student_id
+      JOIN sessions se ON se.id = p_session_id
+      WHERE r.status IN ('confirmed', 'pending') AND r.year = se.year AND st.parent_id IS NOT NULL
+        AND r.section_id IN (SELECT private.week_section_ids(p_session_id));
+  END IF;
+  IF p_audience = 'week_crew' THEN
+    RETURN QUERY
+      SELECT DISTINCT c.id FROM (
+        SELECT s.lead_id AS id FROM sections s WHERE s.id IN (SELECT private.week_section_ids(p_session_id))
+        UNION
+        SELECT ss.volunteer_id FROM section_supports ss WHERE ss.section_id IN (SELECT private.week_section_ids(p_session_id))
+      ) c JOIN profiles p ON p.id = c.id AND p.role = 'volunteer'
+      JOIN volunteers v ON v.id = c.id AND v.removed_at IS NULL;
+  END IF;
+END;
+$$;

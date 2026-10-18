@@ -23,6 +23,7 @@ const LABELS: Record<string, string> = {
   interview_booked: 'Interview booked', interview_reminder: 'Interview reminder', interview_times_posted: 'Interview times posted',
   interview_nudge: 'Interview nudge', application_accepted: 'Volunteer accepted', application_declined: 'Application declined',
   volunteer_removed: 'Removed from the season',
+  urgent_notice: 'Urgent notice', incident_notice: 'Incident: family told',
 }
 
 function Status({ status }: { status: NotificationRow['status'] }) {

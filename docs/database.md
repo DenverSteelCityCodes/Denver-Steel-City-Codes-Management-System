@@ -45,7 +45,8 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 33 | `migration_public_camp_page.sql` | Each week's place (`sessions.location`), the public camp page's data, the "notify me" list and its every-minute job (spec 30). Deploy `send-notifications` first |
 | 34 | `migration_course_rules.sql` | Course rules on classes (grades this fall, a class to take first, a note, the next course), "place with" on registrations, exception requests and the "prerequisite at risk" list (spec 31). Steps 14, 29 and 33 call its helpers once it exists |
 | 35 | `migration_laptop_loans.sql` | Loaner laptops per camper-week: a cap per week, a first-come queue, emails, and a laptop column on the crew's roster (spec 29). Deploy `send-notifications` first |
-| 36 | `migration_volunteer_onboarding.sql` | Volunteer interviews and onboarding: private meeting links, interview and decision emails with a reminder job, the volunteer profile and photo bucket, the onboarding checklist, remove from the season, and Meet the teachers (spec 35). Deploy `send-notifications` first |
+| 36 | `migration_urgent_and_incidents.sql` | Urgent notices (emailed to a whole audience at once, first in the outbox, through the batch sender) and the week audiences on updates, the incident log with its parent notice, and roll-call notes (spec 34). Deploy `send-notifications` first |
+| 37 | `migration_volunteer_onboarding.sql` | Volunteer interviews and onboarding: private meeting links, interview and decision emails with a reminder job, the volunteer profile and photo bucket, the onboarding checklist, remove from the season, and Meet the teachers (spec 35). Deploy `send-notifications` first |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 

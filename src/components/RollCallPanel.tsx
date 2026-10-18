@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Check, CheckCheck, CircleAlert, CircleCheck } from 'lucide-react'
+import { Check, CheckCheck, CircleAlert, CircleCheck, StickyNote } from 'lucide-react'
 import type { AssignedSection, AssignedStudent } from '../hooks/useAssignedClass'
 import { useRollCalls } from '../hooks/useRollCalls'
 import RollCallRow from './RollCallRow'
+import RollCallNote from './RollCallNote'
 import Button from './Button'
 import { ROLL_CALLS, rollCallForTime, formatTime, localDateISO, markKey } from '../lib/campDay'
 import type { RollCallKind } from '../types/database'
@@ -21,7 +22,9 @@ interface Props {
 // the rest of the list stays live while it does.
 export default function RollCallPanel({ section, showClass = false }: Props) {
   const today = localDateISO()
-  const { marks, loading, error: loadError, getMark, taken, setMark, markAllPresent, refetch } = useRollCalls(section.id, today)
+  const { marks, loading, error: loadError, getMark, taken, setMark, markAllPresent, setNote, refetch } = useRollCalls(section.id, today)
+  // "Add notes" mode (spec 34): the quick tags show under each marked camper.
+  const [noting, setNoting] = useState(false)
   const [chosen, setChosen] = useState<RollCallKind | null>(null)
   // Marks being saved, and marks whose save failed (with the camper's name), keyed by markKey.
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set())
@@ -179,6 +182,16 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
         </div>
       )}
 
+      {!loading && total > 0 && (
+        <div className="px-4 sm:px-8 lg:px-0 mt-2">
+          <button type="button" aria-pressed={noting} onClick={() => setNoting(n => !n)}
+            className="inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px] hover:decoration-2">
+            <StickyNote size={16} strokeWidth={2.5} aria-hidden="true" />
+            {noting ? 'Done adding notes' : 'Add notes: late, left early, picked up'}
+          </button>
+        </div>
+      )}
+
       <div id={`${headingId}-list`} role="tabpanel" aria-labelledby={tabId(current)}>
         <ul className="mt-4 border-y-2 border-ink">
           {loading ? (
@@ -197,7 +210,10 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
                   pending={pending.has(key)}
                   failed={failed.has(key)}
                   onToggle={() => toggle(student)}
-                />
+                >
+                  <RollCallNote name={student.full_name} marked={!!m} note={m?.note ?? null} editing={noting}
+                    onSave={note => setNote(student.id, current, note)} />
+                </RollCallRow>
               )
             })
           )}

@@ -7,6 +7,7 @@ import { useScheduleItems } from '../../hooks/useScheduleItems'
 import { useVolunteerPrefs, weeksLabel } from '../../hooks/useVolunteerPrefs'
 import RollCallPanel from '../../components/RollCallPanel'
 import OnboardingChecklist from '../../components/OnboardingChecklist'
+import UrgentBanner from '../../components/UrgentBanner'
 import { formatDayLong, formatTime, localDateISO } from '../../lib/campDay'
 import { campPhase, relativeDay } from '../../lib/volunteerHome'
 import { ClassList, LatestUpdate, PageHead, ScheduleBlock, Sect, linkCls, listCls } from './parts'
@@ -14,8 +15,13 @@ import { MyDutyRow } from './VolunteerDuties'
 import type { AssignedSection } from '../../hooks/useAssignedClass'
 
 // Today tab: on a camp day, a one-sentence day header and the roll call; before camp, when and
-// where to show up; before a class is assigned, what the camp will assign from.
+// where to show up; before a class is assigned, what the camp will assign from. An urgent notice
+// from camp (spec 34) comes first, until the end of its day.
 export default function VolunteerToday() {
+  return <><UrgentBanner className="mt-4 mb-6" /><TodayBody /></>
+}
+
+function TodayBody() {
   const { assigned: { assignedSections }, sessions } = useVolunteerHome()
   const { user } = useAuth()
   const { slots } = useDutySlots()

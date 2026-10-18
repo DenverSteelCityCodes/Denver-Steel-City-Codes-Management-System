@@ -1,14 +1,16 @@
 import { useSearchParams } from 'react-router-dom'
 import { useUpdates } from '../hooks/useUpdates'
 import { useAdminClasses } from '../hooks/useAdminClasses'
+import { useSessions, campSessions } from '../hooks/useSessions'
 import UpdateComposer from '../components/UpdateComposer'
 import UpdatesFeed from '../components/UpdatesFeed'
 import EmailLog from '../components/EmailLog'
 import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
 import Segmented from '../components/Segmented'
 
-// Admin: post to everyone, all parents, all volunteers, or one section's families, with
-// "Also email" to open the mail client with the audience in BCC. Everything posted is listed.
+// Admin: post to everyone, all parents, all volunteers, one week's families or crew, or one
+// section's families, with "Also email" to open the mail client with the audience in BCC, or as an
+// urgent notice the database emails at once (spec 34). Everything posted is listed.
 // Sent emails (the app's own notices to families) is the second tab, ?tab=emails.
 export default function AdminUpdates() {
   const [params, setParams] = useSearchParams()
@@ -18,6 +20,9 @@ export default function AdminUpdates() {
   const sections = classes.flatMap(c => c.sections.map(s => ({
     id: s.id, label: `${c.name} · ${s.label}${s.week ? ` · Week ${s.week}` : ''}`,
   })))
+  // This season's weeks, for "Families in Week N" and "Crew in Week N".
+  const { sessions } = useSessions()
+  const weeks = campSessions(sessions).map(s => ({ id: s.id, label: s.name }))
 
   return (
     <div className={pageClass}>
@@ -37,7 +42,7 @@ export default function AdminUpdates() {
       <div role="tabpanel" id="updates-panel-post" aria-labelledby="updates-tab-post" hidden={tab !== 'post'} className="max-w-[720px]">
         <section aria-labelledby="compose-heading">
           <h2 id="compose-heading" className="sr-only">New update</h2>
-          <UpdateComposer mode={{ kind: 'admin', sections }} onPost={async input => { await postUpdate(input) }} autoFocus={false} />
+          <UpdateComposer mode={{ kind: 'admin', sections, weeks }} onPost={async input => { await postUpdate(input) }} autoFocus={false} />
         </section>
 
         <section aria-labelledby="feed-heading" className="mt-10">

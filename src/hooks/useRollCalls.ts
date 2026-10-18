@@ -68,7 +68,10 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
     // Optimistic: apply locally first so a phone tap feels instant. Other rows stay live meanwhile,
     // so hold these marks until a read that includes the write.
     for (const k of keys) guards.current.set(k, Infinity)
-    setMarks(prev => [...prev.filter(m => !isMine(m)), ...payload.map(p => ({ ...p, id: crypto.randomUUID(), note: null }))])
+    // The note (spec 34) isn't part of the write, so the saved mark keeps it; show it kept too.
+    const noteOf = (p: { student_id: string; roll_call: RollCallKind }) =>
+      before.find(m => m.student_id === p.student_id && m.roll_call === p.roll_call)?.note ?? null
+    setMarks(prev => [...prev.filter(m => !isMine(m)), ...payload.map(p => ({ ...p, id: crypto.randomUUID(), note: noteOf(p) }))])
     const { error } = await supabase
       .from('roll_call_marks')
       .upsert(payload, { onConflict: 'section_id,student_id,day,roll_call', ignoreDuplicates: keepExisting })
@@ -96,5 +99,21 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
     await setMarks_(missing.map(id => ({ student_id: id, roll_call: rollCall, present: true })), true)
   }
 
-  return { marks, loading: sectionId ? loading : false, error, getMark, taken, setMark, markAllPresent, refetch: fetchMarks }
+  // A mark's quick tags (spec 34: Late, Left early, Picked up by …). Only the note changes, through
+  // set_roll_call_note(), so who marked the camper and when stay as they were.
+  async function setNote(studentId: string, rollCall: RollCallKind, note: string | null) {
+    if (!sectionId) return
+    const isIt = (m: RollCallMark) => m.student_id === studentId && m.roll_call === rollCall
+    const before = marks.find(isIt)?.note ?? null
+    setMarks(prev => prev.map(m => (isIt(m) ? { ...m, note } : m)))
+    const { error } = await supabase.rpc('set_roll_call_note', {
+      p_section_id: sectionId, p_student_id: studentId, p_day: day, p_roll_call: rollCall, p_note: note ?? '',
+    })
+    if (error) {
+      setMarks(prev => prev.map(m => (isIt(m) ? { ...m, note: before } : m)))
+      throw new Error(error.message)
+    }
+  }
+
+  return { marks, loading: sectionId ? loading : false, error, getMark, taken, setMark, markAllPresent, setNote, refetch: fetchMarks }
 }

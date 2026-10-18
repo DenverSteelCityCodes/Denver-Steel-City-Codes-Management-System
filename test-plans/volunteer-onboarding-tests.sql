@@ -390,6 +390,21 @@ begin
     res := res || E'\nremoved volunteer claims a duty: blocked ok';
   end;
   perform set_config('request.jwt.claims', claims_adm, true);
+  -- Review fix: off the volunteer email audiences (the old composer list and spec 34's).
+  execute 'reset role';
+  select lower(email) into m from auth.users where id = v;
+  execute 'set local role authenticated';
+  select count(*) into n from unnest(public.update_recipient_emails('volunteers')) e where e = m;
+  res := res || E'\nremoved volunteer is off the "volunteers" email list: ' || case when n = 0 then 'ok' else 'BAD' end;
+  select count(*) into n from unnest(public.update_recipient_emails('everyone')) e where e = m;
+  res := res || E'\nand off "everyone": ' || case when n = 0 then 'ok' else 'BAD' end;
+  execute 'reset role';
+  select count(*) into n from private.update_audience_profiles('volunteers', null, null) a where a.profile_id = v;
+  res := res || E'\nand off spec 34''s volunteer audience: ' || case when n = 0 then 'ok' else 'BAD' end;
+  select count(*) into n from private.update_audience_profiles('volunteers', null, null) a where a.profile_id = user_a;
+  res := res || E'\na current volunteer stays on it: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', claims_adm, true);
   begin
     insert into section_supports (section_id, volunteer_id) values (sup_sec, v);
     res := res || E'\nadmin puts a removed volunteer on a crew: ALLOWED (BAD)';
