@@ -304,6 +304,7 @@ export const ADMIN_GUIDE: HelpGuide = {
                 'Sections with **No roll call yet** are also listed with their room and lead, so you know who to call.',
                 '**Unaccounted now** lists every missing camper across all sections, with their section, room, lead, any health note and a call link for each contact (for example **Call Linh Tran (parent)**). On a phone these dial straight away.',
                 'For paper backups, open a section and tap **Print roster**. At the end of the week, open **Week export** at the bottom and tap **Download attendance CSV**.',
+                'Crews can tag a mark **Late**, **Left early** or **Picked up by** someone. The tags show under the camper\'s name when you open a section, on **Unaccounted now** and in the CSV\'s **Notes** column.',
                 '**Loaner laptops** lists each section\'s borrowed laptops. Tick a camper\'s box as you hand theirs out; untick it if you ticked the wrong one.',
               ],
             },
@@ -351,7 +352,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               heading: 'Post an update',
               items: [
-                'On [[admin-updates]], choose who it goes to under **Send to**: everyone this season, this season\'s parents, all volunteers, or one section\'s families.',
+                'On [[admin-updates]], choose who it goes to under **Send to**: everyone this season, this season\'s parents, all volunteers, one week\'s families, one week\'s crew, or one section\'s families.',
                 'Write the message and tap **Post update**. Parents see it on their Updates tab and on Home; volunteers on their Updates tab and Today.',
                 'To email it too, tick **Also email** before posting. After the post saves, your own mail app opens with every address in BCC (or the addresses are copied for you to paste).',
               ],
@@ -362,6 +363,7 @@ export const ADMIN_GUIDE: HelpGuide = {
                 'Section leads can post to their own section\'s families too.',
                 'Posts can\'t be edited. To fix one, delete it with its trash button and post again.',
                 '"Also email" goes out from your own mail app. The app doesn\'t send it or record it.',
+                'An urgent notice is different: the app emails it itself. See [when something urgent happens](/admin/help#urgent-notice).',
               ],
             },
             {
@@ -670,6 +672,54 @@ export const ADMIN_GUIDE: HelpGuide = {
                 'Any health note shows in red next to the camper\'s name.',
                 'On camp days, **To do** and the bell count unaccounted campers on every page.',
                 'Families see each roll call on their Home page, including "absent".',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'urgent-notice',
+          title: 'When something urgent happens: a site hold, bad weather or an early dismissal',
+          keywords: 'urgent emergency lockdown hold police weather storm early dismissal safety notice banner',
+          body: [
+            {
+              kind: 'steps',
+              items: [
+                'Open [[admin-updates]]. Under **Send to**, pick who needs to know: usually **One week\'s families** and that week.',
+                'Tick **Urgent safety notice**. Tap **Site hold**, **Weather** or **Early dismissal** to start from a prewritten message, then fill in the details (times, places).',
+                'Tap **Send urgent notice**, read the sentence that appears under it, and tap **Send now**.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'The app emails every person in that audience at once, one email each, even people who turned off camp announcements. Urgent emails go before anything else waiting to send.',
+                'It also shows in red at the top of their Home (parents) or Today (volunteers) page until midnight, Denver time.',
+                'Only admins can send one. A sent email can\'t be taken back: to correct it, send another.',
+                'Each email shows on [[admin-emails]] as **Urgent notice**.',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'incident',
+          title: 'When something happens to a camper: the incident log',
+          keywords: 'incident injury behavior bullying conduct safety report log notify parent family tell',
+          body: [
+            { kind: 'p', text: 'Crews log injuries, behavior problems and anything unsafe from their Classes page, for their own section. Each crew member sees only their own entries; you see them all.' },
+            {
+              kind: 'steps',
+              items: [
+                'Open [[admin-attendance]] and scroll to **Incidents**, newest first. Each entry says what happened, what the crew did, the camper, the class, when and who logged it.',
+                'To let the family know, tap **Tell the family**, write what they should hear in your own words, and tap **Email the family**.',
+                'The entry then says **Family told** with the time. It can only be sent once.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'The email names the camper, the class, the day and the kind of incident, then your message. The crew\'s description is never sent.',
+                'An entry about a camper with no word to the family after a day shows on **To do** and in the bell.',
+                'Entries can\'t be deleted. Every change is kept in the history.',
               ],
             },
           ],

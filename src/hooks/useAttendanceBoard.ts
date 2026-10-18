@@ -15,6 +15,8 @@ export interface BoardStudent {
   emergency_contact_phone: string | null
   medicalNote: string | null
   marks: Partial<Record<RollCallKind, boolean>>
+  // The crew's quick tags per roll call (spec 34): "Late", "Picked up by …".
+  notes: Partial<Record<RollCallKind, string>>
 }
 
 export interface RollCallSummary {
@@ -67,6 +69,7 @@ interface MarkRow {
   roll_call: RollCallKind
   present: boolean
   marked_at: string
+  note: string | null
 }
 
 export function useAttendanceBoard() {
@@ -109,7 +112,7 @@ export function useAttendanceBoard() {
         .is('cancelled_at', null),
       supabase
         .from('roll_call_marks')
-        .select('section_id, student_id, roll_call, present, marked_at')
+        .select('section_id, student_id, roll_call, present, marked_at, note')
         .eq('day', day),
     ])
     if (secRes.error || markRes.error) {
@@ -137,7 +140,12 @@ export function useAttendanceBoard() {
           const medicalNote = [allergies && `Allergies: ${allergies}`, medical && `Medical: ${medical}`]
             .filter(Boolean).join(' · ') || null
           const marksFor: Partial<Record<RollCallKind, boolean>> = {}
-          for (const m of secMarks) if (m.student_id === s.id) marksFor[m.roll_call] = m.present
+          const notesFor: Partial<Record<RollCallKind, string>> = {}
+          for (const m of secMarks) {
+            if (m.student_id !== s.id) continue
+            marksFor[m.roll_call] = m.present
+            if (m.note) notesFor[m.roll_call] = m.note
+          }
           return {
             id: s.id,
             full_name: s.full_name,
@@ -148,6 +156,7 @@ export function useAttendanceBoard() {
             emergency_contact_phone: s.emergency_contact_phone,
             medicalNote,
             marks: marksFor,
+            notes: notesFor,
           }
         })
         .sort((a, b) => a.full_name.localeCompare(b.full_name))

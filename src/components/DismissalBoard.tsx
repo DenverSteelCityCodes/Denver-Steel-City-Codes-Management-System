@@ -59,7 +59,7 @@ export default function DismissalBoard({ version }: { version: unknown }) {
                         <p className="text-lg font-bold leading-[1.3] [overflow-wrap:anywhere]">{r.full_name}</p>
                         <StatusWord tone="waiting" icon={ShieldAlert}>Admin OK · {clock(r.marked_at)}</StatusWord>
                       </div>
-                      <p className="text-pretty">Collected by {r.released_to}{r.marked_by_name ? `, recorded by ${r.marked_by_name}` : ''}</p>
+                      <p className="text-pretty">Collected by {r.released_to}, OK'd by {r.released_ok_by ?? 'an admin'}{r.marked_by_name ? `, recorded by ${r.marked_by_name}` : ''}</p>
                       <p className="text-sm text-ink-muted">{r.section_label} · {r.class_name}{r.parent_name ? ` · Parent ${r.parent_name}` : ''}</p>
                     </li>
                   ))}

@@ -4,7 +4,9 @@
 -- the pickup_changed template; a sender that doesn't know a template holds the email queued for 6
 -- hours instead of failing it). Then apply after migration_camp_week_ops.sql (roll_call_marks),
 -- migration_edit_conflicts.sql, migration_audit_log.sql, migration_notifications.sql,
--- migration_admin_mfa.sql and migration_laptop_loans.sql: this file redefines section_roster()
+-- migration_admin_mfa.sql, migration_current_season_audiences.sql (private.current_camp_year()),
+-- migration_volunteer_onboarding.sql (spec 35: private.auth_volunteer_leads_section(), and crew
+-- helpers that ignore removed volunteers) and migration_laptop_loans.sql: this file redefines section_roster()
 -- (keeping the laptop_loan column), so re-apply it whenever migration_laptop_loans.sql or
 -- migration_volunteer_roster_access.sql is re-applied. Then re-apply migration_demo_environment.sql
 -- on the demo project (it seeds pickup adults, a walk-home consent and past releases).
@@ -22,11 +24,16 @@
 --     (NULL = every day of the week; else dates inside it) and a note. Parents can change it until
 --     the week ends, so a same-day change still works.
 --   * roll_call_marks.released_to / released_mode ('listed_adult', 'parent', 'alone', 'admin_ok')
---     on a present dismissal mark, checked by a trigger whichever way the mark is written.
+--     and released_ok_by (which admin said OK) on a present dismissal mark, checked by a trigger
+--     whichever way the mark is written. A recorded release stands until someone undoes it on
+--     purpose: it can't be overwritten, and the camper can't be marked absent while it stands.
+--     Release changes and undos are audited.
 --   * dismissal_board(): admins, today's dismissal for every section: who is still waiting, who
 --     collected whom, and the admin_ok releases.
 --   * pickup_changed email (outbox) to the section's lead when a parent changes the list or the
---     consent during camp week in a way that touches a day from today to the end of the week.
+--     consent during camp week in a way that touches a day from today to the end of the week. At
+--     most one per camper, section and 10 minutes; it says the list changed, never what changed, so
+--     a collapsed email can't hide a removal.
 -- Both new tables are audited. Ship the frontend AFTER this migration (it reads the new columns).
 
 -- ── 0. Helpers ───────────────────────────────────────────────
@@ -180,6 +187,18 @@ CREATE TRIGGER audit_log_change AFTER INSERT OR UPDATE OR DELETE ON release_cons
 
 -- ── 3. Who is allowed on a given day ─────────────────────────
 
+-- Is the section's week running on that day? Its own week, or for a both-weeks section (no
+-- session_id) any week of the current camp year.
+CREATE OR REPLACE FUNCTION private.section_runs_on(p_section_id UUID, p_day DATE)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM sections s
+      JOIN sessions se ON p_day BETWEEN se.start_date AND se.end_date
+                      AND (se.id = s.session_id OR (s.session_id IS NULL AND se.year = private.current_camp_year()))
+     WHERE s.id = p_section_id);
+$$;
+REVOKE ALL ON FUNCTION private.section_runs_on(UUID, DATE) FROM PUBLIC, anon, authenticated;
+
 -- The camper's pickup list for one day: any-day adults and the ones dated that day (dated first).
 -- Phones only when asked (the section's lead and admins).
 CREATE OR REPLACE FUNCTION private.pickups_on(p_student_id UUID, p_day DATE, p_with_phone BOOLEAN)
@@ -216,41 +235,60 @@ REVOKE ALL ON FUNCTION private.leave_alone_on(UUID, UUID, DATE) FROM PUBLIC, ano
 
 ALTER TABLE roll_call_marks ADD COLUMN IF NOT EXISTS released_to   TEXT;
 ALTER TABLE roll_call_marks ADD COLUMN IF NOT EXISTS released_mode TEXT;
+ALTER TABLE roll_call_marks ADD COLUMN IF NOT EXISTS released_ok_by TEXT;
 ALTER TABLE roll_call_marks DROP CONSTRAINT IF EXISTS roll_call_marks_released_mode_check;
 ALTER TABLE roll_call_marks ADD CONSTRAINT roll_call_marks_released_mode_check
     CHECK (released_mode IN ('listed_adult', 'parent', 'alone', 'admin_ok'));
 ALTER TABLE roll_call_marks DROP CONSTRAINT IF EXISTS roll_call_marks_release_shape;
 ALTER TABLE roll_call_marks ADD CONSTRAINT roll_call_marks_release_shape CHECK (
-    (released_mode IS NULL AND released_to IS NULL)
-    OR (released_mode IS NOT NULL AND roll_call = 'dismissal' AND present AND length(released_to) BETWEEN 1 AND 100));
+    (released_mode IS NULL AND released_to IS NULL AND released_ok_by IS NULL)
+    OR (released_mode IS NOT NULL AND roll_call = 'dismissal' AND present AND length(released_to) BETWEEN 1 AND 100
+        AND (released_mode = 'admin_ok') = (released_ok_by IS NOT NULL)
+        AND (released_ok_by IS NULL OR length(released_ok_by) BETWEEN 1 AND 60)));
 COMMENT ON COLUMN roll_call_marks.released_to IS 'Dismissal only (spec 36): who collected the camper, e.g. the parent''s or a listed adult''s name, or "On their own (walk)".';
+COMMENT ON COLUMN roll_call_marks.released_ok_by IS 'Dismissal only (spec 36): the admin who said OK to an admin_ok release, as the crew typed it.';
 COMMENT ON COLUMN roll_call_marks.released_mode IS 'Dismissal only (spec 36): listed_adult, parent, alone (needs the day''s consent) or admin_ok (anyone else, after checking with an admin).';
 
 -- Checks a release however the mark is written (the crew's upsert, an admin, a script):
---   * only a present dismissal mark carries one; marking the camper absent clears it;
+--   * a recorded release stands until it is undone on purpose (all three columns set to NULL, the
+--     camper still present): another release, or marking the camper absent, is refused;
+--   * only a present dismissal mark carries one;
 --   * 'parent': the camper's parent (the name is filled in here);
 --   * 'listed_adult': must be on the camper's pickup list for that day (stored with the listed name);
 --   * 'alone': needs the parent's consent covering that day ("On their own (walk)" is filled in);
---   * 'admin_ok': anyone else, named, after the crew checked with an admin.
+--   * 'admin_ok': anyone else, named, after the crew checked with an admin (named too).
 -- The note column (spec 34's roll-call notes) is left alone: writing only the note doesn't fire this.
 CREATE OR REPLACE FUNCTION private.roll_call_release_check()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
   who  TEXT;
   lone JSONB;
+  same BOOLEAN;
 BEGIN
   NEW.released_to := nullif(regexp_replace(btrim(coalesce(NEW.released_to, '')), '\s+', ' ', 'g'), '');
+  NEW.released_ok_by := nullif(regexp_replace(btrim(coalesce(NEW.released_ok_by, '')), '\s+', ' ', 'g'), '');
+  IF TG_OP = 'UPDATE' AND OLD.released_mode IS NOT NULL THEN
+    same := NEW.present AND NEW.roll_call = OLD.roll_call AND NEW.day = OLD.day
+        AND NEW.student_id = OLD.student_id AND NEW.section_id = OLD.section_id;
+    -- An undo on purpose.
+    IF same AND NEW.released_mode IS NULL AND NEW.released_to IS NULL AND NEW.released_ok_by IS NULL THEN
+      RETURN NEW;
+    END IF;
+    -- The same release (a re-save of "present") passes as it is.
+    IF same AND NEW.released_mode = OLD.released_mode AND NEW.released_to IS NOT DISTINCT FROM OLD.released_to
+       AND NEW.released_ok_by IS NOT DISTINCT FROM OLD.released_ok_by THEN
+      RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'Already collected by % at %. Undo first.', OLD.released_to,
+      to_char(OLD.marked_at AT TIME ZONE 'America/Denver', 'FMHH12:MI AM') USING ERRCODE = 'P0001';
+  END IF;
   IF NEW.roll_call <> 'dismissal' OR NOT NEW.present OR NEW.released_mode IS NULL THEN
     NEW.released_to := NULL;
     NEW.released_mode := NULL;
+    NEW.released_ok_by := NULL;
     RETURN NEW;
   END IF;
-  -- The same release on the same camper-day (a re-save of "present") passes as it is.
-  IF TG_OP = 'UPDATE' AND NEW.released_mode IS NOT DISTINCT FROM OLD.released_mode
-     AND NEW.released_to IS NOT DISTINCT FROM OLD.released_to
-     AND NEW.student_id = OLD.student_id AND NEW.section_id = OLD.section_id AND NEW.day = OLD.day THEN
-    RETURN NEW;
-  END IF;
+  IF NEW.released_mode <> 'admin_ok' THEN NEW.released_ok_by := NULL; END IF;
 
   IF NEW.released_mode = 'parent' THEN
     SELECT coalesce(nullif(btrim(st.parent_name), ''), nullif(btrim(p.display_name), ''), 'Parent')
@@ -277,6 +315,8 @@ BEGIN
     NEW.released_to := 'On their own (' || (lone ->> 'mode') || ')';
   ELSIF NEW.released_to IS NULL THEN   -- admin_ok
     RAISE EXCEPTION 'Say who collected the camper' USING ERRCODE = 'P0001';
+  ELSIF NEW.released_ok_by IS NULL THEN
+    RAISE EXCEPTION 'Say which admin said OK' USING ERRCODE = 'P0001';
   END IF;
   RETURN NEW;
 END;
@@ -284,11 +324,24 @@ $$;
 REVOKE EXECUTE ON FUNCTION private.roll_call_release_check() FROM PUBLIC, anon, authenticated;
 DROP TRIGGER IF EXISTS roll_call_release_check ON roll_call_marks;
 CREATE TRIGGER roll_call_release_check
-    BEFORE INSERT OR UPDATE OF present, roll_call, day, student_id, section_id, released_to, released_mode ON roll_call_marks
+    BEFORE INSERT OR UPDATE OF present, roll_call, day, student_id, section_id, released_to, released_mode, released_ok_by ON roll_call_marks
     FOR EACH ROW EXECUTE FUNCTION private.roll_call_release_check();
+
+-- Audit releases: every insert, change, undo or delete of a mark that carries (or carried) one.
+-- Plain roll-call taps stay out of the log (migration_audit_log.sql: the busiest table at camp).
+DROP TRIGGER IF EXISTS audit_release_insert ON roll_call_marks;
+DROP TRIGGER IF EXISTS audit_release_update ON roll_call_marks;
+DROP TRIGGER IF EXISTS audit_release_delete ON roll_call_marks;
+CREATE TRIGGER audit_release_insert AFTER INSERT ON roll_call_marks
+    FOR EACH ROW WHEN (NEW.released_mode IS NOT NULL) EXECUTE FUNCTION audit.log_change('id');
+CREATE TRIGGER audit_release_update AFTER UPDATE ON roll_call_marks
+    FOR EACH ROW WHEN (OLD.released_mode IS NOT NULL OR NEW.released_mode IS NOT NULL) EXECUTE FUNCTION audit.log_change('id');
+CREATE TRIGGER audit_release_delete AFTER DELETE ON roll_call_marks
+    FOR EACH ROW WHEN (OLD.released_mode IS NOT NULL) EXECUTE FUNCTION audit.log_change('id');
 
 -- ── 5. The crew's roster: today's pickup list and walk-home consent ──
 -- Same as migration_laptop_loans.sql, plus:
+--   (all four only while the section's week is running, Denver date; else [] / false / NULL)
 --   pickup_adults          today's list (name, relation, days; phone for the section's lead and admins)
 --   may_leave_alone_today  the parent's consent covers today (Denver date)
 --   leave_alone_mode       'walk' / 'bike' / 'transit' / 'other' when it does
@@ -319,6 +372,7 @@ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
   today      DATE := (now() AT TIME ZONE 'America/Denver')::date;
   with_phone BOOLEAN;
+  in_week    BOOLEAN;
 BEGIN
   -- coalesce: a NULL role or helper result must fail the check, not skip it.
   IF auth.uid() IS NULL
@@ -327,15 +381,17 @@ BEGIN
     RAISE EXCEPTION 'Only this section''s crew or an admin can see its roster' USING ERRCODE = '42501';
   END IF;
   with_phone := coalesce(private.auth_user_role() = 'admin', false)
-             OR EXISTS (SELECT 1 FROM sections sx WHERE sx.id = p_section_id AND sx.lead_id = auth.uid());
+             OR coalesce(private.auth_volunteer_leads_section(p_section_id), false);
+  -- Pickup lists and walk-home consent only while the section's week is running.
+  in_week := private.section_runs_on(p_section_id, today);
 
   RETURN QUERY
     SELECT st.id, st.full_name, st.age::int, st.allergies, st.medical_conditions, st.medical_info,
            st.emergency_contact_name, st.emergency_contact_phone, st.emergency_contact_relation,
            st.parent_name, st.parent_phone,
            CASE WHEN l.status IN ('reserved', 'handed_out') THEN l.status END,
-           private.pickups_on(st.id, today, with_phone),
-           lone.j IS NOT NULL, lone.j ->> 'mode', lone.j ->> 'note'
+           CASE WHEN in_week THEN private.pickups_on(st.id, today, with_phone) ELSE '[]'::jsonb END,
+           in_week AND lone.j IS NOT NULL, CASE WHEN in_week THEN lone.j ->> 'mode' END, CASE WHEN in_week THEN lone.j ->> 'note' END
     FROM registrations r
     JOIN students st ON st.id = r.student_id
     LEFT JOIN laptop_loans l ON l.registration_id = r.id
@@ -350,10 +406,12 @@ GRANT EXECUTE ON FUNCTION public.section_roster(UUID) TO authenticated;
 
 -- ── 6. Admins: the day's dismissal board ─────────────────────
 -- One row per camper holding a seat in a section of the week running that day (default today,
+-- both-weeks sections included,
 -- Denver): their dismissal mark (present NULL = not marked yet), who collected them and who
 -- recorded it, today's pickup list with phones, and the walk-home consent.
 
-CREATE OR REPLACE FUNCTION public.dismissal_board(p_day DATE DEFAULT NULL)
+DROP FUNCTION IF EXISTS public.dismissal_board(DATE);   -- the columns change
+CREATE FUNCTION public.dismissal_board(p_day DATE DEFAULT NULL)
 RETURNS TABLE (
     section_id        UUID,
     section_label     TEXT,
@@ -367,6 +425,7 @@ RETURNS TABLE (
     present           BOOLEAN,
     released_to       TEXT,
     released_mode     TEXT,
+    released_ok_by    TEXT,
     marked_at         TIMESTAMPTZ,
     marked_by_name    TEXT,
     pickup_adults     JSONB,
@@ -383,11 +442,12 @@ BEGIN
   RETURN QUERY
     SELECT s.id, s.label, c.name, s.room, lp.display_name,
            st.id, st.full_name, st.parent_name, st.parent_phone,
-           m.present, m.released_to, m.released_mode, m.marked_at, mp.display_name,
+           m.present, m.released_to, m.released_mode, m.released_ok_by, m.marked_at, mp.display_name,
            private.pickups_on(st.id, d, true),
            lone.j IS NOT NULL, lone.j ->> 'mode'
       FROM sections s
-      JOIN sessions se ON se.id = s.session_id AND d BETWEEN se.start_date AND se.end_date
+      JOIN sessions se ON d BETWEEN se.start_date AND se.end_date
+                      AND (se.id = s.session_id OR (s.session_id IS NULL AND se.year = private.current_camp_year()))
       JOIN classes c ON c.id = s.class_id
       JOIN registrations r ON r.section_id = s.id AND r.status IN ('confirmed', 'pending')
       JOIN students st ON st.id = r.student_id
@@ -406,7 +466,8 @@ GRANT EXECUTE ON FUNCTION public.dismissal_board(DATE) TO authenticated;
 -- When a parent (not an admin, not the SQL editor or the demo reset) adds, changes or removes a
 -- pickup adult or a walk-home consent while their camper's week is running, and the change touches
 -- a day from today to the end of that week, the section's lead gets a pickup_changed email.
--- One per change to a row, per section, per transaction.
+-- At most one per camper, section and 10 minutes (Denver date in the key): the email says the list
+-- changed and the roll call shows it, never what changed, so collapsing can't hide a removal.
 
 CREATE OR REPLACE FUNCTION private.notify_pickup_changed()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
@@ -438,7 +499,8 @@ BEGIN
       FROM registrations r
       JOIN sections s ON s.id = r.section_id AND s.cancelled_at IS NULL AND s.lead_id IS NOT NULL
       JOIN classes c ON c.id = s.class_id
-      JOIN sessions se ON today BETWEEN se.start_date AND se.end_date AND (s.session_id = se.id OR s.session_id IS NULL)
+      JOIN sessions se ON today BETWEEN se.start_date AND se.end_date
+                      AND (se.id = s.session_id OR (s.session_id IS NULL AND se.year = private.current_camp_year()))
       JOIN students st ON st.id = r.student_id
      WHERE r.student_id = stu AND r.status IN ('confirmed', 'pending')
   LOOP
@@ -461,12 +523,10 @@ BEGIN
     CONTINUE WHEN NOT touches;
     PERFORM private.enqueue_notification(sec.lead_id, 'pickup_changed',
       jsonb_build_object(
-        'change', change, 'camper', sec.full_name, 'camper_first', sec.first,
+        'camper', sec.full_name, 'camper_first', sec.first,
         'class', sec.class_name, 'section', sec.label, 'session', sec.session_name,
-        'name', row_j ->> 'name', 'relation', row_j ->> 'relation', 'mode', row_j ->> 'mode',
-        'days', CASE WHEN TG_OP = 'DELETE' THEN old_j -> 'days' ELSE new_j -> 'days' END,
-        'for_today', for_today, 'today', today, 'student_id', stu),
-      'pickup_changed:' || change || ':' || (row_j ->> 'id') || ':' || sec.id || ':' || txid_current());
+        'change', change, 'for_today', for_today, 'today', today, 'student_id', stu),
+      'pickup_changed:' || stu || ':' || sec.id || ':' || today || ':' || floor(extract(epoch FROM now()) / 600)::bigint);
   END LOOP;
   RETURN NULL;
 END;

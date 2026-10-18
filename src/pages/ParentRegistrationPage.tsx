@@ -703,7 +703,7 @@ export default function ParentRegistrationPage() {
 
     // Who may collect the camper, and the walk-home consent (spec 36). A failure doesn't undo the
     // registration: the last screen says so, and Home can do it.
-    setPickupError(await saveWizardPickups(student.id,
+    setPickupError(await saveWizardPickups(student.id, form.pickup_choice === 'me',
       form.pickup_choice === 'others' ? form.pickup_adults : [], pickupIdsOnFile,
       form.leave_alone && form.leave_mode ? { mode: form.leave_mode, note: form.leave_note } : null, [...seatedWeeks]))
 

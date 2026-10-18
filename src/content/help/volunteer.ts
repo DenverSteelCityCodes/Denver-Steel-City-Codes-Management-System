@@ -37,6 +37,39 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
                 'Admins see your marks on their attendance board. Anyone not marked present shows up there as unaccounted.',
               ],
             },
+            {
+              kind: 'steps',
+              heading: 'Add a note: late, left early, picked up',
+              items: [
+                'Mark the camper first. Then tap **Add notes: late, left early, picked up** above the list.',
+                'Tap **Late** or **Left early** under the camper. To say who picked them up, type the name under **Picked up by** and tap **Save**.',
+                'Tap **Done adding notes** to go back to the plain list. The note stays under the camper\'s name, and admins see it on their board.',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'log-incident',
+          title: 'Log an incident',
+          keywords: 'incident injury hurt behavior bullying unsafe report admin',
+          body: [
+            { kind: 'p', text: 'If a camper gets hurt, something unsafe happens, or there\'s a behavior problem in your class, write it down while it\'s fresh. In an emergency, get help first.' },
+            {
+              kind: 'steps',
+              items: [
+                'Open [[volunteer-classes]] and find your class.',
+                'Under **Incidents**, tap **Log an incident**.',
+                'Pick the camper (or none), what happened and what you did, check the time, and describe it. Stick to what you saw.',
+                'Tap **Save to the log**.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'Admins see it right away and decide whether to tell the family. If they do, they write the email themselves; what you wrote isn\'t sent.',
+                'You see only your own entries, and you can\'t change one after saving. Tell an admin if something needs fixing.',
+              ],
+            },
           ],
         },
         {

@@ -189,6 +189,37 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
         'Make a parent account, or sign in if you have one, and register your camper.',
       ], { label: 'Register a camper', url: `${appUrl}/camp` }, unsubscribeUrl(p, appUrl))
 
+    // Spec 34: an admin's urgent safety notice, sent to everyone in the post's audience at once.
+    // It ignores the announcements opt-out, so it says why it arrived.
+    case 'urgent_notice': {
+      const body = String(p.body ?? '').trim()
+      const first = body.split('\n')[0].trim()
+      const posted = typeof p.posted_at === 'string'
+        ? new Date(p.posted_at).toLocaleString('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit', weekday: 'long' })
+        : ''
+      return build(`Urgent camp notice: ${first.length > 60 ? `${first.slice(0, 57)}…` : first}`, 'Urgent camp notice', [
+        ...textParagraphs(body),
+        `Sent by ${esc(p.author ?? 'the camp')}${posted ? ` on ${esc(posted)} (Denver time)` : ''}. This is a safety notice, so it reaches you even if you turned off camp announcements.`,
+      ], { label: 'Open the camp site', url: `${appUrl}/` })
+    }
+
+    // Spec 34: an admin tells a camper's family about an incident, in the admin's own words.
+    case 'incident_notice': {
+      const on = typeof p.occurred_at === 'string'
+        ? new Date(p.occurred_at).toLocaleDateString('en-US', { timeZone: 'America/Denver', weekday: 'long', month: 'long', day: 'numeric' })
+        : ''
+      const what: Record<string, string> = {
+        injury: 'an injury', behavior: 'a behavior concern', conduct: 'a concern about a crew member’s conduct',
+        safety: 'a safety concern', other: 'something we want you to know about',
+      }
+      const where = `${esc(p.class ?? 'camp')}${p.section ? ` · ${esc(p.section)}` : ''}`
+      return build(`About ${p.camper ?? 'your camper'} at camp${on ? ` on ${on}` : ''}`, `A note from camp about ${p.camper ?? 'your camper'}`, [
+        `We're writing about <strong>${camper}</strong> in ${where}${on ? ` on ${esc(on)}` : ''}: ${what[String(p.kind)] ?? what.other}.`,
+        ...textParagraphs(String(p.message ?? '')),
+        'Please reply to this email if you have questions or would like to talk it through.',
+      ], dashboard)
+    }
+
     // Spec 29: loaner laptops, one per camper-week. Loaners stay at camp; requests past the week's
     // cap wait in a first-come queue, and the payload's position is the place in it.
     case 'laptop_reserved':
@@ -234,33 +265,22 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
     }
 
     // Spec 36: to a section's lead, when a family changes who may collect a camper (or the walk-home
-    // consent) during camp week. The roll call's dismissal list already shows it; this is the heads-up.
-    case 'pickup_changed': {
-      const who = `<strong>${esc(p.name)}</strong>${p.relation ? ` (${esc(p.relation)})` : ''}`
-      const first = esc(p.camper_first ?? p.camper ?? 'the camper')
-      const full = esc(p.camper ?? 'A camper')
-      const days = Array.isArray(p.days) && p.days.length
-        ? p.days.map(d => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })).join(', ')
-        : null
-      const how = ({ walk: 'walking', bike: 'biking', transit: 'by transit' } as Record<string, string>)[String(p.mode)] ?? null
-      const only = `Release ${first} only to their parent or an adult on the list.`
-      const what = ({
-        pickup_added: `${full}'s family added ${who} to the pickup list, ${days ? `for ${esc(days)}` : 'for any day'}.`,
-        pickup_changed: `${full}'s family updated ${who} on the pickup list: ${days ? esc(days) : 'any day'}.`,
-        pickup_removed: `${who} is no longer on ${full}'s pickup list. ${only}`,
-        consent_added: `${full}'s family says ${first} may leave camp on their own${how ? `, ${how}` : ''}, ${days ? `on ${esc(days)}` : `every day of ${esc(p.session ?? 'this week')}`}.`,
-        consent_changed: `${full}'s family changed when ${first} may leave camp on their own${how ? ` (${how})` : ''}: ${days ? esc(days) : `every day of ${esc(p.session ?? 'this week')}`}.`,
-        consent_removed: `${full}'s family withdrew consent for ${first} to leave camp on their own. ${only}`,
-      } as Record<string, string>)[String(p.change)] ?? `${full}'s pickup details changed.`
-      return build(`Pickup change for ${p.camper ?? 'a camper'}${p.for_today ? ' today' : ''}`, 'Pickup change', [
-        what,
-        `${esc(p.class ?? 'Your class')}${p.section ? ` · ${esc(p.section)}` : ''}${p.session ? `, ${esc(p.session)}` : ''}. The dismissal roll call already shows the change.`,
+    // consent) during camp week. At most one per camper and 10 minutes, so it never says what
+    // changed (a later removal would be hidden): the roll call's dismissal list has the current list.
+    case 'pickup_changed':
+      return build(`Pickup change for ${p.camper ?? 'a camper'}`, 'Pickup change', [
+        `The pickup list for <strong>${esc(p.camper ?? 'a camper')}</strong> changed; the roll call shows the current list.`,
+        `${esc(p.class ?? 'Your class')}${p.section ? ` · ${esc(p.section)}` : ''}${p.session ? `, ${esc(p.session)}` : ''}. Check it before dismissal.`,
       ], { label: 'Open roll call', url: `${appUrl}/volunteer` })
-    }
 
     default:
       return null
   }
+}
+
+// A plain-text message as escaped paragraphs: blank lines split paragraphs, single line breaks stay.
+function textParagraphs(text: string): string[] {
+  return text.trim() ? text.trim().split(/\n\s*\n/).map(t => esc(t.trim()).replace(/\n/g, '<br>\n')) : []
 }
 
 function unsubscribeUrl(p: Payload, appUrl: string): string {

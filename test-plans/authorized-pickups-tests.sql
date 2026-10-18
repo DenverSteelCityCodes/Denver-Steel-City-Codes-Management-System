@@ -1,18 +1,19 @@
 -- Tests for migration_authorized_pickups.sql (spec 36). Run against the demo DB after
 -- private.reset_demo(). The block raises its results at the end, so every test write rolls back.
 -- Every line should end in "ok"; any BAD is a failure.
--- Fixture (year 2099, so the demo's own weeks don't count): week W runs from 2 days ago to 2 days
--- from now, week F starts in 30 days, week P ended 10 days ago. Section A (lead: vol, support:
--- vol3) and section B (lead: vol2) both run in W. Campers: c1 and c3 (parent p1) in A, c2 (parent
--- p2) in B.
+-- Fixture (year 2099, so the demo's own weeks don't count; W is active, so 2099 is the current camp
+-- year): week W runs from 2 days ago to 2 days from now, week F starts in 30 days, week P ended 10
+-- days ago. Section A (lead: vol, support: vol3) and section B (lead: vol2) run in W, section X
+-- (lead: vol) runs both weeks, section L (lead: vol) runs in F. Campers: c1 and c3 (parent p1) in
+-- A, c2 (parent p2) in B, c4 (parent p2) in X, c5 (parent p2) in L.
 do $$
 declare
   yr int := 2099;
   today date := (now() at time zone 'America/Denver')::date;
   p1 uuid; p2 uuid; adm uuid; vol uuid; vol2 uuid; vol3 uuid;
   ww uuid; wf uuid; wp uuid;
-  cls uuid; sa uuid; sb uuid;
-  c1 uuid; c2 uuid; c3 uuid;
+  cls uuid; sa uuid; sb uuid; sx uuid; sl uuid;
+  c1 uuid; c2 uuid; c3 uuid; c4 uuid; c5 uuid; mk uuid;
   pk uuid; pk_tomorrow uuid; rc1 uuid;
   res text := ''; st text; n int; m int; b boolean; j jsonb;
 begin
@@ -23,7 +24,7 @@ begin
   select v.id into vol2 from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' and v.id <> vol order by v.id limit 1;
   select v.id into vol3 from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' and v.id not in (vol, vol2) order by v.id limit 1;
 
-  insert into sessions (name, year, start_date, end_date, is_active) values ('Pickup Test W', yr, today - 2, today + 2, false) returning id into ww;
+  insert into sessions (name, year, start_date, end_date, is_active) values ('Pickup Test W', yr, today - 2, today + 2, true) returning id into ww;
   insert into sessions (name, year, start_date, end_date, is_active) values ('Pickup Test F', yr, today + 30, today + 34, false) returning id into wf;
   insert into sessions (name, year, start_date, end_date, is_active) values ('Pickup Test P', yr, today - 14, today - 10, false) returning id into wp;
   insert into classes (name) values ('[TEST] Pickup Class') returning id into cls;
@@ -31,6 +32,10 @@ begin
     values (cls, 'PA', 1, ww, 5, 17, 10, vol) returning id into sa;
   insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id)
     values (cls, 'PB', 1, ww, 5, 17, 10, vol2) returning id into sb;
+  insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id)
+    values (cls, 'PX', null, null, 5, 17, 10, vol) returning id into sx;
+  insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id)
+    values (cls, 'PL', 2, wf, 5, 17, 10, vol) returning id into sl;
   insert into section_supports (section_id, volunteer_id) values (sa, vol3);
   insert into students (parent_id, full_name, first_name, age, grade, parent_name, parent_phone)
     values (p1, 'Pick One', 'Pick1', 11, '6th', 'Pat Parent', '303-555-0100') returning id into c1;
@@ -39,6 +44,13 @@ begin
   insert into registrations (student_id, section_id, status) values (c1, sa, 'confirmed');
   insert into registrations (student_id, section_id, status) values (c2, sb, 'confirmed');
   insert into registrations (student_id, section_id, status) values (c3, sa, 'confirmed');
+  insert into students (parent_id, full_name, first_name, age, grade) values (p2, 'Pick Four', 'Pick4', 11, '6th') returning id into c4;
+  insert into students (parent_id, full_name, first_name, age, grade) values (p2, 'Pick Five', 'Pick5', 11, '6th') returning id into c5;
+  insert into registrations (student_id, section_id, status) values (c4, sx, 'confirmed');
+  insert into registrations (student_id, section_id, status) values (c5, sl, 'confirmed');
+  insert into authorized_pickups (student_id, name, relation, phone) values (c4, 'Both Weeks Aunt', 'Aunt', '303-555-0160');
+  insert into authorized_pickups (student_id, name, relation, phone) values (c5, 'Later Week Uncle', 'Uncle', '303-555-0161');
+  insert into release_consents (student_id, session_id, mode, consented_by) values (c5, wf, 'walk', p2);
 
   execute 'set local role authenticated';
 
@@ -113,6 +125,12 @@ begin
   select pickup_adults into j from public.section_roster(sa) where id = c1;
   select count(*), count(*) filter (where x ->> 'phone' is not null) into n, m from jsonb_array_elements(j) x;
   res := res || E'\nsupport sees the names but no phones: ' || case when n = 2 and m = 0 then 'ok' else 'BAD (' || n || '/' || m || ')' end;
+  -- A both-weeks section shows its list; a section whose week hasn't started shows none.
+  perform set_config('request.jwt.claims', json_build_object('sub', vol, 'role', 'authenticated')::text, true);
+  select jsonb_array_length(pickup_adults) into n from public.section_roster(sx) where id = c4;
+  res := res || E'\nboth-weeks section shows today''s list: ' || case when n = 1 then 'ok' else 'BAD (' || coalesce(n, -1) || ')' end;
+  select jsonb_array_length(pickup_adults), may_leave_alone_today::int into n, m from public.section_roster(sl) where id = c5;
+  res := res || E'\noutside the section''s week: no pickup list, no walk-home: ' || case when n = 0 and m = 0 then 'ok' else 'BAD (' || n || '/' || m || ')' end;
   perform set_config('request.jwt.claims', json_build_object('sub', vol2, 'role', 'authenticated')::text, true);
   begin
     perform * from public.section_roster(sa);
@@ -122,9 +140,44 @@ begin
   -- ── Dismissal: who collected each camper ──
   perform set_config('request.jwt.claims', json_build_object('sub', vol, 'role', 'authenticated')::text, true);
   insert into roll_call_marks (section_id, student_id, day, roll_call, present, marked_by, released_mode)
-    values (sa, c1, today, 'dismissal', true, vol, 'alone');
-  select released_to into st from roll_call_marks where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
+    values (sa, c1, today, 'dismissal', true, vol, 'alone') returning id into mk;
+  select released_to into st from roll_call_marks where id = mk;
   res := res || E'\nleft on their own with today''s consent: ' || case when st = 'On their own (walk)' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
+  begin
+    update roll_call_marks set released_mode = 'listed_adult', released_to = 'Rosa Diaz' where id = mk;
+    res := res || E'\na second release over the first: ALLOWED (BAD)';
+  exception when others then res := res || E'\na second release over the first: refused ' || case when sqlerrm like 'Already collected by On their own (walk) at %Undo first.' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
+  update roll_call_marks set released_mode = null, released_to = null where id = mk;
+  select coalesce(released_mode, '-') into st from roll_call_marks where id = mk;
+  res := res || E'\nan undo clears it: ' || case when st = '-' then 'ok' else 'BAD (' || st || ')' end;
+  update roll_call_marks set released_mode = 'listed_adult', released_to = 'rosa diaz' where id = mk;
+  select released_to into st from roll_call_marks where id = mk;
+  res := res || E'\na listed adult, any capitals, stored as listed: ' || case when st = 'Rosa Diaz' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
+  update roll_call_marks set released_mode = null, released_to = null where id = mk;
+  begin
+    update roll_call_marks set released_mode = 'listed_adult', released_to = 'Ben Diaz' where id = mk;
+    res := res || E'\nan adult listed only for tomorrow: ALLOWED (BAD)';
+  exception when others then res := res || E'\nan adult listed only for tomorrow: refused ' || case when sqlstate = 'P0001' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
+  update roll_call_marks set released_mode = 'parent', released_to = null where id = mk;
+  select released_to into st from roll_call_marks where id = mk;
+  res := res || E'\nthe parent, named from the camper''s record: ' || case when st = 'Pat Parent' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
+  -- spec 34's roll-call notes write only the note: the release stays.
+  update roll_call_marks set note = 'Late' where id = mk;
+  select released_mode into st from roll_call_marks where id = mk;
+  res := res || E'\na note leaves the release alone: ' || case when st = 'parent' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
+  begin
+    update roll_call_marks set present = false where id = mk;
+    res := res || E'\nmarking a collected camper absent: ALLOWED (BAD)';
+  exception when others then res := res || E'\nmarking a collected camper absent: refused ' || case when sqlerrm like 'Already collected by Pat Parent%' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
+  update roll_call_marks set released_mode = null, released_to = null where id = mk;
+  update roll_call_marks set present = false where id = mk;
+  select present::text || '/' || coalesce(released_mode, '-') into st from roll_call_marks where id = mk;
+  res := res || E'\n...after an undo the camper can be marked absent: ' || case when st = 'false/-' then 'ok' else 'BAD (' || st || ')' end;
+  insert into roll_call_marks (section_id, student_id, day, roll_call, present, marked_by, released_mode, released_to)
+    values (sa, c1, today, 'arrival', true, vol, 'admin_ok', 'Someone');
+  select coalesce(released_mode, '-') into st from roll_call_marks where section_id = sa and student_id = c1 and day = today and roll_call = 'arrival';
+  res := res || E'\nno release on an arrival mark: ' || case when st = '-' then 'ok' else 'BAD (' || st || ')' end;
+
   insert into roll_call_marks (section_id, student_id, day, roll_call, present, marked_by)
     values (sa, c3, today, 'dismissal', true, vol);
   begin
@@ -135,34 +188,17 @@ begin
     update roll_call_marks set released_mode = 'listed_adult', released_to = 'Rosa Diaz' where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
     res := res || E'\nanother camper''s listed adult: ALLOWED (BAD)';
   exception when others then res := res || E'\nanother camper''s listed adult: refused ' || case when sqlerrm like 'Rosa Diaz isn''t on this camper''s pickup list%' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
-  update roll_call_marks set released_mode = 'admin_ok', released_to = '  Aunt  May ' where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
-  select released_mode || '/' || released_to into st from roll_call_marks where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
-  res := res || E'\n...but an admin OK records it: ' || case when st = 'admin_ok/Aunt May' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
   begin
-    update roll_call_marks set released_mode = 'admin_ok', released_to = '' where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
+    update roll_call_marks set released_mode = 'admin_ok', released_to = '' , released_ok_by = 'Jo' where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
     res := res || E'\nadmin OK with no name: ALLOWED (BAD)';
   exception when others then res := res || E'\nadmin OK with no name: refused ' || case when sqlerrm like 'Say who collected%' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
-  update roll_call_marks set released_mode = 'listed_adult', released_to = 'rosa diaz' where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  select released_to into st from roll_call_marks where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  res := res || E'\na listed adult, any capitals, stored as listed: ' || case when st = 'Rosa Diaz' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
   begin
-    update roll_call_marks set released_mode = 'listed_adult', released_to = 'Ben Diaz' where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-    res := res || E'\nan adult listed only for tomorrow: ALLOWED (BAD)';
-  exception when others then res := res || E'\nan adult listed only for tomorrow: refused ' || case when sqlstate = 'P0001' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
-  update roll_call_marks set released_mode = 'parent', released_to = null where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  select released_to into st from roll_call_marks where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  res := res || E'\nthe parent, named from the camper''s record: ' || case when st = 'Pat Parent' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
-  -- spec 34's roll-call notes write only the note: the release stays.
-  update roll_call_marks set note = 'Late' where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  select released_mode into st from roll_call_marks where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  res := res || E'\na note leaves the release alone: ' || case when st = 'parent' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
-  update roll_call_marks set present = false where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  select coalesce(released_mode, '-') || '/' || coalesce(released_to, '-') into st from roll_call_marks where section_id = sa and student_id = c1 and day = today and roll_call = 'dismissal';
-  res := res || E'\nmarking the camper absent clears the release: ' || case when st = '-/-' then 'ok' else 'BAD (' || st || ')' end;
-  insert into roll_call_marks (section_id, student_id, day, roll_call, present, marked_by, released_mode, released_to)
-    values (sa, c1, today, 'arrival', true, vol, 'admin_ok', 'Someone');
-  select coalesce(released_mode, '-') into st from roll_call_marks where section_id = sa and student_id = c1 and day = today and roll_call = 'arrival';
-  res := res || E'\nno release on an arrival mark: ' || case when st = '-' then 'ok' else 'BAD (' || st || ')' end;
+    update roll_call_marks set released_mode = 'admin_ok', released_to = 'Aunt May' where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
+    res := res || E'\nadmin OK without saying which admin: ALLOWED (BAD)';
+  exception when others then res := res || E'\nadmin OK without saying which admin: refused ' || case when sqlerrm like 'Say which admin said OK%' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
+  update roll_call_marks set released_mode = 'admin_ok', released_to = '  Aunt  May ', released_ok_by = ' Jo ' where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
+  select released_mode || '/' || released_to || '/' || released_ok_by into st from roll_call_marks where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
+  res := res || E'\n...but an admin OK, naming the admin, records it: ' || case when st = 'admin_ok/Aunt May/Jo' then 'ok' else 'BAD (' || coalesce(st, 'none') || ')' end;
   perform set_config('request.jwt.claims', json_build_object('sub', vol2, 'role', 'authenticated')::text, true);
   update roll_call_marks set present = true, released_mode = 'admin_ok', released_to = 'Stranger' where section_id = sa and student_id = c3 and day = today and roll_call = 'dismissal';
   get diagnostics n = row_count;
@@ -174,13 +210,17 @@ begin
     res := res || E'\nvolunteer reads the dismissal board: ALLOWED (BAD)';
   exception when insufficient_privilege then res := res || E'\nvolunteer reads the dismissal board: refused ok'; end;
   perform set_config('request.jwt.claims', json_build_object('sub', adm, 'role', 'authenticated', 'aal', 'aal2')::text, true);
-  select count(*) filter (where released_mode is null), count(*) filter (where released_mode = 'admin_ok')
+  select count(*) filter (where released_mode is null), count(*) filter (where released_mode = 'admin_ok' and released_ok_by = 'Jo')
     into n, m from public.dismissal_board() where section_id in (sa, sb);
-  res := res || E'\nadmin board: 2 not released (camper 1 absent now, camper 2 unmarked), 1 admin OK: ' || case when n = 2 and m = 1 then 'ok' else 'BAD (' || n || '/' || m || ')' end;
+  res := res || E'\nadmin board: 2 not released (camper 1 absent now, camper 2 unmarked), 1 admin OK by Jo: ' || case when n = 2 and m = 1 then 'ok' else 'BAD (' || n || '/' || m || ')' end;
+  select count(*) into n from public.dismissal_board() where section_id = sx and student_id = c4;
+  res := res || E'\nadmin board includes a both-weeks section: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from public.dismissal_board() where section_id = sl;
+  res := res || E'\n...and leaves out a section whose week isn''t running: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from public.dismissal_board(today + 1) where section_id = sa and jsonb_array_length(pickup_adults) = 2;
   res := res || E'\n...and tomorrow''s board lists tomorrow''s adult: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
-  select count(*) into n from authorized_pickups where student_id in (c1, c2, c3);
-  res := res || E'\nadmin reads every pickup adult: ' || case when n = 3 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from authorized_pickups where student_id in (c1, c2, c3, c4, c5);
+  res := res || E'\nadmin reads every pickup adult: ' || case when n = 5 then 'ok' else 'BAD (' || n || ')' end;
 
   -- ── Email the lead about a change during camp week ──
   perform set_config('request.jwt.claims', json_build_object('sub', p1, 'role', 'authenticated')::text, true);
@@ -191,9 +231,9 @@ begin
   execute 'reset role';
 
   select count(*) into n from notifications where template = 'pickup_changed' and payload ->> 'student_id' = c1::text and recipient_profile = vol;
-  res := res || E'\nthe lead is emailed about camper 1''s changes (3 adults, consent added and removed): ' || case when n = 5 then 'ok' else 'BAD (' || n || ')' end;
-  select count(*) into n from notifications where template = 'pickup_changed' and payload ->> 'student_id' = c1::text and payload ->> 'change' = 'consent_removed' and (payload ->> 'for_today')::boolean;
-  res := res || E'\n...saying the removed consent was for today: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+  res := res || E'\nfive changes to camper 1 in ten minutes email the lead once: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from notifications where template = 'pickup_changed' and payload ->> 'student_id' = c1::text and payload ? 'name';
+  res := res || E'\n...without naming one change (a collapsed email can''t hide a removal): ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from notifications where template = 'pickup_changed' and payload ->> 'student_id' = c3::text;
   res := res || E'\nno email for a past-day adult, a later week''s consent or an admin''s change: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from notifications where template = 'pickup_changed' and recipient_profile in (vol2, vol3) and payload ->> 'student_id' in (c1::text, c3::text);
@@ -203,6 +243,12 @@ begin
   select count(*) into n from audit.log where table_name = 'authorized_pickups' and row_id = pk::text;
   select count(*) into m from audit.log where table_name = 'release_consents' and row_id = rc1::text;
   res := res || E'\naudit log records pickup adults and consents: ' || case when n >= 1 and m = 2 then 'ok' else 'BAD (' || n || '/' || m || ')' end;
+  select count(*), count(*) filter (where old ->> 'released_mode' is not null and new ->> 'released_mode' is null) into n, m
+    from audit.log where table_name = 'roll_call_marks' and row_id = mk::text;
+  res := res || E'\naudit log records each release and each undo: ' || case when n >= 6 and m >= 3 then 'ok' else 'BAD (' || n || '/' || m || ')' end;
+  select count(*) into n from audit.log where table_name = 'roll_call_marks'
+     and row_id in (select id::text from roll_call_marks where section_id = sa and roll_call = 'arrival');
+  res := res || E'\n...but not plain roll-call taps: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
 
   raise exception 'RESULTS (all rolled back):%', res;
 end $$;

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import CallLink from './CallLink'
 import Button from './Button'
+import InlineConfirm from './InlineConfirm'
 import { Input } from './Field'
 import { callLines } from '../lib/campers'
 import { firstName, formatTime } from '../lib/campDay'
@@ -36,10 +37,14 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
   const adults = student.pickup_adults ?? []
   const [ask, setAsk] = useState<Ask>(null)
   const [name, setName] = useState('')
+  // The admin who said OK (admin_ok releases record it), and the undo being asked about.
+  const [okBy, setOkBy] = useState('')
+  const [undoing, setUndoing] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const labelId = useId()
   const nameId = useId()
+  const okId = useId()
   // After a save or an undo, focus lands on what replaced the tapped control.
   const focusNext = useRef(false)
   const lineRef = useRef<HTMLParagraphElement>(null)
@@ -52,12 +57,12 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
     else groupRef.current?.querySelector('button')?.focus()
   }, [released])
 
-  async function save(mode: ReleaseMode | null, to: string | null, key: string) {
+  async function save(mode: ReleaseMode | null, to: string | null, key: string, admin: string | null = null) {
     if (busy || !user) return
     setBusy(key); setErr(null)
     const { error } = await supabase.from('roll_call_marks').upsert({
       section_id: sectionId, student_id: student.id, day, roll_call: 'dismissal', present: true,
-      marked_by: user.id, marked_at: new Date().toISOString(), released_mode: mode, released_to: to,
+      marked_by: user.id, marked_at: new Date().toISOString(), released_mode: mode, released_to: to, released_ok_by: admin,
     }, { onConflict: 'section_id,student_id,day,roll_call' })
     if (error) {
       setBusy(null)
@@ -67,15 +72,19 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
     }
     focusNext.current = true
     await Promise.resolve(onSaved()).catch(() => {})
-    setBusy(null); setAsk(null); setName('')
+    setBusy(null); setAsk(null); setName(''); setOkBy(''); setUndoing(false)
   }
 
-  function someone(e: React.FormEvent) {
+  // "An admin said OK": who is collecting (for "Someone else") and which admin said so, both named.
+  function adminOk(e: React.FormEvent) {
     e.preventDefault()
     const typed = name.replace(/\s+/g, ' ').trim()
-    if (!typed) { setErr(`Type the name of the adult collecting ${first}.`); return }
-    const listed = adults.find(a => a.name.toLowerCase() === typed.toLowerCase())
-    void save(listed ? 'listed_adult' : 'admin_ok', listed ? listed.name : typed, 'someone')
+    const admin = okBy.replace(/\s+/g, ' ').trim()
+    if (ask?.kind === 'someone' && !typed) { setErr(`Type the name of the adult collecting ${first}.`); document.getElementById(nameId)?.focus(); return }
+    const listed = ask?.kind === 'someone' ? adults.find(a => a.name.toLowerCase() === typed.toLowerCase()) : undefined
+    if (listed) { void save('listed_adult', listed.name, 'someone'); return }
+    if (!admin) { setErr('Type the name of the admin who said OK.'); document.getElementById(okId)?.focus(); return }
+    void save('admin_ok', ask?.kind === 'someone' ? typed : 'On their own', 'admin-ok', admin)
   }
 
   if (released) {
@@ -84,12 +93,21 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
       <div className="mt-1 flex flex-wrap items-center gap-x-4">
         <p ref={lineRef} tabIndex={-1} className="flex items-start gap-1.5 font-bold text-success focus:outline-none">
           <CircleCheck size={18} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />
-          <span>{releaseLine(released, mark.released_to)}{at ? ` · ${at}` : ''}</span>
+          <span>{releaseLine(released, mark.released_to, mark.released_ok_by)}{at ? ` · ${at}` : ''}</span>
         </p>
-        <button type="button" onClick={() => void save(null, null, 'undo')} aria-disabled={!!busy || undefined}
-          className="ui-btn ui-btn--text text-ink-muted font-semibold">
-          {busy === 'undo' ? 'Undoing…' : 'Undo'}<span className="sr-only">, {first} not collected yet</span>
-        </button>
+        {undoing ? (
+          <div className="basis-full mt-2">
+            <InlineConfirm tone="neutral"
+              message={`Undo? ${first} will show as not collected yet. Only undo a release tapped by mistake.`}
+              confirmLabel={busy === 'undo' ? 'Undoing…' : 'Undo release'} cancelLabel="Keep it" busy={busy === 'undo'}
+              onConfirm={() => void save(null, null, 'undo')} onCancel={() => { setUndoing(false); setErr(null) }} />
+          </div>
+        ) : (
+          <button type="button" onClick={() => { setUndoing(true); setErr(null) }}
+            className="ui-btn ui-btn--text text-ink-muted font-semibold">
+            Undo<span className="sr-only">, {first} not collected yet</span>
+          </button>
+        )}
         {err && <ErrorText>{err}</ErrorText>}
       </div>
     )
@@ -139,7 +157,7 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
       )}
 
       {ask && (
-        <form onSubmit={ask.kind === 'someone' ? someone : e => { e.preventDefault(); void save('admin_ok', 'On their own', 'alone-ok') }}
+        <form onSubmit={adminOk} noValidate
           className="mt-2 rounded border-2 border-ink p-3">
           {ask.kind === 'someone' && (
             <>
@@ -157,8 +175,11 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
             </span>
           </p>
           {callLines(student).map(c => <CallLink key={c.number} call={c} verb />)}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => { setAsk(null); setErr(null); setName('') }}>Back</Button>
+          <label htmlFor={okId} className="block font-bold mt-2 mb-1.5">Which admin said OK?</label>
+          <Input id={okId} type="text" autoComplete="off" maxLength={60} value={okBy}
+            onChange={e => { setOkBy(e.target.value); setErr(null) }} />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => { setAsk(null); setErr(null); setName(''); setOkBy('') }}>Back</Button>
             <Button type="submit" variant="ink" aria-disabled={!!busy || undefined} aria-busy={!!busy}>
               {busy && <LoaderCircle size={16} strokeWidth={2.5} className="animate-spin" aria-hidden="true" />}
               An admin said OK

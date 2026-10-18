@@ -65,19 +65,19 @@ export function onDay(days: string[] | null | undefined, day: string): boolean {
 }
 
 // What the crew sees once a camper has been collected.
-export function releaseLine(mode: ReleaseMode, releasedTo: string | null | undefined): string {
+export function releaseLine(mode: ReleaseMode, releasedTo: string | null | undefined, okBy?: string | null): string {
   const who = releasedTo?.trim() || 'someone'
   if (mode === 'alone') return who.startsWith('On their own') ? `Left ${who.charAt(0).toLowerCase()}${who.slice(1)}` : 'Left on their own'
   if (mode === 'parent') return `Collected by ${who} (parent)`
-  if (mode === 'admin_ok') return `Collected by ${who}, admin OK`
+  if (mode === 'admin_ok') return `Collected by ${who}, OK'd by ${okBy?.trim() || 'an admin'}`
   return `Collected by ${who}`
 }
 
 // The attendance CSV's "Collected by" cell.
-export function releaseCell(mode: ReleaseMode | null | undefined, releasedTo: string | null | undefined): string {
+export function releaseCell(mode: ReleaseMode | null | undefined, releasedTo: string | null | undefined, okBy?: string | null): string {
   if (!mode || !releasedTo) return ''
   if (mode === 'parent') return `${releasedTo} (parent)`
-  if (mode === 'admin_ok') return `${releasedTo} (admin OK)`
+  if (mode === 'admin_ok') return `${releasedTo} (admin OK: ${okBy ?? '?'})`
   return releasedTo
 }
 
@@ -147,6 +147,7 @@ export interface DismissalRow {
   present: boolean | null
   released_to: string | null
   released_mode: ReleaseMode | null
+  released_ok_by?: string | null
   marked_at: string | null
   marked_by_name: string | null
   pickup_adults: PickupAdult[] | null

@@ -35,11 +35,11 @@ describe('release wording', () => {
     expect(releaseLine('parent', 'Pat Lee')).toBe('Collected by Pat Lee (parent)')
     expect(releaseLine('listed_adult', 'Rosa Diaz')).toBe('Collected by Rosa Diaz')
     expect(releaseLine('alone', 'On their own (walk)')).toBe('Left on their own (walk)')
-    expect(releaseLine('admin_ok', 'Aunt May')).toBe('Collected by Aunt May, admin OK')
+    expect(releaseLine('admin_ok', 'Aunt May', 'Jo')).toBe("Collected by Aunt May, OK'd by Jo")
   })
   it('fills the CSV cell, empty when nobody is recorded', () => {
     expect(releaseCell('parent', 'Pat Lee')).toBe('Pat Lee (parent)')
-    expect(releaseCell('admin_ok', 'Aunt May')).toBe('Aunt May (admin OK)')
+    expect(releaseCell('admin_ok', 'Aunt May', 'Jo')).toBe('Aunt May (admin OK: Jo)')
     expect(releaseCell('alone', 'On their own (bike)')).toBe('On their own (bike)')
     expect(releaseCell(null, null)).toBe('')
   })

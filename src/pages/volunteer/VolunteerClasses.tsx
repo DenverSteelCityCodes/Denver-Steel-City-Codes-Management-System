@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { GraduationCap, HeartPulse, Laptop, Megaphone, Printer } from 'lucide-react'
 import { useVolunteerHome } from '../../hooks/useVolunteerHome'
 import HealthNotes from '../../components/HealthNotes'
+import IncidentLog from '../../components/IncidentLog'
 import CallLink from '../../components/CallLink'
 import { callLines, healthLines } from '../../lib/campers'
 import { rosterLaptopLabel } from '../../lib/laptopLoans'
@@ -78,48 +79,52 @@ export default function VolunteerClasses() {
                       : session ? `${session.name} is over.` : 'This section is not scheduled for a camp week yet.'}
                 </p>
               </div>
-              <Sect title={countLabel(s.students.length, 'camper', 'campers')} id={`roster-${s.id}`} className="sm:mt-0">
-                {withNotes.length > 0 && (
-                  <p className="flex items-start gap-1.5 font-bold text-danger -mt-1 mb-3">
-                    <HeartPulse size={16} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />
-                    <span>
-                      Health notes:{' '}
-                      {withNotes.map((st, i) => (
-                        <span key={st.id}>{i > 0 && ', '}<a href={`#camper-${st.id}`} className="underline underline-offset-[3px]">{st.full_name}</a></span>
-                      ))}
-                    </span>
-                  </p>
-                )}
-                {s.students.length === 0 ? (
-                  <p className="text-ink-muted">No campers enrolled in this section yet.</p>
-                ) : (
-                  <ul className="border-y-2 border-ink">
-                    {s.students.map(st => {
-                      const health = healthLines(st)
-                      const calls = callLines(st)
-                      const laptop = rosterLaptopLabel(st.laptop_loan)
-                      return (
-                        <li key={st.id} id={`camper-${st.id}`} className="py-3 border-t border-border first:border-t-0 scroll-mt-16">
-                          <p className="font-bold text-lg leading-[1.3] text-ink">{st.full_name}</p>
-                          {health.length > 0 && <HealthNotes lines={health} className="mt-1" />}
-                          {calls.length > 0 ? (
-                            <div className="flex flex-col items-start lg:flex-row lg:flex-wrap lg:gap-x-6">
-                              {calls.map(c => <CallLink key={c.number} call={c} />)}
-                            </div>
-                          ) : (
-                            <p className="mt-1 text-ink-muted">No phone number on file. Tell an admin.</p>
-                          )}
-                          {laptop && (
-                            <p className="mt-1 flex items-center gap-1.5 font-bold">
-                              <Laptop size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />{laptop}
-                            </p>
-                          )}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </Sect>
+              {/* The roster (health notes, who to call) first; the incident log under it (spec 34). */}
+              <div>
+                <Sect title={countLabel(s.students.length, 'camper', 'campers')} id={`roster-${s.id}`} className="sm:mt-0">
+                  {withNotes.length > 0 && (
+                    <p className="flex items-start gap-1.5 font-bold text-danger -mt-1 mb-3">
+                      <HeartPulse size={16} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />
+                      <span>
+                        Health notes:{' '}
+                        {withNotes.map((st, i) => (
+                          <span key={st.id}>{i > 0 && ', '}<a href={`#camper-${st.id}`} className="underline underline-offset-[3px]">{st.full_name}</a></span>
+                        ))}
+                      </span>
+                    </p>
+                  )}
+                  {s.students.length === 0 ? (
+                    <p className="text-ink-muted">No campers enrolled in this section yet.</p>
+                  ) : (
+                    <ul className="border-y-2 border-ink">
+                      {s.students.map(st => {
+                        const health = healthLines(st)
+                        const calls = callLines(st)
+                        const laptop = rosterLaptopLabel(st.laptop_loan)
+                        return (
+                          <li key={st.id} id={`camper-${st.id}`} className="py-3 border-t border-border first:border-t-0 scroll-mt-16">
+                            <p className="font-bold text-lg leading-[1.3] text-ink">{st.full_name}</p>
+                            {health.length > 0 && <HealthNotes lines={health} className="mt-1" />}
+                            {calls.length > 0 ? (
+                              <div className="flex flex-col items-start lg:flex-row lg:flex-wrap lg:gap-x-6">
+                                {calls.map(c => <CallLink key={c.number} call={c} />)}
+                              </div>
+                            ) : (
+                              <p className="mt-1 text-ink-muted">No phone number on file. Tell an admin.</p>
+                            )}
+                            {laptop && (
+                              <p className="mt-1 flex items-center gap-1.5 font-bold">
+                                <Laptop size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />{laptop}
+                              </p>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </Sect>
+                <IncidentLog sectionId={s.id} sectionName={`${s.class_name}, ${s.label}`} students={s.students} />
+              </div>
             </div>
           )
         })}

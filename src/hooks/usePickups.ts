@@ -52,17 +52,19 @@ export function usePickups(studentId: string, enabled: boolean) {
   }
 }
 
-// The registration wizard's pickup step (spec 36), saved once the camper exists. The wizard edits
-// the camper's any-day adults: `keep` are the ids it loaded (a returning camper), and any of them
-// no longer in `adults` is removed. Dated adults are left alone (they're changed on Home). A consent
-// covers every day of each week in `sessionIds`. Returns what failed, or null.
-export async function saveWizardPickups(studentId: string, adults: (PickupDraft & { id?: string })[], keep: string[],
+// The registration wizard's pickup step (spec 36), saved once the camper exists. "Only I will pick
+// up" (`onlyMe`) clears the camper's whole list, dated adults included. Otherwise the wizard edits
+// the any-day adults: `keep` are the ids it loaded (a returning camper), and any of them no longer
+// in `adults` is removed; dated adults are left alone (they're changed on Home). A consent covers
+// every day of each week in `sessionIds`. Returns what failed, or null.
+export async function saveWizardPickups(studentId: string, onlyMe: boolean, adults: (PickupDraft & { id?: string })[], keep: string[],
   consent: { mode: LeaveMode; note: string } | null, sessionIds: string[]): Promise<string | null> {
   const kept = new Set(adults.map(a => a.id).filter(Boolean))
   const gone = keep.filter(id => !kept.has(id))
   const row = (a: PickupDraft) => ({ name: a.name.trim(), relation: a.relation.trim(), phone: a.phone.trim() })
   const steps: PromiseLike<{ error: { message: string } | null }>[] = [
-    ...(gone.length ? [supabase.from('authorized_pickups').delete().in('id', gone)] : []),
+    ...(onlyMe ? [supabase.from('authorized_pickups').delete().eq('student_id', studentId)]
+      : gone.length ? [supabase.from('authorized_pickups').delete().in('id', gone)] : []),
     ...adults.filter(a => a.id).map(a => supabase.from('authorized_pickups').update(row(a)).eq('id', a.id!)),
   ]
   const fresh = adults.filter(a => !a.id)

@@ -53,7 +53,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | 🟨 | [31](31-course-rules-in-the-db.md) | #151 | Course rules in the DB: grades, prerequisites, repeat warning, "place with" | P0 | M | 05 | B |
 | ⬜ | [32](32-admin-register-on-behalf.md) | #152 | Admin register-on-behalf with named, logged overrides | P1 | M | 05, 31 | B |
 | ⬜ | [33](33-health-and-accommodations.md) | #153 | Structured allergies, accommodations, lunch list | P0 | M | 04, L2 | B |
-| ⬜ | [34](34-urgent-announcements-and-incidents.md) | #154 | Urgent announcements, week audiences, incident log, roll-call notes | P1 | M | 09 follow-up | B |
+| 🟨 | [34](34-urgent-announcements-and-incidents.md) | #154 | Urgent announcements, week audiences, incident log, roll-call notes | P1 | M | 09 follow-up | B |
 | ⬜ | [35](35-volunteer-onboarding.md) | #155 | Volunteer interviews + onboarding: private links, emails, checklist, profile | P1 | M | 09 | B |
 | 🟨 | [36](36-authorized-pickups.md) | #156 | Authorized pickups + dated walk-home consent at dismissal | P1 | M | — | B |
 | ⬜ | [B2](backlog-p2.md) | #157 | Volunteer hours certificate (promoted from P2) | P1 | S | 35 | B |

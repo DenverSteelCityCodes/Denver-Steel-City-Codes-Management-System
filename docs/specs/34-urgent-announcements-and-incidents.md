@@ -1,6 +1,6 @@
 # 34: Urgent announcements, week audiences, incident log and roll-call notes
 
-**Status:** ⬜ not started · **Issue:** #154 · **Priority:** P1 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in progress (built on `feat/spec-34-urgent-announcements`) · **Issue:** #154 · **Priority:** P1 · **Effort:** M · **Phase:** B
 **Depends on:** 09's announcements follow-up (Also email through the outbox), 05 ✅ · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §2
 
@@ -51,6 +51,14 @@ Today:
 ## Tests and verification
 - SQL: incident RLS (own section, other section, admin). Sender order with mixed priorities.
 - Browser: compose an urgent update, then check the banner on a parent account.
+
+## As built (2026-10-18)
+- **Migration:** `migration_urgent_and_incidents.sql` (step 36 in `docs/database.md`), applied to the demo. Tests: `test-plans/urgent-incidents-tests.sql` (54 checks) and `src/lib/__tests__/spec34.test.ts`, `notificationTemplates.test.ts`.
+- **Week audiences** are `updates.session_id` with `week_families` / `week_crew`. A section is in a week when tied to it or running both weeks; families are counted in that session's year. Week crew also read what that week's families were told. Addresses for "Also email": `week_recipient_emails()` (admins).
+- **Urgent:** admins only (a lead's policy refuses `urgent`). A trigger queues one `urgent_notice` per person in the audience at priority 1, one per address, ignoring `email_opt_out`. The sender claims urgent rows first (`claim_urgent_notifications`, up to 300) and sends them 100 per call through Resend's batch endpoint; `claim_notifications` orders by priority, then age. The composer asks once, inline, before sending, and offers the three prewritten starts. The red banner shows on parent Home and volunteer Today until midnight Denver time.
+- **"Also email"** for ordinary posts still opens the admin's mail app: moving it to the outbox is spec 09's follow-up, not this spec.
+- **Incidents:** crew log from Classes (own section, own name, a camper holding a seat, the last 14 days) and read only their own entries; admins read and update all on Attendance › Incidents. `notify_incident_parent()` is admins only, once per entry, and emails the admin's own message, never the crew's description. Attention item after 24 h. No client deletes.
+- **Roll-call notes:** an "Add notes" mode on the roll call (Late, Left early, Picked up by …) writing through `set_roll_call_note()`, so who marked the camper stays. Shown under the camper on the board, on Unaccounted now, and in the CSV's Notes column.
 
 ## Open questions
 - How long are incident records kept? ❓ (L4). Default: 1 year after the season, then anonymize the camper link.

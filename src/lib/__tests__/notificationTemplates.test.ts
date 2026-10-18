@@ -49,6 +49,38 @@ describe('notify-me list (spec 30)', () => {
   })
 })
 
+describe('urgent notices and incidents (spec 34)', () => {
+  it('sends the urgent notice in full, escaped, with why it arrived', () => {
+    const r = render('urgent_notice', {
+      body: 'Site hold at the school.\nStay in your rooms.\n\nPickup <may> be late.', author: 'Jordan Rivera', posted_at: '2026-07-14T16:05:00Z',
+    }, APP)!
+    expect(r.subject).toBe('Urgent camp notice: Site hold at the school.')
+    expect(r.html).toContain('Site hold at the school.<br>')
+    expect(r.html).toContain('Pickup &lt;may&gt; be late.')
+    expect(r.text).toContain('Stay in your rooms.')
+    expect(r.text).toContain('even if you turned off camp announcements')
+    expect(r.text).toContain('10:05 AM')
+  })
+  it('shortens a long first line in the subject', () => {
+    const r = render('urgent_notice', { body: 'x'.repeat(100) }, APP)!
+    expect(r.subject.length).toBeLessThanOrEqual('Urgent camp notice: '.length + 58)
+  })
+  it("tells the family about an incident in the admin's words, not the crew's", () => {
+    const r = render('incident_notice', {
+      camper: 'Ava', class: 'Intro to Python', section: 'PY-A', kind: 'injury', occurred_at: '2026-07-14T17:30:00Z',
+      message: 'She scraped her knee at recess. We cleaned it and she rejoined the class.',
+    }, APP)!
+    expect(r.subject).toBe('About Ava at camp on Tuesday, July 14')
+    expect(r.text).toContain('an injury')
+    expect(r.text).toContain('She scraped her knee')
+    expect(r.text).toContain(`${APP}/parent`)
+  })
+  it('has a sensible incident notice with no message', () => {
+    const r = render('incident_notice', { camper: 'Ava', kind: 'nonsense' }, APP)!
+    expect(r.text).toContain('something we want you to know about')
+  })
+})
+
 describe('laptop loans (spec 29)', () => {
   const base = { camper: 'Ava', class: 'Intro to Python', section: 'PY-A', week: 2, start_date: '2027-06-14', end_date: '2027-06-18', student_id: 's1' }
   it('has a template for every laptop email the migration queues', () => {
@@ -80,26 +112,15 @@ describe('laptop loans (spec 29)', () => {
 
 describe('pickup changes (spec 36)', () => {
   const base = { camper: 'Maya Brooks', camper_first: 'Maya', class: 'Web Development', section: 'WD-A', session: 'Week 1', student_id: 's1' }
-  it('tells the lead who was added, for which days, and links to the roll call', () => {
-    const r = render('pickup_changed', { ...base, change: 'pickup_added', name: 'Ruth Brooks', relation: 'Grandmother', days: ['2027-06-09'], for_today: true }, APP)!
-    expect(r.subject).toBe('Pickup change for Maya Brooks today')
-    expect(r.text).toContain('added Ruth Brooks (Grandmother) to the pickup list, for Wednesday, June 9.')
+  it('says the list changed and points the lead at the roll call, never at one change', () => {
+    const r = render('pickup_changed', { ...base, change: 'pickup_removed' }, APP)!
+    expect(r.subject).toBe('Pickup change for Maya Brooks')
+    expect(r.text).toContain('The pickup list for Maya Brooks changed; the roll call shows the current list.')
+    expect(r.text).toContain('Web Development · WD-A, Week 1.')
     expect(r.text).toContain(`Open roll call: ${APP}/volunteer`)
     expect(r.text).not.toContain('/parent')
   })
-  it('says an any-day adult or a whole-week consent plainly', () => {
-    expect(render('pickup_changed', { ...base, change: 'pickup_added', name: 'Morgan', relation: 'Aunt', days: null }, APP)!.text).toContain('for any day.')
-    const c = render('pickup_changed', { ...base, change: 'consent_added', mode: 'walk', days: null }, APP)!
-    expect(c.subject).toBe('Pickup change for Maya Brooks')
-    expect(c.text).toContain('Maya may leave camp on their own, walking, every day of Week 1.')
-  })
-  it('asks the lead to hold the camper when an adult or the consent is withdrawn', () => {
-    expect(render('pickup_changed', { ...base, change: 'pickup_removed', name: 'Morgan', relation: 'Aunt' }, APP)!.text)
-      .toContain('Release Maya only to their parent or an adult on the list.')
-    expect(render('pickup_changed', { ...base, change: 'consent_removed', mode: 'bike' }, APP)!.text).toContain('withdrew consent')
-  })
-  it('escapes what the family typed', () => {
-    const r = render('pickup_changed', { ...base, change: 'pickup_added', name: '<b>x</b>', relation: 'Friend' }, APP)!
-    expect(r.html).toContain('&lt;b&gt;x&lt;/b&gt;')
+  it('escapes the camper name', () => {
+    expect(render('pickup_changed', { ...base, camper: '<b>x</b>' }, APP)!.html).toContain('&lt;b&gt;x&lt;/b&gt;')
   })
 })
