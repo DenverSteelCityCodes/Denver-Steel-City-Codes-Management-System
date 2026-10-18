@@ -62,14 +62,14 @@ function AccountNotice({ title, message, onRetry, onSignOut }: {
     <div className="min-h-screen bg-bg flex flex-col">
       <BrandBar />
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-10 text-center">
-        <h1 className="font-sans font-bold text-2xl text-ink mb-2">{title}</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-2">{title}</h1>
         <p role="alert" className="font-sans text-ink-muted text-sm mb-6 max-w-xs">{message}</p>
         <div className="flex gap-2">
           {onRetry && (
             <button
               type="button"
               onClick={onRetry}
-              className="h-10 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition"
+              className="ui-btn ui-btn--primary"
             >
               Retry
             </button>

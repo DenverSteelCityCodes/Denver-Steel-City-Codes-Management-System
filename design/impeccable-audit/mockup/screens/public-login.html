@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<div class="login">
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="login__main">
+  <section class="login__demo" aria-labelledby="demo-h">
+    <div class="sign">
+      <h1 class="msg" id="demo-h">Try the demo</h1>
+      <p class="sub">Explore a fictional summer camp from any seat. Nothing here is real, and the data resets every night.</p>
+      <ul class="seats">
+        <li><a href="admin-today.html">
+          <span><b><span class="sr-only">Sign in as </span>Camp admin</b><span class="blurb">Run the camp: classes, rosters, volunteers, interviews.</span></span>
+          <span class="go"><i data-lucide="arrow-right"></i></span>
+        </a></li>
+        <li><a href="parent-home.html">
+          <span><b><span class="sr-only">Sign in as </span>Parent</b><span class="blurb">Three campers: one confirmed, one waitlisted, one to re-confirm.</span></span>
+          <span class="go"><i data-lucide="arrow-right"></i></span>
+        </a></li>
+        <li><a href="volunteer-today.html">
+          <span><b><span class="sr-only">Sign in as </span>Volunteer</b><span class="blurb">Lead a section: take attendance, see allergies, pick duties.</span></span>
+          <span class="go"><i data-lucide="arrow-right"></i></span>
+        </a></li>
+        <li><a href="volunteer-applicant.html">
+          <span><b><span class="sr-only">Sign in as </span>Volunteer applicant</b><span class="blurb">Application under review, with an interview you can reschedule.</span></span>
+          <span class="go"><i data-lucide="arrow-right"></i></span>
+        </a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="login__signin" aria-labelledby="signin-h">
+    <div class="login__form">
+      <h2 class="signin-h" id="signin-h"><span class="or">or sign in with email</span><span class="full">Sign in</span></h2>
+      <form class="fstack mt-4" data-next="parent-home.html" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" type="email" autocomplete="email" inputmode="email">
+        </div>
+        <div class="field">
+          <div class="label-row"><label for="pw">Password</label><a class="link link--muted" href="public-forgot.html">Forgot password?</a></div>
+          <input class="input" id="pw" type="password" autocomplete="current-password">
+        </div>
+        <button class="btn btn--ink btn--block" type="submit">Sign in</button>
+      </form>
+
+      <h2 class="h3 mt-8" id="new-h">New here?</h2>
+      <div class="stack mt-3">
+        <a class="btn btn--secondary btn--block" href="public-signup.html">Register a camper (parents)</a>
+        <a class="btn btn--secondary btn--block" href="public-apply-1.html">Apply to volunteer</a>
+      </div>
+      <p class="meta mt-6">Questions? <a class="link" href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></p>
+    </div>
+  </section>
+</main>
+</div>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script></body>
+</html>

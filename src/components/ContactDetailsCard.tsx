@@ -50,7 +50,7 @@ export default function ContactDetailsCard() {
 
   if (loading) return <div className="h-40 bg-surface-sunken rounded-[14px] animate-pulse mt-7" />
   // 16px so iOS Safari doesn't zoom the page when the field is focused.
-  const input = 'w-full h-11 px-3 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand'
+  const input = 'ui-input'
   const label = 'block font-sans text-sm font-semibold text-ink-muted mb-1'
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
   const ec = profile?.emergency_contact_name
@@ -91,7 +91,7 @@ export default function ContactDetailsCard() {
           {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setEditing(false)} className="h-11 px-4 rounded-[10px] border border-border-strong bg-surface font-sans font-semibold text-[15px] text-ink hover:bg-surface-sunken transition">Cancel</button>
-            <button type="submit" disabled={saving} className="h-11 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-[15px] flex items-center gap-1.5 transition disabled:opacity-50">
+            <button type="submit" disabled={saving} className="ui-btn ui-btn--primary">
               <Check size={16} /> {saving ? 'Saving…' : 'Save'}
             </button>
           </div>

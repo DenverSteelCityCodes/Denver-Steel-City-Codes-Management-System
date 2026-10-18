@@ -29,7 +29,7 @@ const TONE_CLS: Record<Tone, string> = {
 
 const textBtn = 'min-h-11 font-sans text-[15px] font-semibold text-ink underline decoration-brand-hover decoration-2 underline-offset-4 disabled:opacity-50'
 const btnCls = 'h-11 px-4 rounded-[10px] border border-border-strong bg-surface text-ink font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 hover:bg-surface-sunken transition disabled:opacity-50'
-const primaryCls = 'h-11 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 transition disabled:opacity-50'
+const primaryCls = 'ui-btn ui-btn--primary'
 
 // One row per camper on Home: name, one status, and each week's class. Tapping it opens the class
 // details and the change actions in place (no modal), with the same inline confirmations as before.
@@ -184,7 +184,7 @@ function RegistrationActions({ reg, camper, where, changes }: { reg: Registratio
         >
           <label htmlFor={`req-${reg.id}`} className="block font-sans text-sm font-semibold text-ink-muted">What would you like to change about {where}?</label>
           <textarea id={`req-${reg.id}`} rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
-            className="w-full px-3 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand" />
+            className="ui-input" />
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setMode('idle')} className={btnCls}>Cancel</button>
             <button type="submit" disabled={busy || !message.trim()} className={primaryCls}>{busy ? 'Sending…' : 'Send to the camp'}</button>

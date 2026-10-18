@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Updates · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/volunteer.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="volunteer-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="volunteer-today.html">Today</a>
+      <a href="volunteer-class.html">Class</a>
+      <a href="volunteer-duties.html">Duties</a>
+      <a href="volunteer-updates.html" aria-current="page">Updates</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="SO, account menu">SO</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <a href="volunteer-today.html">Today</a>
+    <a href="volunteer-class.html">Class</a>
+    <a href="volunteer-duties.html">Duties</a>
+    <a href="volunteer-updates.html" aria-current="page">Updates</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Sam Okafor</b><span>demo.volunteer@example.com</span></div>
+    <a href="volunteer-profile.html"><i data-lucide="user-round"></i>Profile and availability</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--narrow">
+  <h1 class="sr-only">Updates</h1>
+
+  <button class="btn btn--secondary btn--block opener" data-toggle="composer"><i data-lucide="pen-line"></i>Post to your class's families</button>
+
+  <section class="composer mt-4" id="composer" aria-labelledby="post-h">
+    <h2 id="post-h">Post to your class's families</h2>
+    <form class="mt-3" onsubmit="return false">
+      <div class="to-line">
+        <label for="to">To: families in</label>
+        <select class="select" id="to">
+          <option selected>PY-B, Week 1</option>
+          <option>PY-B, Week 2</option>
+        </select>
+      </div>
+      <div class="field mt-4">
+        <label for="msg">Message</label>
+        <textarea class="textarea" id="msg" maxlength="2000" placeholder="What we did today, what to bring tomorrow…">Today we wrote our first Python programs: a number-guessing game. Tomorrow, please send a labelled laptop charger.</textarea>
+      </div>
+      <label class="choice mt-3"><input type="checkbox"><span class="grow">Also email them <span class="meta">(opens your mail app)</span></span></label>
+      <button class="btn btn--primary btn--block mt-4" type="submit"><i data-lucide="send"></i>Post to PY-B, Week 1 families</button>
+      <button class="link link--muted mt-2" type="button" data-toggle="composer">Cancel</button>
+    </form>
+  </section>
+
+  <section class="section" aria-labelledby="feed-h">
+    <h2 id="feed-h">From the camp</h2>
+    <ul class="rows rows--framed feed mt-3">
+      <li>
+        <p class="meta"><b>Jordan Rivera</b> · to volunteers · Sun 7:30 PM</p>
+        <p class="mt-2">Crew huddle at 8:15 each morning by the check-in table. Roll calls happen at arrival, after lunch and at dismissal. Take them on your phone from Today.</p>
+      </li>
+      <li>
+        <p class="meta"><b>Jordan Rivera</b> · to everyone · Sun 2:30 PM</p>
+        <p class="mt-2">Welcome to Week 1! Drop-off is 8:30–9:00 in the front lobby and pickup starts at 3:00. Please send a water bottle and a labelled laptop charger each day.</p>
+      </li>
+    </ul>
+  </section>
+</main>
+<footer class="foot">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+</body>
+</html>

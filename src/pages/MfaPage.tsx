@@ -61,7 +61,7 @@ export default function MfaPage() {
     navigate(next, { replace: true })
   }
 
-  const input = 'w-full h-12 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-xl tracking-[0.3em] text-center focus:outline-none focus:ring-2 focus:ring-brand'
+  const input = 'ui-input text-xl tracking-[0.3em] text-center'
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       <BrandBar />
@@ -73,13 +73,13 @@ export default function MfaPage() {
           {mode.kind === 'loading' && <div className="h-40 bg-surface-sunken rounded-[10px] animate-pulse" />}
           {mode.kind === 'error' && (
             <>
-              <h1 className="font-sans font-bold text-2xl text-ink mb-2">Two-step sign-in</h1>
+              <h1 className="font-display font-bold text-2xl text-ink mb-2">Two-step sign-in</h1>
               <p role="alert" className="font-sans text-sm text-danger mb-4">{mode.message}</p>
             </>
           )}
           {(mode.kind === 'verify' || mode.kind === 'enroll') && (
             <form onSubmit={submit} noValidate>
-              <h1 ref={focusOnMount} tabIndex={-1} className="font-sans font-bold text-2xl text-ink mb-1 focus:outline-none">
+              <h1 ref={focusOnMount} tabIndex={-1} className="font-display font-bold text-2xl text-ink mb-1 focus:outline-none">
                 {mode.kind === 'enroll' ? 'Set up two-step sign-in' : 'Enter your code'}
               </h1>
               {mode.kind === 'enroll' ? (
@@ -102,7 +102,7 @@ export default function MfaPage() {
                 aria-describedby={err ? 'mfa-error' : undefined} autoFocus={mode.kind === 'verify'} />
               {err && <p id="mfa-error" role="alert" className="mt-2 font-sans text-sm text-danger">{err}</p>}
               <button type="submit" disabled={busy}
-                className="mt-4 w-full h-11 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">
+                className="ui-btn ui-btn--primary mt-4 w-full">
                 {busy ? 'Checking…' : mode.kind === 'enroll' ? 'Turn on two-step sign-in' : 'Continue'}
               </button>
               <p className="mt-4 font-sans text-xs text-ink-muted">

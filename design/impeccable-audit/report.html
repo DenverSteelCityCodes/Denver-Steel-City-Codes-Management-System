@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SCC Denver Design Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700;800&family=Josefin+Sans:wght@700&display=swap">
+<style>
+/* Layout: one reading column on the concourse floor; a single gold sign points to the mockup; tables for scores. */
+:root {
+  --floor: #F4F4F1; --fg: #1A1613; --muted: #57524A; --hair: #CFCBC3; --rule: #1A1613;
+  --sign: #F1C446; --on-sign: #1A1613; --on-sign-muted: #4A3D10;
+  --shell: #1A1613; --on-shell: #FFFFFF; --on-shell-muted: #CFC9BF;
+  --danger: #B3261E; --danger-wash: #FBE8E6; --ok: #1E6B3A; --ok-wash: #E3F1E8; --surface: #FFFFFF;
+  --ui: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --brand: "Josefin Sans", "Atkinson Hyperlegible Next", ui-sans-serif, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --floor: #141210; --fg: #F2EFE9; --muted: #B3ACA1; --hair: #3A3530; --rule: #F2EFE9;
+  --shell: #0B0A09; --on-shell-muted: #BDB6AB; --danger: #FF8F86; --danger-wash: #3A1714; --ok: #7FD39E; --ok-wash: #13301F; --surface: #1D1A17;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --floor: #141210; --fg: #F2EFE9; --muted: #B3ACA1; --hair: #3A3530; --rule: #F2EFE9;
+  --shell: #0B0A09; --on-shell-muted: #BDB6AB; --danger: #FF8F86; --danger-wash: #3A1714; --ok: #7FD39E; --ok-wash: #13301F; --surface: #1D1A17;
+  color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--floor); color: var(--fg); font: 400 17px/1.55 var(--ui); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--sign); color: var(--on-sign); }
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--rule); outline-offset: 2px; }
+h1, h2, h3, p, ul, ol, figure { margin: 0; }
+ul, ol { padding-left: 1.2em; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--shell); color: var(--on-shell); }
+.bar-in { max-width: 1120px; margin: 0 auto; min-height: 56px; display: flex; align-items: center; gap: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.bar img { height: 26px; width: auto; }
+.bar nav { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+.bar nav a { color: var(--on-shell-muted); text-decoration: none; font-weight: 700; font-size: 15px; min-height: 44px; display: inline-flex; align-items: center; padding: 0 10px; }
+.bar nav a:hover { color: var(--on-shell); }
+@media (max-width: 560px) { .bar nav { display: none; } }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 72px; }
+.read { max-width: 72ch; }
+h1 { font: 700 clamp(2rem, 1.6rem + 1.6vw, 2.75rem)/1.1 var(--brand); letter-spacing: -.01em; text-wrap: balance; }
+h2 { font: 800 1.5rem/1.2 var(--ui); letter-spacing: -.01em; margin-bottom: 12px; text-wrap: balance; }
+h3 { font: 800 1.125rem/1.3 var(--ui); }
+.lede { margin-top: 12px; color: var(--muted); font-size: 1.125rem; max-width: 68ch; text-wrap: pretty; }
+section { margin-top: 56px; }
+.meta { color: var(--muted); font-size: 15px; }
+.stack > * + * { margin-top: 14px; }
+
+/* The one sign on this page: it points to the redesign. */
+.sign { margin-top: 28px; display: grid; grid-template-columns: 1fr auto; gap: 4px 20px; align-items: end; background: var(--sign); color: var(--on-sign); padding: 20px; border-radius: 4px; text-decoration: none; }
+.sign:hover { background: #E2B12C; }
+.sign:focus-visible { outline-color: var(--rule); }
+.sign .ctx { grid-column: 1 / -1; font-weight: 800; font-size: 15px; color: var(--on-sign-muted); }
+.sign .fig { font: 800 clamp(3.25rem, 2.6rem + 3vw, 4.75rem)/.9 var(--ui); letter-spacing: -.03em; }
+.sign .fig small { font-size: .38em; letter-spacing: 0; margin-left: .2em; }
+.sign .msg { font: 800 1.375rem/1.2 var(--ui); text-wrap: balance; }
+.sign .sub { grid-column: 1 / -1; color: var(--on-sign-muted); margin-top: 4px; }
+.sign .go { grid-row: 2 / span 2; grid-column: 2; width: 52px; height: 52px; display: grid; place-items: center; background: var(--shell); color: var(--sign); border-radius: 4px; }
+:root[data-theme="dark"] .sign .go { background: #1A1613; }
+.go svg { width: 28px; height: 28px; }
+
+/* Score tables */
+.tbl { overflow-x: auto; border-top: 2px solid var(--rule); border-bottom: 2px solid var(--rule); }
+table { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+th { text-align: left; font-size: 14px; font-weight: 800; color: var(--muted); padding: 10px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: 10px; border-top: 1px solid var(--hair); vertical-align: top; }
+tr:first-child td { border-top: 0; }
+td.n, th.n { text-align: center; width: 4.5em; }
+tr.total td { border-top: 2px solid var(--rule); font-weight: 800; }
+.score { font-weight: 800; }
+.s1 { color: var(--danger); }
+.band { display: inline-block; font-weight: 800; font-size: 14px; padding: 3px 8px; border-radius: 4px; box-shadow: inset 0 0 0 2px var(--rule); }
+.two { display: grid; gap: 40px; }
+@media (min-width: 960px) { .two { grid-template-columns: 1fr 1fr; } }
+
+/* Issues: one decision per line, like the redesign */
+.issues { list-style: none; padding: 0; }
+.issues > li { display: grid; grid-template-columns: 64px 1fr; gap: 8px 16px; padding: 20px 0; border-top: 2px solid var(--rule); }
+.issues > li:last-child { border-bottom: 2px solid var(--rule); }
+.sev { font-weight: 800; font-size: 14px; height: 32px; display: grid; place-items: center; border-radius: 4px; }
+.sev.p0 { background: var(--danger); color: #fff; }
+.sev.p1 { box-shadow: inset 0 0 0 2px var(--rule); }
+.issues h3 { margin-bottom: 6px; }
+.issues p { max-width: 70ch; }
+.issues .fix { margin-top: 8px; }
+.issues .cmd { font-size: 14px; color: var(--muted); margin-top: 6px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; background: color-mix(in oklab, var(--fg) 7%, transparent); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+
+/* Before / after */
+.pairs { display: grid; gap: 40px; }
+.pair { display: grid; gap: 16px; }
+.pair .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.pair figure img { width: 100%; height: auto; display: block; border: 2px solid var(--rule); border-radius: 4px; background: var(--surface); }
+.pair figcaption { font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+.pair ul { padding-left: 1.1em; }
+.pair li + li { margin-top: 4px; }
+@media (min-width: 960px) { .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 28px; } .pair.wide { grid-template-columns: 1fr; } .pair.wide .imgs { grid-template-columns: 1fr 1fr; } }
+
+.families { display: grid; gap: 0; border-top: 2px solid var(--rule); border-bottom: 2px solid var(--rule); }
+.families > div { display: grid; gap: 4px 20px; padding: 14px 0; border-top: 1px solid var(--hair); }
+.families > div:first-child { border-top: 0; }
+@media (min-width: 760px) { .families > div { grid-template-columns: 15em 1fr 6em; } }
+.tally { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 16px 0 20px; }
+.tally b { font: 800 2rem/1 var(--ui); display: block; }
+.tally span { color: var(--muted); font-size: 15px; }
+.files { list-style: none; padding: 0; }
+.files li { padding: 8px 0; border-top: 1px solid var(--hair); }
+.foot { margin-top: 64px; color: var(--muted); font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="bar">
+  <div class="bar-in">
+    <img src="mockup/assets/wordmark.png" alt="Steel City Codes // Denver" width="97" height="26">
+    <nav aria-label="Report sections">
+      <a href="#scores">Scores</a><a href="#issues">Issues</a><a href="#before-after">Before and after</a><a href="mockup/index.html">Mockup</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="read">
+    <h1>SCC Denver design audit</h1>
+    <p class="lede">An impeccable critique and technical audit of every screen in the registration and camp-management site: 25 routes for parents, volunteers, applicants and admins, at phone and laptop size, light and dark. Then a redesign of every screen.</p>
+    <p class="meta" style="margin-top:12px">17 October 2026 · code at <code>main</code> 47160cf · live demo scc.haanie.com (fictional data)</p>
+  </div>
+
+  <a class="sign" href="mockup/index.html">
+    <span class="ctx">The redesign · Terminal Yellow</span>
+    <span class="fig" id="screen-count">54<small>screens</small></span>
+    <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    <span class="msg">Open the clickable mockup</span>
+    <span class="sub">Every route redrawn, each with notes on what was cut, merged or changed and why. Phone and laptop, light and dark.</span>
+  </a>
+
+  <section id="scores" aria-labelledby="scores-h">
+    <h2 id="scores-h">Scores</h2>
+    <p class="read meta" style="margin-bottom:16px">Design health uses Nielsen's ten heuristics, 0 to 4 each, scored by four reviewers who worked separately and never saw the detector's output. The audit scores five technical dimensions, 0 to 4 each. Most real interfaces land between 20 and 32 out of 40.</p>
+    <div class="two">
+      <div>
+        <h3 style="margin-bottom:10px">Design health</h3>
+        <div class="tbl" tabindex="0" role="region" aria-label="Design health by area">
+          <table>
+            <thead><tr><th>Heuristic</th><th class="n">Out</th><th class="n">Parent</th><th class="n">Vol.</th><th class="n">Admin</th></tr></thead>
+            <tbody>
+              <tr><td>Visibility of system status</td><td class="n">2</td><td class="n">3</td><td class="n">3</td><td class="n">2</td></tr>
+              <tr><td>Match with the real world</td><td class="n">3</td><td class="n">2</td><td class="n">3</td><td class="n">3</td></tr>
+              <tr><td>User control and freedom</td><td class="n">2</td><td class="n">3</td><td class="n">3</td><td class="n">3</td></tr>
+              <tr><td>Consistency and standards</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">2</td></tr>
+              <tr><td>Error prevention</td><td class="n">2</td><td class="n">2</td><td class="n">3</td><td class="n">3</td></tr>
+              <tr><td>Recognition over recall</td><td class="n">3</td><td class="n">3</td><td class="n">2</td><td class="n">2</td></tr>
+              <tr><td>Flexibility and efficiency</td><td class="n">2</td><td class="n">2</td><td class="n">3</td><td class="n">3</td></tr>
+              <tr><td>Aesthetic and minimalist design</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">2</td></tr>
+              <tr><td>Error recovery</td><td class="n">2</td><td class="n">2</td><td class="n">2</td><td class="n">2</td></tr>
+              <tr><td>Help and documentation</td><td class="n">2</td><td class="n">3</td><td class="n">2</td><td class="n">2</td></tr>
+              <tr class="total"><td>Total out of 40</td><td class="n">22</td><td class="n">24</td><td class="n">25</td><td class="n">24</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="meta" style="margin-top:10px">Whole site: <b>24/40</b> <span class="band">Acceptable</span> · "Out" means signed out (login, signup, apply).</p>
+      </div>
+      <div>
+        <h3 style="margin-bottom:10px">Technical audit</h3>
+        <div class="tbl" tabindex="0" role="region" aria-label="Technical audit">
+          <table>
+            <thead><tr><th>Dimension</th><th class="n">Score</th><th>Key finding</th></tr></thead>
+            <tbody>
+              <tr><td>Accessibility</td><td class="n score">3</td><td>All text passes AA in both themes. Focus ring 1.65:1 and field borders 1.69:1 fail 3:1.</td></tr>
+              <tr><td>Performance</td><td class="n score">2</td><td>One 904 KB script: parents' phones load every admin page at opening time.</td></tr>
+              <tr><td>Theming</td><td class="n score">3</td><td>No raw colours anywhere. Dark mode skips the signed-out pages and flashes light.</td></tr>
+              <tr><td>Responsive</td><td class="n score">2</td><td>14px inputs make iPhones zoom; parent targets are 24–34px.</td></tr>
+              <tr><td>Implementation</td><td class="n score">3</td><td>Detector nearly clean; 15 copied input styles, 38 copied buttons, ~20 text sizes.</td></tr>
+              <tr class="total"><td>Total out of 20</td><td class="n">13</td><td><span class="band">Acceptable</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="verdict-h">
+    <div class="read stack">
+      <h2 id="verdict-h">Verdict: the rules are specific, the screens are generic</h2>
+      <p>All four reviewers reached the same verdict independently. The brand is real: the ink bar, the <code>{STEEL CITY CODES} //DENVER</code> wordmark, gold kept for primary buttons. But it sits on a stock software kit: a cream background, white rounded cards with both a border and a shadow, uppercase icon labels over every section, icons in tinted circles, initials on every row, and status pills that repeat the heading. Cover the wordmark and the parent area could be any family portal, and the admin any membership dashboard.</p>
+      <p>The product shows through its words and its rules: the one-sentence status ("Maya is all set for camp. One spot is on a waitlist."), confirmations that name the real consequence with live counts, a roll call whose "Mark all present" never overwrites a co-volunteer's marks. What the screens never use is the product's actual shape. A family's season is campers by weeks. The database allows one class per week. Seats open at a fixed minute, a waitlist offer has a clock, and a camp day has three roll calls.</p>
+      <p>The automated detector found one textbook problem in 124 source files: a coloured side stripe on a toast. The slop here isn't the famous tells like gradients or purple glass. It is decoration by default, which only an element-by-element review can see.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="working-h">
+    <h2 id="working-h">What already works</h2>
+    <ul class="read stack">
+      <li><b>Confirmations without modals.</b> Cancel, switch, move, drop a duty: each confirm sits under the thing it changes, focuses the safe choice and states the consequence with live numbers.</li>
+      <li><b>Real product thinking in the roll call and recovery flows.</b> The roll call defaults to the time of day and only shows a call button on absent rows. Password reset tells an expired link from an invalid one. The volunteer form spots an existing account and retries only the interview booking.</li>
+      <li><b>A clean colour system and a solid accessibility floor.</b> No hard-coded colours, AA text contrast in both themes, labels on every input, 82 live regions.</li>
+    </ul>
+  </section>
+
+  <section id="issues" aria-labelledby="issues-h">
+    <h2 id="issues-h">The problems that matter, in order</h2>
+    <p class="read meta" style="margin-bottom:16px">The five assessments raised 1 P0 and 26 P1 issues, many of them the same problem seen from different roles. Merged, they come to ten. P0 blocks a task; P1 is a major difficulty or an accessibility failure.</p>
+    <ol class="issues">
+      <li><span class="sev p0">P0</span><div><h3>Nobody can see whether registration is open</h3><p>"Open" depends on a switch in the form editor plus an opening time in Sessions. Neither shows on the admin home, and either flips with one click and no confirm. On opening night the director's one question has no answer on screen.</p><p class="fix"><b>Fix:</b> one registration status on Today ("Open since 7:00 PM · 84 campers placed · 38 seats left"), one place to change it, and a confirm before closing a live form.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>Safety information hides behind taps</h3><p>A volunteer sees a camper's allergy only by tapping a 24px chip that always says "Medical". The call button is an unlabelled phone icon, so the volunteer can't see who will answer. The admin list truncates "Bee stings — EpiPen in backp…". The paper roster is safer than the phone.</p><p class="fix"><b>Fix:</b> health lines always visible, split "Allergy" and "Medical", with call lines naming the contact, relationship and number. Never truncate health text.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>The phone rules hold for volunteers and break for parents</h3><p>Inputs are 14px on signup, login, apply and every parent form, so iPhones zoom on each tap. Parent tap targets are 24–34px. Below 640px parent pages have no navigation at all. Step 3 of the volunteer application scrolls sideways.</p><p class="fix"><b>Fix:</b> shared 16px fields, 44px controls, top tabs at every width.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>The most-used screens answer their question last</h3><p>On a phone, a parent's first camper starts about 1,700px down, below a schedule and three updates. A volunteer at 9:00 roll call sees one and a half campers on a small Android. The admin home is a greeting, five stat cards and a grid that repeats the sidebar.</p><p class="fix"><b>Fix:</b> a single sign at the top with the next decision, then a list of the other decisions. Feeds and schedules fold or move to their own tab.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>Red is spent on good news, gold on everything</h3><p>A full section gets the same red ring as an unaccounted camper, so opening night is the reddest screen in the admin. Gold marks tabs, filters, toggles, 17 "Book" buttons and initials drawn gold on pale gold (1.44:1).</p><p class="fix"><b>Fix:</b> red only for safety, failure and destructive actions. A full section is shown in plain ink. Gold only for the next action.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>Forms show one error at a time, at the bottom, and look filled before they are</h3><p>Placeholders look like typed answers, and the signature boxes show the expected names. Errors appear at the bottom one at a time and aren't tied to a field. Raw database errors reach parents and teenagers.</p><p class="fix"><b>Fix:</b> validate the whole step, put each error under its field and focus the first one, put instructions in the labels, and write recovery copy.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>Some copy isn't true</h3><p>The countdown says "add your campers now", but the wizard stops at step 4 until opening. Step 4 says camp runs 8 to 4; classes run 9 to 3. Every newcomer is greeted "Welcome back". Signup with an existing email says "Check your email" and sends nothing.</p><p class="fix"><b>Fix:</b> gate only the final Register button before opening, pull hours from data, use "Sign in" and "Create a parent account", and detect existing accounts.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>Focus rings and field edges are nearly invisible in light mode</h3><p>The gold focus ring measures 1.65:1, field borders 1.69:1, and 11 inputs drop their border when focused (WCAG 1.4.11 and 2.4.7).</p><p class="fix"><b>Fix:</b> an ink focus outline (gold in dark mode), field borders at 3:1 or more, and keep the border on focus.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>Two different designs for one decision</h3><p>The wizard picks a class by week with radio buttons. The class browser groups by course, with admin codes, "6 / 14" fill counts, eight identical gold buttons and a 4-second toast. The yearly check retypes 13 fields, and only appears after the parent taps Register.</p><p class="fix"><b>Fix:</b> one week-and-class picker for both, with the yearly check shown first as a summary.</p></div></li>
+      <li><span class="sev p1">P1</span><div><h3>Admins manage sections, but sections hide in accordions</h3><p>A class-level fill bar hides full sections (Python 39/56 while one section is 10/10), crew appear as initials, and "Find cover" leads to a generic page and a list of 22 bare names.</p><p class="fix"><b>Fix:</b> a week × class timetable showing every section's fill, waitlist and lead, with deep links from Today.</p></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="inventory-h">
+    <div class="read">
+      <h2 id="inventory-h">Justify every element</h2>
+      <p>Each reviewer went through every visible element of every screen and gave it a verdict, with its file and line. Roughly 590 elements were judged.</p>
+    </div>
+    <div class="tally" role="list">
+      <div role="listitem"><b>~230</b><span>keep: they do a job</span></div>
+      <div role="listitem"><b>~90</b><span>cut: no job</span></div>
+      <div role="listitem"><b>~35</b><span>merge: duplicate a job</span></div>
+      <div role="listitem"><b>~235</b><span>change: a job done badly</span></div>
+    </div>
+    <p class="read meta" style="margin-bottom:12px">The cuts fall into five groups, and the redesign removes every one.</p>
+    <div class="families">
+      <div><b>Boxes standing in for grouping</b><span>Cards with both a border and a shadow, cards inside cards, a sunken panel labelled "SECTIONS"</span><span class="meta">Cut</span></div>
+      <div><b>Icons that repeat a word</b><span>Icon tiles on statuses, icons in every primary button, a megaphone on every update, uppercase icon labels</span><span class="meta">Cut</span></div>
+      <div><b>People as decoration</b><span>Initials circles on campers, applicants, users and roll-call rows (some gold on pale gold at 1.44:1)</span><span class="meta">Cut</span></div>
+      <div><b>Status said twice</b><span>"All set" next to "Confirmed", a waitlist stated five times on one screen, "5 pending" four times, "15 min" seventeen times</span><span class="meta">Merge</span></div>
+      <div><b>Duplicate navigation</b><span>A "Jump to" grid that repeats the sidebar, "Browse classes" twice, "Back to dashboard" links, a sidebar footer that repeats the avatar menu</span><span class="meta">Cut</span></div>
+    </div>
+  </section>
+
+  <section id="before-after" aria-labelledby="ba-h">
+    <h2 id="ba-h">Before and after</h2>
+    <p class="read meta" style="margin-bottom:20px">First screen on a 390px phone, unless marked. The redesign keeps every feature, the wordmark and the brand gold, and adds no new features.</p>
+    <div class="pairs">
+      <div class="pair">
+        <div class="imgs">
+          <figure><figcaption>Before</figcaption><img src="shots/before-parent-parent.m.png" alt="Old parent home: greeting, two buttons, a This week card and the start of an eight-row daily schedule; no camper is visible." width="390" height="844"></figure>
+          <figure><figcaption>After</figcaption><img src="shots/after-parent-home.m.png" alt="New parent home: a gold sign reading 21 spots, confirm Noor's details then pick a class, then the campers with their weeks." width="390" height="844"></figure>
+        </div>
+        <div><h3>Parent home</h3><ul class="meta"><li>The sign holds the one next decision: Noor needs a class, with the number that makes it urgent (21 spots left in the classes that fit her).</li><li>Maya is already set, so her room and Monday drop-off sit on her own Week 1 line.</li><li>Each camper shows their weeks as rows with one status each. Initials, rollup badges and icon labels are gone.</li><li>Schedule folded; updates moved to their own tab; contact details under the avatar.</li></ul></div>
+      </div>
+      <div class="pair">
+        <div class="imgs">
+          <figure><figcaption>Before</figcaption><img src="shots/before-volunteer-campday.m.png" alt="Old camp-day roll call: a large header and a dark slab fill most of the screen; one and a half campers are visible." width="390" height="844"></figure>
+          <figure><figcaption>After</figcaption><img src="shots/after-volunteer-today.m.png" alt="New roll call: a slim sticky ink sign with the roll-call tabs and the count, then campers with health lines always visible." width="390" height="844"></figure>
+        </div>
+        <div><h3>Volunteer roll call</h3><ul class="meta"><li>The sticky sign is one slim row: Arrival / After lunch / Dismissal and the live count.</li><li>Every allergy and medical note is a visible line on the camper's row.</li><li>An absent camper shows who to call and the number, as text.</li><li>Initials, ages and the "Confidential" footnote are cut.</li></ul></div>
+      </div>
+      <div class="pair">
+        <div class="imgs">
+          <figure><figcaption>Before</figcaption><img src="shots/before-public-login.m.png" alt="Old login: a Try the demo card with four bordered seat cards, the sign-in form below the fold." width="390" height="844"></figure>
+          <figure><figcaption>After</figcaption><img src="shots/after-public-login.m.png" alt="New login: the four demo seats as a gold signpost of destinations with arrows, then Sign in." width="390" height="844"></figure>
+        </div>
+        <div><h3>Login and demo</h3><ul class="meta"><li>The demo seats read like a signpost: four destinations, each with its story and an arrow.</li><li>"Welcome back" becomes "Sign in". A "New here?" block names the two ways in: register a camper, or apply to volunteer.</li><li>Inputs are 16px and the placeholders that looked filled are gone.</li></ul></div>
+      </div>
+      <div class="pair wide">
+        <div class="imgs">
+          <figure><figcaption>Before · laptop</figcaption><img src="shots/before-admin-today.d.png" alt="Old admin home: Good evening greeting, five stat cards, then a needs-attention grid with a red ring around full sections." width="1280" height="800"></figure>
+          <figure><figcaption>After · laptop</figcaption><img src="shots/after-admin-today.d.png" alt="New admin Today: a gold sign with registration status and seats left, a to-do list and a week by class seat grid." width="1280" height="800"></figure>
+        </div>
+        <div class="read"><h3>Admin Today</h3><ul class="meta"><li>The sign is the P0 fix: whether registration is open, seats left, campers and waitlist, and when it last updated.</li><li>To-do as a list sorted by severity. Full sections are good news in plain ink, never red.</li><li>A week × class seat grid replaces five stat cards and the "Jump to" grid. The sidebar drops from 11 items to 5 plus Setup.</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="world-h">
+    <div class="read stack">
+      <h2 id="world-h">The direction: Terminal Yellow</h2>
+      <p>Impeccable's direction roll assigned a "camp T-shirt" look. You chose the alternative, airport wayfinding, which won on clarity. Every screen is a junction sign: one gold band holds the one next decision, with the number you act on (room, time, count, seats) in large type, and an arrow on the edge it points past. Everything below is a list of other decisions, one per line, divided by heavy ink rules.</p>
+      <p>Each colour has one job. <b>Gold</b> marks the sign, the active tab and the single primary action, nothing else. <b>Red</b> is for safety and destructive actions. <b>Green</b> means done. <b>Ink</b> carries everything else. The background is a neutral grey instead of cream. Atkinson Hyperlegible Next, a typeface designed for legibility, carries the interface with numerals that line up in columns. Josefin Sans is kept for page titles, and the wordmark stays on ink.</p>
+      <p>Five rules came from the other worlds in the roll: a single layer with no floating cards; the same fields in the same order on every person row; schedule blocks as tall as they are long; section codes and week numbers set the same way everywhere; hierarchy from type size and weight, not from boxes.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="ask-h">
+    <div class="read">
+      <h2 id="ask-h">Decisions only you can make</h2>
+      <ul class="stack">
+        <li><b>Waiver text.</b> Is the volunteer and camper waiver SCC national's official text? If not, it is invented legal copy. The mockup marks it as a placeholder.</li>
+        <li><b>Adult volunteers.</b> "Current grade" has no true answer for adults. Add "Not in school", or make it optional?</li>
+        <li><b>Early registration steps.</b> Should parents fill every wizard step before opening, with only the final Register button gated? The mockup shows that, because it makes the countdown's "get ready now" true.</li>
+        <li><b>Waitlist position.</b> Can a parent see their place in line? "#2 in line" would be the most reassuring line the waitlist could show.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="files-h">
+    <div class="read">
+      <h2 id="files-h">What's in the repo</h2>
+      <p class="meta" style="margin-bottom:10px">Branch <code>design/impeccable-audit</code>, folder <code>design/impeccable-audit/</code>. Nothing is committed yet.</p>
+      <ul class="files">
+        <li><code>REPORT.md</code>: this report in full, in impeccable's format, with run notes</li>
+        <li><code>raw/A-public.md</code>, <code>A-parent.md</code>, <code>A-volunteer.md</code>, <code>A-admin.md</code>: each reviewer's heuristics, personas and full element inventory with file and line</li>
+        <li><code>raw/B-detector-audit.md</code>: detector output, axe results, measured contrast</li>
+        <li><code>mockup/</code>: every redesigned screen, the shared system and the screen-by-screen notes</li>
+        <li><code>PRODUCT.md</code>, <code>.impeccable/</code>: impeccable's product context, direction contract and critique snapshot</li>
+      </ul>
+    </div>
+  </section>
+
+  <p class="foot">Method: impeccable 4.6.0 critique (four isolated design reviewers plus a separate detector-and-audit pass), its craft-floor and operate rules, axe-core, and Playwright captures of the live demo. All data shown is fictional demo data.</p>
+</main>

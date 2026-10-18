@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteer application, step 1 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Volunteer application, 2026</h1>
+      <p class="lede">Already applied? <a class="link" href="public-login.html">Sign in</a></p>
+    </div>
+  </div>
+
+  <section class="sign" aria-labelledby="step-h">
+    <span class="msg">Cherry Creek High School, 8:30 AM–4:30 PM each day</span>
+    <span class="sub">Week 1 (Oct 19–23), Week 2 (Oct 26–30) or both, plus a 15-minute online interview.</span>
+    <h2 class="steplabel" id="step-h" aria-live="polite">Step 1 of 5 · About you</h2>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span></span><span></span><span></span><span></span></div>
+  </section>
+
+  <form class="fstack mt-8" data-next="public-apply-2.html" novalidate>
+    <div class="grid2">
+      <div class="field"><label for="a-first">First name</label><input class="input" id="a-first" type="text" autocomplete="given-name" value="Riya"></div>
+      <div class="field"><label for="a-last">Last name</label><input class="input" id="a-last" type="text" autocomplete="family-name" value="Shah"></div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="a-age">Age</label>
+        <p class="hint" id="a-age-hint">Volunteers are 14 or older</p>
+        <input class="input" id="a-age" type="text" inputmode="numeric" value="15" aria-describedby="a-age-hint">
+      </div>
+      <div class="field">
+        <label for="a-grade">Current grade</label>
+        <p class="hint">This school year</p>
+        <select class="select" id="a-grade"><option value="">Choose…</option><option>9th</option><option selected>10th</option><option>11th</option><option>12th</option><option>College</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="a-school">School</label>
+      <select class="select" id="a-school"><option value="">Choose…</option><option selected>Cherry Creek High School</option><option>Grandview High School</option><option>Smoky Hill High School</option><option>Eaglecrest High School</option><option>Rock Canyon High School</option><option>Other</option></select>
+    </div>
+
+    <h3>Contact</h3>
+    <div class="field">
+      <label for="a-email">Email</label>
+      <input class="input" id="a-email" type="email" autocomplete="email" inputmode="email" value="riya.shah@example" aria-invalid="true" aria-describedby="a-email-err">
+      <p class="error" id="a-email-err"><i data-lucide="circle-alert" class="icon-sm"></i><span>This email is missing its ending, like .com. Check it and try again.</span></p>
+    </div>
+    <div class="field">
+      <label for="a-phone">Phone number</label>
+      <input class="input" id="a-phone" type="tel" autocomplete="tel" inputmode="tel" value="303-555-0142">
+    </div>
+
+    <h3>Create a password</h3>
+    <div class="field">
+  <label for="a-pw">Password</label>
+  <p class="hint" id="a-pw-hint">At least 8 characters. You'll use it to check your application and interview time.</p>
+  <div class="reveal">
+    <input class="input" id="a-pw" type="password" autocomplete="new-password" value="robotics-club" aria-describedby="a-pw-hint">
+    <button class="reveal__btn" type="button" data-reveal="a-pw">Show<span class="sr-only"> password</span></button>
+  </div>
+</div>
+
+    <p class="error summary" role="alert"><i data-lucide="circle-alert" class="icon-sm"></i><span>1 answer needs attention:</span> <a class="link" href="#a-email">Email</a></p>
+    <div class="formnav">
+      
+      <button class="btn btn--primary" type="submit">Next: Availability<i data-lucide="chevron-right"></i></button>
+    </div>
+  </form>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script>
+<script>
+document.querySelectorAll('[data-reveal]').forEach(function (b) {
+  var input = document.getElementById(b.getAttribute('data-reveal'));
+  b.addEventListener('click', function () {
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    b.innerHTML = (show ? 'Hide' : 'Show') + '<span class="sr-only"> password</span>';
+  });
+});
+</script></body>
+</html>

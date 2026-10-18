@@ -1,0 +1,766 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T04:47:46+00:00",
+  "title": "Design System: Steel City Codes // Denver",
+  "extensions": {
+    "colorMeta": {
+      "shell-ink": {
+        "role": "secondary",
+        "displayName": "Shell Ink",
+        "canonical": "oklch(20.4% 0.009 59)",
+        "tonalRamp": [
+          "#0D0B08",
+          "#272321",
+          "#433F3C",
+          "#615D59",
+          "#817C78",
+          "#A29D9A",
+          "#C8C3BF",
+          "#F2EDEA"
+        ]
+      },
+      "shell-ink-raised": {
+        "role": "secondary",
+        "displayName": "Raised Ink",
+        "canonical": "oklch(27.2% 0.013 72)",
+        "tonalRamp": [
+          "#0E0B07",
+          "#27231E",
+          "#443F39",
+          "#625D56",
+          "#827C75",
+          "#A39D97",
+          "#C9C3BD",
+          "#F3EEE7"
+        ]
+      },
+      "on-shell": {
+        "role": "secondary",
+        "displayName": "On-Shell White",
+        "canonical": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#242424",
+          "#404040",
+          "#5D5D5D",
+          "#7D7D7D",
+          "#9E9E9E",
+          "#C4C4C4",
+          "#EEEEEE"
+        ]
+      },
+      "on-shell-muted": {
+        "role": "secondary",
+        "displayName": "On-Shell Muted",
+        "canonical": "oklch(83.8% 0.015 81)",
+        "tonalRamp": [
+          "#0E0B06",
+          "#27231D",
+          "#433F38",
+          "#625D55",
+          "#827C74",
+          "#A39E95",
+          "#C8C3BB",
+          "#F2EEE6"
+        ]
+      },
+      "sign-gold": {
+        "role": "primary",
+        "displayName": "Terminal Gold",
+        "canonical": "oklch(83.8% 0.147 89)",
+        "tonalRamp": [
+          "#1D0200",
+          "#3B1B00",
+          "#5C3800",
+          "#7E5600",
+          "#A07600",
+          "#C09921",
+          "#E5C05E",
+          "#FFEB95"
+        ]
+      },
+      "sign-gold-press": {
+        "role": "primary",
+        "displayName": "Gold, Pressed",
+        "canonical": "oklch(78.4% 0.149 87)",
+        "tonalRamp": [
+          "#1E0100",
+          "#3D1A00",
+          "#5E3700",
+          "#805500",
+          "#A37500",
+          "#C3981F",
+          "#E7BE5D",
+          "#FFEA94"
+        ]
+      },
+      "on-sign": {
+        "role": "primary",
+        "displayName": "On-Sign Ink",
+        "canonical": "oklch(20.4% 0.009 59)",
+        "tonalRamp": [
+          "#0D0B08",
+          "#272321",
+          "#433F3C",
+          "#615D59",
+          "#817C78",
+          "#A29D9A",
+          "#C8C3BF",
+          "#F2EDEA"
+        ]
+      },
+      "on-sign-muted": {
+        "role": "primary",
+        "displayName": "On-Sign Muted",
+        "canonical": "oklch(36.4% 0.064 93)",
+        "tonalRamp": [
+          "#120A00",
+          "#2D2300",
+          "#4A3F19",
+          "#6A5D34",
+          "#8A7D52",
+          "#AB9E75",
+          "#D0C49D",
+          "#FAEECA"
+        ]
+      },
+      "concourse-floor": {
+        "role": "neutral",
+        "displayName": "Concourse Floor",
+        "canonical": "oklch(96.6% 0.004 106)",
+        "tonalRamp": [
+          "#0B0B0A",
+          "#242422",
+          "#40403E",
+          "#5E5E5B",
+          "#7D7D7B",
+          "#9E9E9C",
+          "#C4C4C2",
+          "#EFEFEC"
+        ]
+      },
+      "surface-white": {
+        "role": "neutral",
+        "displayName": "Surface White",
+        "canonical": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#242424",
+          "#404040",
+          "#5D5D5D",
+          "#7D7D7D",
+          "#9E9E9E",
+          "#C4C4C4",
+          "#EEEEEE"
+        ]
+      },
+      "text-ink": {
+        "role": "neutral",
+        "displayName": "Ink Text",
+        "canonical": "oklch(20.4% 0.009 59)",
+        "tonalRamp": [
+          "#0D0B08",
+          "#272321",
+          "#433F3C",
+          "#615D59",
+          "#817C78",
+          "#A29D9A",
+          "#C8C3BF",
+          "#F2EDEA"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "oklch(44.1% 0.014 80)",
+        "tonalRamp": [
+          "#0E0B06",
+          "#27231E",
+          "#433F38",
+          "#625D55",
+          "#827C74",
+          "#A39E96",
+          "#C8C3BC",
+          "#F2EEE6"
+        ]
+      },
+      "rule-ink": {
+        "role": "neutral",
+        "displayName": "Rule Ink",
+        "canonical": "oklch(20.4% 0.009 59)",
+        "tonalRamp": [
+          "#0D0B08",
+          "#272321",
+          "#433F3C",
+          "#615D59",
+          "#817C78",
+          "#A29D9A",
+          "#C8C3BF",
+          "#F2EDEA"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(84.3% 0.012 85)",
+        "tonalRamp": [
+          "#0D0B07",
+          "#26241F",
+          "#423F3A",
+          "#615D57",
+          "#807D76",
+          "#A19E97",
+          "#C7C4BD",
+          "#F1EEE8"
+        ]
+      },
+      "field-stroke": {
+        "role": "neutral",
+        "displayName": "Field Stroke",
+        "canonical": "oklch(56.4% 0.015 82)",
+        "tonalRamp": [
+          "#0E0B06",
+          "#27241D",
+          "#433F38",
+          "#625D55",
+          "#827D74",
+          "#A39E95",
+          "#C8C3BB",
+          "#F2EEE6"
+        ]
+      },
+      "danger-red": {
+        "role": "tertiary",
+        "displayName": "Safety Red",
+        "canonical": "oklch(50.1% 0.178 29)",
+        "tonalRamp": [
+          "#310000",
+          "#570000",
+          "#7F0000",
+          "#A9231C",
+          "#D0483C",
+          "#F27162",
+          "#FF9C8C",
+          "#FFCBBA"
+        ]
+      },
+      "danger-wash": {
+        "role": "tertiary",
+        "displayName": "Safety Wash",
+        "canonical": "oklch(94.6% 0.021 25)",
+        "tonalRamp": [
+          "#110908",
+          "#2C2120",
+          "#493C3B",
+          "#695958",
+          "#897977",
+          "#AA9A98",
+          "#CFC0BE",
+          "#F9EBE9"
+        ]
+      },
+      "ok-green": {
+        "role": "tertiary",
+        "displayName": "Done Green",
+        "canonical": "oklch(46.9% 0.108 152)",
+        "tonalRamp": [
+          "#001300",
+          "#002F0A",
+          "#034D24",
+          "#276E3F",
+          "#488F5D",
+          "#6EB080",
+          "#98D5A7",
+          "#C6FFD3"
+        ]
+      },
+      "ok-wash": {
+        "role": "tertiary",
+        "displayName": "Done Wash",
+        "canonical": "oklch(94.5% 0.019 158)",
+        "tonalRamp": [
+          "#060D09",
+          "#1E2621",
+          "#39433C",
+          "#55615A",
+          "#758179",
+          "#96A29A",
+          "#BCC7C0",
+          "#E7F2EB"
+        ]
+      },
+      "alarm-red": {
+        "role": "tertiary",
+        "displayName": "Alarm Red",
+        "canonical": "oklch(50.1% 0.178 29)",
+        "tonalRamp": [
+          "#310000",
+          "#570000",
+          "#7F0000",
+          "#A9231C",
+          "#D0483C",
+          "#F27162",
+          "#FF9C8C",
+          "#FFCBBA"
+        ]
+      },
+      "dark-shell-ink": {
+        "role": "secondary",
+        "displayName": "Dark: Shell Ink",
+        "canonical": "oklch(14.6% 0.003 69)",
+        "tonalRamp": [
+          "#0C0B0A",
+          "#252423",
+          "#413F3E",
+          "#5F5D5C",
+          "#7E7D7B",
+          "#9F9E9D",
+          "#C5C4C2",
+          "#EFEEED"
+        ]
+      },
+      "dark-shell-ink-raised": {
+        "role": "secondary",
+        "displayName": "Dark: Raised Ink",
+        "canonical": "oklch(24.6% 0.011 73)",
+        "tonalRamp": [
+          "#0D0B07",
+          "#27231F",
+          "#433F3A",
+          "#615D57",
+          "#817C76",
+          "#A29E98",
+          "#C8C3BE",
+          "#F2EEE8"
+        ]
+      },
+      "dark-on-shell-muted": {
+        "role": "secondary",
+        "displayName": "Dark: On-Shell Muted",
+        "canonical": "oklch(77.9% 0.017 79)",
+        "tonalRamp": [
+          "#0E0B06",
+          "#28231C",
+          "#443F37",
+          "#635D53",
+          "#837C72",
+          "#A49D94",
+          "#C9C3BA",
+          "#F3EEE5"
+        ]
+      },
+      "dark-floor": {
+        "role": "neutral",
+        "displayName": "Dark: Floor",
+        "canonical": "oklch(18.4% 0.005 67)",
+        "tonalRamp": [
+          "#0C0B09",
+          "#252422",
+          "#413F3D",
+          "#5F5D5B",
+          "#7F7D7A",
+          "#A09E9B",
+          "#C6C3C1",
+          "#F0EEEC"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark: Surface",
+        "canonical": "oklch(22.0% 0.007 67)",
+        "tonalRamp": [
+          "#0D0B09",
+          "#262321",
+          "#423F3C",
+          "#605D59",
+          "#807C79",
+          "#A19E9A",
+          "#C7C3C0",
+          "#F1EEEA"
+        ]
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "Dark: Text",
+        "canonical": "oklch(95.3% 0.009 85)",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262420",
+          "#423F3B",
+          "#605D58",
+          "#7F7D78",
+          "#A19E99",
+          "#C6C4BF",
+          "#F0EEEA"
+        ]
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Dark: Muted",
+        "canonical": "oklch(74.7% 0.017 79)",
+        "tonalRamp": [
+          "#0E0B06",
+          "#28231C",
+          "#443F37",
+          "#635D53",
+          "#837C72",
+          "#A49D94",
+          "#C9C3BA",
+          "#F3EEE5"
+        ]
+      },
+      "dark-hairline": {
+        "role": "neutral",
+        "displayName": "Dark: Hairline",
+        "canonical": "oklch(33.2% 0.011 67)",
+        "tonalRamp": [
+          "#0E0B08",
+          "#27231F",
+          "#433F3A",
+          "#625D57",
+          "#827C77",
+          "#A39D98",
+          "#C8C3BE",
+          "#F2EDE9"
+        ]
+      },
+      "dark-field-stroke": {
+        "role": "neutral",
+        "displayName": "Dark: Field Stroke",
+        "canonical": "oklch(62.9% 0.016 81)",
+        "tonalRamp": [
+          "#0E0B06",
+          "#27231D",
+          "#443F37",
+          "#625D54",
+          "#827C73",
+          "#A39E94",
+          "#C9C3BA",
+          "#F3EEE5"
+        ]
+      },
+      "dark-danger": {
+        "role": "neutral",
+        "displayName": "Dark: Danger",
+        "canonical": "oklch(76.8% 0.137 26)",
+        "tonalRamp": [
+          "#2A0000",
+          "#4D0002",
+          "#731B1B",
+          "#9A3935",
+          "#C05953",
+          "#E17E76",
+          "#FFA69E",
+          "#FFD4CB"
+        ]
+      },
+      "dark-danger-wash": {
+        "role": "tertiary",
+        "displayName": "Dark: Safety Wash",
+        "canonical": "oklch(25.7% 0.056 27)",
+        "tonalRamp": [
+          "#1A0403",
+          "#371B18",
+          "#573531",
+          "#79524D",
+          "#9B716C",
+          "#BC938E",
+          "#E1B9B4",
+          "#FFE4DF"
+        ]
+      },
+      "dark-ok": {
+        "role": "neutral",
+        "displayName": "Dark: Ok",
+        "canonical": "oklch(79.9% 0.112 155)",
+        "tonalRamp": [
+          "#001400",
+          "#00300D",
+          "#004E27",
+          "#196F42",
+          "#3E9060",
+          "#67B183",
+          "#92D7AA",
+          "#C1FFD6"
+        ]
+      },
+      "dark-ok-wash": {
+        "role": "tertiary",
+        "displayName": "Dark: Done Wash",
+        "canonical": "oklch(28.1% 0.047 156)",
+        "tonalRamp": [
+          "#000F05",
+          "#132A1C",
+          "#2D4736",
+          "#496653",
+          "#678672",
+          "#8AA793",
+          "#B0CCB9",
+          "#DCF6E4"
+        ]
+      },
+      "dark-alarm-red": {
+        "role": "tertiary",
+        "displayName": "Dark: Alarm Red",
+        "canonical": "oklch(47.7% 0.171 29)",
+        "tonalRamp": [
+          "#300000",
+          "#560000",
+          "#7D0002",
+          "#A62820",
+          "#CE4C3F",
+          "#EF7465",
+          "#FF9E8E",
+          "#FFCDBD"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Sign Figure",
+        "purpose": "The sign band's monumental figure only (3.5rem phone, 4.5rem from 768px)."
+      },
+      "headline": {
+        "displayName": "Page Title",
+        "purpose": "h1 page titles; the only Josefin Sans on a screen."
+      },
+      "message": {
+        "displayName": "Sign Message",
+        "purpose": "The sign band's message line."
+      },
+      "title": {
+        "displayName": "Section Title",
+        "purpose": "h2 section headings."
+      },
+      "row": {
+        "displayName": "Row",
+        "purpose": "h3, decision sentences, names in rows, section codes."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, field values, table cells; tabular numerals."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Sign context, meta, table headers, status words. Sentence case."
+      }
+    },
+    "shadows": [
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "One ply: no drop shadows. Inset lines below are borders, not elevation."
+      },
+      {
+        "name": "tab-marker",
+        "value": "inset 0 -4px 0 var(--sign)",
+        "purpose": "Current top tab (ink underline on floor sub-tabs)."
+      },
+      {
+        "name": "inset-frame",
+        "value": "inset 0 0 0 2px var(--rule)",
+        "purpose": "Waiting status word; expanded admin section."
+      },
+      {
+        "name": "dark-seam",
+        "value": "inset 0 -1px 0 #2E2A25",
+        "purpose": "Shell bottom seam in dark mode only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Disclosure chevrons and switch thumbs (150ms)."
+      },
+      {
+        "name": "split-flap",
+        "value": "160ms steps(2, end) scaleY 1 to .08 to 1",
+        "purpose": "Sign figure updates (roll-call count, seats, offer clock); none under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "two-up-fields",
+        "value": "480px"
+      },
+      {
+        "name": "roll-row",
+        "value": "560px"
+      },
+      {
+        "name": "tablet",
+        "value": "768px"
+      },
+      {
+        "name": "laptop-rail",
+        "value": "1024px"
+      },
+      {
+        "name": "wide",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one gold action on a view (when the sign's arrow is not it).",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Register Maya for Web Basics, Week 1</button>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:var(--r);border:2px solid transparent;font:800 1rem/1.2 var(--ui);text-decoration:none;cursor:pointer;background:transparent;color:var(--text);} .ds-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;} .ds-btn-primary{background:var(--sign);color:var(--on-sign);} .ds-btn-primary:hover{background:var(--sign-press);}"
+    },
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Strong secondary action; gold text on ink.",
+      "html": "<button class=\"ds-btn ds-btn-ink\">Accept the spot</button>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:var(--r);border:2px solid transparent;font:800 1rem/1.2 var(--ui);text-decoration:none;cursor:pointer;background:transparent;color:var(--text);} .ds-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;} .ds-btn-ink{background:var(--shell);color:var(--sign);} .ds-btn-ink:hover{background:var(--shell-2);}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet action: 2px ink border, no fill.",
+      "html": "<button class=\"ds-btn ds-btn-secondary\">Back</button>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:var(--r);border:2px solid transparent;font:800 1rem/1.2 var(--ui);text-decoration:none;cursor:pointer;background:transparent;color:var(--text);} .ds-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;} .ds-btn-secondary{border-color:var(--rule);} .ds-btn-secondary:hover{background:color-mix(in oklab,var(--text) 6%,transparent);}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action, usually inside an inline confirm.",
+      "html": "<button class=\"ds-btn ds-btn-danger\">Cancel registration</button>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:var(--r);border:2px solid transparent;font:800 1rem/1.2 var(--ui);text-decoration:none;cursor:pointer;background:transparent;color:var(--text);} .ds-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;} .ds-btn-danger{border-color:var(--danger);color:var(--danger);} .ds-btn-danger:hover{background:var(--danger-wash);}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White field, 2px field stroke, 48px, 16px text; ink focus; red when invalid.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-n\">Camper first name</label><input id=\"ds-n\" class=\"ds-input\" value=\"Maya\"><span class=\"ds-hint\">As it should appear on the roster.</span></div>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-field{display:grid;gap:6px;font-family:var(--ui);color:var(--text);} .ds-field label{font-weight:700;font-size:1rem;} .ds-hint{color:var(--muted);font-size:.875rem;} .ds-input{width:100%;min-height:48px;padding:10px 12px;font:400 16px/1.5 var(--ui);background:var(--surface);color:var(--text);border:2px solid var(--field);border-radius:var(--r);} .ds-input:hover{border-color:var(--muted);} .ds-input:focus-visible{border-color:var(--focus);outline:2px solid var(--focus);outline-offset:0;} .ds-input[aria-invalid=true]{border-color:var(--danger);}"
+    },
+    {
+      "name": "Top Tabs",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Ink tab strip; current tab white with a 4px gold inset marker.",
+      "html": "<nav class=\"ds-tabs\"><a href=\"#\" aria-current=\"page\">Home</a><a href=\"#\">Classes</a><a href=\"#\">Updates</a><a href=\"#\">Contact</a></nav>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-tabs{display:flex;background:var(--shell);padding:0 8px;font-family:var(--ui);} .ds-tabs a{flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;color:var(--on-shell-muted);text-decoration:none;font-weight:700;font-size:1rem;padding:0 8px;} .ds-tabs a:hover{color:var(--on-shell);} .ds-tabs a:focus-visible{outline:2px solid var(--sign);outline-offset:-2px;} .ds-tabs a[aria-current=page]{color:var(--on-shell);box-shadow:inset 0 -4px 0 var(--sign);}"
+    },
+    {
+      "name": "Sign Band",
+      "kind": "custom",
+      "refersTo": "sign-band",
+      "description": "The junction sign: context, monumental figure, message, ink arrow square.",
+      "html": "<a class=\"ds-sign\" href=\"#\"><span class=\"ds-ctx\">Today, Week 1</span><span class=\"ds-fig\">B204</span><span class=\"ds-go\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"m12 5 7 7-7 7\"/></svg></span><span class=\"ds-msg\">Web Basics starts at 9:00</span><span class=\"ds-sub\">12 campers, 2 with allergies</span></a>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-sign{background:var(--sign);color:var(--on-sign);border-radius:var(--r);padding:16px;display:grid;grid-template-columns:1fr auto;gap:4px 16px;align-items:end;text-decoration:none;font-family:var(--ui);font-variant-numeric:tabular-nums;} .ds-sign:hover{background:var(--sign-press);} .ds-sign:focus-visible{outline:2px solid var(--on-sign);outline-offset:2px;} .ds-ctx{grid-column:1/-1;font-weight:700;font-size:.875rem;color:var(--on-sign-muted);} .ds-fig{font:800 3.5rem/.92 var(--ui);letter-spacing:-.03em;font-variant-numeric:tabular-nums lining-nums;} .ds-msg{grid-column:1/2;font:800 1.375rem/1.15 var(--ui);} .ds-sub{grid-column:1/-1;color:var(--on-sign-muted);margin-top:4px;} .ds-go{grid-row:2/span 2;grid-column:2;align-self:center;width:48px;height:48px;display:inline-grid;place-items:center;background:var(--shell);color:var(--sign);border-radius:var(--r);}"
+    },
+    {
+      "name": "Decision Line",
+      "kind": "custom",
+      "refersTo": "pictogram",
+      "description": "One decision per line between 2px ink rules, named by a white-on-ink pictogram.",
+      "html": "<ul class=\"ds-decisions\"><li><span class=\"ds-picto\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg></span><div><p class=\"ds-what\">Week 2 Python has no lead yet</p><p class=\"ds-why\">Starts in 9 days. Two seniors are free that week.</p></div><div class=\"ds-do\"><a class=\"ds-link\" href=\"#\">Crew it</a></div></li></ul>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-decisions{list-style:none;margin:0;padding:0;font-family:var(--ui);color:var(--text);} .ds-decisions>li{display:grid;grid-template-columns:40px 1fr;gap:12px 16px;padding:16px 0;border-top:2px solid var(--rule);border-bottom:2px solid var(--rule);} .ds-picto{width:40px;height:40px;display:inline-grid;place-items:center;background:var(--shell);color:#fff;border-radius:var(--r);} .ds-what{margin:0;font:700 1.125rem/1.3 var(--ui);} .ds-why{margin:4px 0 0;color:var(--muted);} .ds-do{grid-column:2;} .ds-link{display:inline-flex;align-items:center;min-height:44px;font-weight:700;color:inherit;text-underline-offset:3px;} .ds-link:hover{text-decoration-thickness:2px;} .ds-link:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}"
+    },
+    {
+      "name": "Status Words",
+      "kind": "chip",
+      "refersTo": "status-ok",
+      "description": "Inline status with a drawn icon; colour only where it carries meaning.",
+      "html": "<span class=\"ds-status ds-ok\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 6 9 17l-5-5\"/></svg>Confirmed</span> <span class=\"ds-status ds-wait\">Waitlist #3</span> <span class=\"ds-status ds-danger\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/><path d=\"M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z\"/></svg>Peanut allergy</span>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-status{display:inline-flex;align-items:center;gap:6px;font:700 .875rem/1 var(--ui);padding:6px 8px;border-radius:var(--r);white-space:nowrap;} .ds-ok{color:var(--ok);background:var(--ok-wash);} .ds-wait{color:var(--text);box-shadow:inset 0 0 0 2px var(--rule);} .ds-danger{color:var(--danger);background:var(--danger-wash);}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segmented-selected",
+      "description": "One control for weeks, roll calls, filters; selected is ink fill.",
+      "html": "<div class=\"ds-seg\" role=\"group\"><button aria-pressed=\"true\">9:00</button><button aria-pressed=\"false\">12:30</button><button aria-pressed=\"false\">3:00</button></div>",
+      "css": ":host{--shell:#1A1613;--shell-2:#2B2620;--on-shell:#FFFFFF;--on-shell-muted:#CFC9BF;--sign:#F1C446;--sign-press:#E2B12C;--on-sign:#1A1613;--on-sign-muted:#4A3D10;--floor:#F4F4F1;--surface:#FFFFFF;--text:#1A1613;--muted:#57524A;--rule:#1A1613;--hair:#CFCBC3;--field:#7A756C;--danger:#B3261E;--danger-wash:#FBE8E6;--ok:#1E6B3A;--ok-wash:#E3F1E8;--alarm:#B3261E;--focus:#1A1613;--r:4px;--tap:44px;--ui:'Atkinson Hyperlegible Next',ui-sans-serif,system-ui,sans-serif;--brand:'Josefin Sans',var(--ui);} .ds-seg{display:inline-flex;border:2px solid var(--rule);border-radius:var(--r);overflow:hidden;font-family:var(--ui);} .ds-seg button{min-height:44px;padding:0 16px;border:0;background:transparent;color:var(--text);font:700 1rem/1 var(--ui);cursor:pointer;} .ds-seg button+button{border-left:2px solid var(--rule);} .ds-seg button:hover{background:color-mix(in oklab,var(--text) 6%,transparent);} .ds-seg button:focus-visible{outline:2px solid var(--focus);outline-offset:-4px;} .ds-seg [aria-pressed=true]{background:var(--shell);color:#fff;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Junction Sign",
+    "overview": "Every screen is a sign at a transit junction. The one next decision for this person stands in a single gold band at the top: a short line of context, the number they act on (room, time, count, seats) at monumental scale, an ink arrow square locked to the edge it points past, and a one-line message. Everything after the band is the list of other decisions, one per line, each named by a white-on-ink pictogram square. There is no dashboard of equal white cards, no stat tiles, no icon eyebrows.\n\nThe world is a quiet neutral concourse (not cream) with ink furniture. Content sits straight on the floor; the only containers are signs and data tables. Hierarchy comes from the type scale and from rule weight: a heavy 2px ink rule between decisions, a 1px hairline between rows of one dataset. It is one ply: nothing floats, nothing casts a shadow. Gold is the wayfinding colour and is rationed to three places. Red and green sit on top of the world only where they carry meaning.\n\nThe world is built for a phone in someone's hand (parents at the registration minute, teen volunteers taking roll call standing up) and opens up to density on the admin's laptop. Targets are 44px or larger, inputs are 16px, settings live under the avatar, and nothing is a modal. At night the floor goes dark and the signs stay lit.",
+    "keyCharacteristics": [
+      "One gold sign band per view carries the next decision and its figure.",
+      "Gold only for the sign band, the active tab marker and the one primary action.",
+      "Ink shell (bar, tabs, admin rail) with white-on-ink pictogram squares.",
+      "Neutral concourse floor (#F4F4F1); white only for fields and data tables.",
+      "2px ink rules between decisions, 1px hairlines within a dataset.",
+      "One ply, no shadows, 4px corners.",
+      "Atkinson Hyperlegible Next with tabular numerals; Josefin Sans for page titles only.",
+      "Split-flap figure updates, instant under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Wayfinding Gold Rule",
+        "body": "Gold appears in exactly three roles on a view: the sign band, the active tab marker and the one primary action. The primary action is the sign's arrow or a single gold button on the floor, never both. Everything else that is \"on\" (switches, selected segments, sub-tab underlines, seat meters) is ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Meaningful Red Rule",
+        "body": "Red is for safety, destruction and blocking validation errors only. \"Needs a person soon\" (no lead, open slot, no roll call yet) is ink weight with a drawn icon, never red. A full seat meter is ink, never red or gold.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Never Text Rule",
+        "body": "Gold is a ground, never a text colour on the light floor or white. Gold text appears only on ink (the arrow, the ink button, the figure in an ink sign).",
+        "section": "colors"
+      },
+      {
+        "name": "The One Josefin Rule",
+        "body": "Josefin Sans sets the page title and nothing else: no Josefin headings, buttons, figures or labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Every label, tab, button and status is sentence case with no letter-spacing. The only tracked text is the one-time-code field, which is a code.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Numerals are tabular across the whole UI (`font-variant-numeric: tabular-nums` on body).",
+        "section": "typography"
+      },
+      {
+        "name": "The One Ply Rule",
+        "body": "Nothing casts a shadow. If something needs to stand out, change its ground or its rule, not its elevation. Inline popovers (the avatar menu) are framed with a 2px ink rule, not lifted.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Rule Weight Rule",
+        "body": "A 2px ink rule separates decisions, frames a dataset and closes a form; a 1px hairline separates rows inside one dataset. Never box a group of rows in a card.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do put the one next decision in a single gold sign band at the top, with its number at display scale and the ink arrow square at its edge.",
+      "Do ration gold to the sign band, the 4px active-tab marker and one primary action per view.",
+      "Do separate decisions with 2px ink rules and rows of one dataset with 1px hairlines.",
+      "Do set content straight on the concourse floor; reserve white for fields, choice rows and data tables.",
+      "Do keep every target at 44px or larger (buttons and fields 48px) and every input at 16px.",
+      "Do use red for safety, destruction and blocking validation errors, green for done, and ink weight with a drawn icon for \"needs attention\".",
+      "Do confirm inline under the thing being changed; edit profile and settings from the avatar menu.",
+      "Do use drawn line icons (2.25 stroke at 20px, 2.5 at 16px) inside pictogram squares and next to status words.",
+      "Do keep safety information (allergies, medical notes, emergency phones, unaccounted campers) visible without a tap.",
+      "Do keep gold unchanged in dark mode and invert selected states to bone fill rather than ink on ink."
+    ],
+    "donts": [
+      "Don't use gold as text on the light floor or white, or for switches, meters, sub-tab underlines, status chips or decoration.",
+      "Don't show a gold sign arrow and a gold floor button for the same action on one view.",
+      "Don't add shadows, floating cards, stat tiles or a dashboard of equal white cards.",
+      "Don't set anything but the page title in Josefin Sans.",
+      "Don't use uppercase labels, tracked eyebrows or kickers above headings.",
+      "Don't use red for \"no lead yet\" or a full class.",
+      "Don't open a modal; don't put primary navigation in a bottom bar.",
+      "Don't use a cream floor; the concourse is neutral.",
+      "Don't truncate safety text in tables; let it wrap."
+    ]
+  }
+}

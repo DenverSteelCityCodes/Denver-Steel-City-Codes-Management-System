@@ -1,0 +1,68 @@
+Classes
+New class
+Intro to Java
+Object-oriented programming fundamentals in Java. Recommended for campers who have tried some coding before.
+2 sections
+
+17 / 28
+
+Intro to Python
+First steps in programming: variables, loops and functions, building small games and art with Python.
+4 sections
+
+39 / 56
+
+Microcontrollers
+Program real hardware — LEDs, sensors and buttons — with CircuitPython. For campers entering grades 7–9 with some Python experience.
+2 sections
+
+19 / 20Almost full
+
+SECTIONS
+
+MC-1
+W1
+
+Mon–Fri · 9:00 AM – 3:00 PM · Maker Lab
+
+Ages 12–14
+
+10 / 10Full
+
++2 waitlisted
+
+D
+S
+Daniela Ruiz +1
+CAMPER	AGE	ALLERGIES / MEDICAL	PARENT	STATUS
+Mateo Garcia	13	
+Medical: Asthma — inhaler in backpack
+	Aisha Garcia	Confirmed
+Leila Haddad	12	—	Michael Haddad	Confirmed
+Wren Ortiz	12	—	Javier Ortiz	Confirmed
+Clara Price	12	—	Hannah Price	Cancelled
+Sofia Romero	12	—	Diana Romero	Confirmed
+Imani Castillo	14	—	Carmen Castillo	Confirmed
+Felix Fischer	13	—	Tom Fischer	Confirmed
+Elena Brown	14	—	Laura Brown	Confirmed
+Zoe Johnson	14	—	James Johnson	Confirmed
+Freya Hernandez	14	—	Ana Hernandez	Confirmed
+Zoe Ahmed	14	—	Kareem Ahmed	Confirmed
+June Novak	14	—	Ben Novak	Waitlisted
+Mia Thompson	14	—	Robert Thompson	Waitlisted
+MC-1
+W2
+
+Mon–Fri · 9:00 AM – 3:00 PM · Maker Lab
+
+Ages 12–14
+
+9 / 10Almost full
+
+No crew
+Add section to Microcontrollers
+Web Development
+Build and publish a personal website with HTML, CSS and a little JavaScript.
+1 section
+
+12 / 18

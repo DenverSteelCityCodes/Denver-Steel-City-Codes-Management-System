@@ -8,7 +8,7 @@
 The app sends no email of its own. Status changes reach a parent only when they next open the dashboard, and "Also email" opens one admin's personal mail client, with no record of what was sent.
 
 ## Decided rules
-- Reply-to `denver@steelcitycodes.org` (per chapter after spec 20).
+- Reply-to `denver@steelcitycodes.org` (per region after spec 20).
 - Auto-confirm (Q-P4): the first email after a sign-up is "You're confirmed", not "We'll confirm soon".
 
 ## Scope: what to build

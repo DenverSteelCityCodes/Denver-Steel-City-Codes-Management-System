@@ -1,0 +1,200 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Roster
+Applications (5)
+Volunteer roster
+Export CSV
+NAME	WEEK 1	WEEK 2	ASSIGNED TO	NOTES
+
+Aiden Brooks
+senior
+	
+	—	Unassigned	
+Returning volunteer, comfortable leading a room.
+
+
+Bella Nguyen
+senior
+	
+	
+	Unassigned	
+Returning volunteer, comfortable leading a room.
+
+
+Cameron Ortiz
+senior
+	
+	
+	JAVA-1 W1 (lead) · JAVA-1 W2 (lead)	
+Returning volunteer, comfortable leading a room.
+
+
+Daniela Ruiz
+senior
+	
+	
+	MC-1 W1 (lead)	
+Returning volunteer, comfortable leading a room.
+
+
+Elijah Foster
+senior
+	—	—	Unassigned	
+Returning volunteer, comfortable leading a room.
+
+
+Fiona Zhang
+senior
+	
+	
+	WEB-1 W1 (lead)	
+Returning volunteer, comfortable leading a room.
+
+
+Gabe Holloway
+senior
+	
+	
+	Unassigned	
+Returning volunteer, comfortable leading a room.
+
+
+Harper Ito
+senior
+	
+	
+	PY-A W1 (lead) · PY-A W2 (lead)	
+Returning volunteer, comfortable leading a room.
+
+
+Isaiah Grant
+junior
+	
+	—	JAVA-1 W1 (support)	
+Great energy; pair with a senior lead.
+
+
+Jasmine Kaur
+junior
+	—	
+	Unassigned	
+Great energy; pair with a senior lead.
+
+
+Kevin Osei
+junior
+	
+	
+	PY-A W1 (support) · PY-A W2 (support)	
+Great energy; pair with a senior lead.
+
+
+Lily Moreau
+junior
+	
+	
+	PY-B W1 (support) · PY-A W2 (support)	
+Great energy; pair with a senior lead.
+
+
+Marcus Bell
+junior
+	
+	—	PY-A W1 (support)	
+Great energy; pair with a senior lead.
+
+
+Nadia Rahman
+junior
+	
+	
+	PY-B W2 (support)	
+Great energy; pair with a senior lead.
+
+
+Oscar Lindqvist
+junior
+	—	
+	Unassigned	
+Great energy; pair with a senior lead.
+
+
+Paige Morgan
+junior
+	
+	
+	Unassigned	
+Great energy; pair with a senior lead.
+
+
+Quinn Alvarez
+junior
+	
+	—	PY-B W1 (support)	
+Great energy; pair with a senior lead.
+
+
+Ravi Iyer
+junior
+	
+	
+	Unassigned	
+Great energy; pair with a senior lead.
+
+
+Sienna Cole
+junior
+	
+	
+	PY-B W2 (support) · MC-1 W1 (support)	
+Great energy; pair with a senior lead.
+
+
+Tyler Washington
+junior
+	—	
+	JAVA-1 W2 (support)	
+Great energy; pair with a senior lead.
+
+
+Sam Okafor
+senior
+	
+	
+	PY-B W1 (lead) · PY-B W2 (lead)	
+Taught Python at a library coding club; strong with younger campers.
+
+
+Haanie Mohammed
+senior
+	
+	
+	Unassigned	
+—
+Auto-assign volunteers
+
+Fills open lead (senior) and support (junior) spots for the chosen week. Existing assignments are kept.
+
+Week 1
+Week 2
+Preview matches

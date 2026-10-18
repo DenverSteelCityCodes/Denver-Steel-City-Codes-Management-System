@@ -102,7 +102,7 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
           <button
             onClick={() => run(() => markAllPresent(ids, current))}
             disabled={busy}
-            className="mt-2.5 w-full h-12 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-base rounded-[10px] flex items-center justify-center gap-2 transition disabled:opacity-50"
+            className="ui-btn ui-btn--primary mt-2.5 w-full"
           >
             <CheckCheck size={17} /> {left === ids.length ? `Mark all ${ids.length} present` : `Mark the other ${left} present`}
           </button>

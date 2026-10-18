@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Choose a new password · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Choose a new password</h1>
+      <p class="lede">For <b>demo.parent@example.com</b>. Use at least 8 characters.</p>
+    </div>
+  </div>
+
+  <form class="fstack" data-next="parent-home.html" novalidate>
+    <div class="field">
+      <label for="pw">New password</label>
+      <input class="input" id="pw" type="password" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label for="pw2">Type it again</label>
+      <input class="input" id="pw2" type="password" autocomplete="new-password">
+    </div>
+    <button class="btn btn--primary btn--block" type="submit">Save new password</button>
+  </form>
+
+  <p class="mt-6"><a class="link" href="public-login.html"><i data-lucide="arrow-left" class="icon-sm"></i>Back to sign in</a></p>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script></body>
+</html>

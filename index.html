@@ -6,10 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Steel City Codes // Denver</title>
 
-    <!-- Fonts: Josefin Sans + Josefin Slab -->
+    <!-- Theme before first paint (DESIGN.md): the saved choice, else the OS setting. Runs before
+         CSS so no page flashes light, and signed-out pages follow the same theme as signed-in ones. -->
+    <script>
+      (function () {
+        var dark = false
+        try {
+          var saved = localStorage.getItem('scc-theme')
+          dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+        } catch (e) { /* private mode: follow the light default */ }
+        var root = document.documentElement
+        root.classList.toggle('dark', dark)
+        root.style.colorScheme = dark ? 'dark' : 'light'
+      })()
+    </script>
+
+    <!-- Fonts (DESIGN.md): Atkinson Hyperlegible Next for the UI, Josefin Sans 700 for page titles only. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,300..700;1,400&family=Josefin+Slab:wght@300..600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Josefin+Sans:wght@700&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>

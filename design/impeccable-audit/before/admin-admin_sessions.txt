@@ -1,0 +1,125 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Sessions
+
+Each session is one camp week. The year's first and second sessions by date are Week 1 and Week 2, shown or hidden.
+
+New session
+2026 registration settings
+
+No opening time is set, so registration follows the Forms on/off switch.
+
+Registration opens (Denver time)
+
+Leave empty for no scheduled opening.
+
+Parents can cancel or switch until (days before a session)
+Waitlist offer lasts (hours)
+…in the week before camp (hours)
+Save settings
+
+Week 1
+
+2026
+Shown
+
+October 19 – October 23, 2026
+
+DAILY SCHEDULE
+
+8:30 AM – 9:00 AM
+Drop-off
+· Front lobby
+
+9:00 AM – 10:30 AM
+Morning session
+· Classrooms
+
+10:30 AM – 10:45 AM
+Snack break
+· Courtyard
+
+10:45 AM – 12:00 PM
+Morning session continues
+· Classrooms
+
+12:00 PM – 12:45 PM
+Lunch
+· Cafeteria
+
+12:45 PM – 2:30 PM
+Afternoon session
+· Classrooms
+
+2:30 PM – 3:00 PM
+Show and tell
+· Classrooms
+
+3:00 PM – 3:30 PM
+Pickup
+· Front lobby
+
+Add a time block
+
+Week 2
+
+2026
+Shown
+
+October 26 – October 30, 2026
+
+DAILY SCHEDULE
+
+8:30 AM – 9:00 AM
+Drop-off
+· Front lobby
+
+9:00 AM – 10:30 AM
+Morning session
+· Classrooms
+
+10:30 AM – 10:45 AM
+Snack break
+· Courtyard
+
+10:45 AM – 12:00 PM
+Morning session continues
+· Classrooms
+
+12:00 PM – 12:45 PM
+Lunch
+· Cafeteria
+
+12:45 PM – 2:30 PM
+Afternoon session
+· Classrooms
+
+2:30 PM – 3:00 PM
+Show and tell
+· Classrooms
+
+3:00 PM – 3:30 PM
+Pickup
+· Front lobby
+
+Add a time block

@@ -14,10 +14,10 @@ import { realNote } from '../lib/campers'
 // Everything on this page edits in place — no modals. Forms open where the thing lives
 // (top of the list, the class header, the section row) and Esc cancels.
 
-const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
+const inputCls = 'ui-input'
 const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
 const cancelBtnCls = 'h-10 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition'
-const saveBtnCls = 'h-10 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50'
+const saveBtnCls = 'ui-btn ui-btn--primary'
 
 function SaveButton({ saving, label }: { saving: boolean; label: string }) {
   return (
@@ -615,11 +615,11 @@ export default function AdminClasses() {
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="font-sans font-bold text-2xl text-ink">Classes</h1>
+          <h1 className="font-display font-bold text-2xl text-ink">Classes</h1>
           {editing?.kind !== 'new-class' && (
             <button
               onClick={() => startEditing({ kind: 'new-class' })}
-              className="h-11 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition"
+              className="ui-btn ui-btn--primary"
             >
               <Plus size={16} /> New class
             </button>

@@ -42,7 +42,7 @@ export default function ResetPasswordPage() {
     setDone(true)
   }
 
-  const input = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition'
+  const input = 'ui-input'
 
   let body: React.ReactNode
   if (authLoading) {
@@ -57,12 +57,12 @@ export default function ResetPasswordPage() {
         <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 size={20} className="text-success" />
         </div>
-        <h1 ref={focusOnMount} tabIndex={-1} className="font-sans font-bold text-xl text-ink mb-2 focus:outline-none">Password updated</h1>
+        <h1 ref={focusOnMount} tabIndex={-1} className="font-display font-bold text-xl text-ink mb-2 focus:outline-none">Password updated</h1>
         <p role="status" className="font-sans text-ink-muted text-sm">You're signed in with your new password.</p>
         <button
           type="button"
           onClick={() => navigate('/', { replace: true })}
-          className="mt-6 w-full h-11 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm transition"
+          className="ui-btn ui-btn--primary mt-6 w-full"
         >
           Continue
         </button>
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
   } else if (!session) {
     body = (
       <div className="text-center">
-        <h1 className="font-sans font-bold text-xl text-ink mb-2">
+        <h1 className="font-display font-bold text-xl text-ink mb-2">
           {linkFailed ? 'This link has expired' : "This link isn't valid"}
         </h1>
         <p role="alert" className="font-sans text-ink-muted text-sm">
@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
         </p>
         <Link
           to="/forgot"
-          className="mt-6 w-full h-11 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm flex items-center justify-center transition"
+          className="ui-btn ui-btn--primary mt-6 w-full"
         >
           Send a new link
         </Link>
@@ -91,7 +91,7 @@ export default function ResetPasswordPage() {
   } else {
     body = (
       <>
-        <h1 className="font-sans font-bold text-2xl text-ink mb-1">Choose a new password</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-1">Choose a new password</h1>
         <p className="font-sans text-ink-muted text-sm mb-6">
           For <strong className="text-ink">{session.user.email}</strong>. Use at least 8 characters.
         </p>
@@ -116,7 +116,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full h-11 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ui-btn ui-btn--primary w-full"
           >
             {saving
               ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />

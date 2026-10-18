@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Sun, Moon, LogOut, ChevronDown, Home, GraduationCap, Megaphone, UsersRound, UserPlus } from 'lucide-react'
 import wordmark from '../../assets/sccdenver.png'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../hooks/useTheme'
 import { useUpdates } from '../hooks/useUpdates'
 
 const TABS = [
@@ -26,23 +27,8 @@ export default function ParentLayout() {
   const registering = pathname.startsWith('/parent/register')
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [dark, setDark] = useState(() => {
-    if (typeof document === 'undefined') return false
-    const stored = localStorage.getItem('scc-theme')
-    if (stored) return stored === 'dark'
-    return document.documentElement.classList.contains('dark')
-  })
+  const { dark, toggle: toggleTheme } = useTheme()
   const menuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
-  }, [dark])
-
-  function toggleTheme() {
-    const next = !dark
-    localStorage.setItem('scc-theme', next ? 'dark' : 'light')
-    setDark(next)
-  }
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -103,14 +89,14 @@ export default function ParentLayout() {
 
         <div className="ml-auto flex items-center gap-1">
           <button onClick={toggleTheme} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="w-11 h-11 grid place-items-center text-white/75 hover:text-white rounded-[10px] hover:bg-white/10 transition">
+            className="ui-iconbtn text-on-shell-muted hover:text-on-shell">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenuOpen(o => !o)} aria-label="Account menu" aria-haspopup="menu" aria-expanded={menuOpen}
               className="h-11 flex items-center gap-1.5 px-1.5 rounded-full hover:bg-white/10 transition">
-              <span className="w-8 h-8 rounded-full bg-role-parent-soft text-role-parent ring-2 ring-brand flex items-center justify-center font-sans font-bold text-xs">
+              <span className="w-8 h-8 rounded-full bg-role-parent-soft text-role-parent ring-2 ring-on-shell-muted flex items-center justify-center font-sans font-bold text-xs">
                 {initials}
               </span>
               <ChevronDown size={14} className="text-white/60 hidden sm:block" />

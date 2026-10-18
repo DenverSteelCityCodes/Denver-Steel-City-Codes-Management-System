@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteers · Duties · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html" aria-current="page">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html" aria-current="page"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead pagehead--tabs">
+      <div class="grow"><h1>Volunteers</h1></div>
+      
+    </div>
+    <nav class="subtabs" aria-label="Volunteers">
+  <a href="admin-volunteers.html">Applications <span class="n">5</span></a>
+  <a href="admin-volunteers-interviews.html">Interviews</a>
+  <a href="admin-volunteers-crew.html">Crew</a>
+  <a href="admin-volunteers-duties.html" aria-current="page">Duties</a>
+</nav>
+
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Week" data-seg>
+        <button type="button" aria-pressed="true" data-show="duties-w1">Week 1<span class="hide-sm"> · Oct 19–23</span></button>
+        <button type="button" aria-pressed="false" data-show="duties-w2">Week 2<span class="hide-sm"> · Oct 26–30</span></button>
+      </div>
+      <span class="meta">8 open spots in Week 1 · 8 in Week 2 · two volunteers per duty</span>
+    </div>
+
+    <div class="table-wrap" id="duties-w1" role="region" aria-label="Duties, Week 1, scrolls sideways" tabindex="0">
+      <table class="data duty">
+        <caption class="sr-only">Duties, Week 1</caption>
+        <colgroup><col class="c-duty"><col><col><col><col><col></colgroup>
+        <thead><tr><th scope="col">Duty</th><th scope="col">Mon 19</th><th scope="col">Tue 20</th><th scope="col">Wed 21</th><th scope="col">Thu 22</th><th scope="col">Fri 23</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><b>Morning Check-In</b><span class="sub">8:30 · front lobby</span></th><td><ul><li>Sienna Cole</li><li>Sam Okafor</li></ul></td><td><ul><li>Aiden Brooks</li><li>Marcus Bell</li></ul></td><td><ul><li>Aiden Brooks</li><li>Fiona Zhang</li></ul></td><td><ul><li>Gabe Holloway</li><li>Marcus Bell</li></ul></td><td><ul><li>Haanie Mohammed</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td></tr>
+          <tr><th scope="row"><b>Break Supervision</b><span class="sub">10:30 · courtyard</span></th><td><ul><li>Harper Ito</li><li>Daniela Ruiz</li></ul></td><td><ul><li>Cameron Ortiz</li><li>Fiona Zhang</li></ul></td><td><ul><li>Daniela Ruiz</li><li>Paige Morgan</li></ul></td><td><ul><li>Fiona Zhang</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Fiona Zhang</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td></tr>
+          <tr><th scope="row"><b>Lunch Duty</b><span class="sub">12:00 · cafeteria</span></th><td><ul><li>Lily Moreau</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Marcus Bell</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Haanie Mohammed</li><li>Paige Morgan</li></ul></td><td><ul><li>Sienna Cole</li><li>Aiden Brooks</li></ul></td><td><ul><li>Cameron Ortiz</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td></tr>
+          <tr><th scope="row"><b>Afternoon Dismissal</b><span class="sub">3:00 · front lobby</span></th><td><ul><li>Aiden Brooks</li><li>Cameron Ortiz</li></ul></td><td><ul><li>Gabe Holloway</li><li>Lily Moreau</li></ul></td><td><ul><li>Haanie Mohammed</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Marcus Bell</li><li>Isaiah Grant</li></ul></td><td><ul><li>Fiona Zhang</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap" id="duties-w2" role="region" aria-label="Duties, Week 2, scrolls sideways" tabindex="0" hidden>
+      <table class="data duty">
+        <caption class="sr-only">Duties, Week 2</caption>
+        <colgroup><col class="c-duty"><col><col><col><col><col></colgroup>
+        <thead><tr><th scope="col">Duty</th><th scope="col">Mon 26</th><th scope="col">Tue 27</th><th scope="col">Wed 28</th><th scope="col">Thu 29</th><th scope="col">Fri 30</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><b>Morning Check-In</b><span class="sub">8:30 · front lobby</span></th><td><ul><li>Gabe Holloway</li><li>Kevin Osei</li></ul></td><td><ul><li>Nadia Rahman</li><li>Jasmine Kaur</li></ul></td><td><ul><li>Haanie Mohammed</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Sienna Cole</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Sienna Cole</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td></tr>
+          <tr><th scope="row"><b>Break Supervision</b><span class="sub">10:30 · courtyard</span></th><td><ul><li>Cameron Ortiz</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Bella Nguyen</li><li>Gabe Holloway</li></ul></td><td><ul><li>Daniela Ruiz</li><li>Gabe Holloway</li></ul></td><td><ul><li>Sienna Cole</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Oscar Lindqvist</li><li>Daniela Ruiz</li></ul></td></tr>
+          <tr><th scope="row"><b>Lunch Duty</b><span class="sub">12:00 · cafeteria</span></th><td><ul><li>Tyler Washington</li><li>Oscar Lindqvist</li></ul></td><td><ul><li>Lily Moreau</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Tyler Washington</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td><td><ul><li>Tyler Washington</li><li>Lily Moreau</li></ul></td><td><ul><li>Harper Ito</li></ul><span class="flag"><i data-lucide="user-plus"></i>1 open</span></td></tr>
+          <tr><th scope="row"><b>Afternoon Dismissal</b><span class="sub">3:00 · front lobby</span></th><td><ul><li>Fiona Zhang</li><li>Jasmine Kaur</li></ul></td><td><ul><li>Tyler Washington</li><li>Oscar Lindqvist</li></ul></td><td><ul><li>Tyler Washington</li><li>Harper Ito</li></ul></td><td><ul><li>Harper Ito</li><li>Cameron Ortiz</li></ul></td><td><ul><li>Cameron Ortiz</li><li>Gabe Holloway</li></ul></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="meta mt-3">Accepted volunteers sign up for these from their Duties tab.</p>
+
+    <section class="section" aria-labelledby="add-h">
+      <h2 id="add-h" class="h3">Add a duty slot</h2>
+      <form class="toolbar mt-3" onsubmit="return false">
+        <div class="field"><label for="ad-duty">Duty</label><select class="select" id="ad-duty"><option value="">Choose…</option><option>Morning Check-In</option><option>Break Supervision</option><option>Lunch Duty</option><option>Afternoon Dismissal</option></select></div>
+        <div class="field"><label for="ad-day">Day</label><select class="select" id="ad-day"><option>Mon, Oct 19</option><option>Tue, Oct 20</option><option>Wed, Oct 21</option><option>Thu, Oct 22</option><option>Fri, Oct 23</option><option>Mon, Oct 26</option><option>Tue, Oct 27</option><option>Wed, Oct 28</option><option>Thu, Oct 29</option><option>Fri, Oct 30</option></select></div>
+        <div class="field field--fit"><label for="ad-n">Volunteers</label><input class="input" id="ad-n" type="number" inputmode="numeric" value="2" style="width:104px"></div>
+        <button class="btn btn--secondary" type="submit"><i data-lucide="plus"></i>Add slot</button>
+      </form>
+      <details class="more mt-3">
+        <summary>Duty types (4) <i data-lucide="chevron-down" class="chev"></i></summary>
+        <ul class="rows rows--framed">
+          <li class="row"><span class="grow">Morning Check-In</span><button class="link link--muted" type="button">Rename<span class="sr-only"> Morning Check-In</span></button><button class="link link--muted" type="button">Remove<span class="sr-only"> Morning Check-In</span></button></li>
+          <li class="row"><span class="grow">Break Supervision</span><button class="link link--muted" type="button">Rename<span class="sr-only"> Break Supervision</span></button><button class="link link--muted" type="button">Remove<span class="sr-only"> Break Supervision</span></button></li>
+          <li class="row"><span class="grow">Lunch Duty</span><button class="link link--muted" type="button">Rename<span class="sr-only"> Lunch Duty</span></button><button class="link link--muted" type="button">Remove<span class="sr-only"> Lunch Duty</span></button></li>
+          <li class="row"><span class="grow">Afternoon Dismissal</span><button class="link link--muted" type="button">Rename<span class="sr-only"> Afternoon Dismissal</span></button><button class="link link--muted" type="button">Remove<span class="sr-only"> Afternoon Dismissal</span></button></li>
+        </ul>
+        <form class="toolbar mt-3" onsubmit="return false">
+          <div class="field"><label for="nd">New duty type</label><input class="input" id="nd" placeholder="For example, Water refill"></div>
+          <button class="btn btn--secondary" type="submit">Add duty type</button>
+        </form>
+      </details>
+    </section>
+  </main>
+</div>
+</body>
+</html>

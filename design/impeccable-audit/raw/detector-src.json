@@ -1,0 +1,15 @@
+[
+  {
+    "antipattern": "side-tab",
+    "name": "Side-tab accent border",
+    "description": "Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.",
+    "severity": "warning",
+    "category": "slop",
+    "file": "/Users/haaniemohammed/Denver-SCC-worktrees/impeccable-audit/src/pages/ClassBrowser.tsx",
+    "line": 393,
+    "snippet": "border-l-4",
+    "importedBy": [
+      "App.tsx"
+    ]
+  }
+]

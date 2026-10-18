@@ -54,7 +54,7 @@ function SessionForm({
     }
   }
 
-  const input = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
+  const input = 'ui-input'
   const label = 'block font-sans font-semibold text-sm text-ink mb-1.5'
 
   return (
@@ -94,7 +94,7 @@ function SessionForm({
             Cancel
           </button>
           <button type="submit" disabled={saving}
-            className="h-10 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50">
+            className="ui-btn ui-btn--primary">
             {saving ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Check size={16} />}
             {saving ? 'Saving…' : submitLabel}
           </button>
@@ -152,7 +152,7 @@ function ScheduleItemForm({
     }
   }
 
-  const input = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
+  const input = 'ui-input'
   const label = 'block font-sans font-semibold text-sm text-ink mb-1.5'
 
   return (
@@ -194,7 +194,7 @@ function ScheduleItemForm({
           Cancel
         </button>
         <button type="submit" disabled={saving}
-          className="h-10 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50">
+          className="ui-btn ui-btn--primary">
           {saving ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Check size={16} />}
           {saving ? 'Saving…' : submitLabel}
         </button>
@@ -261,13 +261,13 @@ export default function AdminSessions() {
     <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="font-sans font-bold text-2xl text-ink mb-1">Sessions</h1>
+          <h1 className="font-display font-bold text-2xl text-ink mb-1">Sessions</h1>
           <p className="font-sans text-sm text-ink-muted">Each session is one camp week. The year's first and second sessions by date are Week 1 and Week 2, shown or hidden.</p>
         </div>
         {editing !== 'new' && (
           <button
             onClick={() => { setPendingDelete(null); setEditing('new') }}
-            className="h-11 px-4 shrink-0 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition"
+            className="ui-btn ui-btn--primary shrink-0"
           >
             <Plus size={16} /> New session
           </button>

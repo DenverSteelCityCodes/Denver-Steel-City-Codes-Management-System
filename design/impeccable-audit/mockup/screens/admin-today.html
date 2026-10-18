@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Today · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html" aria-current="page">Today</a>
+    <a href="admin-campers.html">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html" aria-current="page"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead"><div class="grow"><h1>Today</h1></div></div>
+
+    <a class="sign" href="admin-classes.html" aria-label="Registration open since 7:00 PM. 38 seats left in 9 sections. 84 campers placed, 9 waitlisted, updated 7:14. See every section in Classes.">
+      <span class="ctx">Registration open since 7:00 PM</span>
+      <span class="fig flap">38</span>
+      <span class="go"><i data-lucide="arrow-right"></i></span>
+      <span class="msg">seats left in 9 sections</span>
+      <span class="sub">84 campers placed · 9 waitlisted · Updated 7:14</span>
+    </a>
+
+    <div class="cols mt-8">
+      <section class="todo" aria-labelledby="todo-h">
+        <h2 id="todo-h">To do</h2>
+        <ul class="decisions decisions--todo mt-3">
+      <li>
+        <span class="picto"><i data-lucide="user-round-x"></i></span>
+        <div><p class="what">PY-B Week 2 has no lead</p><p class="why">Intro to Python · Room 102 · 4 campers so far. Sam Okafor leads PY-B in Week 1 and is free in Week 2.</p></div>
+        <div class="do"><a class="link" href="admin-classes.html#py-b-w2">Assign a lead <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+      <li>
+        <span class="picto"><i data-lucide="message-square-text"></i></span>
+        <div><p class="what">2 families asked for a change</p><p class="why">Taylor Brooks and Hannah Price, after online changes closed. Oldest is 2 days old.</p></div>
+        <div class="do"><a class="link" href="admin-campers.html#requests">Review requests <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+      <li>
+        <span class="picto"><i data-lucide="inbox"></i></span>
+        <div><p class="what">5 volunteer applications pending</p><p class="why">Oldest is 5 days old. 3 have an interview booked.</p></div>
+        <div class="do"><a class="link" href="admin-volunteers.html">Review applications <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+      <li>
+        <span class="picto"><i data-lucide="calendar-clock"></i></span>
+        <div><p class="what">2 applicants have no interview yet</p><p class="why">Avery Johnson and Mila Novak haven’t picked a time.</p></div>
+        <div class="do"><a class="link" href="admin-volunteers-interviews.html">Book interviews <i data-lucide="arrow-right" class="icon-sm"></i></a></div>
+      </li>
+    </ul>
+      </section>
+
+      <section id="seats" aria-labelledby="seats-h">
+        <h2 id="seats-h">Seats</h2>
+        <p class="meta mt-2">Full sections show their waitlist. Select a section to open it in Classes.</p>
+        <div class="table-wrap static mt-3">
+      <table class="tt tt--mini reflow">
+        <caption class="sr-only">Seats by class and week</caption>
+        <colgroup><col class="c-class"><col><col></colgroup>
+        <thead><tr><th scope="col">Class</th><th scope="col">Week 1 <span class="meta">Oct 19–23</span></th><th scope="col">Week 2 <span class="meta">Oct 26–30</span></th></tr></thead>
+        <tbody>
+        <tr>
+          <th scope="row"><span class="cname">Intro to Java</span></th>
+          <td data-label="Week 1"><a class="sec" href="admin-classes.html#java-1-w1" aria-label="JAVA-1 Week 1: 6 of 14 seats">
+            <span class="top"><span class="code">JAVA-1</span><span class="fill">6/14</span></span>
+            <span class="meter" aria-hidden="true"><span style="--w:43%"></span></span>
+          </a></td>
+          <td data-label="Week 2"><a class="sec" href="admin-classes.html#java-1-w2" aria-label="JAVA-1 Week 2: 14 of 14 seats, 3 waitlisted">
+            <span class="top"><span class="code">JAVA-1</span><span class="fill"><b>14/14</b> · 3 wait</span></span>
+            <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+          </a></td>
+        </tr>
+        <tr>
+          <th scope="row"><span class="cname">Intro to Python</span></th>
+          <td data-label="Week 1"><a class="sec" href="admin-classes.html#py-a-w1" aria-label="PY-A Week 1: 10 of 10 seats, 1 waitlisted">
+            <span class="top"><span class="code">PY-A</span><span class="fill"><b>10/10</b> · 1 wait</span></span>
+            <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+          </a>
+          <a class="sec" href="admin-classes.html#py-b-w1" aria-label="PY-B Week 1: 9 of 16 seats">
+            <span class="top"><span class="code">PY-B</span><span class="fill">9/16</span></span>
+            <span class="meter" aria-hidden="true"><span style="--w:56%"></span></span>
+          </a></td>
+          <td data-label="Week 2"><a class="sec" href="admin-classes.html#py-a-w2" aria-label="PY-A Week 2: 9 of 14 seats">
+            <span class="top"><span class="code">PY-A</span><span class="fill">9/14</span></span>
+            <span class="meter" aria-hidden="true"><span style="--w:64%"></span></span>
+          </a>
+          <a class="sec" href="admin-classes.html#py-b-w2" aria-label="PY-B Week 2: 4 of 16 seats, no lead">
+            <span class="top"><span class="code">PY-B</span><span class="fill">4/16</span></span>
+            <span class="meter" aria-hidden="true"><span style="--w:25%"></span></span>
+            <span class="flag"><i data-lucide="user-round-x"></i>No lead</span>
+          </a></td>
+        </tr>
+        <tr>
+          <th scope="row"><span class="cname">Microcontrollers</span></th>
+          <td data-label="Week 1"><a class="sec" href="admin-classes.html#mc-1-w1" aria-label="MC-1 Week 1: 10 of 10 seats, 2 waitlisted">
+            <span class="top"><span class="code">MC-1</span><span class="fill"><b>10/10</b> · 2 wait</span></span>
+            <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+          </a></td>
+          <td data-label="Week 2"><a class="sec" href="admin-classes.html#mc-1-w2" aria-label="MC-1 Week 2: 10 of 10 seats, 3 waitlisted">
+            <span class="top"><span class="code">MC-1</span><span class="fill"><b>10/10</b> · 3 wait</span></span>
+            <span class="meter is-full" aria-hidden="true"><span style="--w:100%"></span></span>
+          </a></td>
+        </tr>
+        <tr>
+          <th scope="row"><span class="cname">Web Development</span></th>
+          <td data-label="Week 1"><a class="sec" href="admin-classes.html#web-1-w1" aria-label="WEB-1 Week 1: 12 of 18 seats">
+            <span class="top"><span class="code">WEB-1</span><span class="fill">12/18</span></span>
+            <span class="meter" aria-hidden="true"><span style="--w:67%"></span></span>
+          </a></td>
+          <td data-label="Week 2"><span class="meta">No section</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Register for a class · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html">Home</a>
+      <a href="parent-classes.html" aria-current="page">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow"><h1>Register for a class</h1></div>
+  </div>
+
+  <div class="field">
+        <span class="label" id="camper-l">Camper</span>
+        <div class="seg seg--block" data-seg data-camper-seg role="group" aria-labelledby="camper-l">
+          <button type="button" aria-pressed="false" data-show="c-maya" data-camper="maya">Maya</button>
+          <button type="button" aria-pressed="false" data-show="c-eli" data-camper="eli">Eli</button>
+          <button type="button" aria-pressed="true" data-show="c-noor" data-camper="noor">Noor</button>
+        </div>
+        <p class="hint">New camper? <a class="link" href="parent-register-1.html">Register a new camper</a></p>
+      </div>
+
+  <div class="mt-6">
+    <section id="c-maya" aria-label="Maya's classes" hidden>
+      <div class="field mt-5">
+        <span class="label" id="maya-wk-l">Week for Maya</span>
+        <div class="seg seg--block" data-seg role="group" aria-labelledby="maya-wk-l">
+          <button type="button" aria-pressed="false" data-show="maya-w1">Week 1</button>
+          <button type="button" aria-pressed="true" data-show="maya-w2">Week 2</button>
+        </div>
+      </div>
+      <div id="maya-w1" class="mt-5" hidden>
+        <p><b>Maya is in Web Development this week.</b></p>
+        <p class="meta mt-2">Online changes for Week 1 closed Oct 4. <a class="link" href="mailto:denver@steelcitycodes.org">Ask the camp to change it</a></p>
+      </div>
+      <fieldset id="maya-w2" class="mt-5" data-pick data-camper="Maya" data-week="Week 2">
+        <legend>Classes <span class="sep">·</span> Mon–Fri, Oct 26–30</legend>
+        <div class="choices mt-3">
+          <label class="choice"><input type="radio" name="maya-w2" value="java" data-class="Intro to Java"><span class="grow"><span class="top"><b>Intro to Java</b><span class="seats">3 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 201</span></span><span class="meta">Object-oriented programming fundamentals. For campers who have tried some coding before.</span></span></label>
+          <label class="choice"><input type="radio" name="maya-w2" value="python" data-class="Intro to Python"><span class="grow"><span class="top"><b>Intro to Python</b><span class="seats">5 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 102</span></span><span class="meta">First steps in programming: variables, loops and functions, building small games and art.</span></span></label>
+          <label class="choice"><input type="radio" name="maya-w2" value="micro" data-class="Microcontrollers"><span class="grow"><span class="top"><b>Microcontrollers</b><span class="seats">1 spot left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Maker Lab</span></span><span class="meta">Program real hardware (LEDs, sensors and buttons) with CircuitPython.</span></span></label>
+        </div>
+        <p class="meta mt-3">Web Development runs in Week 1 only.</p>
+        <a class="btn btn--primary btn--block btn--long mt-6" href="parent-classes-done.html" data-go hidden>Register Maya</a>
+      </fieldset>
+    </section>
+
+    <section id="c-eli" aria-label="Eli's classes" hidden>
+      <div class="field mt-5">
+        <span class="label" id="eli-wk-l">Week for Eli</span>
+        <div class="seg seg--block" data-seg role="group" aria-labelledby="eli-wk-l">
+          <button type="button" aria-pressed="false" data-show="eli-w1">Week 1</button>
+          <button type="button" aria-pressed="true" data-show="eli-w2">Week 2</button>
+        </div>
+      </div>
+      <div id="eli-w1" class="mt-5" hidden>
+        <p><b>Eli is on the waitlist for Intro to Python this week.</b></p>
+        <p class="meta mt-2">A camper holds one class a week, so other Week 1 classes stay closed while Eli waits. To pick another, leave the waitlist from <a class="link" href="parent-home.html">Home</a>.</p>
+      </div>
+      <fieldset id="eli-w2" class="mt-5" data-pick data-camper="Eli" data-week="Week 2">
+        <legend>Classes <span class="sep">·</span> Mon–Fri, Oct 26–30</legend>
+        <div class="choices mt-3">
+          <label class="choice"><input type="radio" name="eli-w2" value="python" data-class="Intro to Python"><span class="grow"><span class="top"><b>Intro to Python</b><span class="seats">5 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 101</span></span><span class="meta">First steps in programming: variables, loops and functions, building small games and art.</span></span></label>
+        </div>
+        <details class="more mt-3">
+          <summary>2 classes aren't open to Eli <i data-lucide="chevron-down" class="chev"></i></summary>
+          <ul class="rows">
+            <li><b>Intro to Java</b> <span class="meta"><span class="sep">·</span> for ages 11–14</span></li>
+            <li><b>Microcontrollers</b> <span class="meta"><span class="sep">·</span> for campers entering grades 7–9</span></li>
+          </ul>
+        </details>
+        <p class="meta">Web Development runs in Week 1 only.</p>
+        <a class="btn btn--primary btn--block btn--long mt-6" href="parent-classes-done.html" data-go hidden>Register Eli</a>
+      </fieldset>
+    </section>
+
+    <section id="c-noor" aria-label="Noor's classes">
+      <p><span class="status status--ok"><i data-lucide="check" class="icon-sm"></i>Details confirmed for 2026</span></p>
+      <div class="field mt-5">
+        <span class="label" id="noor-wk-l">Week for Noor</span>
+        <div class="seg seg--block" data-seg role="group" aria-labelledby="noor-wk-l">
+          <button type="button" aria-pressed="true" data-show="noor-w1">Week 1</button>
+          <button type="button" aria-pressed="false" data-show="noor-w2">Week 2</button>
+        </div>
+      </div>
+      <div id="noor-w1" class="mt-5">
+        <section class="sign" role="status" aria-labelledby="noor-in-h">
+          <span class="ctx">Noor is in · Intro to Python, Week 1</span>
+          <span class="fig">102</span>
+          <h2 class="msg" id="noor-in-h">Room 102, Monday 9:00</h2>
+          <span class="sub"><span class="nw">Mon–Fri 9:00–3:00</span><br><span class="nw">Week 1 starts Monday, Oct 19</span><br><span class="nw">Drop-off from 8:30</span> in the front lobby</span>
+        </section>
+        <div class="row mt-4">
+          <a class="btn btn--ink" href="parent-classes.html#eli">Register another camper</a>
+          <a class="btn btn--secondary" href="parent-home.html">Go to Home</a>
+        </div>
+      </div>
+      <fieldset id="noor-w2" class="mt-5" data-pick data-camper="Noor" data-week="Week 2" hidden>
+        <legend>Classes <span class="sep">·</span> Mon–Fri, Oct 26–30</legend>
+        <div class="choices mt-3">
+          <label class="choice"><input type="radio" name="noor-w2" value="java" data-class="Intro to Java"><span class="grow"><span class="top"><b>Intro to Java</b><span class="seats">3 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 201</span></span><span class="meta">Object-oriented programming fundamentals. For campers who have tried some coding before.</span></span></label>
+          <label class="choice"><input type="radio" name="noor-w2" value="python" data-class="Intro to Python"><span class="grow"><span class="top"><b>Intro to Python</b><span class="seats">5 spots left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 102</span></span><span class="meta">First steps in programming: variables, loops and functions, building small games and art.</span></span></label>
+          <label class="choice"><input type="radio" name="noor-w2" value="micro" data-class="Microcontrollers"><span class="grow"><span class="top"><b>Microcontrollers</b><span class="seats">1 spot left</span></span><span class="line"><span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Maker Lab</span></span><span class="meta">Program real hardware (LEDs, sensors and buttons) with CircuitPython.</span></span></label>
+        </div>
+        <p class="meta mt-3">Web Development runs in Week 1 only.</p>
+        <a class="btn btn--primary btn--block btn--long mt-6" href="parent-classes-done.html" data-go hidden>Register Noor</a>
+      </fieldset>
+    </section>
+  </div>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+// Mockup only: the gold button appears once a class is picked and names camper, class and week.
+document.querySelectorAll('[data-pick]').forEach(function (fs) {
+  var go = fs.querySelector('[data-go]');
+  function update() {
+    var r = fs.querySelector('input[type=radio]:checked');
+    go.hidden = !r; if (!r) return;
+    var c = fs.dataset.camper, w = fs.dataset.week, k = r.dataset.class;
+    go.textContent = r.hasAttribute('data-full') ? 'Add ' + c + ' to the ' + k + ' waitlist, ' + w : 'Register ' + c + ' for ' + k + ', ' + w;
+  }
+  fs.addEventListener('change', update); update();
+});
+// Preselect the camper from ?camper= or #name (links from Home), as the real route does.
+document.addEventListener('DOMContentLoaded', function () {
+  var want = new URLSearchParams(location.search).get('camper') || location.hash.slice(1);
+  var b = want && document.querySelector('[data-camper-seg] [data-camper="' + want + '"]');
+  if (b && b.getAttribute('aria-pressed') !== 'true') b.click();
+});
+</script>
+</body>
+</html>

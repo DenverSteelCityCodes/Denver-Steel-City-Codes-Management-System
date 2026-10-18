@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volunteer application, step 3 of 5 · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/public.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--flat">
+  <div class="bar bar--form">
+    <span class="wordmark"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver" width="104" height="28"></span>
+  </div>
+</header>
+
+<main class="page page--form">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Volunteer application, 2026</h1>
+    </div>
+  </div>
+
+  <section class="sign" aria-labelledby="step-h">
+    <h2 class="steplabel" id="step-h" aria-live="polite">Step 3 of 5 · Experience</h2>
+    <div class="steps" aria-hidden="true"><span class="done"></span><span class="done"></span><span class="done"></span><span></span><span></span></div>
+  </section>
+
+  <form class="fstack mt-8" data-next="public-apply-4.html" novalidate>
+    <fieldset>
+      <legend>Coding languages you know</legend>
+      <p class="hint">Pick any. New to coding? Leave them all empty.</p>
+      <div class="choices choices--chips">
+        <label class="choice"><input type="checkbox" checked><span class="grow">Python</span></label>
+        <label class="choice"><input type="checkbox"><span class="grow">Java</span></label>
+        <label class="choice"><input type="checkbox" checked><span class="grow">HTML</span></label>
+        <label class="choice"><input type="checkbox" checked><span class="grow">CSS</span></label>
+        <label class="choice"><input type="checkbox"><span class="grow">JavaScript</span></label>
+        <label class="choice"><input type="checkbox"><span class="grow">CircuitPython</span></label>
+        <label class="choice"><input type="checkbox"><span class="grow">Other</span></label>
+      </div>
+    </fieldset>
+    <div class="field">
+      <label for="a-classes">Computer science classes you've taken <span class="optional">(optional)</span></label>
+      <textarea class="textarea" id="a-classes" rows="2">AP Computer Science Principles</textarea>
+    </div>
+    <div class="field">
+      <label for="a-kids">Experience working with children or volunteering <span class="optional">(optional)</span></label>
+      <p class="hint" id="a-kids-hint">A few short lines is plenty.</p>
+      <textarea class="textarea" id="a-kids" aria-describedby="a-kids-hint"></textarea>
+    </div>
+
+    <h3 id="skills-h">How well do you know each one?</h3>
+    <p class="hint">1 = just starting · 5 = could teach it. Skip any you haven't used.</p>
+    <ul class="skills" aria-labelledby="skills-h">
+      <li><fieldset>
+        <legend>Python</legend>
+        <div class="scale"><label class="opt"><input type="radio" name="skill-0" value="1">1</label><label class="opt"><input type="radio" name="skill-0" value="2">2</label><label class="opt"><input type="radio" name="skill-0" value="3">3</label><label class="opt"><input type="radio" name="skill-0" value="4" checked>4</label><label class="opt"><input type="radio" name="skill-0" value="5">5</label></div>
+        <button class="link link--muted clear" type="button" data-clear>Clear<span class="sr-only"> Python rating</span></button>
+      </fieldset></li>
+      <li><fieldset>
+        <legend>Java</legend>
+        <div class="scale"><label class="opt"><input type="radio" name="skill-1" value="1">1</label><label class="opt"><input type="radio" name="skill-1" value="2">2</label><label class="opt"><input type="radio" name="skill-1" value="3">3</label><label class="opt"><input type="radio" name="skill-1" value="4">4</label><label class="opt"><input type="radio" name="skill-1" value="5">5</label></div>
+        <button class="link link--muted clear" type="button" data-clear>Clear<span class="sr-only"> Java rating</span></button>
+      </fieldset></li>
+      <li><fieldset>
+        <legend>HTML</legend>
+        <div class="scale"><label class="opt"><input type="radio" name="skill-2" value="1">1</label><label class="opt"><input type="radio" name="skill-2" value="2">2</label><label class="opt"><input type="radio" name="skill-2" value="3" checked>3</label><label class="opt"><input type="radio" name="skill-2" value="4">4</label><label class="opt"><input type="radio" name="skill-2" value="5">5</label></div>
+        <button class="link link--muted clear" type="button" data-clear>Clear<span class="sr-only"> HTML rating</span></button>
+      </fieldset></li>
+      <li><fieldset>
+        <legend>CSS</legend>
+        <div class="scale"><label class="opt"><input type="radio" name="skill-3" value="1">1</label><label class="opt"><input type="radio" name="skill-3" value="2">2</label><label class="opt"><input type="radio" name="skill-3" value="3" checked>3</label><label class="opt"><input type="radio" name="skill-3" value="4">4</label><label class="opt"><input type="radio" name="skill-3" value="5">5</label></div>
+        <button class="link link--muted clear" type="button" data-clear>Clear<span class="sr-only"> CSS rating</span></button>
+      </fieldset></li>
+      <li><fieldset>
+        <legend>JavaScript</legend>
+        <div class="scale"><label class="opt"><input type="radio" name="skill-4" value="1">1</label><label class="opt"><input type="radio" name="skill-4" value="2" checked>2</label><label class="opt"><input type="radio" name="skill-4" value="3">3</label><label class="opt"><input type="radio" name="skill-4" value="4">4</label><label class="opt"><input type="radio" name="skill-4" value="5">5</label></div>
+        <button class="link link--muted clear" type="button" data-clear>Clear<span class="sr-only"> JavaScript rating</span></button>
+      </fieldset></li>
+      <li><fieldset>
+        <legend>Microcontrollers / CircuitPython</legend>
+        <div class="scale"><label class="opt"><input type="radio" name="skill-5" value="1">1</label><label class="opt"><input type="radio" name="skill-5" value="2">2</label><label class="opt"><input type="radio" name="skill-5" value="3">3</label><label class="opt"><input type="radio" name="skill-5" value="4">4</label><label class="opt"><input type="radio" name="skill-5" value="5">5</label></div>
+        <button class="link link--muted clear" type="button" data-clear>Clear<span class="sr-only"> Microcontrollers / CircuitPython rating</span></button>
+      </fieldset></li>
+    </ul>
+
+    <h3>Which class would you like to teach?</h3>
+    <fieldset>
+      <legend>First choice</legend>
+      <div class="choices choices--2">
+        <label class="choice"><input type="radio" name="first" value="Intro to Java"><span class="grow">Intro to Java</span></label>
+        <label class="choice"><input type="radio" name="first" value="Intro to Python"><span class="grow">Intro to Python</span></label>
+        <label class="choice"><input type="radio" name="first" value="Microcontrollers"><span class="grow">Microcontrollers</span></label>
+        <label class="choice"><input type="radio" name="first" value="Web Development" checked><span class="grow">Web Development</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Second choice</legend>
+      <p class="hint">Different from your first choice.</p>
+      <div class="choices choices--2">
+        <label class="choice"><input type="radio" name="second" value="Intro to Java"><span class="grow">Intro to Java</span></label>
+        <label class="choice"><input type="radio" name="second" value="Intro to Python" checked><span class="grow">Intro to Python</span></label>
+        <label class="choice"><input type="radio" name="second" value="Microcontrollers"><span class="grow">Microcontrollers</span></label>
+        <label class="choice" hidden><input type="radio" name="second" value="Web Development"><span class="grow">Web Development</span></label>
+      </div>
+    </fieldset>
+    <div class="field">
+      <label for="a-other">Other classes you could teach <span class="optional">(optional)</span></label>
+      <p class="hint" id="a-other-hint">For example: game development, Processing, Greenfoot.</p>
+      <textarea class="textarea" id="a-other" rows="2" aria-describedby="a-other-hint"></textarea>
+    </div>
+    <div class="formnav">
+      <a class="btn btn--secondary" href="public-apply-2.html"><i data-lucide="chevron-left"></i>Back</a>
+      <button class="btn btn--primary" type="submit">Next: Waiver<i data-lucide="chevron-right"></i></button>
+    </div>
+  </form>
+</main>
+<footer class="foot foot--form">Questions? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+document.querySelectorAll('form[data-next]').forEach(function (f) {
+  f.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var u = new URL(f.getAttribute('data-next'), location.href);
+    var t = new URLSearchParams(location.search).get('theme'); if (t) u.searchParams.set('theme', t);
+    location.href = u.href;
+  });
+});
+</script>
+<script>
+document.querySelectorAll('[data-clear]').forEach(function (b) {
+  var fs = b.closest('fieldset');
+  function sync() { b.hidden = !fs.querySelector('input:checked'); }
+  b.addEventListener('click', function () { fs.querySelectorAll('input').forEach(function (i) { i.checked = false; }); sync(); fs.querySelector('input').focus(); });
+  fs.addEventListener('change', sync); sync();
+});
+// Second choice never repeats the first.
+function syncSecond() {
+  var first = document.querySelector('input[name=first]:checked');
+  document.querySelectorAll('input[name=second]').forEach(function (i) {
+    var same = first && i.value === first.value;
+    i.closest('.choice').hidden = same; if (same) i.checked = false;
+  });
+}
+document.querySelectorAll('input[name=first]').forEach(function (i) { i.addEventListener('change', syncSecond); });
+</script>
+</body>
+</html>

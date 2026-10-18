@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Campers · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/admin.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="shell shell--admin">
+  <div class="bar">
+    <a class="wordmark" href="admin-today.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, admin home" width="104" height="28"></a>
+    <label class="search" for="q"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <span class="spacer"></span>
+    <button class="iconbtn search-btn" type="button" data-toggle="searchrow" aria-label="Search"><i data-lucide="search"></i></button>
+    <a class="iconbtn" href="admin-today.html" aria-label="Needs attention, 4 items"><i data-lucide="bell"></i><span class="dot"></span></a>
+    <button class="avatar" type="button" data-menu="acct" aria-label="JR, account menu">JR</button>
+  </div>
+  <div class="searchrow" id="searchrow" hidden><label class="search" for="q-phone"><i data-lucide="search"></i><span class="sr-only">Search campers, classes and people</span><input id="q-phone" type="search" placeholder="Search campers, classes, people" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label></div>
+  <nav class="tabs admin-tabs" aria-label="Admin">
+    <a href="admin-today.html">Today</a>
+    <a href="admin-campers.html" aria-current="page">Campers</a>
+    <a href="admin-classes.html">Classes</a>
+    <a href="admin-volunteers.html">Volunteers</a>
+    <a href="admin-updates.html">Updates</a>
+    <a href="admin-setup.html">Setup</a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Jordan Rivera</b><span>Admin · demo.admin@example.com</span></div>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+<div class="app">
+  <nav class="rail" aria-label="Admin">
+    <a href="admin-today.html"><span class="picto"><i data-lucide="sun"></i></span>Today<span class="count"><span class="sr-only">, </span>1<span class="sr-only"> item needs you</span></span></a>
+    <a href="admin-campers.html" aria-current="page"><span class="picto"><i data-lucide="backpack"></i></span>Campers</a>
+    <a href="admin-classes.html"><span class="picto"><i data-lucide="layout-grid"></i></span>Classes</a>
+    <a href="admin-volunteers.html"><span class="picto"><i data-lucide="hand-helping"></i></span>Volunteers<span class="count"><span class="sr-only">, </span>5<span class="sr-only"> applications pending</span></span></a>
+    <a href="admin-updates.html"><span class="picto"><i data-lucide="megaphone"></i></span>Updates</a>
+    <span class="divider" role="separator"></span>
+    <a href="admin-setup.html"><span class="picto"><i data-lucide="settings"></i></span>Setup</a>
+  </nav>
+  <main class="page" id="main">
+<div class="pagehead">
+      <div class="grow"><h1>Campers</h1><p class="lede">73 campers · Week 1 starts Monday, Oct 19</p></div>
+      <div class="act"><a class="btn btn--secondary" href="#"><i data-lucide="download"></i>Export CSV</a></div>
+    </div>
+
+    <section id="requests" aria-labelledby="req-h">
+      <h2 id="req-h">Change requests (2)</h2>
+      <p class="meta mt-2">Online changes close 14 days before each week. Make the change in the camper’s row below, then mark the request done.</p>
+      <ul class="decisions decisions--plain mt-3">
+        <li>
+          <div>
+            <p class="what">Maya Brooks · Web Development, Week 1</p>
+            <p class="why">From Taylor Brooks · 2 days ago</p>
+            <p class="quote">“We’ll be away the week of Oct 19. Could Maya move to a Week 2 class instead? She’d love Python if there’s room.”</p>
+          </div>
+          <div class="do"><a class="link" href="mailto:demo.parent@example.com">Reply to Taylor</a><button class="link" type="button">Mark done</button><button class="link link--muted" type="button">Decline</button></div>
+        </li>
+        <li>
+          <div>
+            <p class="what">Kenji Price · Intro to Java, Week 2</p>
+            <p class="why">From Hannah Price · yesterday</p>
+            <p class="quote">“Kenji would rather do Intro to Python in Week 2 with his cousin. Is a switch still possible?”</p>
+          </div>
+          <div class="do"><a class="link" href="mailto:hannah.price@example.com">Reply to Hannah</a><button class="link" type="button">Mark done</button><button class="link link--muted" type="button">Decline</button></div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="all-h">
+      <h2 id="all-h">All campers</h2>
+      <div class="toolbar mt-3">
+        <div class="field">
+          <label class="sr-only" for="camper-q">Search campers or parents</label>
+          <div class="inputicon"><i data-lucide="search"></i><input class="input" id="camper-q" type="search" placeholder="Search campers or parents"></div>
+        </div>
+        <div class="seg" role="group" aria-label="Show" data-seg>
+          <button type="button" aria-pressed="true">All 73</button>
+          <button type="button" aria-pressed="false">Waitlisted 3</button>
+          <button type="button" aria-pressed="false">Offered 0</button>
+          <button type="button" aria-pressed="false">Cancelled 4</button>
+          <button type="button" aria-pressed="false">Not registered 7</button>
+        </div>
+      </div>
+      <div class="table-wrap static">
+        <table class="data reflow campers">
+          <caption class="sr-only">Campers 1 to 50 of 73</caption>
+          <thead><tr><th scope="col">Camper</th><th scope="col">Parent</th><th scope="col">Classes</th><th scope="col">Health</th></tr></thead>
+          <tbody>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Aaliyah Singh<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Priya Singh<a class="tel" href="tel:+13035550136">(303) 555-0136</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Gluten</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Amara Okafor<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Carlos Okafor<a class="tel" href="tel:+13035550105">(303) 555-0105</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Tree nuts</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Amara Sullivan<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Molly Sullivan<a class="tel" href="tel:+13035550132">(303) 555-0132</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Bee stings — EpiPen in backpack</span></td>
+              </tr>
+              <tr class="open">
+                <td><button class="namebtn" type="button" data-toggle="camper-andre">Andre Tran<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Linh Tran<a class="tel" href="tel:+13035550125">(303) 555-0125</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Type 1 diabetes — checks levels at lunch</span></td>
+              </tr>
+              <tr class="detailrow" id="camper-andre"><td colspan="4">
+                <div class="twocol">
+                  <div>
+                    <h3 class="h3">Details</h3>
+                    <p class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Type 1 diabetes — checks levels at lunch</p>
+                    <dl class="kv mt-4">
+                      <dt>Age</dt><dd>13 · entering 8th grade</dd>
+                      <dt>Parent</dt><dd>Linh Tran · <a class="call" href="tel:+13035550125">(303) 555-0125</a> · linh.tran@example.com</dd>
+                      <dt>Emergency contact</dt><dd>Minh Tran, uncle · <a class="call" href="tel:+13035550154">(303) 555-0154</a></dd>
+                      <dt>Registered</dt><dd>Sep 12, 7:02 PM by Linh Tran</dd>
+                    </dl>
+                  </div>
+                  <div>
+                    <h3 class="h3">Registrations</h3>
+                    <ul class="regs mt-3">
+                      <li>
+                        <p class="what"><b>Intro to Python · PY-B · Week 1</b><span class="meta">Oct 19–23 · Mon–Fri 9:00–3:00 · Room 102</span></p>
+                        <div class="field">
+                          <label for="andre-st">Status</label>
+                          <select class="select" id="andre-st"><option selected>Confirmed</option><option>Waitlisted</option><option>Offered</option><option>Cancelled</option></select>
+                        </div>
+                        <div class="field">
+                          <label for="andre-mv">Move to</label>
+                          <select class="select" id="andre-mv" aria-describedby="andre-mv-h">
+                            <option selected>Keep in PY-B Week 1 · 9/16</option>
+                            <optgroup label="Week 1">
+                              <option>JAVA-1 · 6/14 · ages 11–14</option>
+                              <option>MC-1 · 10/10 full · ages 12–14</option>
+                              <option>WEB-1 · 12/18 · ages 10–13</option>
+                              <option disabled>PY-A · 10/10 full · ages 9–10 (Andre is 13)</option>
+                            </optgroup>
+                            <optgroup label="Week 2">
+                              <option>PY-B · 11/16 · ages 11–13</option>
+                              <option>JAVA-1 · 11/14 · ages 11–14</option>
+                              <option>MC-1 · 9/10 · ages 12–14</option>
+                              <option disabled>PY-A · 9/14 · ages 9–10 (Andre is 13)</option>
+                            </optgroup>
+                          </select>
+                          <p class="hint" id="andre-mv-h">Seats and ages update as you choose. Cancelled frees the seat for the waitlist.</p>
+                        </div>
+                        <div class="full">
+                          <button class="link" type="button" data-toggle="andre-hist">Show history</button>
+                          <ul class="rows mt-2" id="andre-hist" hidden>
+                            <li class="row"><span class="grow"><b>Confirmed</b><span class="meta"> · Sep 12, 7:02 PM · Linh Tran</span></span></li>
+                          </ul>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </td></tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Arjun Davis<i data-lucide="chevron-down"></i></button><span class="sub">11 · entering 6th</span></td>
+                <td data-label="Parent" class="inline">Rachel Davis<a class="tel" href="tel:+13035550137">(303) 555-0137</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Ava Diaz<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Gabriela Diaz<a class="tel" href="tel:+13035550114">(303) 555-0114</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Shellfish</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Ava Nguyen<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Maria Nguyen<a class="tel" href="tel:+13035550128">(303) 555-0128</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Peanuts</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Bodhi Novak<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Ben Novak<a class="tel" href="tel:+13035550104">(303) 555-0104</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Caleb Rivera<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Fatima Rivera<a class="tel" href="tel:+13035550113">(303) 555-0113</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Chloe Ali<i data-lucide="chevron-down"></i></button><span class="sub">12 · entering 7th</span></td>
+                <td data-label="Parent" class="inline">Hassan Ali<a class="tel" href="tel:+13035550117">(303) 555-0117</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span><span class="sep">·</span> <span class="nowrap">Microcontrollers W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Clara Price<i data-lucide="chevron-down"></i></button><span class="sub">12 · entering 7th</span></td>
+                <td data-label="Parent" class="inline">Hannah Price<a class="tel" href="tel:+13035550116">(303) 555-0116</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Microcontrollers W1 <span class="status status--plain">Cancelled</span></span><span class="sep">·</span> <span class="nowrap">Python W2 <span class="status status--plain">Cancelled</span></span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Dante Ali<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Hassan Ali<a class="tel" href="tel:+13035550117">(303) 555-0117</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Diego Chen<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Kwame Chen<a class="tel" href="tel:+13035550123">(303) 555-0123</a></td>
+                <td data-label="Classes" class="inline"><span class="status status--plain">Not registered</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Elena Brown<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Laura Brown<a class="tel" href="tel:+13035550124">(303) 555-0124</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Microcontrollers W2</span><span class="sep">·</span> <span class="nowrap">Microcontrollers W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Eli Brooks<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Taylor Brooks<a class="tel" href="tel:+13035550144">(303) 555-0144</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1 <span class="status status--wait">Waitlisted</span></span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Esme Shah<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Anjali Shah<a class="tel" href="tel:+13035550103">(303) 555-0103</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Ethan Ahmed<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Kareem Ahmed<a class="tel" href="tel:+13035550122">(303) 555-0122</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Ethan Kim<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Mei Kim<a class="tel" href="tel:+13035550130">(303) 555-0130</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Ezra Brown<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Laura Brown<a class="tel" href="tel:+13035550124">(303) 555-0124</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Felix Fischer<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Tom Fischer<a class="tel" href="tel:+13035550145">(303) 555-0145</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W1 <span class="status status--plain">Cancelled</span></span><span class="sep">·</span> <span class="nowrap">Microcontrollers W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Freya Hernandez<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Ana Hernandez<a class="tel" href="tel:+13035550102">(303) 555-0102</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W2</span><span class="sep">·</span> <span class="nowrap">Microcontrollers W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Grace Kowalski<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Peter Kowalski<a class="tel" href="tel:+13035550135">(303) 555-0135</a></td>
+                <td data-label="Classes" class="inline"><span class="status status--plain">Not registered</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Peanuts</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Hana Williams<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Elena Williams<a class="tel" href="tel:+13035550111">(303) 555-0111</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Dairy</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Hugo Bennett<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Mark Bennett<a class="tel" href="tel:+13035550129">(303) 555-0129</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Imani Castillo<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Carmen Castillo<a class="tel" href="tel:+13035550106">(303) 555-0106</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W2</span><span class="sep">·</span> <span class="nowrap">Microcontrollers W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Isaac Ibrahim<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Yusuf Ibrahim<a class="tel" href="tel:+13035550146">(303) 555-0146</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Isla Martinez<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Sarah Martinez<a class="tel" href="tel:+13035550141">(303) 555-0141</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Microcontrollers W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Ivy Moreno<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Lucia Moreno<a class="tel" href="tel:+13035550126">(303) 555-0126</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Bee stings — EpiPen in backpack</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Jada Robinson<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Nadia Robinson<a class="tel" href="tel:+13035550133">(303) 555-0133</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Microcontrollers W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Jonah Thompson<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Robert Thompson<a class="tel" href="tel:+13035550138">(303) 555-0138</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">June Novak<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Ben Novak<a class="tel" href="tel:+13035550104">(303) 555-0104</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Microcontrollers W2</span><span class="sep">·</span> <span class="nowrap">Microcontrollers W1 <span class="status status--wait">Waitlisted</span></span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Kai Lopez<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Daniel Lopez<a class="tel" href="tel:+13035550108">(303) 555-0108</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Type 1 diabetes — checks levels at lunch</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Kenji Price<i data-lucide="chevron-down"></i></button><span class="sub">11 · entering 6th</span></td>
+                <td data-label="Parent" class="inline">Hannah Price<a class="tel" href="tel:+13035550116">(303) 555-0116</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Leila Haddad<i data-lucide="chevron-down"></i></button><span class="sub">12 · entering 7th</span></td>
+                <td data-label="Parent" class="inline">Michael Haddad<a class="tel" href="tel:+13035550131">(303) 555-0131</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Microcontrollers W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Lena Walsh<i data-lucide="chevron-down"></i></button><span class="sub">12 · entering 7th</span></td>
+                <td data-label="Parent" class="inline">Sean Walsh<a class="tel" href="tel:+13035550142">(303) 555-0142</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W1</span><span class="sep">·</span> <span class="nowrap">Microcontrollers W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Leo Castillo<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Carmen Castillo<a class="tel" href="tel:+13035550106">(303) 555-0106</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Liam Larsen<i data-lucide="chevron-down"></i></button><span class="sub">11 · entering 6th</span></td>
+                <td data-label="Parent" class="inline">Erik Larsen<a class="tel" href="tel:+13035550112">(303) 555-0112</a></td>
+                <td data-label="Classes" class="inline"><span class="status status--plain">Not registered</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Liam Patel<i data-lucide="chevron-down"></i></button><span class="sub">11 · entering 6th</span></td>
+                <td data-label="Parent" class="inline">David Patel<a class="tel" href="tel:+13035550109">(303) 555-0109</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Lucas Okafor<i data-lucide="chevron-down"></i></button><span class="sub">11 · entering 6th</span></td>
+                <td data-label="Parent" class="inline">Carlos Okafor<a class="tel" href="tel:+13035550105">(303) 555-0105</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Lucas Vargas<i data-lucide="chevron-down"></i></button><span class="sub">11 · entering 6th</span></td>
+                <td data-label="Parent" class="inline">Rosa Vargas<a class="tel" href="tel:+13035550139">(303) 555-0139</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W2 <span class="status status--plain">Cancelled</span></span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Lucia Moreno<i data-lucide="chevron-down"></i></button><span class="sub">12 · entering 7th</span></td>
+                <td data-label="Parent" class="inline">Lucia Moreno<a class="tel" href="tel:+13035550126">(303) 555-0126</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Malik Clarke<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Chris Clarke<a class="tel" href="tel:+13035550107">(303) 555-0107</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Mason Mensah<i data-lucide="chevron-down"></i></button><span class="sub">9 · entering 4th</span></td>
+                <td data-label="Parent" class="inline">Grace Mensah<a class="tel" href="tel:+13035550115">(303) 555-0115</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W1</span><span class="sep">·</span> <span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Mateo Ahmed<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Kareem Ahmed<a class="tel" href="tel:+13035550122">(303) 555-0122</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W1</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Mateo Garcia<i data-lucide="chevron-down"></i></button><span class="sub">13 · entering 8th</span></td>
+                <td data-label="Parent" class="inline">Aisha Garcia<a class="tel" href="tel:+13035550101">(303) 555-0101</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Microcontrollers W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Asthma — inhaler in backpack</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Maya Brooks<i data-lucide="chevron-down"></i></button><span class="sub">12 · entering 7th</span></td>
+                <td data-label="Parent" class="inline">Taylor Brooks<a class="tel" href="tel:+13035550144">(303) 555-0144</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Peanuts</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Maya Yamamoto<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Hiroshi Yamamoto<a class="tel" href="tel:+13035550118">(303) 555-0118</a></td>
+                <td data-label="Classes" class="inline"><span class="status status--plain">Not registered</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Shellfish</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Mia Thompson<i data-lucide="chevron-down"></i></button><span class="sub">14 · entering 9th</span></td>
+                <td data-label="Parent" class="inline">Robert Thompson<a class="tel" href="tel:+13035550138">(303) 555-0138</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Java W2 <span class="status status--plain">Cancelled</span></span><span class="sep">·</span> <span class="nowrap">Microcontrollers W1 <span class="status status--wait">Waitlisted</span></span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Miles Walsh<i data-lucide="chevron-down"></i></button><span class="sub">11 · entering 6th</span></td>
+                <td data-label="Parent" class="inline">Sean Walsh<a class="tel" href="tel:+13035550142">(303) 555-0142</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Python W2</span></td>
+                <td class="none"><span class="sr-only">No health notes</span></td>
+              </tr>
+              <tr>
+                <td><button class="namebtn" type="button" aria-expanded="false">Nia Bennett<i data-lucide="chevron-down"></i></button><span class="sub">10 · entering 5th</span></td>
+                <td data-label="Parent" class="inline">Mark Bennett<a class="tel" href="tel:+13035550129">(303) 555-0129</a></td>
+                <td data-label="Classes" class="inline"><span class="nowrap">Web Development W1</span></td>
+                <td data-label="Health"><span class="health"><i data-lucide="heart-pulse" class="icon-sm"></i>Tree nuts</span></td>
+              </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span class="meta">1–50 of 73</span>
+        <a class="btn btn--secondary" href="#">Next 23<span class="sr-only"> campers</span> <i data-lucide="arrow-right"></i></a>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

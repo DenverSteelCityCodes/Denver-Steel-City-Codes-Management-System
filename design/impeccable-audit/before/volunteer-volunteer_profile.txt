@@ -1,0 +1,33 @@
+Today
+Classes
+Duties
+Updates
+SO
+Back
+SO
+Sam Okafor
+
+demo.volunteer@example.com
+
+Availability and courses
+Edit
+
+Admins use these when they assign classes. Your class is set by an admin.
+
+Weeks
+Week 1 and Week 2
+First choice
+Intro to Python
+Second choice
+Intro to Java
+Switch classes
+
+You're in PY-B for Week 1 and PY-B for Week 2. Admins assign classes, but you can ask for a change.
+
+Ask to switch
+Days you can't make it
+
+Tell the camp early so they can find cover. Admins see it right away.
+
+Add a day
+Sign out

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home · Steel City Codes // Denver</title>
+<link rel="stylesheet" href="../system.css">
+<link rel="stylesheet" href="../css/parent.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+</head>
+<body>
+<header class="shell shell--tabs">
+  <div class="bar">
+    <a class="wordmark" href="parent-home.html"><img src="../assets/wordmark.png" alt="Steel City Codes // Denver, home" width="104" height="28"></a>
+    <nav class="tabs-inline" aria-label="Main">
+      <a href="parent-home.html" aria-current="page">Home</a>
+      <a href="parent-classes.html">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="avatar" data-menu="acct" aria-label="TB, account menu">TB</button>
+  </div>
+  <nav class="tabs" aria-label="Main">
+      <a href="parent-home.html" aria-current="page">Home</a>
+      <a href="parent-classes.html">Classes</a>
+      <a href="parent-updates.html">Updates<span class="tabdot" aria-hidden="true"></span><span class="sr-only">, 1 new</span></a>
+  </nav>
+  <div class="menu" id="acct" hidden>
+    <div class="who"><b>Taylor Brooks</b><span>demo.parent@example.com</span></div>
+    <a href="parent-contact.html"><i data-lucide="contact"></i>Your contact details</a>
+    <label class="item"><i data-lucide="moon"></i><span style="flex:1">Dark mode</span><input type="checkbox" role="switch" data-theme-switch></label>
+    <a href="public-login.html"><i data-lucide="log-out"></i>Sign out</a>
+  </div>
+</header>
+
+<main class="page">
+  <div class="pagehead">
+    <div class="grow">
+      <h1>Hi, Taylor</h1>
+      <p class="lede">A spot opened for Eli. Maya is set for Week 1. Noor isn't registered yet.</p>
+    </div>
+  </div>
+
+  <section class="sign anchor" id="offer" aria-labelledby="offer-h">
+    <span class="ctx" data-offer-ctx>Eli · Intro to Python, Week 1</span>
+    <span class="fig"><span class="flap" data-offer-fig>9<small>h</small></span></span>
+    <h2 class="msg" id="offer-h" tabindex="-1" aria-live="polite">Claim the spot by Fri 7:00 PM</h2>
+    <span class="sub" data-offer-sub>A seat opened in Room 101 and it's held for Eli. After 7:00 PM it goes to the next family on the waitlist.</span>
+    <div class="actions" data-offer-actions>
+      <button class="btn btn--ink" type="button" data-claim>Claim Eli's spot</button>
+      <button class="link" type="button" data-toggle="decline-eli">Decline</button>
+    </div>
+    <div class="confirm" id="decline-eli" hidden>
+      <p>Decline the spot in Intro to Python? It goes to the next family on the waitlist.</p>
+      <div class="do"><button class="btn btn--secondary" type="button" data-toggle="decline-eli" autofocus>Keep the offer</button><button class="btn btn--danger" type="button" data-decline>Decline the spot</button></div>
+    </div>
+  </section>
+
+  <div class="cols mt-8">
+    <div>
+      <section aria-labelledby="needs-h">
+        <h2 id="needs-h">Needs you</h2>
+        <ul class="decisions mt-3">
+          <li>
+            <span class="picto"><i data-lucide="clipboard-check"></i></span>
+            <div>
+              <p class="what">Confirm Noor's details for 2026</p>
+              <p class="why">Camp needs current details every summer. Then pick Noor's class.</p>
+            </div>
+            <div class="do"><a class="btn btn--ink" href="parent-classes-quickcheck.html">Review Noor's details</a></div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section" aria-labelledby="kids-h">
+        <h2 id="kids-h">Your campers</h2>
+        <ul class="mt-3">
+          <li class="camper anchor" id="maya">
+            <div class="row">
+              <div class="grow"><h3 class="name">Maya Brooks</h3><p class="meta">Entering 7th · health info on file</p></div>
+              <a class="link link--muted" href="parent-contact.html#maya">Edit<span class="sr-only"> Maya's details</span></a>
+            </div>
+            <ul class="weeks">
+              <li>
+                <span class="wk">Week 1</span>
+                <div>
+                  <span class="status status--ok"><i data-lucide="check" class="icon-sm"></i>Confirmed</span>
+                  <p class="cls"><span class="nw">Web Development&nbsp;<span class="sep">·</span></span> <span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 202</span></p>
+                  <p class="meta">Online changes closed Oct 4. <a class="link" href="mailto:denver@steelcitycodes.org">Ask the camp to change it</a></p>
+                </div>
+              </li>
+              <li>
+                <span class="wk">Week 2</span>
+                <div class="row"><span class="status status--plain">Not registered</span><a class="link" href="parent-classes.html#maya">Register Maya</a></div>
+              </li>
+            </ul>
+          </li>
+
+          <li class="camper anchor" id="eli">
+            <div class="row">
+              <div class="grow"><h3 class="name">Eli Brooks</h3><p class="meta">Entering 4th</p></div>
+              <a class="link link--muted" href="parent-contact.html#eli">Edit<span class="sr-only"> Eli's details</span></a>
+            </div>
+            <ul class="weeks">
+              <li>
+                <span class="wk">Week 1</span>
+                <div>
+                  <span class="status status--wait" data-eli-status><i data-lucide="clock" class="icon-sm"></i>Spot offered</span>
+                  <p class="cls"><span class="nw">Intro to Python&nbsp;<span class="sep">·</span></span> <span class="nw">Mon–Fri 9:00–3:00&nbsp;<span class="sep">·</span></span> <span class="nw">Room 101</span></p>
+                  <p class="meta" data-eli-note>Held for Eli until Fri 7:00 PM. <a class="link" href="#offer">Claim or decline it</a></p>
+                </div>
+              </li>
+              <li>
+                <span class="wk">Week 2</span>
+                <div class="row"><span class="status status--plain">Not registered</span><a class="link" href="parent-classes.html#eli">Register Eli</a></div>
+              </li>
+            </ul>
+          </li>
+
+          <li class="camper anchor" id="noor">
+            <div class="row">
+              <div class="grow"><h3 class="name">Noor Brooks</h3><p class="meta">Entering 8th · health info on file</p></div>
+              <a class="link link--muted" href="parent-contact.html#noor">Edit<span class="sr-only"> Noor's details</span></a>
+            </div>
+            <ul class="weeks">
+              <li><span class="wk">Weeks 1, 2</span><div><span class="status status--plain">Not registered</span><p class="meta">Confirm Noor's details above, then pick a class.</p></div></li>
+            </ul>
+          </li>
+        </ul>
+        <a class="btn btn--secondary mt-6" href="parent-register-1.html"><i data-lucide="plus"></i>Register a new camper</a>
+      </section>
+    </div>
+
+    <aside>
+      <section id="week" aria-labelledby="week-h">
+        <h2 id="week-h">This week</h2>
+        <p class="meta mt-2">Week 1 <span class="sep">·</span> Oct 19–23 <span class="sep">·</span> starts Monday</p>
+        <ul class="rows rows--framed mt-3">
+          <li class="row"><span class="grow"><b>Maya</b> · Web Development</span><span>Room 202 · Lead Fiona</span></li>
+        </ul>
+        <details class="more mt-3">
+          <summary>Daily schedule · 8:30 AM – 3:30 PM <i data-lucide="chevron-down" class="chev"></i></summary>
+          <div class="timetable mt-2">
+            <span class="t">8:30</span><span class="b" style="--min:30">Drop-off · front lobby</span>
+            <span class="t">9:00</span><span class="b" style="--min:90">Morning session · classrooms</span>
+            <span class="t">10:30</span><span class="b" style="--min:15">Snack · courtyard</span>
+            <span class="t">10:45</span><span class="b" style="--min:75">Morning session continues</span>
+            <span class="t">12:00</span><span class="b" style="--min:45">Lunch · cafeteria</span>
+            <span class="t">12:45</span><span class="b" style="--min:105">Afternoon session · classrooms</span>
+            <span class="t">2:30</span><span class="b" style="--min:30">Show and tell</span>
+            <span class="t">3:00</span><span class="b" style="--min:30">Pickup · front lobby</span>
+          </div>
+        </details>
+      </section>
+
+      <section class="section" aria-labelledby="latest-h">
+        <h2 id="latest-h">Latest from camp</h2>
+        <a class="latest mt-3" href="parent-updates.html">
+          <span class="meta">Fiona Zhang · Web Development, Week 1 · just now</span>
+          <span>Great first day in Web Dev! Everyone built their first page with a heading, a photo and a link…</span>
+          <span class="link">All updates <i data-lucide="arrow-right" class="icon-sm"></i></span>
+        </a>
+      </section>
+    </aside>
+  </div>
+</main>
+<footer class="foot">Questions or changes? <a href="mailto:denver@steelcitycodes.org">denver@steelcitycodes.org</a></footer>
+<script>
+// Mockup only: claiming flips the sign to the room (the split-flap swap); declining quiets it.
+document.addEventListener('DOMContentLoaded', function () {
+  var sign = document.getElementById('offer');
+  var q = function (s) { return sign.querySelector(s); };
+  var msg = document.getElementById('offer-h');
+  function settle() { q('[data-offer-actions]').hidden = true; document.getElementById('decline-eli').hidden = true; msg.focus(); }
+  q('[data-claim]').addEventListener('click', function () {
+    window.sccFlap(q('[data-offer-fig]'), '101');
+    q('[data-offer-ctx]').textContent = 'Eli · Intro to Python, Week 1 · claimed';
+    msg.textContent = 'Eli is in. Room 101, Monday 9:00';
+    q('[data-offer-sub]').textContent = 'Mon–Fri 9:00–3:00 · Drop-off from 8:30 in the front lobby';
+    var st = document.querySelector('[data-eli-status]');
+    st.className = 'status status--ok'; st.innerHTML = '<i data-lucide="check" class="icon-sm"></i>Confirmed';
+    document.querySelector('[data-eli-note]').textContent = 'You claimed this spot.';
+    if (window.lucide) window.lucide.createIcons({ attrs: { class: 'icon', 'aria-hidden': 'true' } });
+    settle();
+  });
+  q('[data-decline]').addEventListener('click', function () {
+    sign.className = 'sign sign--quiet anchor';
+    q('.fig').hidden = true;
+    msg.textContent = 'You declined the spot';
+    q('[data-offer-sub]').textContent = 'It went to the next family on the waitlist. Eli can still register for Week 2.';
+    var st = document.querySelector('[data-eli-status]');
+    st.className = 'status status--plain'; st.textContent = 'Declined';
+    document.querySelector('[data-eli-note]').textContent = 'You declined this spot.';
+    settle();
+  });
+});
+</script>
+</body>
+</html>

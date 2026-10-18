@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>Terminal Yellow — parent home</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Josefin+Sans:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16130F;--sign:#F1C446;--paper:#F6F6F4;--white:#fff;--red:#B3261E;--mute:#55504A}
+*{box-sizing:border-box;margin:0}
+html,body{width:390px;height:844px;overflow:hidden;background:var(--paper);color:var(--ink);font:400 16px/1.45 "Atkinson Hyperlegible Next",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.bar{background:var(--ink);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.mark{font:700 17px/1 "Josefin Sans";color:var(--sign)}
+.av{width:36px;height:36px;border-radius:50%;border:2px solid var(--sign);color:var(--sign);font:800 14px/32px "Atkinson Hyperlegible Next";text-align:center}
+.tabs{display:flex;background:var(--ink);border-top:1px solid #2E2923}
+.tabs a{flex:1;text-align:center;color:#BDB6AC;font-weight:700;font-size:15px;padding:12px 0}
+.tabs a[aria-current]{background:var(--sign);color:var(--ink)}
+.sign{background:var(--sign);padding:16px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:end}
+.sign .k{font-size:15px;font-weight:700}
+.sign .big{font:800 64px/0.9 "Atkinson Hyperlegible Next";letter-spacing:-.03em}
+.sign .msg{font-size:22px;font-weight:800;line-height:1.15}
+.sign .arrow{width:52px;height:52px;background:var(--ink);color:var(--sign);display:grid;place-items:center;font-weight:800;font-size:26px;border-radius:4px}
+.sub{grid-column:1/3;font-size:15px;font-weight:600}
+.list{padding:8px 16px 0}
+.dec{display:grid;grid-template-columns:48px 1fr;gap:12px;padding:14px 0;border-bottom:2px solid var(--ink)}
+.pict{width:48px;height:48px;background:var(--ink);color:var(--white);display:grid;place-items:center;font-weight:800;border-radius:4px}
+.dec h2{font-size:19px;font-weight:800}
+.dec p{color:var(--mute);font-size:15px}
+.go{margin-top:8px;display:inline-flex;height:44px;align-items:center;padding:0 16px;background:var(--ink);color:var(--sign);font-weight:800;border-radius:4px;font-size:15px}
+.flag{color:var(--red);font-weight:800;font-size:14px}
+</style></head><body>
+<header class="bar"><span class="mark">{STEEL CITY CODES} //DENVER</span><span class="av">TB</span></header>
+<nav class="tabs"><a aria-current="page">Home</a><a>Classes</a><a>Updates</a></nav>
+<section class="sign" aria-label="Next for Maya">
+  <span class="k">Maya · Web Development · WEB-1</span><span></span>
+  <span class="big">202</span><span class="arrow">→</span>
+  <span class="msg">Room 202, Monday 9:00</span><span></span>
+  <span class="sub">Drop-off 8:30 in the front lobby · Lead Fiona · Starts in 2 days</span>
+</section>
+<div class="list">
+  <article class="dec"><span class="pict">N</span><div>
+    <h2>Noor needs a class for Week 1</h2>
+    <p class="flag">Medical note on file</p>
+    <span class="go">Choose a class →</span></div></article>
+  <article class="dec"><span class="pict">E</span><div>
+    <h2>Eli is on the waitlist</h2>
+    <p>Intro to Python · PY-A · Week 1. If a seat opens you get an email and 48 hours to take it.</p></div></article>
+  <article class="dec"><span class="pict">M</span><div>
+    <h2>Maya is confirmed</h2>
+    <p>Changes closed Oct 4. Ask the camp to change anything.</p></div></article>
+</div>
+</body></html>

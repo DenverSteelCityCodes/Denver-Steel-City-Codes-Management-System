@@ -12,7 +12,7 @@ The waiver is hardcoded in `ParentRegistrationPage.tsx`. It says "Denver Summer 
 - Photo/media consent is a **separate opt-in, default off**, changeable later by the parent.
 
 ## Scope: what to build
-- Table `waivers(id, year, kind check in (liability, medical_authorization, photo_media, technology_use, code_of_conduct), version int, title, body_md, required bool, published_at, retired_at)`; `chapter_id` in spec 23. Admin write; everyone reads published rows.
+- Table `waivers(id, year, kind check in (liability, medical_authorization, photo_media, technology_use, code_of_conduct), version int, title, body_md, required bool, published_at, retired_at)`; `region_id` in spec 23. Admin write; everyone reads published rows.
 - Table `consents(id, student_id, waiver_id, granted bool, signer_profile uuid, typed_name text, camper_typed_name text, signed_at timestamptz, user_agent text, body_sha256 text)`. Parent inserts own (via RPC); admin reads; never updated (a change = a new row).
 - Wizard step 5 and the yearly confirmation panel render the **active** waivers from the DB, one card each, with its own checkbox (photo/media: "Yes / No" radio, nothing preselected) and typed signatures.
 - RPC `sign_consents(p_student_id, p_items jsonb, p_typed_name, p_camper_typed_name)` writes rows with a server-computed body hash; called in the registration transaction (spec 17) or right after.
@@ -22,7 +22,7 @@ The waiver is hardcoded in `ParentRegistrationPage.tsx`. It says "Denver Summer 
 - Remove the hardcoded waiver text and the "Denver Summer Camp" wording from the page.
 
 ## Out of scope
-- Per-chapter waiver versions (spec 23).
+- Per-region waiver versions (spec 23).
 
 ## Done when
 - [ ] The waiver text shown comes from the DB; publishing a new version doesn't need a deploy.

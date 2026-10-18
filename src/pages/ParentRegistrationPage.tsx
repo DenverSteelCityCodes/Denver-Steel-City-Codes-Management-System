@@ -562,7 +562,7 @@ export default function ParentRegistrationPage() {
     setSubmitted(true)
   }
 
-  const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-base focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition'
+  const inputCls = 'ui-input'
   const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
   // Question label from the Form editor, with the required marker / optional hint.
   const labelText = (key: string, hint?: string) => (
@@ -571,7 +571,7 @@ export default function ParentRegistrationPage() {
       {hint && <span className="font-normal text-ink-muted"> ({hint})</span>}
     </>
   )
-  const textareaCls = 'w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-base focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition resize-none'
+  const textareaCls = 'ui-input resize-none'
   const invalidProps = (id: string) => error && errorField === id
     ? { 'aria-invalid': true as const, 'aria-describedby': 'reg-error' }
     : {}
@@ -583,7 +583,7 @@ export default function ParentRegistrationPage() {
   if (submitted) {
     return (
       <div className="max-w-sm mx-auto py-10 text-center">
-          <h1 className="font-sans font-bold text-[28px] text-ink mb-2 flex items-center justify-center gap-2">
+          <h1 className="font-display font-bold text-[28px] text-ink mb-2 flex items-center justify-center gap-2">
             <CheckCircle2 size={26} aria-hidden="true" className="text-success shrink-0" />
             {waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}
           </h1>
@@ -598,7 +598,7 @@ export default function ParentRegistrationPage() {
           </p>
           <button
             onClick={() => navigate('/parent')}
-            className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] transition"
+            className="ui-btn ui-btn--primary"
           >
             Back to Home
           </button>
@@ -609,7 +609,7 @@ export default function ParentRegistrationPage() {
   if (!formConfigLoading && !registrationOpen) {
     return (
       <div className="max-w-lg mx-auto px-4 pt-16 pb-16 text-center">
-        <h1 className="font-sans font-bold text-2xl text-ink mb-2">{formConfigError ? "Couldn't load the form" : 'Registration is closed'}</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-2">{formConfigError ? "Couldn't load the form" : 'Registration is closed'}</h1>
         <p className="font-sans text-sm text-ink-muted mb-6">
           {formConfigError
             ? 'Check your connection and reload the page to try again.'
@@ -617,7 +617,7 @@ export default function ParentRegistrationPage() {
         </p>
         <button
           onClick={() => navigate('/parent')}
-          className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] transition"
+          className="ui-btn ui-btn--primary"
         >
           Back to Home
         </button>
@@ -630,12 +630,12 @@ export default function ParentRegistrationPage() {
       <div className="max-w-lg mx-auto px-4 pt-16 pb-16 text-center">
         {camperPrefillError ? (
           <>
-            <h1 className="font-sans font-bold text-2xl text-ink mb-2">Couldn't load your camper</h1>
+            <h1 className="font-display font-bold text-2xl text-ink mb-2">Couldn't load your camper</h1>
             <p role="alert" className="font-sans text-sm text-ink-muted mb-6">{camperPrefillError}</p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setPrefillAttempt(a => a + 1)}
-                className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] transition"
+                className="ui-btn ui-btn--primary"
               >
                 Retry
               </button>
@@ -665,7 +665,7 @@ export default function ParentRegistrationPage() {
               Save and exit
             </button>
           </div>
-          <h1 ref={stepRef} tabIndex={-1} className="font-sans font-bold text-[22px] leading-tight text-ink focus:outline-none">
+          <h1 ref={stepRef} tabIndex={-1} className="font-display font-bold text-[22px] leading-tight text-ink focus:outline-none">
             <span className="sr-only">Step {step} of 5: </span>{STEP_NAMES[step - 1]}
           </h1>
           <StepBar current={step} total={5} />
@@ -922,7 +922,7 @@ export default function ParentRegistrationPage() {
           {step === 5 && (
             <div className="space-y-6">
 
-              <div tabIndex={0} role="region" aria-label="Waiver and consent text" className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-brand space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
+              <div tabIndex={0} role="region" aria-label="Waiver and consent text" className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-focus space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
                 <p className="font-semibold text-ink text-sm">Steel City Codes {campYear} Participant Waiver</p>
                 <p>This Release and Waiver of Liability releases Steel City Codes ("Nonprofit"), its directors, officers, employees, and agents from any liability arising from your student's participation in the Denver Summer Camp program.</p>
                 <p><strong className="text-ink">ASSUMPTION OF RISK:</strong> I acknowledge that participation in the Steel City Codes program involves physical and other risks. I voluntarily assume all risks associated with my student's participation.</p>
@@ -967,12 +967,12 @@ export default function ParentRegistrationPage() {
               // Distinct keys: without them React reuses the Next <button> as Submit and the click
               // that lands on the last step can fire a submit.
               <button key="next" type="button" onClick={handleNext}
-                className="flex-1 h-12 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-base rounded-[10px] flex items-center justify-center gap-2 transition">
+                className="ui-btn ui-btn--primary flex-1">
                 Continue <ChevronRight size={16} />
               </button>
             ) : (
               <button key="submit" type="submit" disabled={submitting}
-                className="flex-1 h-12 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-base rounded-[10px] flex items-center justify-center gap-2 transition disabled:opacity-50">
+                className="ui-btn ui-btn--primary flex-1">
                 {submitting
                   ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
                   : <CheckCircle2 size={16} />}

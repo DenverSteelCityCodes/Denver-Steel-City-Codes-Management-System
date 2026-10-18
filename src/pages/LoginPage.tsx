@@ -97,7 +97,7 @@ export default function LoginPage() {
       )}
 
       <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8">
-        <h1 className="font-sans font-bold text-2xl text-ink mb-1">Welcome back</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-1">Welcome back</h1>
         <p className="font-sans text-ink-muted text-sm mb-6">Sign in to your account</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -113,7 +113,7 @@ export default function LoginPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition"
+              className="ui-input"
             />
           </div>
 
@@ -134,7 +134,7 @@ export default function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition"
+              className="ui-input"
             />
           </div>
 
@@ -147,7 +147,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-11 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ui-btn ui-btn--primary w-full"
           >
             {loading ? (
               <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />

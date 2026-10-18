@@ -101,7 +101,7 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
     })
   }
 
-  const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand transition'
+  const inputCls = 'ui-input'
   const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
   const yesNo = (val: boolean | null | undefined, target: boolean) =>
     `flex-1 h-11 rounded-[10px] font-sans font-semibold text-[15px] border transition ${
@@ -239,7 +239,7 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className="h-11 px-3 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-[15px] rounded-[10px] flex items-center justify-center gap-2 transition disabled:opacity-50"
+            className="ui-btn ui-btn--primary px-3"
           >
             {submitting && <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />}
             {submitting ? 'Confirming…' : full ? 'Confirm and join waitlist' : 'Confirm and register'}

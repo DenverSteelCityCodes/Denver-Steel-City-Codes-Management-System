@@ -1,0 +1,47 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Classes
+New class
+Intro to Java
+Object-oriented programming fundamentals in Java. Recommended for campers who have tried some coding before.
+2 sections
+
+17 / 28
+
+Intro to Python
+First steps in programming: variables, loops and functions, building small games and art with Python.
+4 sections
+
+39 / 56
+
+Microcontrollers
+Program real hardware — LEDs, sensors and buttons — with CircuitPython. For campers entering grades 7–9 with some Python experience.
+2 sections
+
+19 / 20Almost full
+
+Web Development
+Build and publish a personal website with HTML, CSS and a little JavaScript.
+1 section
+
+12 / 18

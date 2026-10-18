@@ -1,0 +1,82 @@
+/* Parent additions to the Terminal Yellow system. Tokens only; each one is a candidate for promotion
+   into system.css. Linked after system.css on every parent screen. */
+
+/* 0. `hidden` always wins. Several system classes set display (flex, grid, inline-flex), which
+      would otherwise override the attribute the mockup toggles. */
+[hidden] { display: none !important; }
+
+/* 1. Wizard: the step rail runs the full width of the sign, under the step name. */
+.sign .steps { grid-column: 1 / -1; }
+.sign .sub { text-wrap: pretty; }
+.sign .fig small { font-size: var(--t-msg); }
+
+/* 2. Controls that sit on the sign (the waitlist offer). The inline confirm keeps its frame in
+      sign ink; the destructive button is filled so it reads on gold in both themes. */
+.sign .confirm { grid-column: 1 / -1; border-color: var(--on-sign); }
+.sign .confirm .btn--danger { background: var(--alarm); border-color: var(--alarm); color: var(--on-shell); }
+:root[data-theme="dark"] .sign .btn--ink { background: var(--on-sign); color: var(--sign); }
+
+/* 3. Facts: a read-only summary of saved answers, label then value. When the group's edit
+      fields are open, the summary steps aside so nothing is shown twice. */
+.facts { display: grid; grid-template-columns: fit-content(8.5rem) 1fr; gap: var(--s1) var(--s4); margin-top: var(--s2); }
+.facts dt { color: var(--muted); font-size: var(--t-meta); padding-top: 2px; }
+.facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.group:has(.group-edit:not([hidden])) .facts { display: none; }
+.group-edit { margin-top: var(--s3); }
+.group-edit .do-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin-top: var(--s5); }
+
+/* 4. Result: the persistent, inline outcome that takes the place of a submit button.
+      Green means done; it stays until the person moves on. */
+.result { padding: var(--s4); border: 2px solid var(--ok); border-radius: var(--r); }
+.result .h2 { display: flex; align-items: center; gap: var(--s2); }
+.result .h2 .icon { color: var(--ok); width: 26px; height: 26px; }
+.result .do { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin-top: var(--s4); }
+
+/* 5. Anchored blocks land below the sticky bar and tabs. */
+.anchor { scroll-margin-top: 120px; }
+@media (min-width: 768px) { .anchor { scroll-margin-top: 88px; } }
+
+/* 6. Form rhythm: a two-column pair never adds a margin on top of its own row gap, and the
+      block after a pair keeps the field spacing. */
+.grid2 > .field + .field { margin-top: 0; }
+.grid2 + .field, .field + .grid2, .grid2 + .grid2 { margin-top: var(--s5); }
+.field > .seg:not(.seg--block) { justify-self: start; }
+.seg button, .seg a { padding-top: var(--s2); padding-bottom: var(--s2); }
+.grid2--pair { grid-template-columns: 1fr 1fr; }
+.grid2--pair > .field + .field { margin-top: 0; }
+@media (min-width: 480px) { .choices--2 { grid-template-columns: 1fr 1fr; } }
+
+/* 7. Class rows: name and seats on one line (seats are the figure a parent decides on), then
+      days, time and room, then the description as a muted aside. */
+.choice .top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--s3); }
+.choice .seats { font-size: var(--t-meta); font-weight: 700; }
+.choice .line { display: block; margin-top: 2px; }
+
+/* 8. Waiting: a list that is visible but not usable yet (the region is inert; its reason is
+      stated outside it). Text keeps full contrast; dashed frames and faded radios say "not yet". */
+.waiting .choice { background: transparent; border-style: dashed; border-color: var(--field); cursor: default; }
+.waiting .choice input { opacity: .4; }
+
+/* 9. Wizard Back / Next row, in flow (no sticky bar under Safari's toolbar). */
+.wiznav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin-top: var(--s8); padding-top: var(--s5); border-top: 2px solid var(--rule); }
+.wiznav .btn--primary { margin-left: auto; }
+.decisions + .wiznav, .rows--framed + .wiznav { border-top: 0; margin-top: var(--s4); }
+
+/* 10. A button whose label names camper, class and week may wrap to two lines on a phone. */
+.btn--long { padding-top: var(--s2); padding-bottom: var(--s2); text-align: center; text-wrap: balance; }
+
+/* 11. Placeholder legal text: framed with a dashed field rule so it can never pass for the
+       final agreement. */
+.placeholder { margin-top: var(--s3); padding: var(--s4); border: 2px dashed var(--field); border-radius: var(--r); }
+.placeholder > * + * { margin-top: var(--s3); }
+.placeholder .note { display: flex; gap: var(--s2); align-items: flex-start; font-weight: 700; }
+.placeholder .note .icon { margin-top: 2px; }
+
+/* 12. Two spacing steps the system's utilities skip (s1, s5). */
+.mt-1 { margin-top: var(--s1); } .mt-5 { margin-top: var(--s5); }
+
+/* 13. Heading sizes restated as longhands, so tools that cannot expand the system's
+       `font:` shorthand with custom properties still read the real scale (28 / 22 / 18). */
+h1, .h1 { font-size: var(--t-h1); }
+h2, .h2 { font-size: var(--t-msg); }
+h3, .h3 { font-size: var(--t-row); }

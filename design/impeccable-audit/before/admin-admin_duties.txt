@@ -1,0 +1,299 @@
+⌘K
+JR
+OVERVIEW
+Dashboard
+Updates
+PEOPLE
+Students
+Volunteers
+5
+Users & roles
+PROGRAM
+Attendance
+Classes
+Sessions
+Duty schedule
+Interviews
+2
+SETUP
+Form editor
+JR
+Jordan Rivera
+Admin
+Duty schedule
+
+Daily jobs like check-in and lunch. Open slots here; accepted volunteers sign up from their dashboard.
+
+Duty types
+Afternoon Dismissal
+Break Supervision
+Lunch Duty
+Morning Check-In
+New duty type
+Duty slots
+Show session
+All sessions
+Week 1 2026
+Week 2 2026
+
+Add duty slot
+
+Duty
+Choose…
+Afternoon Dismissal
+Break Supervision
+Lunch Duty
+Morning Check-In
+Date
+Volunteers
+Add
+Monday, Oct 19
+
+Afternoon Dismissal
+
+2/2 filled · Aiden Brooks, Cameron Ortiz
+
+Full
+
+Break Supervision
+
+2/2 filled · Harper Ito, Daniela Ruiz
+
+Full
+
+Lunch Duty
+
+1/2 filled · Lily Moreau
+
+Open
+
+Morning Check-In
+
+2/2 filled · Sienna Cole, Sam Okafor
+
+Full
+Tuesday, Oct 20
+
+Afternoon Dismissal
+
+2/2 filled · Gabe Holloway, Lily Moreau
+
+Full
+
+Break Supervision
+
+2/2 filled · Cameron Ortiz, Fiona Zhang
+
+Full
+
+Lunch Duty
+
+1/2 filled · Marcus Bell
+
+Open
+
+Morning Check-In
+
+2/2 filled · Aiden Brooks, Marcus Bell
+
+Full
+Wednesday, Oct 21
+
+Afternoon Dismissal
+
+1/2 filled · Haanie Mohammed
+
+Open
+
+Break Supervision
+
+2/2 filled · Daniela Ruiz, Paige Morgan
+
+Full
+
+Lunch Duty
+
+2/2 filled · Haanie Mohammed, Paige Morgan
+
+Full
+
+Morning Check-In
+
+2/2 filled · Aiden Brooks, Fiona Zhang
+
+Full
+Thursday, Oct 22
+
+Afternoon Dismissal
+
+2/2 filled · Marcus Bell, Isaiah Grant
+
+Full
+
+Break Supervision
+
+1/2 filled · Fiona Zhang
+
+Open
+
+Lunch Duty
+
+2/2 filled · Sienna Cole, Aiden Brooks
+
+Full
+
+Morning Check-In
+
+2/2 filled · Gabe Holloway, Marcus Bell
+
+Full
+Friday, Oct 23
+
+Afternoon Dismissal
+
+1/2 filled · Fiona Zhang
+
+Open
+
+Break Supervision
+
+1/2 filled · Fiona Zhang
+
+Open
+
+Lunch Duty
+
+1/2 filled · Cameron Ortiz
+
+Open
+
+Morning Check-In
+
+1/2 filled · Haanie Mohammed
+
+Open
+Monday, Oct 26
+
+Afternoon Dismissal
+
+2/2 filled · Fiona Zhang, Jasmine Kaur
+
+Full
+
+Break Supervision
+
+1/2 filled · Cameron Ortiz
+
+Open
+
+Lunch Duty
+
+2/2 filled · Tyler Washington, Oscar Lindqvist
+
+Full
+
+Morning Check-In
+
+2/2 filled · Gabe Holloway, Kevin Osei
+
+Full
+Tuesday, Oct 27
+
+Afternoon Dismissal
+
+2/2 filled · Tyler Washington, Oscar Lindqvist
+
+Full
+
+Break Supervision
+
+2/2 filled · Bella Nguyen, Gabe Holloway
+
+Full
+
+Lunch Duty
+
+1/2 filled · Lily Moreau
+
+Open
+
+Morning Check-In
+
+2/2 filled · Nadia Rahman, Jasmine Kaur
+
+Full
+Wednesday, Oct 28
+
+Afternoon Dismissal
+
+2/2 filled · Tyler Washington, Harper Ito
+
+Full
+
+Break Supervision
+
+2/2 filled · Daniela Ruiz, Gabe Holloway
+
+Full
+
+Lunch Duty
+
+1/2 filled · Tyler Washington
+
+Open
+
+Morning Check-In
+
+1/2 filled · Haanie Mohammed
+
+Open
+Thursday, Oct 29
+
+Afternoon Dismissal
+
+2/2 filled · Harper Ito, Cameron Ortiz
+
+Full
+
+Break Supervision
+
+1/2 filled · Sienna Cole
+
+Open
+
+Lunch Duty
+
+2/2 filled · Tyler Washington, Lily Moreau
+
+Full
+
+Morning Check-In
+
+1/2 filled · Sienna Cole
+
+Open
+Friday, Oct 30
+
+Afternoon Dismissal
+
+2/2 filled · Cameron Ortiz, Gabe Holloway
+
+Full
+
+Break Supervision
+
+2/2 filled · Oscar Lindqvist, Daniela Ruiz
+
+Full
+
+Lunch Duty
+
+1/2 filled · Harper Ito
+
+Open
+
+Morning Check-In
+
+1/2 filled · Sienna Cole
+
+Open
