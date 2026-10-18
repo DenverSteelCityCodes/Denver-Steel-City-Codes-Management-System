@@ -244,7 +244,7 @@ export const PARENT_GUIDE: HelpGuide = {
               kind: 'system',
               items: [
                 'You see the volunteers teaching in the weeks your camper has a spot: the name they go by, how to say it, and a short bio.',
-                'Photos show only when the volunteer agreed, and for volunteers under 18 a parent or guardian too. Everyone else shows their initials.',
+                'Photos show only when the volunteer agreed, and for volunteers under 18 a parent or guardian too. Without a photo you see just their name, how to say it and their bio.',
               ],
             },
           ],

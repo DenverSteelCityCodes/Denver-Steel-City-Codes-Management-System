@@ -29,15 +29,6 @@ export function dueLabel(dueISO: string | null, now: Date = new Date()): string 
   return `Due ${day} at ${at}`
 }
 
-// When an item is due for one volunteer: N hours after they were accepted, or after the item was
-// added if that came later (mirrors private.task_due_at() in the database). Null when the
-// volunteer was accepted before checklists existed.
-export function taskDueAt(acceptedAt: string | null | undefined, taskCreatedAt: string, hours: number): string | null {
-  if (!acceptedAt) return null
-  const start = Math.max(new Date(acceptedAt).getTime(), new Date(taskCreatedAt).getTime())
-  return new Date(start + hours * 3_600_000).toISOString()
-}
-
 export function isOverdue(item: Pick<ChecklistItem, 'due_at' | 'done_at'>, now: Date = new Date()): boolean {
   return !item.done_at && !!item.due_at && new Date(item.due_at).getTime() <= now.getTime()
 }
@@ -84,9 +75,4 @@ export function photoStatus(p: { hasPhoto: boolean; consent: boolean; needsGuard
 export function bioProblem(bio: string): string | null {
   const n = bio.trim().length
   return n > BIO_MAX ? `Keep your bio to ${BIO_MAX} characters. It's ${n} now.` : null
-}
-
-// Initials for a crew member without a photo: "Sam" → "S", "Mary Kate" → "MK".
-export function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?'
 }

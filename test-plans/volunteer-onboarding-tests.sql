@@ -11,6 +11,7 @@ declare
   app_a uuid; app_b uuid; user_a uuid; user_b uuid;
   v uuid; lead_sec uuid; sup_sec uuid; w1 uuid; w2 uuid; p1 uuid; duty uuid;
   slot1 uuid; slot2 uuid; slot3 uuid; slot_soon uuid; slot_day uuid; bk uuid;
+  cls uuid; past uuid; past_sec uuid; past_sec2 uuid; both_sec uuid; kid uuid; kid2 uuid; yr int := (select max(year) from sessions where is_active);
   claims_adm text; claims_a text; claims_b text; claims_v text; claims_p1 text;
   res text := ''; n int; expected int; m text; t timestamptz; j jsonb; ok boolean; url text; path text;
 begin
@@ -151,11 +152,31 @@ begin
   select count(*) into n from cron.job where jobname = 'interview-reminders' and schedule = '*/5 * * * *';
   res := res || E'\nreminder job scheduled: ' || case when n = 1 then 'ok' else 'BAD' end;
 
+  -- Withdrawn reminders (review fix). The demo's example.com addresses make every row 'cancelled'
+  -- at once, so the rows are put back in the queue first, as a real address would leave them.
+  update notifications set status = 'queued', last_error = null where template = 'interview_reminder' and payload ->> 'application_id' = app_a::text;
+  update interview_bookings set slot_id = slot3 where application_id = app_a;
+  select count(*) into n from notifications where template = 'interview_reminder' and payload ->> 'application_id' = app_a::text and status = 'queued';
+  res := res || E'\nmoving the interview withdraws its queued reminders: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  insert into notifications (recipient_email, template, payload, status)
+  values ('a@test.invalid', 'interview_reminder', jsonb_build_object('application_id', app_a, 'slot_id', slot3, 'slot_datetime', now() + interval '6 days', 'kind', '24h'), 'queued');
+  delete from interview_bookings where application_id = app_a;
+  select count(*) into n from notifications where template = 'interview_reminder' and payload ->> 'application_id' = app_a::text and status = 'queued';
+  res := res || E'\ncancelling the interview withdraws its reminders: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  insert into notifications (recipient_email, template, payload, status)
+  values ('a@test.invalid', 'interview_reminder', jsonb_build_object('application_id', app_a, 'slot_id', slot2, 'slot_datetime', now() - interval '5 minutes', 'kind', '1h'), 'queued');
+  perform private.send_interview_reminders();
+  select count(*) into n from notifications where template = 'interview_reminder' and status = 'queued' and (payload ->> 'slot_datetime')::timestamptz <= now();
+  res := res || E'\na reminder still queued after the interview started is withdrawn: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  update notifications set status = 'queued' where template = 'interview_nudge' and payload ->> 'application_id' = app_b::text;
+
   -- ── 3. Decisions ──
   delete from interview_bookings where application_id = app_b;
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', claims_adm, true);
   update volunteer_applications set status = 'rejected' where id = app_b;
+  select count(*) into n from notifications where template = 'interview_nudge' and payload ->> 'application_id' = app_b::text and status = 'queued';
+  res := res || E'\nleaving pending withdraws the queued nudge: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from notifications where template = 'application_declined' and payload ->> 'application_id' = app_b::text;
   res := res || E'\ndecline: one email: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
   update volunteer_applications set admin_notes = 'note only' where id = app_b;
@@ -198,6 +219,16 @@ begin
   res := res || E'\nparent reads the overdue list: ' || case when n = 0 then 'blocked ok' else 'ALLOWED (BAD)' end;
   select count(*) into n from volunteer_tasks;
   res := res || E'\nparent reads volunteer_tasks: ' || case when n = 0 then 'blocked ok' else 'ALLOWED (BAD)' end;
+  -- Accepted in an earlier season (review fix): nothing overdue, no due times.
+  perform set_config('request.jwt.claims', claims_adm, true);
+  update volunteers set accepted_at = now() - interval '800 days' where id = user_a;
+  select count(*) into n from public.admin_onboarding_overdue() where volunteer_id = user_a;
+  res := res || E'\nlast season''s volunteer: nothing overdue: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from public.admin_onboarding_due() where volunteer_id = user_a and due_at is not null;
+  res := res || E'\nlast season''s volunteer: no due times for admins: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  perform set_config('request.jwt.claims', claims_a, true);
+  select count(*) into n from public.my_onboarding() where due_at is not null;
+  res := res || E'\nlast season''s volunteer: no due times on their checklist: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
 
   -- ── 5. Profile and photo consent ──
   perform set_config('request.jwt.claims', claims_v, true);
@@ -263,6 +294,40 @@ begin
   select count(*) into n from public.meet_the_crew();
   res := res || E'\nsomeone with no seated camper sees no crew: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
 
+  -- ── 6b. Sections that run both weeks, and last season (review fixes) ──
+  execute 'reset role';
+  perform set_config('request.jwt.claims', '', true);
+  select id into cls from classes where grades_allowed is null and requires_class_id is null order by name limit 1;
+  insert into sessions (name, year, start_date, end_date, is_active)
+  values ('[TEST] last summer', yr - 1, make_date(yr - 1, 7, 6), make_date(yr - 1, 7, 10), false) returning id into past;
+  -- A both-weeks section (no week) led by A, with a consented photo.
+  insert into sections (class_id, label, week, age_min, age_max, capacity, lead_id) values (cls, 'T-BOTH', null, 5, 17, 10, user_a) returning id into both_sec;
+  update volunteers set photo_path = user_a::text || '/both.jpg', photo_consent_at = now(), photo_guardian_consent_at = now(), photo_guardian_name = 'G' where id = user_a;
+  -- Last summer's sections: V led one (with a camper and a roll call); B led another and has a consented photo.
+  insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id) values (cls, 'T-PAST', 1, past, 5, 17, 10, v) returning id into past_sec;
+  insert into volunteers (id, experience_level, availability_week_1, availability_week_2, photo_path, photo_consent_at, photo_guardian_consent_at)
+  values (user_b, 'senior', true, true, user_b::text || '/past.jpg', now(), now())
+  on conflict (id) do update set photo_path = excluded.photo_path, photo_consent_at = now(), photo_guardian_consent_at = now(), removed_at = null;
+  update volunteer_applications set age = 19 where user_id = user_b;
+  insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id) values (cls, 'T-PAST2', 1, past, 5, 17, 10, user_b) returning id into past_sec2;
+  insert into students (parent_id, full_name, first_name, age, grade) values (p1, 'Past Camper', 'Past', 10, '5th') returning id into kid;
+  insert into registrations (student_id, section_id, status) values (kid, past_sec, 'confirmed');
+  insert into roll_call_marks (section_id, student_id, day, roll_call, present) values (past_sec, kid, make_date(yr - 1, 7, 6), 'arrival', true);
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', claims_p1, true);
+  select count(*) into n from public.meet_the_crew() where section_id = both_sec and volunteer_id = user_a;
+  res := res || E'\nboth-weeks section''s crew shows to a Week 1 family: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+  res := res || E'\nand its consented photo is readable: ' || case when private.crew_photo_visible(user_a::text || '/both.jpg') then 'ok' else 'BAD' end;
+  -- A family with a both-weeks camper overlaps every week, but never last season's crew.
+  execute 'reset role';
+  insert into students (parent_id, full_name, first_name, age, grade) values (p1, 'Both Weeks', 'Both', 10, '5th') returning id into kid2;
+  insert into registrations (student_id, section_id, status) values (kid2, both_sec, 'confirmed');
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', claims_p1, true);
+  res := res || E'\na both-weeks family can''t read last season''s crew photo: ' || case when not private.crew_photo_visible(user_b::text || '/past.jpg') then 'ok' else 'BAD' end;
+  select count(*) into n from public.meet_the_crew() where section_id in (past_sec, past_sec2);
+  res := res || E'\nlast season''s sections aren''t on Meet the teachers: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+
   -- ── 7. Remove from the season ──
   perform set_config('request.jwt.claims', claims_v, true);
   begin
@@ -278,7 +343,14 @@ begin
   exception when others then
     res := res || E'\nremove with no reason: refused ok';
   end;
-  expected := (select count(*) from sections where lead_id = v) + (select count(*) from section_supports where volunteer_id = v);
+  -- Control: before removal V reads last season's section they led.
+  perform set_config('request.jwt.claims', claims_v, true);
+  select count(*) into n from registrations where section_id = past_sec;
+  select n + count(*) into n from roll_call_marks where section_id = past_sec;
+  res := res || E'\nbefore removal V reads last season''s camper and roll call: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
+  perform set_config('request.jwt.claims', claims_adm, true);
+  expected := (select count(*) from sections where lead_id = v and private.section_in_season(id))
+            + (select count(*) from section_supports where volunteer_id = v and private.section_in_season(section_id));
   n := public.remove_from_season(v, '[TEST] Missed onboarding');
   res := res || E'\nremove frees the lead and support spots: ' || case when n = expected and n >= 2 and (select lead_id from sections where id = lead_sec) is null
     and not exists (select 1 from section_supports where volunteer_id = v and section_id = sup_sec) then 'ok' else 'BAD (' || n || ')' end;
@@ -293,6 +365,24 @@ begin
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', claims_v, true);
   res := res || E'\nremoved volunteer loses volunteer access: ' || case when not private.auth_is_volunteer() then 'ok' else 'BAD' end;
+  -- Review fix: last season's section (still led by V) is closed to them too.
+  begin
+    perform * from public.section_roster(past_sec);
+    res := res || E'\nremoved volunteer reads last season''s roster: ALLOWED (BAD)';
+  exception when insufficient_privilege then
+    res := res || E'\nremoved volunteer reads last season''s roster: blocked ok';
+  end;
+  begin
+    perform public.update_recipient_emails('section', past_sec);
+    res := res || E'\nremoved volunteer gets last season''s section email list: ALLOWED (BAD)';
+  exception when others then
+    res := res || E'\nremoved volunteer gets last season''s section email list: blocked ok';
+  end;
+  select count(*) into n from registrations where section_id = past_sec;
+  res := res || E'\nremoved volunteer reads last season''s registrations: ' || case when n = 0 then 'blocked ok' else 'ALLOWED (BAD, ' || n || ')' end;
+  select count(*) into n from roll_call_marks where section_id = past_sec;
+  res := res || E'\nremoved volunteer reads last season''s roll calls: ' || case when n = 0 then 'blocked ok' else 'ALLOWED (BAD, ' || n || ')' end;
+  res := res || E'\nremoved volunteer isn''t a lead of it any more: ' || case when not private.auth_volunteer_leads_section(past_sec) then 'ok' else 'BAD' end;
   begin
     insert into duty_assignments (duty_slot_id, volunteer_id) values (duty, v);
     res := res || E'\nremoved volunteer claims a duty: ALLOWED (BAD)';

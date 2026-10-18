@@ -36,6 +36,12 @@ Deno.serve(async () => {
 
   let sent = 0, failed = 0, waiting = 0
   for (const row of (rows ?? []) as { id: number; attempts: number; recipient_email: string | null; template: string; payload: Record<string, unknown> }[]) {
+    // Spec 35: an interview reminder that waited past the interview's start is withdrawn, not sent.
+    const slotAt = row.template === 'interview_reminder' ? Date.parse(String(row.payload?.slot_datetime ?? '')) : NaN
+    if (slotAt <= Date.now()) {
+      await db.from('notifications').update({ status: 'cancelled', last_error: 'The interview time had passed' }).eq('id', row.id)
+      continue
+    }
     const email = render(row.template, row.payload ?? {}, appUrl)
     if (!email) {
       // A template this deploy doesn't know yet (a migration ran before the function was

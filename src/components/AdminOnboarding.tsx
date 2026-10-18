@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, CircleCheck, Clock3 } from 'lucide-react'
 import { useAdminOnboarding, type OnboardingVolunteer, type OverdueItem } from '../hooks/useAdminOnboarding'
 import { formatCampSlot } from '../lib/denverTime'
-import { hoursLabel, taskDueAt, validHelpUrl } from '../lib/onboarding'
+import { hoursLabel, validHelpUrl } from '../lib/onboarding'
 import { supabase } from '../lib/supabase'
 import type { OnboardingTask, VolunteerTask } from '../types/database'
 import Button from './Button'
@@ -45,7 +45,7 @@ function ItemsFor({ volunteer, tasks, done, onlyKeys, actions }: {
       <ul>
         {tasks.filter(t => !onlyKeys || onlyKeys.has(t.key)).map(t => {
           const row = done.get(t.key)
-          const due = taskDueAt(volunteer.accepted_at, t.created_at, t.due_hours_after_accept)
+          const due = actions.dueAt.get(`${volunteer.id}:${t.key}`) ?? null
           const late = !row && !!due && new Date(due).getTime() <= now
           return (
             <li key={t.key} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-1.5">
@@ -278,7 +278,7 @@ export default function AdminOnboarding() {
                   {isOpen && (
                     <div id={`ob-${v.id}`} className="pb-4">
                       {v.accepted_at
-                        ? <p className="text-sm text-ink-muted">Accepted {formatCampSlot(v.accepted_at)}</p>
+                        ? <p className="text-sm text-ink-muted">Accepted {formatCampSlot(v.accepted_at)}{tasks.some(t => actions.dueAt.get(`${v.id}:${t.key}`)) ? '' : ', in an earlier season, so nothing is due'}</p>
                         : <p className="text-sm text-ink-muted">Accepted before checklists, so nothing is due.</p>}
                       <ItemsFor volunteer={v} tasks={tasks} done={mine} actions={actions} />
                       {removeControl(v)}

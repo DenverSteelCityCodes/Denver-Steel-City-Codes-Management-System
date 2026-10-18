@@ -165,6 +165,34 @@ DROP TRIGGER IF EXISTS notify_interview_booked ON interview_bookings;
 CREATE TRIGGER notify_interview_booked AFTER INSERT OR UPDATE OF slot_id ON interview_bookings
     FOR EACH ROW EXECUTE FUNCTION private.notify_interview_booked();
 
+-- Withdraw queued interview emails that no longer apply (not ones already being sent). A moved or
+-- deleted booking withdraws its reminders (for that slot, or all); an application that leaves
+-- pending withdraws its reminders, nudges and times-posted emails.
+CREATE OR REPLACE FUNCTION private.withdraw_interview_emails(p_application_id UUID, p_templates TEXT[], p_slot_id UUID, p_why TEXT)
+RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  UPDATE notifications SET status = 'cancelled', last_error = p_why
+   WHERE template = ANY (p_templates) AND status IN ('queued', 'failed')
+     AND payload ->> 'application_id' = p_application_id::text
+     AND (p_slot_id IS NULL OR payload ->> 'slot_id' = p_slot_id::text);
+$$;
+REVOKE ALL ON FUNCTION private.withdraw_interview_emails(UUID, TEXT[], UUID, TEXT) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION private.interview_booking_withdrawn()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    PERFORM private.withdraw_interview_emails(OLD.application_id, ARRAY['interview_reminder'], NULL, 'The interview was cancelled');
+  ELSIF NEW.slot_id IS DISTINCT FROM OLD.slot_id THEN
+    PERFORM private.withdraw_interview_emails(OLD.application_id, ARRAY['interview_reminder'], OLD.slot_id, 'The interview moved');
+  END IF;
+  RETURN NULL;
+END;
+$$;
+REVOKE ALL ON FUNCTION private.interview_booking_withdrawn() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS interview_booking_withdrawn ON interview_bookings;
+CREATE TRIGGER interview_booking_withdrawn AFTER UPDATE OF slot_id OR DELETE ON interview_bookings
+    FOR EACH ROW EXECUTE FUNCTION private.interview_booking_withdrawn();
+
 -- Pending applicants with no booking, from the last six months (older pending applications are
 -- last season's and shouldn't hear about this season's times).
 CREATE OR REPLACE FUNCTION private.unbooked_applications()
@@ -208,6 +236,10 @@ DECLARE
   r RECORD;
   n INT := 0;
 BEGIN
+  -- A reminder still waiting when its interview has started is no use any more.
+  UPDATE notifications SET status = 'cancelled', last_error = 'The interview time had passed'
+   WHERE template = 'interview_reminder' AND status IN ('queued', 'failed')
+     AND (payload ->> 'slot_datetime')::timestamptz <= now();
   FOR r IN
     SELECT b.id, b.application_id, b.slot_id,
            CASE WHEN s.slot_datetime <= now() + interval '1 hour' THEN '1h' ELSE '24h' END AS kind
@@ -385,6 +417,26 @@ $$;
 REVOKE ALL ON FUNCTION private.auth_is_volunteer() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION private.auth_is_volunteer() TO authenticated;
 
+-- Crew checks require a current volunteer too, so removal (which clears only this season's crew
+-- spots) also ends access to a past season's sections the person crewed: section_roster(),
+-- registrations, roll calls, section updates and their email list. Replaces the versions in
+-- migration_security_hardening.sql and migration_camp_week_ops.sql (grants unchanged).
+CREATE OR REPLACE FUNCTION private.auth_volunteer_has_section(p_section_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT private.auth_is_volunteer() AND EXISTS (
+    SELECT 1 FROM sections sec
+    WHERE sec.id = p_section_id
+      AND (sec.lead_id = auth.uid()
+           OR EXISTS (SELECT 1 FROM section_supports ss
+                      WHERE ss.section_id = sec.id AND ss.volunteer_id = auth.uid())));
+$$;
+
+CREATE OR REPLACE FUNCTION private.auth_volunteer_leads_section(p_section_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT private.auth_is_volunteer()
+     AND EXISTS (SELECT 1 FROM sections WHERE id = p_section_id AND lead_id = auth.uid());
+$$;
+
 -- ── 5. Onboarding checklist ───────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS onboarding_tasks (
@@ -456,11 +508,28 @@ RETURNS TIMESTAMPTZ LANGUAGE sql IMMUTABLE SET search_path = public AS $$
   WHERE p_accepted_at IS NOT NULL;
 $$;
 
+-- This camp season starts the day after the last session of an earlier camp year ended (else on
+-- September 1 before the camp year). Volunteers accepted before it are last season's: their
+-- checklist has no due times and nothing of theirs is overdue.
+CREATE OR REPLACE FUNCTION private.season_start()
+RETURNS DATE LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
+  SELECT coalesce((SELECT max(end_date) + 1 FROM sessions WHERE year < private.current_camp_year()),
+                  make_date(private.current_camp_year() - 1, 9, 1));
+$$;
+REVOKE ALL ON FUNCTION private.season_start() FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION private.volunteer_task_due(p_accepted_at TIMESTAMPTZ, p_task_created TIMESTAMPTZ, p_hours INT)
+RETURNS TIMESTAMPTZ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
+  SELECT private.task_due_at(p_accepted_at, p_task_created, p_hours)
+  WHERE p_accepted_at >= (private.season_start()::timestamp AT TIME ZONE 'America/Denver');
+$$;
+REVOKE ALL ON FUNCTION private.volunteer_task_due(TIMESTAMPTZ, TIMESTAMPTZ, INT) FROM PUBLIC, anon, authenticated;
+
 -- The signed-in volunteer's checklist.
 CREATE OR REPLACE FUNCTION public.my_onboarding()
 RETURNS TABLE (key TEXT, label TEXT, help_url TEXT, due_at TIMESTAMPTZ, done_at TIMESTAMPTZ, verified BOOLEAN)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
-  SELECT t.key, t.label, t.help_url, private.task_due_at(v.accepted_at, t.created_at, t.due_hours_after_accept),
+  SELECT t.key, t.label, t.help_url, private.volunteer_task_due(v.accepted_at, t.created_at, t.due_hours_after_accept),
          vt.done_at, vt.verified_by IS NOT NULL
   FROM volunteers v
   CROSS JOIN onboarding_tasks t
@@ -496,18 +565,33 @@ $$;
 REVOKE ALL ON FUNCTION public.set_my_onboarding_task(TEXT, BOOLEAN) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.set_my_onboarding_task(TEXT, BOOLEAN) TO authenticated;
 
--- Admins: every late item (not done, past due) of every current volunteer.
+-- Admins: each current volunteer's due time per item (NULL: accepted in an earlier season, or
+-- before checklists), and whether it's done. The admin tab reads this instead of working it out.
+CREATE OR REPLACE FUNCTION public.admin_onboarding_due()
+RETURNS TABLE (volunteer_id UUID, task_key TEXT, due_at TIMESTAMPTZ, done BOOLEAN)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
+  SELECT v.id, t.key, private.volunteer_task_due(v.accepted_at, t.created_at, t.due_hours_after_accept),
+         EXISTS (SELECT 1 FROM volunteer_tasks vt WHERE vt.volunteer_id = v.id AND vt.task_key = t.key)
+  FROM volunteers v
+  JOIN profiles p ON p.id = v.id AND p.role = 'volunteer'
+  CROSS JOIN onboarding_tasks t
+  WHERE private.auth_user_role() = 'admin' AND v.removed_at IS NULL;
+$$;
+REVOKE ALL ON FUNCTION public.admin_onboarding_due() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_onboarding_due() TO authenticated;
+
+-- Admins: every late item (not done, past due) of every current volunteer accepted this season.
 CREATE OR REPLACE FUNCTION public.admin_onboarding_overdue()
 RETURNS TABLE (volunteer_id UUID, volunteer_name TEXT, task_key TEXT, task_label TEXT, due_at TIMESTAMPTZ)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
   SELECT v.id, p.display_name, t.key, t.label,
-         private.task_due_at(v.accepted_at, t.created_at, t.due_hours_after_accept) AS due
+         private.volunteer_task_due(v.accepted_at, t.created_at, t.due_hours_after_accept) AS due
   FROM volunteers v
   JOIN profiles p ON p.id = v.id AND p.role = 'volunteer'
   CROSS JOIN onboarding_tasks t
   WHERE private.auth_user_role() = 'admin'
     AND v.removed_at IS NULL
-    AND private.task_due_at(v.accepted_at, t.created_at, t.due_hours_after_accept) < now()
+    AND private.volunteer_task_due(v.accepted_at, t.created_at, t.due_hours_after_accept) < now()
     AND NOT EXISTS (SELECT 1 FROM volunteer_tasks vt WHERE vt.volunteer_id = v.id AND vt.task_key = t.key)
   ORDER BY due, p.display_name, t.sort_order;
 $$;
@@ -523,6 +607,10 @@ DECLARE
   tasks JSONB;
 BEGIN
   IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NULL; END IF;
+  IF OLD.status = 'pending' THEN
+    PERFORM private.withdraw_interview_emails(NEW.id, ARRAY['interview_reminder', 'interview_nudge', 'interview_times_posted'],
+      NULL, 'The application was decided');
+  END IF;
   IF NEW.status = 'accepted' AND NEW.user_id IS NOT NULL THEN
     UPDATE volunteers SET accepted_at = now(), removed_at = NULL, removed_reason = NULL, removed_by = NULL
      WHERE id = NEW.user_id;
@@ -555,6 +643,7 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, p
                  WHERE s.id = p_section_id AND (se.id IS NULL OR se.year >= private.current_camp_year()));
 $$;
 REVOKE ALL ON FUNCTION private.section_in_season(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.section_in_season(UUID) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.remove_from_season(p_volunteer_id UUID, p_reason TEXT)
 RETURNS INT LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
@@ -656,9 +745,12 @@ GRANT EXECUTE ON FUNCTION private.my_seated_weeks() TO authenticated;
 -- Sections running in the same week as one of the caller's seated campers.
 CREATE OR REPLACE FUNCTION private.section_in_my_weeks(p_session_id UUID, p_week SMALLINT)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
+  -- Same session; or, where either side isn't tied to a session, overlapping weeks (a section
+  -- with no week runs both).
   SELECT EXISTS (SELECT 1 FROM private.my_seated_weeks() w
                  WHERE (p_session_id IS NOT NULL AND w.session_id = p_session_id)
-                    OR (p_session_id IS NULL AND w.session_id IS NULL AND w.week = p_week));
+                    OR ((p_session_id IS NULL OR w.session_id IS NULL)
+                        AND (w.week IS NULL OR p_week IS NULL OR w.week = p_week)));
 $$;
 REVOKE ALL ON FUNCTION private.section_in_my_weeks(UUID, SMALLINT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION private.section_in_my_weeks(UUID, SMALLINT) TO authenticated;
@@ -672,7 +764,7 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, p
     JOIN sections s ON s.cancelled_at IS NULL
      AND (s.lead_id = v.id OR EXISTS (SELECT 1 FROM section_supports ss WHERE ss.section_id = s.id AND ss.volunteer_id = v.id))
     WHERE v.photo_path = p_path AND v.removed_at IS NULL AND private.volunteer_photo_ok(v.id)
-      AND private.section_in_my_weeks(s.session_id, s.week));
+      AND private.section_in_season(s.id) AND private.section_in_my_weeks(s.session_id, s.week));
 $$;
 REVOKE ALL ON FUNCTION private.crew_photo_visible(TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION private.crew_photo_visible(TEXT) TO authenticated;

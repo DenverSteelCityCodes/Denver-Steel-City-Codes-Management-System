@@ -17,14 +17,15 @@ export interface OverdueItem { volunteer_id: string; volunteer_name: string; tas
 type VolunteerRow = Omit<OnboardingVolunteer, 'name'> & { profiles: { display_name: string } | { display_name: string }[] }
 
 async function fetchOnboarding() {
-  const [t, v, d, o] = await Promise.all([
+  const [t, v, d, o, due] = await Promise.all([
     supabase.from('onboarding_tasks').select('*').order('sort_order').order('label'),
     supabase.from('volunteers').select('id, preferred_name, accepted_at, removed_at, removed_reason, profiles!inner(display_name, role)')
       .eq('profiles.role', 'volunteer').order('created_at'),
     supabase.from('volunteer_tasks').select('*'),
     supabase.rpc('admin_onboarding_overdue'),
+    supabase.rpc('admin_onboarding_due'),
   ])
-  return { t, v, d, o }
+  return { t, v, d, o, due }
 }
 
 // Admin: the onboarding checklist (spec 35). The items, every current volunteer's ticks, the overdue
@@ -35,12 +36,14 @@ export function useAdminOnboarding() {
   const [volunteers, setVolunteers] = useState<OnboardingVolunteer[]>([])
   const [done, setDone] = useState<VolunteerTask[]>([])
   const [overdue, setOverdue] = useState<OverdueItem[]>([])
+  // "volunteer:task" → when it's due (null: accepted in an earlier season, or before checklists).
+  const [dueAt, setDueAt] = useState<Map<string, string | null>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const apply = useCallback((x: Awaited<ReturnType<typeof fetchOnboarding>>) => {
-    const { t, v, d, o } = x
-    const err = t.error ?? v.error ?? d.error ?? o.error
+    const { t, v, d, o, due } = x
+    const err = t.error ?? v.error ?? d.error ?? o.error ?? due.error
     setError(err?.message ?? null)
     if (!err) {
       setTasks((t.data ?? []) as OnboardingTask[])
@@ -49,6 +52,8 @@ export function useAdminOnboarding() {
       })).sort((a, b) => a.name.localeCompare(b.name)))
       setDone((d.data ?? []) as VolunteerTask[])
       setOverdue((o.data ?? []) as OverdueItem[])
+      setDueAt(new Map(((due.data ?? []) as { volunteer_id: string; task_key: string; due_at: string | null }[])
+        .map(r => [`${r.volunteer_id}:${r.task_key}`, r.due_at])))
     }
     setLoading(false)
   }, [])
@@ -67,7 +72,7 @@ export function useAdminOnboarding() {
   }
 
   return {
-    tasks, volunteers, done, overdue, loading, error, reload: load,
+    tasks, volunteers, done, overdue, dueAt, loading, error, reload: load,
     // An admin ticks an item for a volunteer (and so has checked it), or confirms the volunteer's tick.
     markDone: (volunteerId: string, key: string) =>
       run(supabase.from('volunteer_tasks').upsert({ volunteer_id: volunteerId, task_key: key, verified_by: user!.id }, { onConflict: 'volunteer_id,task_key', ignoreDuplicates: false })),

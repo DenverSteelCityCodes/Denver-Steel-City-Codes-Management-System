@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bioProblem, checklistState, dueLabel, hoursLabel, initials, isOverdue, photoStatus, taskDueAt, validHelpUrl, validMeetingUrl } from '../onboarding'
+import { bioProblem, checklistState, dueLabel, hoursLabel, isOverdue, photoStatus, validHelpUrl, validMeetingUrl } from '../onboarding'
 import type { ChecklistItem } from '../onboarding'
 
 // Monday, October 19, 2026, 2:00 PM in Denver (MDT, UTC−6).
@@ -69,21 +69,10 @@ describe('profile', () => {
     expect(photoStatus({ hasPhoto: true, consent: true, needsGuardian: true, guardianName: ' ' })).toMatch(/until a parent or guardian agrees/)
     expect(photoStatus({ hasPhoto: true, consent: true, needsGuardian: true, guardianName: 'Pat' })).toMatch(/Parents of campers/)
   })
-  it('makes initials and hour labels', () => {
-    expect(initials('Mary Kate')).toBe('MK')
-    expect(initials('Sam')).toBe('S')
+  it('makes hour labels', () => {
     expect(hoursLabel(24)).toBe('1 day')
     expect(hoursLabel(48)).toBe('2 days')
     expect(hoursLabel(36)).toBe('36 hours')
   })
 })
 
-describe('taskDueAt', () => {
-  it('counts from acceptance, or from when the item was added if later', () => {
-    expect(taskDueAt('2026-10-19T03:00:00Z', '2026-01-01T00:00:00Z', 24)).toBe('2026-10-20T03:00:00.000Z')
-    expect(taskDueAt('2026-06-01T00:00:00Z', '2026-10-19T12:00:00Z', 48)).toBe('2026-10-21T12:00:00.000Z')
-  })
-  it('has no due time for someone accepted before checklists', () => {
-    expect(taskDueAt(null, '2026-01-01T00:00:00Z', 24)).toBeNull()
-  })
-})

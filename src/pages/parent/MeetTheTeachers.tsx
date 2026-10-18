@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Printer } from 'lucide-react'
 import Segmented from '../../components/Segmented'
 import { useMeetTheCrew, type CrewRow } from '../../hooks/useMeetTheCrew'
-import { initials } from '../../lib/onboarding'
 import { localDateISO } from '../../lib/campDay'
 import { buttonClass } from '../../lib/ui'
 import { PageHead, framedCls, h2Cls, rowCls } from './parts'
@@ -21,12 +20,11 @@ function dateRange(a: string | null, b: string | null) {
   return `${f(a)} – ${f(b)}`
 }
 
+// A photo only when there is one (consented); without it the row is just the words, no placeholder.
 function Person({ r, photo }: { r: CrewRow; photo: string | undefined }) {
   return (
-    <li className={`${rowCls} py-4 grid grid-cols-[4.5rem_1fr] gap-4 items-start break-inside-avoid`}>
-      {photo
-        ? <img src={photo} alt={`${r.name}`} className="w-[4.5rem] h-[4.5rem] rounded object-cover border border-border bg-surface" />
-        : <span aria-hidden="true" className="w-[4.5rem] h-[4.5rem] rounded grid place-items-center bg-shell text-on-shell text-xl font-extrabold print:border-2 print:border-ink print:bg-transparent print:text-ink">{initials(r.name)}</span>}
+    <li className={`${rowCls} py-4 break-inside-avoid ${photo ? 'grid grid-cols-[4.5rem_1fr] gap-4 items-start' : ''}`}>
+      {photo && <img src={photo} alt={r.name} className="w-[4.5rem] h-[4.5rem] rounded object-cover border border-border bg-surface" />}
       <div className="min-w-0">
         <p className="text-lg font-bold leading-[1.3]">
           {r.name} <span className="text-base font-normal text-ink-muted">· {r.crew_role === 'lead' ? 'Lead teacher' : 'Support'}</span>
@@ -42,11 +40,22 @@ export default function MeetTheTeachers() {
   const { rows, photos, error } = useMeetTheCrew()
   const [picked, setPicked] = useState<string | null>(null)
 
+  // One tab per week. A section not tied to a week's session joins every week it overlaps (a
+  // section with no week runs both), so its crew shows wherever the family has a camper.
   const weeks: Week[] = []
-  for (const r of rows ?? []) {
+  const loose = (rows ?? []).filter(r => !r.session_id)
+  for (const r of (rows ?? []).filter(r => r.session_id)) {
     const k = weekKey(r)
     let w = weeks.find(x => x.key === k)
-    if (!w) { w = { key: k, name: r.session_name ?? (r.week ? `Week ${r.week}` : 'Camp'), start: r.start_date, end: r.end_date, rows: [] }; weeks.push(w) }
+    if (!w) { w = { key: k, name: r.session_name ?? `Week ${r.week}`, start: r.start_date, end: r.end_date, rows: [] }; weeks.push(w) }
+    w.rows.push(r)
+  }
+  for (const r of loose) {
+    const fits = weeks.filter(w => r.week === null || w.rows.some(x => x.week === null || x.week === r.week))
+    if (fits.length > 0) { for (const w of fits) w.rows.push(r); continue }
+    const k = weekKey(r)
+    let w = weeks.find(x => x.key === k)
+    if (!w) { w = { key: k, name: r.week ? `Week ${r.week}` : 'Both weeks', start: null, end: null, rows: [] }; weeks.push(w) }
     w.rows.push(r)
   }
   // Open on the first week that isn't over yet.
