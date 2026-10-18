@@ -233,6 +233,31 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       ], dashboard)
     }
 
+    // Spec 36: to a section's lead, when a family changes who may collect a camper (or the walk-home
+    // consent) during camp week. The roll call's dismissal list already shows it; this is the heads-up.
+    case 'pickup_changed': {
+      const who = `<strong>${esc(p.name)}</strong>${p.relation ? ` (${esc(p.relation)})` : ''}`
+      const first = esc(p.camper_first ?? p.camper ?? 'the camper')
+      const full = esc(p.camper ?? 'A camper')
+      const days = Array.isArray(p.days) && p.days.length
+        ? p.days.map(d => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })).join(', ')
+        : null
+      const how = ({ walk: 'walking', bike: 'biking', transit: 'by transit' } as Record<string, string>)[String(p.mode)] ?? null
+      const only = `Release ${first} only to their parent or an adult on the list.`
+      const what = ({
+        pickup_added: `${full}'s family added ${who} to the pickup list, ${days ? `for ${esc(days)}` : 'for any day'}.`,
+        pickup_changed: `${full}'s family updated ${who} on the pickup list: ${days ? esc(days) : 'any day'}.`,
+        pickup_removed: `${who} is no longer on ${full}'s pickup list. ${only}`,
+        consent_added: `${full}'s family says ${first} may leave camp on their own${how ? `, ${how}` : ''}, ${days ? `on ${esc(days)}` : `every day of ${esc(p.session ?? 'this week')}`}.`,
+        consent_changed: `${full}'s family changed when ${first} may leave camp on their own${how ? ` (${how})` : ''}: ${days ? esc(days) : `every day of ${esc(p.session ?? 'this week')}`}.`,
+        consent_removed: `${full}'s family withdrew consent for ${first} to leave camp on their own. ${only}`,
+      } as Record<string, string>)[String(p.change)] ?? `${full}'s pickup details changed.`
+      return build(`Pickup change for ${p.camper ?? 'a camper'}${p.for_today ? ' today' : ''}`, 'Pickup change', [
+        what,
+        `${esc(p.class ?? 'Your class')}${p.section ? ` · ${esc(p.section)}` : ''}${p.session ? `, ${esc(p.session)}` : ''}. The dismissal roll call already shows the change.`,
+      ], { label: 'Open roll call', url: `${appUrl}/volunteer` })
+    }
+
     default:
       return null
   }

@@ -77,3 +77,29 @@ describe('laptop loans (spec 29)', () => {
     expect(render('laptop_promoted', { ...base, camper: '<b>Ava</b>' }, APP)!.html).not.toContain('<b>Ava</b>')
   })
 })
+
+describe('pickup changes (spec 36)', () => {
+  const base = { camper: 'Maya Brooks', camper_first: 'Maya', class: 'Web Development', section: 'WD-A', session: 'Week 1', student_id: 's1' }
+  it('tells the lead who was added, for which days, and links to the roll call', () => {
+    const r = render('pickup_changed', { ...base, change: 'pickup_added', name: 'Ruth Brooks', relation: 'Grandmother', days: ['2027-06-09'], for_today: true }, APP)!
+    expect(r.subject).toBe('Pickup change for Maya Brooks today')
+    expect(r.text).toContain('added Ruth Brooks (Grandmother) to the pickup list, for Wednesday, June 9.')
+    expect(r.text).toContain(`Open roll call: ${APP}/volunteer`)
+    expect(r.text).not.toContain('/parent')
+  })
+  it('says an any-day adult or a whole-week consent plainly', () => {
+    expect(render('pickup_changed', { ...base, change: 'pickup_added', name: 'Morgan', relation: 'Aunt', days: null }, APP)!.text).toContain('for any day.')
+    const c = render('pickup_changed', { ...base, change: 'consent_added', mode: 'walk', days: null }, APP)!
+    expect(c.subject).toBe('Pickup change for Maya Brooks')
+    expect(c.text).toContain('Maya may leave camp on their own, walking, every day of Week 1.')
+  })
+  it('asks the lead to hold the camper when an adult or the consent is withdrawn', () => {
+    expect(render('pickup_changed', { ...base, change: 'pickup_removed', name: 'Morgan', relation: 'Aunt' }, APP)!.text)
+      .toContain('Release Maya only to their parent or an adult on the list.')
+    expect(render('pickup_changed', { ...base, change: 'consent_removed', mode: 'bike' }, APP)!.text).toContain('withdrew consent')
+  })
+  it('escapes what the family typed', () => {
+    const r = render('pickup_changed', { ...base, change: 'pickup_added', name: '<b>x</b>', relation: 'Friend' }, APP)!
+    expect(r.html).toContain('&lt;b&gt;x&lt;/b&gt;')
+  })
+})

@@ -557,6 +557,42 @@ BEGIN
      WHERE id = w2;
   END IF;
 
+  -- ── 11. Pickups and walk-home consent (spec 36) ──
+  -- Every camper present at a past dismissal went home with their parent. The demo family lists an
+  -- aunt for any day and a grandmother for Wednesday of Week 1 only, and Maya may walk home every
+  -- day of Week 2. In Python B (the demo volunteer's room) a grandfather collects one camper today
+  -- only, a carpool neighbour collects another any day, and a third may walk home all week.
+  IF to_regclass('public.authorized_pickups') IS NOT NULL THEN
+    UPDATE roll_call_marks SET released_mode = 'parent'
+     WHERE roll_call = 'dismissal' AND present AND day < today;
+    IF demo_parent IS NOT NULL THEN
+      INSERT INTO authorized_pickups (student_id, name, relation, phone, days)
+      SELECT st2.id, x.name, x.relation, x.phone, x.days
+        FROM students st2,
+             (VALUES ('Morgan Brooks', 'Aunt', '720-555-0199', NULL::date[]),
+                     ('Ruth Brooks', 'Grandmother', '303-555-0142', ARRAY[w1_start + 2])) AS x(name, relation, phone, days)
+       WHERE st2.parent_id = demo_parent AND st2.first_name = 'Maya';
+      INSERT INTO release_consents (student_id, session_id, mode, note, consented_by)
+      SELECT st2.id, w2, 'walk', 'She walks home with her friend Ava. We live four blocks away.', demo_parent
+        FROM students st2 WHERE st2.parent_id = demo_parent AND st2.first_name = 'Maya';
+    END IF;
+    FOR reg IN SELECT r.student_id, st2.parent_id, st2.last_name, row_number() OVER (ORDER BY st2.full_name) AS n
+                 FROM registrations r JOIN sections s ON s.id = r.section_id JOIN students st2 ON st2.id = r.student_id
+                WHERE s.label = 'PY-B' AND s.week = 1 AND r.status = 'confirmed'
+                ORDER BY st2.full_name LIMIT 3 LOOP
+      IF reg.n = 1 THEN
+        INSERT INTO authorized_pickups (student_id, name, relation, phone, days)
+        VALUES (reg.student_id, 'Grandpa ' || reg.last_name, 'Grandfather', '303-555-0151', ARRAY[GREATEST(today, w1_start)]);
+      ELSIF reg.n = 2 THEN
+        INSERT INTO authorized_pickups (student_id, name, relation, phone)
+        VALUES (reg.student_id, 'Dana Whitfield', 'Carpool neighbour', '303-555-0152');
+      ELSE
+        INSERT INTO release_consents (student_id, session_id, mode, consented_by)
+        VALUES (reg.student_id, w1, 'walk', reg.parent_id);
+      END IF;
+    END LOOP;
+  END IF;
+
   RETURN format('demo reset: %s families, %s campers, %s registrations, %s volunteers, %s applications',
     (SELECT count(*) FROM parent_profiles), (SELECT count(*) FROM students), (SELECT count(*) FROM registrations),
     (SELECT count(*) FROM volunteers), (SELECT count(*) FROM volunteer_applications));
