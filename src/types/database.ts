@@ -75,6 +75,12 @@ export interface Class {
   id: string
   name: string
   description: string | null
+  // Course rules (migration_course_rules.sql, spec 31). The database enforces the grade limit and
+  // the prerequisite for parents; src/lib/courseRules.ts words them for the screens.
+  grades_allowed?: string[] | null      // grades the camper may be entering this fall; null = any
+  requires_class_id?: string | null     // take this class first (an earlier week, or a past year)
+  requirement_note?: string | null      // one line for families
+  next_class_id?: string | null         // suggested when a camper takes this course in both weeks
   updated_at?: string
   created_at: string
 }
@@ -163,6 +169,9 @@ export interface Registration {
   // Waitlist offer window (migration_waitlist_offers.sql).
   offered_at?: string | null
   offer_expires_at?: string | null
+  // The family's "place with a friend or sibling" request, max 100 characters
+  // (migration_course_rules.sql). Parents change it through set_place_with() until the deadline.
+  place_with?: string | null
   created_at: string
 }
 

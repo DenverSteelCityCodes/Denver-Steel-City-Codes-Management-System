@@ -17,7 +17,8 @@ import { useVolunteers } from '../hooks/useVolunteers'
 import { useSessions, campSessions } from '../hooks/useSessions'
 import { supabase } from '../lib/supabase'
 import { formatTimeRange } from '../lib/campDay'
-import { healthLines } from '../lib/campers'
+import { GRADES, healthLines } from '../lib/campers'
+import { classRuleLine } from '../lib/courseRules'
 import { seatTotals } from '../lib/registrationStatus'
 import { crewGroups, weekName, type CrewPerson, type CrewSection, type CrewGroup } from '../lib/sectionCrew'
 import type { RegistrationStatus } from '../types/database'
@@ -59,19 +60,43 @@ function SaveButton({ saving, children }: { saving: boolean; children: ReactNode
 
 // ── Class form (inline) ───────────────────────────────────────
 
+// A class and its course rules (spec 31). The database holds families to the rules; admins can
+// still place anyone.
+interface ClassFormValues {
+  name: string
+  description: string
+  grades_allowed: string[] | null
+  requires_class_id: string | null
+  requirement_note: string | null
+  next_class_id: string | null
+}
+
+const classFormValues = (c?: ClassWithSections): ClassFormValues => ({
+  name: c?.name ?? '', description: c?.description ?? '',
+  grades_allowed: c?.grades_allowed ?? null, requires_class_id: c?.requires_class_id ?? null,
+  requirement_note: c?.requirement_note ?? null, next_class_id: c?.next_class_id ?? null,
+})
+
 function ClassForm({
   initial,
+  courses,
   submitLabel,
   onSave,
   onCancel,
 }: {
-  initial: { name: string; description: string }
+  initial: ClassFormValues
+  // The other classes, for "Take first" and "Next course".
+  courses: { id: string; name: string }[]
   submitLabel: string
-  onSave: (payload: { name: string; description: string }) => Promise<void>
+  onSave: (payload: ClassFormValues) => Promise<void>
   onCancel: () => void
 }) {
   const [name, setName] = useState(initial.name)
   const [description, setDescription] = useState(initial.description)
+  const [grades, setGrades] = useState<string[]>(initial.grades_allowed ?? [])
+  const [requires, setRequires] = useState(initial.requires_class_id ?? '')
+  const [nextClass, setNextClass] = useState(initial.next_class_id ?? '')
+  const [note, setNote] = useState(initial.requirement_note ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [nameError, setNameError] = useState(false)
@@ -84,7 +109,14 @@ function ClassForm({
     setSaving(true)
     setError(null)
     try {
-      await onSave({ name: name.trim(), description: description.trim() })
+      await onSave({
+        name: name.trim(), description: description.trim(),
+        // No grade ticked means any grade (NULL); keep them in school order.
+        grades_allowed: grades.length > 0 ? GRADES.filter(g => grades.includes(g)) : null,
+        requires_class_id: requires || null,
+        requirement_note: note.trim() || null,
+        next_class_id: nextClass || null,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setSaving(false)
@@ -108,6 +140,47 @@ function ClassForm({
           <p id="class-desc-hint" className={hint}>Families see this when they pick a class.</p>
         </div>
       </div>
+      <fieldset className="mt-6 max-w-[880px]">
+        <legend className="text-lg font-bold leading-[1.3]">Who can take it</legend>
+        <p className={hint}>Families can't sign up past these rules; they can ask for an exception instead. Admins can still place anyone.</p>
+        <div className="mt-4 grid gap-x-4 gap-y-5 md:grid-cols-2">
+          <fieldset>
+            <legend className={label}>Grades this fall <span className="font-normal text-ink-muted">(optional)</span></legend>
+            <div className="mt-1 flex flex-wrap gap-x-5">
+              {GRADES.map(g => (
+                <label key={g} className="inline-flex items-center gap-2 min-h-11 cursor-pointer">
+                  <input type="checkbox" className="w-5 h-5 shrink-0" checked={grades.includes(g)}
+                    onChange={e => setGrades(cur => e.target.checked ? [...cur, g] : cur.filter(x => x !== g))} />
+                  {g}
+                </label>
+              ))}
+            </div>
+            <p className={hint}>Leave them all unticked for any grade.</p>
+          </fieldset>
+          <div>
+            <label className={label} htmlFor="class-requires">Take first <span className="font-normal text-ink-muted">(optional)</span></label>
+            <Select id="class-requires" className="mt-1.5" value={requires} aria-describedby="class-requires-hint" onChange={e => setRequires(e.target.value)}>
+              <option value="">Nothing</option>
+              {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Select>
+            <p id="class-requires-hint" className={hint}>A seat in it in an earlier week this summer, or in a past summer, counts.</p>
+          </div>
+          <div>
+            <label className={label} htmlFor="class-next">Next course <span className="font-normal text-ink-muted">(optional)</span></label>
+            <Select id="class-next" className="mt-1.5" value={nextClass} aria-describedby="class-next-hint" onChange={e => setNextClass(e.target.value)}>
+              <option value="">None</option>
+              {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Select>
+            <p id="class-next-hint" className={hint}>Suggested to a camper who picks this course for both weeks.</p>
+          </div>
+          <div>
+            <label className={label} htmlFor="class-note">Note for families <span className="font-normal text-ink-muted">(optional)</span></label>
+            <Input id="class-note" className="mt-1.5" value={note} maxLength={300} placeholder="e.g. Taking Intermediate Python in Week 1 counts."
+              aria-describedby="class-note-hint" onChange={e => setNote(e.target.value)} />
+            <p id="class-note-hint" className={hint}>Shown with the rules wherever families see the class.</p>
+          </div>
+        </div>
+      </fieldset>
       {error && <p role="alert" className="mt-4 font-bold text-danger text-pretty">Couldn't save the class: {error}</p>}
       <div className="mt-5 flex flex-wrap gap-2">
         <SaveButton saving={saving}>{submitLabel}</SaveButton>
@@ -402,6 +475,8 @@ interface RosterEntry {
   medical_info: string | null
   parentName: string
   status: RegistrationStatus
+  // The family's "place with a friend or sibling" request (spec 31), read when building sections.
+  placeWith: string | null
 }
 
 const ROSTER_ORDER: Record<RegistrationStatus, number> = { confirmed: 0, pending: 1, offered: 2, waitlisted: 3, cancelled: 4 }
@@ -417,6 +492,7 @@ function RosterTable({ rows }: { rows: RosterEntry[] }) {
           <th scope="col" className={`${th} w-16`}>Age</th>
           <th scope="col" className={th}>Health</th>
           <th scope="col" className={th}>Parent</th>
+          <th scope="col" className={th}>Place with</th>
         </tr>
       </thead>
       <tbody className="max-md:block">
@@ -440,6 +516,11 @@ function RosterTable({ rows }: { rows: RosterEntry[] }) {
                   : <span className="sr-only">No health notes</span>}
               </td>
               <td className={`${td} max-md:text-ink-muted`}>{r.parentName}</td>
+              <td className={`${td} text-pretty break-words`}>
+                {r.placeWith
+                  ? <><span className="md:hidden text-ink-muted">Place with </span>{r.placeWith}</>
+                  : <span className="sr-only">No placement request</span>}
+              </td>
             </tr>
           )
         })}
@@ -455,21 +536,26 @@ function SectionRoster({ sectionId }: { sectionId: string }) {
 
   useEffect(() => {
     let cancelled = false
+    // Placement requests aren't readable directly (spec 31): admin_place_with() for this section.
+    const placedPromise = supabase.rpc('admin_place_with', { p_section_id: sectionId })
     supabase
       .from('registrations')
       .select(`
-        status,
+        id, status,
         students (
           full_name, age, allergies, medical_conditions, medical_info,
           profiles:parent_id ( display_name )
         )
       `)
       .eq('section_id', sectionId)
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
+        const placed = await placedPromise
         if (cancelled) return
+        const placeWith = new Map(((placed.data ?? []) as { registration_id: string; place_with: string }[]).map(p => [p.registration_id, p.place_with]))
         setLoadError(error?.message ?? null)
         setRoster(
           ((data ?? []) as unknown as {
+            id: string
             status: RegistrationStatus
             students: {
               full_name: string; age: number
@@ -485,6 +571,7 @@ function SectionRoster({ sectionId }: { sectionId: string }) {
             medical_info: r.students?.medical_info ?? null,
             parentName: r.students?.profiles?.display_name ?? 'Unknown',
             status: r.status,
+            placeWith: placeWith.get(r.id) ?? null,
           })).sort((a, b) => ROSTER_ORDER[a.status] - ROSTER_ORDER[b.status] || a.studentName.localeCompare(b.studentName))
         )
         setLoading(false)
@@ -771,7 +858,8 @@ export default function AdminClasses() {
       return shell('edit-class', <>
         <h2 id={`edit-class-${cls.id}-h`} className="text-lg font-bold leading-[1.3] mb-4">Edit {cls.name}</h2>
         <ClassForm
-          initial={{ name: cls.name, description: cls.description ?? '' }}
+          initial={classFormValues(cls)}
+          courses={classes.filter(c => c.id !== cls.id)}
           submitLabel="Save class"
           onCancel={() => setEditing(null)}
           onSave={async payload => {
@@ -961,7 +1049,8 @@ export default function AdminClasses() {
         <section aria-labelledby="new-class-h" className="mb-8 pt-5 pb-6 border-y-2 border-ink">
           <h2 id="new-class-h" className={`${h2} mb-4`}>New class</h2>
           <ClassForm
-            initial={{ name: '', description: '' }}
+            initial={classFormValues()}
+            courses={classes}
             submitLabel="Create class"
             onCancel={() => setEditing(null)}
             onSave={async payload => {
@@ -1018,6 +1107,7 @@ export default function AdminClasses() {
                         <span className="block font-bold leading-[1.3]">{cls.name}</span>
                         <span className="block mt-0.5 text-sm text-ink-muted">{ages}</span>
                         {cls.description && <span className="block mt-0.5 text-sm text-ink-muted text-pretty">{cls.description}</span>}
+                        {classRuleLine(cls, classes) && <span className="block mt-0.5 text-sm font-bold text-pretty">{classRuleLine(cls, classes)}</span>}
                         <span className="flex flex-wrap gap-x-4 mt-1 text-sm">
                           <button type="button" onClick={() => startEditing({ kind: 'class', classId: cls.id })}
                             className={`${textLink} text-ink-muted font-semibold`}>

@@ -47,7 +47,7 @@ begin
   select array_agg(x order by x) into k from jsonb_object_keys(info->'weeks'->0->'schedule'->0) x;
   res := res || E'\nonly whitelisted schedule keys: ' || case when k = '{end_time,location,start_time,title}' then 'ok' else 'BAD (' || coalesce(k::text, 'none') || ')' end;
   select array_agg(x order by x) into k from jsonb_object_keys(info->'courses'->0) x;
-  res := res || E'\nonly whitelisted course keys: ' || case when k = '{age_max,age_min,description,name,weeks}' then 'ok' else 'BAD (' || coalesce(k::text, 'no course') || ')' end;
+  res := res || E'\nonly whitelisted course keys: ' || case when k = '{age_max,age_min,description,grades_allowed,name,requirement_note,requires,weeks}' then 'ok' else 'BAD (' || coalesce(k::text, 'no course') || ')' end;
   select array_agg(x order by x) into k from jsonb_object_keys(info->'courses'->0->'weeks'->0) x;
   res := res || E'\nonly whitelisted course-week keys: ' || case when k = '{full,week}' then 'ok' else 'BAD (' || coalesce(k::text, 'none') || ')' end;
 

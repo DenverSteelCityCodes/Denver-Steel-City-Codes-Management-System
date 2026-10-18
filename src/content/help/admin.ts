@@ -555,6 +555,30 @@ export const ADMIN_GUIDE: HelpGuide = {
           ],
         },
         {
+          id: 'course-rules',
+          title: 'When a family asks for an exception to a class\'s rules',
+          keywords: 'prerequisite grade rule exception microcontrollers intermediate python place with friend sibling at risk',
+          body: [
+            { kind: 'p', text: 'A class can be limited to some grades (the grade the camper enters this fall) and can need another class first: a seat in it in an earlier week, or in a past summer. Set them under **Who can take it** when you edit the class on [[admin-classes]]. Families can\'t sign up or switch past them; the database refuses it.' },
+            {
+              kind: 'steps',
+              heading: 'An exception request',
+              items: [
+                'It shows under **Change requests** on [[admin-students]], with the class, its rules and the camper\'s grade.',
+                'To agree, open the camper below and use **Move to** to move their class that week into the one they asked for (admin moves skip the rules), then **Mark done**. To say no, **Decline**. Either way the family gets an email with your reply.',
+                'A camper with no class that week has nothing to move yet: reply and ask the family to sign up for another class that week first.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                '"Prerequisite at risk" on Today means a camper\'s earlier-week prerequisite was cancelled, or they missed every arrival roll call in it so far. Check with the family before their next class starts.',
+                'Families can ask to be placed with a friend or sibling. Their request shows in each section\'s roster on [[admin-classes]], on the camper on [[admin-students]] and in its CSV.',
+              ],
+            },
+          ],
+        },
+        {
           id: 'over-capacity',
           title: 'When a section is over capacity after a move',
           keywords: 'over full capacity overfill seats',

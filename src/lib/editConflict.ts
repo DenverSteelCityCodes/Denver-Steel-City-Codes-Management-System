@@ -14,7 +14,8 @@ export const FIELD_LABELS: Record<string, string> = {
   age_min: 'ages', age_max: 'ages', week: 'week', lead_id: 'lead', days: 'days',
   start_time: 'start time', end_time: 'end time', room: 'room', name: 'name',
   description: 'description', start_date: 'start date', end_date: 'end date', is_active: 'visibility',
-  year: 'year',
+  year: 'year', grades_allowed: 'grades', requires_class_id: 'class to take first',
+  requirement_note: 'note for families', next_class_id: 'next course',
 }
 
 export class EditConflictError extends Error {

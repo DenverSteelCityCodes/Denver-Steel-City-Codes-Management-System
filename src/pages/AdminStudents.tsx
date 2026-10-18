@@ -284,6 +284,9 @@ function CamperDetail({
                   <p className="text-lg font-bold leading-[1.3]">
                     {reg.class_name} · {reg.section_label} · {weekWord(reg.section_week)}
                   </p>
+                  {reg.place_with && (
+                    <p className="mt-1 text-pretty"><span className="text-ink-muted">Place with:</span> <span className="font-bold">{reg.place_with}</span></p>
+                  )}
                   <div className="mt-3 grid gap-x-4 gap-y-3 min-[1280px]:grid-cols-2">
                     <div className="min-w-0">
                       <label htmlFor={`status-${reg.id}`} className={label}>Status</label>
@@ -377,13 +380,13 @@ function CamperDetail({
 
 function exportCamperCSV(students: AdminStudent[]) {
   // Allergies is its own required field; medical conditions replaced the older medical_info.
-  const headers = ['Student Name', 'Age', 'Allergies', 'Medical Conditions', 'Parent Name', 'Class', 'Section', 'Week', 'Status']
+  const headers = ['Student Name', 'Age', 'Allergies', 'Medical Conditions', 'Parent Name', 'Class', 'Section', 'Week', 'Status', 'Place With']
   const rows: (string | number)[][] = []
 
   for (const s of students) {
     const health = [s.allergies ?? '', s.medical_conditions || s.medical_info || '']
     if (s.registrations.length === 0) {
-      rows.push([s.full_name, s.age, ...health, s.parent_name, '', '', '', 'unregistered'])
+      rows.push([s.full_name, s.age, ...health, s.parent_name, '', '', '', 'unregistered', ''])
     } else {
       for (const r of s.registrations) {
         rows.push([
@@ -395,6 +398,7 @@ function exportCamperCSV(students: AdminStudent[]) {
           r.section_label,
           r.section_week ?? '',
           r.status,
+          r.place_with ?? '',
         ])
       }
     }
