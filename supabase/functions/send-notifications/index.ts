@@ -66,23 +66,50 @@ Deno.serve(async () => {
     const message = await prepare(row)
     if (message) ready.push({ id: row.id, message })
   }
+
+  // One email through the single-send endpoint; records the result.
+  async function sendOne(id: number, message: Record<string, unknown>) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(message),
+      })
+      const detail = res.ok ? null : `${res.status} ${(await res.text()).slice(0, 400)}`
+      await db.rpc('finish_notification', { p_id: id, p_ok: res.ok, p_error: detail })
+      if (res.ok) sent++; else failed++
+    } catch (e) {
+      await db.rpc('finish_notification', { p_id: id, p_ok: false, p_error: e instanceof Error ? e.message : String(e) })
+      failed++
+    }
+  }
+
   for (let i = 0; i < ready.length; i += 100) {
     const chunk = ready.slice(i, i + 100)
-    let ok = false, detail: string | null = null
+    let status = 0, detail: string | null = null
     try {
       const res = await fetch('https://api.resend.com/emails/batch', {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(chunk.map(c => c.message)),
       })
-      ok = res.ok
+      status = res.status
       detail = res.ok ? null : `${res.status} ${(await res.text()).slice(0, 400)}`
     } catch (e) {
       detail = e instanceof Error ? e.message : String(e)
     }
-    // The batch is all or nothing: every row in it is sent, or every row retries.
-    await Promise.all(chunk.map(c => db.rpc('finish_notification', { p_id: c.id, p_ok: ok, p_error: detail })))
-    if (ok) sent += chunk.length; else failed += chunk.length
+    if (status >= 200 && status < 300) {
+      await Promise.all(chunk.map(c => db.rpc('finish_notification', { p_id: c.id, p_ok: true, p_error: null })))
+      sent += chunk.length
+    } else if (status >= 400 && status < 500 && status !== 429) {
+      // The batch is all or nothing: one address the provider rejects would hold back the rest.
+      // Send this chunk one by one instead, so only the bad address fails.
+      for (const c of chunk) await sendOne(c.id, c.message)
+    } else {
+      // Rate limit, provider error or no answer: every row in the chunk retries in 5 minutes.
+      await Promise.all(chunk.map(c => db.rpc('finish_notification', { p_id: c.id, p_ok: false, p_error: detail })))
+      failed += chunk.length
+    }
   }
 
   // ── Everything else, one email per call, highest priority then oldest ──
@@ -91,20 +118,7 @@ Deno.serve(async () => {
 
   for (const row of (rows ?? []) as Row[]) {
     const message = await prepare(row)
-    if (!message) continue
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(message),
-      })
-      const detail = res.ok ? null : `${res.status} ${(await res.text()).slice(0, 400)}`
-      await db.rpc('finish_notification', { p_id: row.id, p_ok: res.ok, p_error: detail })
-      if (res.ok) sent++; else failed++
-    } catch (e) {
-      await db.rpc('finish_notification', { p_id: row.id, p_ok: false, p_error: e instanceof Error ? e.message : String(e) })
-      failed++
-    }
+    if (message) await sendOne(row.id, message)
   }
   return json({ sent, failed, waiting })
 })
