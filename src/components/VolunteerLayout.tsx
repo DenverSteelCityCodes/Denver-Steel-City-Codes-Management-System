@@ -48,9 +48,14 @@ export default function VolunteerLayout() {
   const initials = name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase() || 'V'
   const context: VolunteerHome = { assigned, sessions }
 
+  // Camp day on a phone (under 768px): the roll call must stay in view, so the bar and tab strip
+  // scroll away and only the roll-call band sticks (DESIGN.md › Layout). The band marks itself with
+  // data-rollcall-band; `group-has` keys the shell off it so the two can never disagree.
+  const campDayStatic = 'max-md:group-has-[[data-rollcall-band]]/shell:static'
+
   return (
-    <div className="min-h-dvh bg-bg">
-      <header className="sm:sticky sm:top-0 z-40 h-14 sm:h-16 bg-ink-950 flex items-center gap-3 pl-4 pr-2 sm:px-6">
+    <div className="group/shell min-h-dvh bg-bg">
+      <header className={`sm:sticky sm:top-0 ${campDayStatic} z-40 h-14 sm:h-16 bg-ink-950 flex items-center gap-3 pl-4 pr-2 sm:px-6`}>
         <img src={wordmark} alt="Steel City Codes // Denver" className="h-7 sm:h-8 w-auto" />
 
         {crew && (
@@ -103,7 +108,7 @@ export default function VolunteerLayout() {
       </header>
 
       {crew && (
-        <nav aria-label="Volunteer" className="sm:hidden sticky top-0 z-30 h-12 bg-ink-950 grid grid-cols-4 border-t border-white/10">
+        <nav aria-label="Volunteer" className={`sm:hidden sticky top-0 ${campDayStatic} z-30 h-12 bg-ink-950 grid grid-cols-4 border-t border-white/10`}>
           {TABS.map(({ to, label, end }) => (
             <NavLink key={to} to={to} end={end} onClick={() => setMenuOpen(false)}
               className={({ isActive }) => `relative flex items-center justify-center font-sans text-[15px] font-semibold transition ${
