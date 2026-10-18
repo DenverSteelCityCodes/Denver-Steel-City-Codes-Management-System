@@ -106,8 +106,8 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
         <button type="button" className={chipCls} aria-disabled={!!busy || undefined} onClick={() => void save('parent', null, 'parent')}>
           {spin('parent')}<span className="font-bold">{parent}</span> <span className="text-sm text-ink-muted">parent</span>
         </button>
-        {adults.map(a => (
-          <button key={a.name} type="button" className={chipCls} aria-disabled={!!busy || undefined}
+        {adults.map((a, i) => (
+          <button key={`${a.name}-${i}`} type="button" className={chipCls} aria-disabled={!!busy || undefined}
             onClick={() => void save('listed_adult', a.name, `adult:${a.name}`)}>
             {spin(`adult:${a.name}`)}<span className="font-bold">{a.name}</span>{' '}
             <span className="text-sm text-ink-muted">{a.relation.toLowerCase()}{a.days ? ', today only' : ''}</span>
@@ -134,7 +134,7 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
       )}
       {leadPhones.length > 0 && !ask && (
         <div className="flex flex-col items-start">
-          {leadPhones.map(a => <CallLink key={a.name} call={{ who: `${a.name} (${a.relation.toLowerCase()})`, number: a.phone! }} />)}
+          {leadPhones.map((a, i) => <CallLink key={`${a.name}-${i}`} call={{ who: `${a.name} (${a.relation.toLowerCase()})`, number: a.phone! }} />)}
         </div>
       )}
 

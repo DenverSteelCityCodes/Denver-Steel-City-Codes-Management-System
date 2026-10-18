@@ -668,7 +668,8 @@ export default function ParentRegistrationPage() {
       for (const r of regs ?? []) {
         if (r.status !== 'confirmed' && r.status !== 'pending') continue
         const sec = classes.flatMap(c => c.sections).find(x => x.id === r.section_id)
-        const ids = sec?.session_id ? [sec.session_id] : sec?.week ? [campSessions[sec.week - 1]?.id] : campSessions.map(x => x.id)
+        if (!sec) continue
+        const ids = sec.session_id ? [sec.session_id] : sec.week ? [campSessions[sec.week - 1]?.id] : campSessions.map(x => x.id)
         for (const id of ids) if (id) seatedWeeks.add(id)
       }
       setRegisteredCount((regs ?? []).length)
