@@ -107,6 +107,7 @@ export default function LoginPage() {
         <Link to="/signup" className={buttonClass('secondary', undefined, true)}>Register a camper (parents)</Link>
         <Link to="/apply" className={buttonClass('secondary', undefined, true)}>Apply to volunteer</Link>
       </div>
+      <p className="mt-3 text-ink-muted">When and where is camp? <Link to="/camp" className={buttonClass('text')}>Dates, place and classes</Link></p>
     </>
   )
 

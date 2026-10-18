@@ -8,6 +8,7 @@ import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear, campSessions } from '../hooks/useSessions'
 import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
 import RegistrationCountdown from '../components/RegistrationCountdown'
+import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useAuth } from '../context/AuthContext'
@@ -138,7 +139,7 @@ export default function ClassBrowser() {
 
   return (
     <div className="max-w-[760px]">
-      <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
+      <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }}><NotifyMeSwitch /></RegistrationCountdown>
       <PageHead title="Find a class" />
       {!registrationOpen && (
         <p role="status" className="mt-3 font-bold text-pretty">

@@ -18,6 +18,7 @@ interface NotificationRow {
 const LABELS: Record<string, string> = {
   registration_confirmed: 'Spot confirmed', registration_waitlisted: 'Waitlisted', registration_moved: 'Class change',
   registration_cancelled: 'Cancelled',
+  interest_confirm: 'Notify me: confirm', registration_opening_soon: 'Registration opening soon', registration_now_open: 'Registration open',
 }
 const STATUS: Record<NotificationRow['status'], string> = {
   queued: 'bg-warning-soft text-warning', sending: 'bg-info-soft text-info', sent: 'bg-success-soft text-success',
@@ -71,7 +72,7 @@ export default function EmailLog() {
               <span className={`shrink-0 mt-0.5 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${STATUS[r.status]}`}>{r.status === 'cancelled' ? 'skipped' : r.status}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-ink truncate">
-                  {LABELS[r.template] ?? r.template}: {String(r.payload?.camper_full ?? r.payload?.camper ?? '')} · {String(r.payload?.class ?? '')}
+                  {[LABELS[r.template] ?? r.template, [r.payload?.camper_full ?? r.payload?.camper, r.payload?.class].filter(Boolean).map(String).join(' · ')].filter(Boolean).join(': ')}
                 </p>
                 <p className="text-xs text-ink-muted truncate">
                   {r.recipient_email ?? 'no address'} · {new Date(r.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
