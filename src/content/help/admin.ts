@@ -244,6 +244,8 @@ export const ADMIN_GUIDE: HelpGuide = {
                 'On [[admin-interviews]], add times under **Slots** (date, Denver time, minutes) and tap **Add slot**.',
                 'Applicants book and move their own interview from their application page. You can also book them yourself: under **Needs a time**, pick an open time next to their name and tap **Book**, or tap **Book** on an open slot and pick an applicant.',
                 'After the interview, tap **Notes** on the booking, write the **Interview notes** and tap **Save notes**.',
+                'Give each time its meeting link: fill **Meeting link** when you add slots (it stays filled for the next one), or tap **Link** on a slot. Only the applicant booked into that time sees it.',
+                'If someone hasn\'t picked a time, tap **Nudge** next to their name under **Needs a time** to email them a reminder (once a day).',
               ],
             },
             {
@@ -259,7 +261,8 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'system',
               items: [
                 'Accepting needs an account with the applicant\'s email; applying at /apply makes one. The app tells you if it\'s missing.',
-                'Accepting doesn\'t email the volunteer. Their page turns into the volunteer area the next time they open it; tell them yourself.',
+                'Every decision is emailed to the applicant, one person per email: accepting sends a welcome with the onboarding checklist, rejecting a short, kind note (your reason stays with the admins).',
+                'Applicants get an email when they book or move an interview (with a calendar invite), reminders 24 hours and 1 hour before, and an email when you add new times if they haven\'t booked yet (at most one a day).',
                 '**Fill open spots** fills only empty spots: a senior as lead and a junior as support, from volunteers available that week who aren\'t on another crew that week. Existing crews are kept.',
                 'Editing a section by hand doesn\'t check whether the volunteer is already on another crew that week. The **Week 1** and **Week 2** columns on [[admin-crew]] show who is where.',
               ],
@@ -286,6 +289,40 @@ export const ADMIN_GUIDE: HelpGuide = {
               items: [
                 'Cancelling a spot releases its laptop to the next camper in the queue. A laptop already handed out stays on the list until it\'s back.',
                 'Families can release a laptop or leave the queue online until the week starts; after that, changes happen at check-in.',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'volunteer-onboarding',
+          title: 'Volunteer onboarding: the checklist, overdue items and removing someone',
+          keywords: 'onboarding checklist overdue discord remind folder remove season removed photo bio meet the teachers',
+          body: [
+            {
+              kind: 'steps',
+              heading: 'The checklist',
+              items: [
+                'Open [[admin-onboarding]]. Under **Checklist items**, each item has what to do, an optional link and how many hours after acceptance it\'s due.',
+                'To add one, fill **What to do**, **Link** (https://, or a page here like /volunteer/profile) and **Due within (hours)**, then tap **Add item**. **Edit** and **Delete** change or remove an item.',
+                'Volunteers tick items on their Today page. Under **Every volunteer**, tap a name to see their list: **Mark done** ticks an item for them, **Confirm** checks one they ticked, **Undo** clears it.',
+              ],
+            },
+            {
+              kind: 'steps',
+              heading: 'Overdue and removal',
+              items: [
+                '**Overdue** lists every item past its due time, by volunteer. It also shows on [[admin-today]].',
+                'If someone has to come off the crew, tap **Remove from the season** under their name, write the **Reason** and tap **Remove** with their name. Their class spots and upcoming duties open up, they lose the volunteer pages, and they get an email with your reason.',
+                'Fill the open spots on [[admin-crew]]. **Removed this season** keeps who was removed and why, with their history.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'An item is due its hours after the volunteer was accepted, or after the item was added if that came later. Volunteers accepted before the checklist existed have nothing overdue.',
+                'Every change a removal makes carries the reason into History, so a section\'s History tab shows who left its crew and why.',
+                'Accepting a new application from a removed volunteer puts them back on the crew.',
+                'Parents with a camper in a week see that week\'s crew on their Meet the teachers page: preferred names, how to say them, bios, and photos only where the volunteer (and a guardian, under 18) agreed.',
               ],
             },
           ],

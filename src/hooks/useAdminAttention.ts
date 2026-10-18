@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   TriangleAlert, Armchair, Inbox, CalendarClock, ListChecks, ClipboardList, UserRoundX, Copy, MailWarning,
-  MessageSquareText, CalendarX, BookAlert,
+  MessageSquareText, CalendarX, BookAlert, ClipboardCheck,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
@@ -77,14 +77,17 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
   const [absences, setAbsences] = useState<CrewAbsence[]>([])
   // Campers who may not have the class their next class needs (spec 31).
   const [atRisk, setAtRisk] = useState<PrereqAtRisk[]>([])
+  // Onboarding checklist items past due (spec 35).
+  const [lateOnboarding, setLateOnboarding] = useState<{ volunteer_id: string; volunteer_name: string; task_label: string }[]>([])
 
   const loadExtras = useCallback(async () => {
-    const [abs, dup, failed, requests, risk] = await Promise.all([
+    const [abs, dup, failed, requests, risk, onboarding] = await Promise.all([
       supabase.rpc('admin_crew_absences'),
       supabase.rpc('possible_duplicate_campers'),
       supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3),
       supabase.from('change_requests').select('id', { count: 'exact', head: true }).eq('status', 'open'),
       supabase.rpc('admin_prerequisite_at_risk'),
+      supabase.rpc('admin_onboarding_overdue'),
     ])
     return {
       absences: abs.error ? null : ((abs.data ?? []) as CrewAbsence[]),
@@ -92,6 +95,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       failed: failed.count ?? 0,
       requests: requests.count ?? 0,
       atRisk: risk.error ? null : ((risk.data ?? []) as PrereqAtRisk[]),
+      onboarding: onboarding.error ? null : ((onboarding.data ?? []) as { volunteer_id: string; volunteer_name: string; task_label: string }[]),
     }
   }, [])
 
@@ -101,6 +105,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
     setFailedEmails(x.failed)
     setOpenRequests(x.requests)
     if (x.atRisk) setAtRisk(x.atRisk)
+    if (x.onboarding) setLateOnboarding(x.onboarding)
   }, [])
 
   useEffect(() => {
@@ -312,6 +317,21 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       detail: "They haven't picked a time. Post more slots or book them in.",
       ctaLabel: 'Book interviews',
       to: '/admin/interviews',
+    })
+  }
+
+  // ── Onboarding checklist items past due (spec 35) ────────────────────────
+  if (lateOnboarding.length > 0) {
+    const people = new Set(lateOnboarding.map(o => o.volunteer_id)).size
+    const first = lateOnboarding[0]
+    items.push({
+      key: 'onboarding',
+      icon: ClipboardCheck,
+      tone: 'attention',
+      title: `${lateOnboarding.length} onboarding ${plural(lateOnboarding.length, 'item', 'items')} overdue`,
+      detail: `${people} ${plural(people, 'volunteer', 'volunteers')}, starting with ${first.volunteer_name}: ${first.task_label}.`,
+      ctaLabel: 'See onboarding',
+      to: '/admin/volunteers?tab=onboarding',
     })
   }
 

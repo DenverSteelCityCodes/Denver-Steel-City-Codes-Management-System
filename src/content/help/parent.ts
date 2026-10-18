@@ -228,6 +228,28 @@ export const PARENT_GUIDE: HelpGuide = {
       title: 'Camp week',
       topics: [
         {
+          id: 'meet-the-teachers',
+          title: 'Meet your camper\'s teachers',
+          keywords: 'teachers volunteers crew lead names photo bio print who is teaching',
+          body: [
+            {
+              kind: 'steps',
+              items: [
+                'On [[parent-home]], find **Meet the teachers** and tap **See who\'s teaching**. It shows once your camper has a spot.',
+                'If your campers are in more than one week, pick the week at the top. Your camper\'s class comes first.',
+                'To keep a copy, tap **Print this week** (or **Print this page**).',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'You see the volunteers teaching in the weeks your camper has a spot: the name they go by, how to say it, and a short bio.',
+                'Photos show only when the volunteer agreed, and for volunteers under 18 a parent or guardian too. Everyone else shows their initials.',
+              ],
+            },
+          ],
+        },
+        {
           id: 'home-in-camp-week',
           title: 'What Home shows during camp',
           keywords: 'this week room lead roll call checked in schedule',

@@ -8,7 +8,8 @@ import Button from '../components/Button'
 import { Input, Select, Textarea } from '../components/Field'
 import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
 import { supabase } from '../lib/supabase'
-import { campDateKey, campInputToISO, formatCampTime } from '../lib/denverTime'
+import { campDateKey, campInputToISO, formatCampSlot, formatCampTime, isSameCampDay } from '../lib/denverTime'
+import { validMeetingUrl } from '../lib/onboarding'
 import { mondayOf, shortRange } from '../lib/weekRange'
 import type { VolunteerApplication } from '../types/database'
 
@@ -154,19 +155,80 @@ function NotesPanel({
   )
 }
 
+// Inline meeting-link editor under a slot (spec 35). The link is admin-only; the applicant booked
+// into the slot sees it on their page and in their emails, nobody else.
+function LinkPanel({
+  when,
+  initialUrl,
+  onSave,
+  onCancel,
+}: {
+  when: string
+  initialUrl: string
+  onSave: (url: string | null) => Promise<void>
+  onCancel: () => void
+}) {
+  const [url, setUrl] = useState(initialUrl)
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const id = `link-${when.replace(/\W+/g, '-')}`
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const next = url.trim()
+    if (next && !validMeetingUrl(next)) { setErr('Paste the full link, starting with https://'); return }
+    setSaving(true); setErr(null)
+    try { await onSave(next || null) } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Something went wrong'); setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} className="space-y-3 max-w-[640px]" noValidate>
+      <div>
+        <label htmlFor={id} className={label}>Meeting link for {when}</label>
+        <Input id={id} type="url" inputMode="url" autoFocus value={url} onChange={e => { setUrl(e.target.value); setErr(null) }}
+          placeholder="https://meet.google.com/…" aria-invalid={!!err || undefined} aria-describedby={`${id}-hint`} />
+        <p id={`${id}-hint`} className="mt-1.5 text-sm text-ink-muted text-pretty">Only the applicant booked into this time sees it, on their page and in their reminder emails. Leave it empty to remove it.</p>
+      </div>
+      {err && <p role="alert" className="text-sm font-bold text-danger">{err}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button type="submit" variant="ink" disabled={saving}>{saving ? 'Saving…' : url.trim() ? 'Save link' : 'Remove link'}</Button>
+      </div>
+    </form>
+  )
+}
+
 // "Needs a time": one pending applicant with no booking, an open time to pick and Book.
 function NeedsTime({
   app,
   openSlots,
   onBook,
+  lastNudge,
+  onNudge,
+  now,
 }: {
   app: VolunteerApplication
   openSlots: InterviewSlot[]
   onBook: (slotId: string) => Promise<void>
+  // When they were last nudged (spec 35): one a day, so the button rests once today's went.
+  lastNudge: string | null
+  onNudge: () => Promise<void>
+  now: number
 }) {
   const [slotId, setSlotId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [nudging, setNudging] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const nudgedToday = !!lastNudge && isSameCampDay(lastNudge, now)
+
+  async function nudge() {
+    setNudging(true); setErr(null)
+    try { await onNudge() } catch (e) {
+      setErr(`Couldn't nudge ${app.first_name}: ${e instanceof Error ? e.message : 'unknown error'}. Try again.`)
+    } finally { setNudging(false) }
+  }
   const byDay = openSlots.reduce<Record<string, InterviewSlot[]>>((acc, s) => {
     ;(acc[campDateKey(s.slot_datetime)] ??= []).push(s)
     return acc
@@ -192,6 +254,7 @@ function NeedsTime({
         <div className="flex-[1_1_18rem] min-w-0 self-center">
           <p className="text-lg font-bold leading-[1.3]">{app.first_name} {app.last_name}</p>
           <p className="text-sm text-ink-muted text-pretty">{app.school} · {app.grade} · {weeksText(app.availability_week_1, app.availability_week_2)}</p>
+          {lastNudge && <p className="text-sm text-ink-muted">Nudged {nudgedToday ? `today at ${formatCampTime(lastNudge)}` : formatCampSlot(lastNudge)}</p>}
         </div>
         <div className="flex-[1_1_16rem] md:flex-[0_0_18rem] min-w-0">
           <label htmlFor={`need-${app.id}`} className="block text-sm font-bold mb-1.5">Interview time for {app.first_name}</label>
@@ -207,24 +270,48 @@ function NeedsTime({
         <Button onClick={book} disabled={saving || openSlots.length === 0} className="md:min-w-[9rem]">
           {saving ? 'Booking…' : `Book ${app.first_name}`}
         </Button>
+        {/* Spec 35: an email asking them to pick a time; one a day. */}
+        <button type="button" onClick={() => void nudge()} disabled={nudging || nudgedToday} aria-busy={nudging}
+          className="ui-btn ui-btn--text disabled:no-underline">
+          {nudging ? 'Nudging…' : nudgedToday ? 'Nudged today' : `Nudge ${app.first_name}`}
+          {!nudgedToday && <span className="sr-only"> by email to pick a time</span>}
+        </button>
       </div>
       {err && <p role="alert" className="mt-2 text-sm font-bold text-danger text-pretty">{err}</p>}
     </li>
   )
 }
 
+// The latest nudge email per application (spec 35), from the outbox admins can read.
+async function fetchNudges(): Promise<Map<string, string>> {
+  const { data } = await supabase.from('notifications').select('created_at, app:payload->>application_id')
+    .eq('template', 'interview_nudge').order('created_at', { ascending: false }).limit(500)
+  const map = new Map<string, string>()
+  for (const r of (data ?? []) as { created_at: string; app: string | null }[]) if (r.app && !map.has(r.app)) map.set(r.app, r.created_at)
+  return map
+}
+
 type Panel =
   | { kind: 'book'; slotId: string }
+  | { kind: 'link'; slotId: string }
   | { kind: 'notes'; slotId: string }
   | { kind: 'unbook'; slotId: string }
   | { kind: 'delete'; slotId: string }
   | null
 
 export default function AdminInterviews() {
-  const { slots, loading, error: loadError, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, refetch } = useInterviews()
+  const { slots, loading, error: loadError, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, setLink, refetch } = useInterviews()
   const { applications, loading: appsLoading } = useVolunteerApplications()
+  const [nudges, setNudges] = useState<Map<string, string>>(new Map())
+  const loadNudges = useCallback(async () => setNudges(await fetchNudges()), [])
+  useEffect(() => {
+    let alive = true
+    void fetchNudges().then(m => { if (alive) setNudges(m) })
+    return () => { alive = false }
+  }, [])
 
-  const [slotForm, setSlotForm] = useState({ date: '', time: '', duration: '15' })
+  // The link stays filled between adds: most chapters reuse one room for a day of interviews.
+  const [slotForm, setSlotForm] = useState({ date: '', time: '', duration: '15', link: '' })
   const [addingSlot, setAddingSlot] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [panel, setPanel] = useState<Panel>(null)
@@ -239,6 +326,7 @@ export default function AdminInterviews() {
   async function handleAddSlot(e: React.FormEvent) {
     e.preventDefault()
     if (!slotForm.date || !slotForm.time) { setErr('Pick a date and time'); return }
+    if (slotForm.link.trim() && !validMeetingUrl(slotForm.link.trim())) { setErr('Paste the full meeting link, starting with https://, or leave it empty'); return }
     setAddingSlot(true)
     setErr(null)
     try {
@@ -246,6 +334,7 @@ export default function AdminInterviews() {
         // The picked date and time are Denver time, whatever zone the admin's device is in (#147).
         slot_datetime: campInputToISO(`${slotForm.date}T${slotForm.time}`)!,
         duration_minutes: Number(slotForm.duration) || 15,
+        meeting_url: slotForm.link.trim() || undefined,
       })
       setSlotForm(f => ({ ...f, time: '' }))
     } catch (e) {
@@ -303,7 +392,7 @@ export default function AdminInterviews() {
           <tr>
             <th scope="col" className={`${th} w-28`}>Time</th>
             <th scope="col" className={th}>Applicant</th>
-            <th scope="col" className={th}>Notes</th>
+            <th scope="col" className={th}>Notes and link</th>
             <th scope="col" className={th}><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
@@ -338,6 +427,11 @@ export default function AdminInterviews() {
                             ? <span className="line-clamp-2 text-pretty">{slot.booking.admin_notes}</span>
                             : <span className="text-sm text-ink-muted">No notes yet</span>
                         )}
+                        {kind !== 'link' && (
+                          <span className="block text-sm text-ink-muted break-all">
+                            {slot.meeting_url ? <>Link: {slot.meeting_url.replace(/^https:\/\//, '')}</> : 'No meeting link'}
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5 align-middle whitespace-nowrap max-md:block max-md:p-0">
                         <span className="inline-flex flex-wrap gap-x-4">
@@ -358,6 +452,10 @@ export default function AdminInterviews() {
                               Book<span className="sr-only"> {when}</span>
                             </button>
                           )}
+                          <button type="button" className={linkBtn} aria-expanded={kind === 'link'}
+                            onClick={() => setPanel(kind === 'link' ? null : { kind: 'link', slotId: slot.id })}>
+                            Link<span className="sr-only"> for the {when} slot</span>
+                          </button>
                           <button type="button" className={`${linkBtn} text-ink-muted`} aria-expanded={kind === 'delete'}
                             onClick={() => setPanel({ kind: 'delete', slotId: slot.id })}>
                             Delete<span className="sr-only"> the {when} slot</span>
@@ -373,6 +471,14 @@ export default function AdminInterviews() {
                               bookedAppIds={bookedAppIds}
                               onCancel={() => setPanel(null)}
                               onBook={async (appId, notes) => { await bookSlot(slot.id, appId, notes); setPanel(null) }}
+                            />
+                          )}
+                          {kind === 'link' && (
+                            <LinkPanel
+                              when={when}
+                              initialUrl={slot.meeting_url ?? ''}
+                              onCancel={() => setPanel(null)}
+                              onSave={async url => { await setLink(slot.id, url); setPanel(null) }}
                             />
                           )}
                           {kind === 'notes' && slot.booking && (
@@ -431,7 +537,7 @@ export default function AdminInterviews() {
 
       <section aria-labelledby="need-heading">
         <h2 id="need-heading" className={h2Class}>Needs a time{appsLoading ? '' : ` (${needsTime.length})`}</h2>
-        <p className="mt-1 text-sm text-ink-muted text-pretty">Pending applicants with no interview booked yet.</p>
+        <p className="mt-1 text-sm text-ink-muted text-pretty">Pending applicants with no interview booked yet. Adding slots emails them that new times are open (once a day); <b className="font-bold">Nudge</b> sends one a reminder to pick a time.</p>
         {appsLoading || loading ? (
           <div aria-busy="true" aria-label="Loading applicants" className="mt-3 border-y-2 border-ink">
             {[1, 2].map(i => <div key={i} className="h-14 my-2 rounded bg-surface-sunken animate-pulse" />)}
@@ -446,7 +552,14 @@ export default function AdminInterviews() {
             <ul className="mt-3 border-y-2 border-ink">
               {needsTime.map(app => (
                 <NeedsTime key={app.id} app={app} openSlots={openAhead}
-                  onBook={slotId => bookSlot(slotId, app.id, '')} />
+                  onBook={slotId => bookSlot(slotId, app.id, '')}
+                  lastNudge={nudges.get(app.id) ?? null}
+                  now={now}
+                  onNudge={async () => {
+                    const { error } = await supabase.rpc('admin_nudge_applicant', { p_application_id: app.id })
+                    if (error) throw new Error(error.message)
+                    await loadNudges()
+                  }} />
               ))}
             </ul>
           </>
@@ -467,6 +580,11 @@ export default function AdminInterviews() {
           <div>
             <label htmlFor="slot-duration" className={label}>Minutes</label>
             <Input id="slot-duration" type="number" inputMode="numeric" min={5} max={120} value={slotForm.duration} onChange={e => setSlotForm(f => ({ ...f, duration: e.target.value }))} className="w-[6.5rem]" />
+          </div>
+          <div className="flex-[1_1_16rem] min-w-0">
+            <label htmlFor="slot-link" className={label}>Meeting link <span className="font-normal text-ink-muted">(optional)</span></label>
+            <Input id="slot-link" type="url" inputMode="url" value={slotForm.link} placeholder="https://meet.google.com/…"
+              onChange={e => setSlotForm(f => ({ ...f, link: e.target.value }))} />
           </div>
           <Button type="submit" variant="primary" disabled={addingSlot}>
             {addingSlot

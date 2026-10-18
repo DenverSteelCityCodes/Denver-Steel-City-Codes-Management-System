@@ -144,7 +144,7 @@ export default function VolunteerLayout() {
             </button>
           </div>
         ) : !crew && pathname !== '/volunteer/help' ? (
-          <VolunteerApplicant status={assigned.applicationStatus} appliedAt={assigned.appliedAt} />
+          <VolunteerApplicant status={assigned.applicationStatus} appliedAt={assigned.appliedAt} removedReason={assigned.removedReason} />
         ) : (
           <Outlet context={context} />
         )}

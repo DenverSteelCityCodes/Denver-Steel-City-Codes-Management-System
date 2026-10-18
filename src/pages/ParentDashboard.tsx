@@ -107,6 +107,12 @@ export default function ParentDashboard() {
 
         <div className="min-w-0 lg:[&>section:first-child]:mt-5">
           {students.length > 0 && <Schedule items={schedule} live={band?.kind === 'campDay'} />}
+          {/* Spec 35: the week's crew, once a camper holds a spot. */}
+          {registrations.some(r => r.status === 'confirmed' || r.status === 'pending') && (
+            <Sect title="Meet the teachers" id="teachers-h" action={<Link to="/parent/teachers" className={textBtn}>See who's teaching</Link>}>
+              <p className="text-pretty">The volunteers teaching in your camper's week, with how to say their names.</p>
+            </Sect>
+          )}
           <LatestUpdate />
         </div>
       </div>

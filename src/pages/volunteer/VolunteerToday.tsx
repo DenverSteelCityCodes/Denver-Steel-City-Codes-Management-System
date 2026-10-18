@@ -6,6 +6,7 @@ import { useDutySlots } from '../../hooks/useDutyRoles'
 import { useScheduleItems } from '../../hooks/useScheduleItems'
 import { useVolunteerPrefs, weeksLabel } from '../../hooks/useVolunteerPrefs'
 import RollCallPanel from '../../components/RollCallPanel'
+import OnboardingChecklist from '../../components/OnboardingChecklist'
 import { formatDayLong, formatTime, localDateISO } from '../../lib/campDay'
 import { campPhase, relativeDay } from '../../lib/volunteerHome'
 import { ClassList, LatestUpdate, PageHead, ScheduleBlock, Sect, linkCls, listCls } from './parts'
@@ -42,6 +43,8 @@ export default function VolunteerToday() {
             {running.map(sec => <RollCallPanel key={sec.id} section={sec} showClass={running.length > 1} />)}
           </div>
           <div>
+            {/* Spec 35: anything still open on the onboarding checklist; the roll call comes first. */}
+            <OnboardingChecklist />
             <ScheduleBlock items={items.filter(i => i.session_id === phase.session.id)} live />
             <LatestUpdate />
           </div>
@@ -64,6 +67,7 @@ export default function VolunteerToday() {
       </PageHead>
       <div className="sm:grid sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] sm:gap-10 sm:items-start">
         <div>
+          <OnboardingChecklist />
           <Sect title="Your classes" action={<Link to="/volunteer/classes" className={linkCls}>Rosters</Link>}>
             <ClassList sections={sorted} />
           </Sect>
@@ -108,6 +112,7 @@ function AcceptedWelcome({ today }: { today: string }) {
       </PageHead>
       <div className="sm:grid sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] sm:gap-10 sm:items-start">
         <div>
+          <OnboardingChecklist />
           {prefs && (
             <Sect title="What we'll assign you from" action={<Link to="/volunteer/profile" className={linkCls}>Change</Link>}>
               <dl className="bg-surface border border-border rounded-[14px] p-4 grid grid-cols-[auto_1fr] gap-x-5 gap-y-1.5 font-sans text-base">

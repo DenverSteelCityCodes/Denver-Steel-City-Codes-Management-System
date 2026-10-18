@@ -63,6 +63,7 @@ export function useAssignedClass() {
   // Latest application status, so a rejected applicant isn't told "under review" forever.
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null)
   const [appliedAt, setAppliedAt] = useState<string | null>(null)
+  const [removedReason, setRemovedReason] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -87,7 +88,7 @@ export function useAssignedClass() {
         .from('section_supports')
         .select('section_id')
         .eq('volunteer_id', user!.id),
-      supabase.from('volunteers').select('id').eq('id', user!.id).maybeSingle(),
+      supabase.from('volunteers').select('id, removed_at, removed_reason').eq('id', user!.id).maybeSingle(),
       // RPC, not a table read: applicants can't SELECT volunteer_applications (admin notes).
       supabase.rpc('my_volunteer_application').maybeSingle(),
     ])
@@ -95,9 +96,12 @@ export function useAssignedClass() {
     // A failed lookup must not read as "not accepted" / "under review" — surface it instead.
     const lookupErr = volunteerRes.error ?? appRes.error
     if (lookupErr) { setError(lookupErr.message); setLoading(false); return }
-    setIsAccepted(!!volunteerRes.data)
+    // Removed from the season (spec 35): not crew until accepted again; the page says why.
+    const vol = volunteerRes.data as { id: string; removed_at: string | null; removed_reason: string | null } | null
+    setIsAccepted(!!vol && !vol.removed_at)
+    setRemovedReason(vol?.removed_at ? vol.removed_reason ?? '' : null)
     const app = appRes.data as { status: string; created_at: string } | null
-    setApplicationStatus(app?.status ?? null)
+    setApplicationStatus(vol?.removed_at ? 'removed' : app?.status ?? null)
     setAppliedAt(app?.created_at ?? null)
 
     if (leadRes.error) { setError(leadRes.error.message); setLoading(false); return }
@@ -165,5 +169,5 @@ export function useAssignedClass() {
     setLoading(false)
   }
 
-  return { assignedSections, isAccepted, applicationStatus, appliedAt, loading, error, refetch: fetchAssignedSections }
+  return { assignedSections, isAccepted, applicationStatus, appliedAt, removedReason, loading, error, refetch: fetchAssignedSections }
 }

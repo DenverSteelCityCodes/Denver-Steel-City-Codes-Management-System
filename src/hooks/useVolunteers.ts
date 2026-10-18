@@ -28,6 +28,8 @@ export function useVolunteers() {
       .from('volunteers')
       .select('*, profiles!inner(display_name, role), volunteer_notes(notes)')
       .eq('profiles.role', 'volunteer')
+      // Removed from the season (spec 35): off the crew lists and the matcher until accepted again.
+      .is('removed_at', null)
       .order('created_at', { ascending: true })
 
     setError(error?.message ?? null)
