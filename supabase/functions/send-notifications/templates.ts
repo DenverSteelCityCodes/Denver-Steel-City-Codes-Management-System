@@ -220,6 +220,50 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       ], dashboard)
     }
 
+    // Spec 29: loaner laptops, one per camper-week. Loaners stay at camp; requests past the week's
+    // cap wait in a first-come queue, and the payload's position is the place in it.
+    case 'laptop_reserved':
+      return build(`A loaner laptop is reserved for ${p.camper ?? 'your camper'}`, 'Laptop reserved', [
+        `<strong>${camper}</strong> has a loaner laptop reserved for ${line}.`,
+        `Loaners stay at camp: ${camper} uses it in class and leaves it there each day. If ${camper} won't need it after all, release it on your dashboard so the next family gets it.`,
+      ], dashboard)
+
+    case 'laptop_queued': {
+      const place = Number(p.position) > 0 ? ` <strong>number ${esc(p.position)}</strong> in` : ' in'
+      return build(`${p.camper ?? 'Your camper'} is in the laptop queue`, 'You\'re in the laptop queue', [
+        `Every loaner laptop for that week is spoken for, so <strong>${camper}</strong> is${place} the laptop queue for ${line}.`,
+        'Loaners go in the order families asked. If one frees up, we\'ll reserve it for you and email you. Any laptop or Chromebook with a web browser works, or an iPad with a keyboard: if you find one, leave the queue on your dashboard.',
+      ], dashboard)
+    }
+
+    case 'laptop_promoted':
+      return build(`A loaner laptop opened up for ${p.camper ?? 'your camper'}`, 'A laptop opened up', [
+        `A loaner laptop freed up, and it's now reserved for <strong>${camper}</strong>: ${line}.`,
+        `Nothing else to do. Loaners stay at camp: ${camper} uses it in class and leaves it there each day. If you don't need it any more, release it on your dashboard.`,
+      ], dashboard)
+
+    case 'laptop_released': {
+      const reason = String(p.reason ?? '')
+      if (reason === 'spot_ended') {
+        return build(`${p.camper ?? 'Your camper'}'s laptop request was released`, 'Laptop request released', [
+          `<strong>${camper}</strong> no longer has a spot in ${line}, so the loaner laptop request went with it.`,
+          `If ${camper} gets a spot in another class and still needs a laptop, request one on your dashboard.`,
+        ], dashboard)
+      }
+      if (reason === 'admin') {
+        return build(`The camp released ${p.camper ?? 'your camper'}'s laptop request`, 'Laptop request released', [
+          `The camp released the loaner laptop request for <strong>${camper}</strong> in ${line}.`,
+          'If that\'s a surprise, reply to this email and we\'ll sort it out.',
+        ], dashboard)
+      }
+      return build(p.was === 'queued' ? `You left the laptop queue for ${p.camper ?? 'your camper'}` : `You released ${p.camper ?? 'your camper'}'s loaner laptop`, 'Laptop released', [
+        p.was === 'queued'
+          ? `As you asked, <strong>${camper}</strong> is out of the laptop queue for ${line}.`
+          : `As you asked, the loaner laptop for <strong>${camper}</strong> in ${line} is released. It goes to the next family in the queue.`,
+        'Need one after all? You can ask again on your dashboard until the week starts.',
+      ], dashboard)
+    }
+
     default:
       return null
   }

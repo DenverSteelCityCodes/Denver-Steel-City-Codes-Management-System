@@ -80,3 +80,32 @@ describe('urgent notices and incidents (spec 34)', () => {
     expect(r.text).toContain('something we want you to know about')
   })
 })
+
+describe('laptop loans (spec 29)', () => {
+  const base = { camper: 'Ava', class: 'Intro to Python', section: 'PY-A', week: 2, start_date: '2027-06-14', end_date: '2027-06-18', student_id: 's1' }
+  it('has a template for every laptop email the migration queues', () => {
+    for (const t of ['laptop_reserved', 'laptop_queued', 'laptop_promoted', 'laptop_released']) {
+      expect(render(t, base, APP), t).not.toBeNull()
+    }
+  })
+  it('says loaners stay at camp and links to the dashboard', () => {
+    const r = render('laptop_reserved', base, APP)!
+    expect(r.subject).toBe('A loaner laptop is reserved for Ava')
+    expect(r.text).toContain('Intro to Python · PY-A, Week 2 (June 14 – June 18)')
+    expect(r.text).toContain('stay at camp')
+    expect(r.text).toContain(`${APP}/parent`)
+  })
+  it('gives the place in the queue, and copes without one', () => {
+    expect(render('laptop_queued', { ...base, position: 3 }, APP)!.text).toContain('Ava is number 3 in the laptop queue')
+    expect(render('laptop_queued', base, APP)!.text).toContain('Ava is in the laptop queue')
+  })
+  it('words a release by who released it', () => {
+    expect(render('laptop_released', { ...base, reason: 'parent', was: 'reserved' }, APP)!.subject).toBe("You released Ava's loaner laptop")
+    expect(render('laptop_released', { ...base, reason: 'parent', was: 'queued' }, APP)!.subject).toBe('You left the laptop queue for Ava')
+    expect(render('laptop_released', { ...base, reason: 'spot_ended', was: 'reserved' }, APP)!.text).toContain('no longer has a spot')
+    expect(render('laptop_released', { ...base, reason: 'admin' }, APP)!.subject).toBe("The camp released Ava's laptop request")
+  })
+  it('escapes names in the HTML', () => {
+    expect(render('laptop_promoted', { ...base, camper: '<b>Ava</b>' }, APP)!.html).not.toContain('<b>Ava</b>')
+  })
+})

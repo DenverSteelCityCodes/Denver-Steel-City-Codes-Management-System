@@ -31,7 +31,7 @@ interface Props {
 // A missing answer is flagged under its own field (marked invalid and focused), not in a summary.
 type ErrKey = keyof OnboardingConfirmation | 'attested'
 const FIELD_ID: Partial<Record<ErrKey, string>> = {
-  full_name: 'ob-1', grade: 'ob-2', shirt_size: 'ob-3', laptop_available: 'ob-4', parent_name: 'ob-5',
+  full_name: 'ob-1', grade: 'ob-2', shirt_size: 'ob-3', parent_name: 'ob-5',
   parent_phone: 'ob-6', emergency_contact_name: 'ob-7', emergency_contact_phone: 'ob-8',
   emergency_contact_relation: 'ob-9', allergies: 'ob-10', medical_conditions: 'ob-11', free_reduced_lunch: 'ob-12',
   guardian_signature: 'ob-13', attested: 'ob-14',
@@ -42,7 +42,6 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
     full_name: student.full_name,
     grade: student.grade ?? null,
     shirt_size: student.shirt_size ?? null,
-    laptop_available: student.laptop_available ?? null,
     parent_name: student.parent_name ?? parentDefaults?.parent_name ?? null,
     parent_phone: student.parent_phone ?? parentDefaults?.parent_phone ?? null,
     emergency_contact_name: student.emergency_contact_name ?? parentDefaults?.emergency_contact_name ?? null,
@@ -59,7 +58,7 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
   const [editing, setEditing] = useState(() =>
     [form.full_name, form.grade, form.shirt_size, form.parent_name, form.parent_phone, form.emergency_contact_name,
       form.emergency_contact_phone, form.emergency_contact_relation, form.allergies, form.medical_conditions]
-      .some(v => !v?.trim()) || form.laptop_available == null || form.free_reduced_lunch == null)
+      .some(v => !v?.trim()) || form.free_reduced_lunch == null)
   const [error, setError] = useState<{ key: ErrKey; msg: string } | null>(null)
   const panelRef = useRef<HTMLElement>(null)
 
@@ -86,8 +85,6 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
     if (!form.full_name?.trim()) return e('full_name', "Camper's name is required")
     if (!form.grade) return e('grade', 'Grade is required')
     if (!form.shirt_size) return e('shirt_size', 'Shirt size is required')
-    if (form.laptop_available === null || form.laptop_available === undefined)
-      return e('laptop_available', 'Please answer the laptop question')
     if (!form.parent_name?.trim()) return e('parent_name', 'Parent/guardian name is required')
     if (!form.parent_phone?.trim()) return e('parent_phone', 'Parent/guardian phone is required')
     if (!form.emergency_contact_name?.trim()) return e('emergency_contact_name', 'Emergency contact name is required')
@@ -125,7 +122,7 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
   // Marks the field an error is about and points it at the message under it.
   const invalid = (key: ErrKey) => error?.key === key ? { 'aria-invalid': true as const, 'aria-describedby': 'ob-err' } : {}
   const errorUnder = (key: ErrKey) => error?.key === key && <ErrorLine id="ob-err" className="mt-1.5">{error.msg}</ErrorLine>
-  const yesNo = (key: 'laptop_available' | 'free_reduced_lunch', labelId: string) => (
+  const yesNo = (key: 'free_reduced_lunch', labelId: string) => (
     <Segmented labelledBy={labelId} invalid={error?.key === key} items={[true, false].map(v => ({
       key: String(v), label: v ? 'Yes' : 'No', on: form[key] === v, onClick: () => set(key, v),
     }))} />
@@ -150,7 +147,6 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
               <dt className="text-sm text-ink-muted pt-0.5">Name</dt><dd className="min-w-0 break-words font-bold">{form.full_name}</dd>
               <dt className="text-sm text-ink-muted pt-0.5">Grade</dt><dd className="font-bold">{form.grade ?? missing}</dd>
               <dt className="text-sm text-ink-muted pt-0.5">Shirt</dt><dd className="font-bold">{form.shirt_size ?? missing}</dd>
-              <dt className="text-sm text-ink-muted pt-0.5">Laptop</dt><dd className="font-bold">{form.laptop_available == null ? missing : form.laptop_available ? 'Yes' : 'No'}</dd>
               <dt className="text-sm text-ink-muted pt-0.5">Guardian</dt><dd className="min-w-0 break-words font-bold">{[form.parent_name, form.parent_phone].filter(Boolean).join(', ') || missing}</dd>
               <dt className="text-sm text-ink-muted pt-0.5">Emergency</dt><dd className="min-w-0 break-words font-bold">{[form.emergency_contact_name, form.emergency_contact_relation, form.emergency_contact_phone].filter(Boolean).join(', ') || missing}</dd>
               <dt className="text-sm text-ink-muted pt-0.5">Health</dt><dd className="min-w-0 break-words font-bold">{[form.allergies, form.medical_conditions].filter(Boolean).join('; ') || missing}</dd>
@@ -183,12 +179,6 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
               </select>
               {errorUnder('shirt_size')}
             </div>
-          </div>
-
-          <div>
-            <p id="ob-4" className={labelCls}>Can your camper bring a laptop each day? *</p>
-            {yesNo('laptop_available', 'ob-4')}
-            {errorUnder('laptop_available')}
           </div>
 
           <div className="grid min-[480px]:grid-cols-2 gap-x-4 gap-y-5">
@@ -243,6 +233,9 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
 
         </div>
         )}
+
+        {/* Spec 29: the laptop question moved to each week's spot (borrow one on Home). */}
+        <p className="mt-4 text-sm text-ink-muted text-pretty">Need to borrow a laptop at camp? Ask on Home once {student.first_name ?? student.full_name.split(' ')[0]} has a spot.</p>
 
         <div className="mt-5 space-y-3">
           <div>

@@ -48,7 +48,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [17](17-fewer-round-trips.md) | #86 | Shared query cache, `register_camper()` RPC, volunteer home RPC | P1 | M | 16 | B |
 | ✅ | [18](18-admin-paging.md) | #87 | Server-side paging + search for admin lists | P0 | S | — | B |
 | ⬜ | [19](19-load-test-runbook-dry-run.md) | #88 | Load test, restore drill, PITR, runbooks, dry run | P0 | M | 01–18, L1–L3, L5, L6a | B |
-| ⬜ | [29](29-laptop-loans.md) | #149 | Laptop loans per camper-week: cap per session, queue, roster column | P0 | M | 09 | B |
+| 🟨 | [29](29-laptop-loans.md) | #149 | Laptop loans per camper-week: cap per session, queue, roster column | P0 | M | 09 | B |
 | 🟨 | [30](30-public-camp-page.md) | #150 | Public camp page (status, dates, location, courses, FAQ) + notify-me list | P1 | M | 09, 13 | B |
 | 🟨 | [31](31-course-rules-in-the-db.md) | #151 | Course rules in the DB: grades, prerequisites, repeat warning, "place with" | P0 | M | 05 | B |
 | ⬜ | [32](32-admin-register-on-behalf.md) | #152 | Admin register-on-behalf with named, logged overrides | P1 | M | 05, 31 | B |

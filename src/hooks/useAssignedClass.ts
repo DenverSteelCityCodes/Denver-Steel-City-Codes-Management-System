@@ -14,6 +14,8 @@ export interface AssignedStudent {
   emergency_contact_relation: string | null
   parent_name: string | null
   parent_phone: string | null
+  // 'reserved' or 'handed_out' when the camper borrows a camp laptop that week (spec 29), else null.
+  laptop_loan?: string | null
 }
 
 export interface AssignedSection {

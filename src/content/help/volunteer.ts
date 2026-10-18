@@ -103,6 +103,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
             },
             { kind: 'p', text: 'During roll call, campers you mark **Absent** show their call links right in the list.' },
             { kind: 'p', text: 'If a camper says "No phone number on file", tell an admin.' },
+            { kind: 'p', text: 'A camper borrowing one of the camp\'s laptops that week says **Loaner laptop to hand out** (or **handed out**). Loaners stay at camp.' },
           ],
         },
         {
@@ -114,7 +115,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'Open [[volunteer-classes]] and tap **Paper roster**.',
-                'Tap **Print**. The sheet has health notes, emergency contacts and boxes for each roll call.',
+                'Tap **Print**. The sheet has health notes, emergency contacts, who borrows a loaner laptop and boxes for each roll call.',
               ],
             },
             { kind: 'p', text: 'The sheet is for camp staff only. Shred it after the camp week.' },

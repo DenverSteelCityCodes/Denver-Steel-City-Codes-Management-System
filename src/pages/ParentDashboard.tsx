@@ -11,6 +11,7 @@ import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import { useScheduleItems } from '../hooks/useScheduleItems'
 import { useSectionLeadNames } from '../hooks/useSectionLeadNames'
 import { useMyChanges } from '../hooks/useMyChanges'
+import { useMyLaptops } from '../hooks/useMyLaptops'
 import RegistrationCountdown from '../components/RegistrationCountdown'
 import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import SignBand from '../components/SignBand'
@@ -40,6 +41,8 @@ export default function ParentDashboard() {
     swapSpot: async (id: string, sectionId: string) => { await myChanges.swapSpot(id, sectionId); await refetch() },
     setPlaceWith: async (id: string, placeWith: string) => { await myChanges.setPlaceWith(id, placeWith); await refetch() },
   }
+  // Loaner laptops per camper-week (spec 29); reloads with the registrations.
+  const laptops = useMyLaptops(registrations, students.length > 0)
   const today = localDateISO()
   const marks = useMyRollCalls(today)
   const { sessions } = useSessions()
@@ -98,7 +101,7 @@ export default function ParentDashboard() {
               <ul className={framedCls}>
                 {students.map(s => (
                   <CamperRow key={s.id} student={s} regs={rowRegistrations(s.id, registrations)} sessions={sessions}
-                    leadNames={leadNames} changes={changes} open={open === s.id} onToggle={() => setOpen(o => (o === s.id ? null : s.id))} />
+                    leadNames={leadNames} changes={changes} laptops={laptops} open={open === s.id} onToggle={() => setOpen(o => (o === s.id ? null : s.id))} />
                 ))}
               </ul>
             </Sect>

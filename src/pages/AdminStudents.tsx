@@ -1,6 +1,6 @@
 import { useState, useMemo, Fragment } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
-import { Search, Download, HeartPulse, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Search, Download, HeartPulse, ChevronDown, ArrowLeft, ArrowRight, Laptop } from 'lucide-react'
 import InlineConfirm from '../components/InlineConfirm'
 import HistoryStrip from '../components/HistoryStrip'
 import AdminChangeRequests from '../components/AdminChangeRequests'
@@ -11,6 +11,7 @@ import { Input, Select } from '../components/Field'
 import { supabase } from '../lib/supabase'
 import { healthLines, telHref } from '../lib/campers'
 import { toCsv, downloadCsv } from '../lib/csv'
+import { adminLaptopWord } from '../lib/laptopLoans'
 import { useAdminStudents, type AdminStudent, type StudentRegistration } from '../hooks/useAdminStudents'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import type { RegistrationStatus } from '../types/database'
@@ -380,13 +381,13 @@ function CamperDetail({
 
 function exportCamperCSV(students: AdminStudent[]) {
   // Allergies is its own required field; medical conditions replaced the older medical_info.
-  const headers = ['Student Name', 'Age', 'Allergies', 'Medical Conditions', 'Parent Name', 'Class', 'Section', 'Week', 'Status', 'Place With']
+  const headers = ['Student Name', 'Age', 'Allergies', 'Medical Conditions', 'Parent Name', 'Class', 'Section', 'Week', 'Status', 'Place With', 'Laptop']
   const rows: (string | number)[][] = []
 
   for (const s of students) {
     const health = [s.allergies ?? '', s.medical_conditions || s.medical_info || '']
     if (s.registrations.length === 0) {
-      rows.push([s.full_name, s.age, ...health, s.parent_name, '', '', '', 'unregistered', ''])
+      rows.push([s.full_name, s.age, ...health, s.parent_name, '', '', '', 'unregistered', '', ''])
     } else {
       for (const r of s.registrations) {
         rows.push([
@@ -399,6 +400,8 @@ function exportCamperCSV(students: AdminStudent[]) {
           r.section_week ?? '',
           r.status,
           r.place_with ?? '',
+          // Spec 29: reserved / queued / handed_out / returned; blank when none (or released).
+          r.laptop && r.laptop !== 'released' ? r.laptop : '',
         ])
       }
     }
@@ -554,7 +557,7 @@ export default function AdminStudents() {
                   Campers {shownPage * PAGE + 1} to {shownPage * PAGE + rows.length} of {filtered.length}. Select a name to open the camper.
                 </caption>
                 <colgroup>
-                  <col className="w-[26%]" /><col className="w-[22%]" /><col className="w-[25%]" /><col />
+                  <col className="w-[24%]" /><col className="w-[20%]" /><col className="w-[24%]" /><col /><col className="w-[14%]" />
                 </colgroup>
                 <thead className="max-md:sr-only">
                   <tr>
@@ -562,6 +565,7 @@ export default function AdminStudents() {
                     <th scope="col" className={th}>Parent</th>
                     <th scope="col" className={th}>Classes</th>
                     <th scope="col" className={th}>Health</th>
+                    <th scope="col" className={th}>Laptop</th>
                   </tr>
                 </thead>
                 <tbody className="max-md:block">
@@ -603,10 +607,19 @@ export default function AdminStudents() {
                           <td className={`${td} ${line} max-md:order-3`}>
                             {healthLines(s).length > 0 ? <HealthText s={s} /> : <span className="sr-only">No health notes</span>}
                           </td>
+                          {/* Spec 29: each week's loaner laptop, if one was asked for. */}
+                          <td className={`${td} ${line} max-md:order-4`}>
+                            {regs.filter(r => adminLaptopWord(r.laptop)).map(r => (
+                              <span key={r.id} className="flex items-center gap-1.5 text-sm">
+                                <Laptop size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0 md:hidden" />
+                                {adminLaptopWord(r.laptop)}{regs.length > 1 ? `, ${weekWord(r.section_week)}` : ''}
+                              </span>
+                            ))}
+                          </td>
                         </tr>
                         {open && (
                           <tr id={`camper-${s.id}`} className="max-md:block">
-                            <td colSpan={4} className="bg-surface border-b-2 border-ink px-4 pt-4 pb-5 max-md:block max-md:-mx-4 max-md:px-4">
+                            <td colSpan={5} className="bg-surface border-b-2 border-ink px-4 pt-4 pb-5 max-md:block max-md:-mx-4 max-md:px-4">
                               <CamperDetail
                                 student={s}
                                 allSections={allSections}

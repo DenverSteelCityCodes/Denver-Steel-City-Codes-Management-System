@@ -26,6 +26,8 @@ export interface Student {
   school_name?: string | null
   grade?: string | null
   shirt_size?: string | null
+  // No longer asked (spec 29: loaner laptops are requested per week, laptop_loans). Read-only,
+  // kept for past seasons until retention (L4) clears it.
   laptop_available?: boolean | null
   ethnic_background?: string[] | null
   gender?: string | null
@@ -55,7 +57,7 @@ export interface Student {
 // camp year (per-summer attestation). Excludes immutable identity (parent_id, created_at).
 export type OnboardingConfirmation = Pick<
   Student,
-  | 'full_name' | 'grade' | 'shirt_size' | 'laptop_available'
+  | 'full_name' | 'grade' | 'shirt_size'
   | 'parent_name' | 'parent_phone' | 'emergency_contact_name'
   | 'emergency_contact_phone' | 'emergency_contact_relation'
   | 'allergies' | 'medical_conditions' | 'free_reduced_lunch'
@@ -205,7 +207,21 @@ export interface Session {
   is_active: boolean
   // Building and address of this week (migration_public_camp_page.sql, spec 30).
   location?: string | null
+  // Loaner laptops the camp can lend that week (migration_laptop_loans.sql, spec 29).
+  laptop_loaners?: number
   created_at: string
+}
+
+// A loaner laptop for one registration (one camper, one week; migration_laptop_loans.sql).
+// reserved and handed_out count against the week's cap; queued waits, first come first served.
+export type LaptopLoanStatus = 'reserved' | 'queued' | 'handed_out' | 'returned' | 'released'
+export interface LaptopLoan {
+  registration_id: string
+  status: LaptopLoanStatus
+  requested_at: string
+  handed_out_at: string | null
+  returned_at: string | null
+  updated_at: string
 }
 
 export interface DutyType {
