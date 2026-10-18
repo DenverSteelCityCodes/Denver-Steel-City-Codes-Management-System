@@ -37,6 +37,7 @@ import CampListLinkPage from './pages/CampListLinkPage'
 import MfaGate from './components/MfaGate'
 import MfaPage from './pages/MfaPage'
 import AdminHelp from './pages/help/AdminHelp'
+import { DEMO_ACCOUNTS } from './lib/demo'
 import ParentHelp from './pages/help/ParentHelp'
 import VolunteerHelp from './pages/help/VolunteerHelp'
 
@@ -52,9 +53,10 @@ function RoleRedirect() {
 }
 
 // Signed-out visitors at / see the public camp page (spec 30); signed-in users go to their area.
+// The demo keeps its one-click seats on /login as the landing page (/camp is a link away).
 function Root() {
   const { session, loading } = useAuth()
-  if (!loading && !session) return <Navigate to="/camp" replace />
+  if (!loading && !session) return <Navigate to={DEMO_ACCOUNTS.length > 0 ? '/login' : '/camp'} replace />
   return <ProtectedRoute />
 }
 

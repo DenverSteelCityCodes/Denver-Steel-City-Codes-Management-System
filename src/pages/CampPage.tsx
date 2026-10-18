@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, MapPin } from 'lucide-react'
@@ -20,6 +20,7 @@ import { formatTimeRange } from '../lib/campDay'
 import { CONTACT_EMAIL, GENERIC_ERROR, emailProblem } from '../lib/authErrors'
 import { focusOnMount } from '../lib/focus'
 import { buttonClass } from '../lib/ui'
+import { DEMO_ACCOUNTS } from '../lib/demo'
 import type { UserRole, ScheduleItem } from '../types/database'
 
 // The public camp page (spec 30): what a family asks before registering, answered from the
@@ -28,17 +29,44 @@ import type { UserRole, ScheduleItem } from '../types/database'
 // visitors land here from /. Nothing on it is invented: every date, place, class and status comes
 // from public_camp_info(), and the FAQ says only what the registration form and the camp-day
 // tools already do.
+// The demo (scc.haanie.com) shows a fictional camp, and its notify form never takes an address.
+const DEMO = DEMO_ACCOUNTS.length > 0
+
+// While the opening minute turns over: ask again every 5 seconds, at most 6 times.
+const RECHECK_MS = 5000
+const RECHECKS = 6
+
 export default function CampPage() {
   const { info, error, loading, retry } = useCampInfo()
   const { session, role } = useAuth()
   const signedIn = !!session && !!role
   const barLink = 'min-h-11 inline-flex items-center px-1 font-bold text-on-shell underline underline-offset-[3px] hover:text-brand focus-visible:outline-brand!'
 
+  // The opening time, as this page has seen it pass: from the countdown's onOpen, or already
+  // behind us when the page loaded. Kept in state so the status slot never goes blank.
+  const [loadedAt] = useState(() => Date.now())
+  const [passed, setPassed] = useState(false)
+  const [rechecks, setRechecks] = useState(0)
+  const opens = info?.registration_opens_at ? new Date(info.registration_opens_at).getTime() : null
+  const ahead = opens !== null && opens > loadedAt && !passed
+  // The time has passed and classes exist, but the server hasn't said "open" yet.
+  const waiting = info?.status === 'upcoming' && opens !== null && !ahead && info.courses.length > 0
+
+  useEffect(() => {
+    if (!waiting || rechecks >= RECHECKS) return
+    const id = window.setTimeout(() => { setRechecks(n => n + 1); void retry() }, RECHECK_MS)
+    return () => window.clearTimeout(id)
+  }, [waiting, rechecks, retry])
+
   return (
     <PublicShell bar={signedIn
       ? <Link to="/" className={barLink}>Your account</Link>
       : <Link to="/login" className={barLink}>Sign in</Link>}>
-      {info ? <Camp info={info} role={role} signedIn={signedIn} onOpen={() => { void retry() }} />
+      {info ? (
+        <Camp info={info} role={role} signedIn={signedIn}
+          opening={{ ahead, waiting, gaveUp: waiting && rechecks >= RECHECKS }}
+          onOpen={() => { setPassed(true); void retry() }} />
+      )
         : loading ? <Loading />
         : (
           <>
@@ -64,7 +92,9 @@ function Loading() {
   )
 }
 
-function Camp({ info, role, signedIn, onOpen }: { info: CampInfo; role: UserRole | null; signedIn: boolean; onOpen: () => void }) {
+interface Opening { ahead: boolean; waiting: boolean; gaveUp: boolean }
+
+function Camp({ info, role, signedIn, opening, onOpen }: { info: CampInfo; role: UserRole | null; signedIn: boolean; opening: Opening; onOpen: () => void }) {
   const ages = ageSpan(info.courses)
   const notify = info.status === 'upcoming' || info.status === 'closed'
   return (
@@ -73,7 +103,12 @@ function Camp({ info, role, signedIn, onOpen }: { info: CampInfo; role: UserRole
         title={`Coding camp ${info.year}`}
         lede={`Free, week-long coding classes${ages ? ` for ages ${ages.min} to ${ages.max}` : ''}, taught by volunteers.`}
       />
-      <Status info={info} role={role} signedIn={signedIn} onOpen={onOpen} />
+      {DEMO && (
+        <p className="-mt-2 mb-5 text-pretty">
+          <strong>This is the demo.</strong> <span className="text-ink-muted">The camp, its dates and its classes are made up, and everything resets every night.</span>
+        </p>
+      )}
+      <Status info={info} role={role} signedIn={signedIn} opening={opening} onOpen={onOpen} />
       {notify && <Notify parent={role === 'parent'} />}
       <Weeks weeks={info.weeks} />
       <Courses courses={info.courses} weekCount={info.weeks.length} />
@@ -87,18 +122,25 @@ function Camp({ info, role, signedIn, onOpen }: { info: CampInfo; role: UserRole
 
 // ── Where registration stands: the one gold sign when there's something to do now ──
 
-function Status({ info, role, signedIn, onOpen }: { info: CampInfo; role: UserRole | null; signedIn: boolean; onOpen: () => void }) {
+function Status({ info, role, signedIn, opening, onOpen }: { info: CampInfo; role: UserRole | null; signedIn: boolean; opening: Opening; onOpen: () => void }) {
   const opens = info.registration_opens_at
-  const [loadedAt] = useState(() => Date.now())
-  if (info.status === 'upcoming' && opens && new Date(opens).getTime() > loadedAt) {
-    return <RegistrationCountdown opensAt={opens} onOpen={onOpen} note="Spots are first come, first served." />
+  const label = `Registration for ${info.year}`
+  if (info.status === 'upcoming' && opens && opening.ahead) {
+    return <RegistrationCountdown opensAt={opens} onOpen={onOpen}
+      note={info.courses.length > 0 ? 'Spots are first come, first served.' : "Spots are first come, first served. The classes aren't posted yet."} />
+  }
+  if (opening.waiting) {
+    return <Quiet live label={label} message="Registration is opening…"
+      sub={opening.gaveUp ? 'This is taking longer than it should. Reload the page in a minute.' : 'This page updates by itself in a few seconds.'} />
   }
   if (info.status === 'upcoming') {
-    return <Quiet label={`Registration for ${info.year}`} message="Not open yet"
-      sub={info.weeks.length === 0 ? "This year's dates aren't set yet." : "The classes and the opening time aren't posted yet."} />
+    return <Quiet label={label} message="Not open yet"
+      sub={info.weeks.length === 0 ? "This year's dates aren't set yet."
+        : opens ? "The classes aren't posted yet."
+        : "The classes and the opening time aren't posted yet."} />
   }
   if (info.status === 'closed') {
-    return <Quiet label={`Registration for ${info.year}`} message="Closed right now"
+    return <Quiet label={label} message="Closed right now"
       sub="The camp isn't taking new sign-ups. Families who registered keep their spots." />
   }
 
@@ -120,9 +162,10 @@ function Status({ info, role, signedIn, onOpen }: { info: CampInfo; role: UserRo
 }
 
 // A quiet sign (DESIGN.md › Sign Band, quiet): a 2px ink frame when there's nothing to do yet.
-function Quiet({ label, message, sub }: { label: string; message: string; sub: string }) {
+// `live` announces it (the opening minute's "Registration is opening…").
+function Quiet({ label, message, sub, live = false }: { label: string; message: string; sub: string; live?: boolean }) {
   return (
-    <div className="rounded border-2 border-ink p-4 mb-5">
+    <div role={live ? 'status' : undefined} className="rounded border-2 border-ink p-4 mb-5">
       <p className="text-sm font-bold text-ink-muted">{label}</p>
       <p className="mt-1 text-[1.375rem] font-extrabold leading-[1.15] text-balance">{message}</p>
       <p className="mt-1 text-ink-muted text-pretty">{sub}</p>
@@ -136,12 +179,12 @@ function Notify({ parent }: { parent: boolean }) {
   return (
     <section aria-labelledby="notify-h" className="mt-6">
       <h2 id="notify-h" className={h2Cls}>Get an email when registration opens</h2>
-      {parent ? <NotifyMeSwitch /> : <NotifyForm />}
+      {parent ? <NotifyMeSwitch /> : <NotifyForm demo={DEMO} />}
     </section>
   )
 }
 
-function NotifyForm() {
+function NotifyForm({ demo }: { demo: boolean }) {
   const [email, setEmail] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -151,6 +194,7 @@ function NotifyForm() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    if (demo) return
     setError(null)
     const problem = emailProblem(email)
     setFieldError(problem)
@@ -186,11 +230,12 @@ function NotifyForm() {
       <p className="text-ink-muted text-pretty">
         First we send a link to confirm it's you. After that, one email with the opening time and one when registration opens. Each has an unsubscribe link.
       </p>
-      <FormField id="notify-email" label="Email" error={fieldError}>
-        {a => <Input {...a} ref={inputRef} type="email" autoComplete="email" inputMode="email" value={email} onChange={e => setEmail(e.target.value)} />}
+      <FormField id="notify-email" label="Email" error={fieldError}
+        hint={demo ? "The demo doesn't collect email addresses, so this form is switched off." : undefined}>
+        {a => <Input {...a} ref={inputRef} type="email" autoComplete="email" inputMode="email" value={email} disabled={demo} onChange={e => setEmail(e.target.value)} />}
       </FormField>
       {error && <FormError>{error}</FormError>}
-      <Button type="submit" variant="primary" disabled={busy} className="justify-self-start max-[479px]:w-full">
+      <Button type="submit" variant="primary" disabled={busy || demo} className="justify-self-start max-[479px]:w-full">
         {busy ? <><Spinner />Sending…</> : 'Notify me'}
       </Button>
     </form>
