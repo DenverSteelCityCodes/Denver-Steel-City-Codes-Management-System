@@ -1,20 +1,20 @@
 import { useId } from 'react'
-import { TriangleAlert } from 'lucide-react'
 import Button from './Button'
 
-// In-place confirmation for destructive actions — shown directly under the thing it acts on
-// instead of a modal. Cancel is focused first so Enter never deletes by accident.
+// In-place confirmation (DESIGN.md › Inline Confirm), shown directly under the thing it changes
+// instead of a modal: a 2px frame (red when it destroys or takes something away, ink for a
+// consequential change), a bold sentence and its 48px buttons. The safe choice comes first and is
+// focused, so Enter never deletes by accident; Esc cancels. The group is labelled by its sentence
+// (role="group", not an alert: the person asked for this, so it shouldn't interrupt a screen reader).
 //
-// `frame` is the DESIGN.md › Inline Confirm: a 2px red (or ink) frame with 48px buttons, labelled
-// by its sentence. Without it, the older full-width strip that existing rows and cards are built
-// around.
+// Callers own where focus goes after Cancel (Season's registration switch hands it back to the
+// switch). `frame` is kept so older callers compile; every confirm is framed now.
 export default function InlineConfirm({
   message,
   confirmLabel = 'Delete',
   cancelLabel = 'Cancel',
   tone = 'danger',
   busy = false,
-  frame = false,
   onConfirm,
   onCancel,
 }: {
@@ -29,56 +29,22 @@ export default function InlineConfirm({
   onCancel: () => void
 }) {
   const id = useId()
-  const onKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Escape') onCancel() }
-  const spinner = busy && <span aria-hidden="true" className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-
-  if (frame) {
-    return (
-      <div role="group" aria-labelledby={id} onKeyDown={onKeyDown}
-        className={`p-4 rounded border-2 ${tone === 'danger' ? 'border-danger' : 'border-ink'}`}>
-        <p id={id} className="font-bold text-pretty">{message}</p>
-        <div className="flex flex-wrap gap-2 mt-3">
-          <Button autoFocus variant="secondary" onClick={onCancel}>{cancelLabel}</Button>
-          <Button variant={tone === 'danger' ? 'danger' : 'ink'} onClick={onConfirm} disabled={busy} aria-busy={busy}>
-            {spinner}{confirmLabel}
-          </Button>
-        </div>
-      </div>
-    )
-  }
+  const danger = tone === 'danger'
+  // While the change is saving, Keep and Esc wait: cancelling then wouldn't stop the save.
+  const onKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); if (!busy) onCancel() } }
 
   return (
-    <div
-      role="alert"
-      onKeyDown={onKeyDown}
-      className={`flex flex-col sm:flex-row sm:items-center gap-3 px-4 sm:px-5 py-3 border-t ${
-        tone === 'danger' ? 'bg-danger-soft border-danger/30' : 'bg-brand-soft border-brand/30'
-      }`}
-    >
-      <p className={`flex-1 flex items-start gap-2 font-sans text-sm ${tone === 'danger' ? 'text-danger' : 'text-ink'}`}>
-        <TriangleAlert size={16} className="shrink-0 mt-0.5" />
-        <span>{message}</span>
-      </p>
-      <div className="flex gap-2 shrink-0">
-        <button
-          autoFocus
-          type="button"
-          onClick={onCancel}
-          className="h-11 px-4 rounded-[10px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition"
-        >
-          {cancelLabel}
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={busy}
-          className={`h-11 px-4 rounded-[10px] font-sans font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center gap-2 ${
-            tone === 'danger' ? 'bg-danger text-surface' : 'bg-brand text-brand-on'
-          }`}
-        >
-          {spinner}
+    <div role="group" aria-labelledby={id} onKeyDown={onKeyDown}
+      className={`p-4 rounded border-2 bg-surface text-ink text-left ${danger ? 'border-danger' : 'border-ink'}`}>
+      <p id={id} aria-live="polite" className="font-bold text-pretty max-w-[68ch]">{message}</p>
+      <div className="flex flex-wrap gap-2 mt-3">
+        <Button autoFocus variant="secondary" onClick={() => { if (!busy) onCancel() }} aria-disabled={busy || undefined}>{cancelLabel}</Button>
+        {/* aria-disabled while busy: a disabled button would drop keyboard focus to the page. */}
+        <Button variant={danger ? 'danger' : 'ink'} onClick={() => { if (!busy) onConfirm() }}
+          aria-disabled={busy || undefined} aria-busy={busy}>
+          {busy && <span aria-hidden="true" className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />}
           {confirmLabel}
-        </button>
+        </Button>
       </div>
     </div>
   )

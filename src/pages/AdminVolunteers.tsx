@@ -16,7 +16,7 @@ import { Textarea, Select } from '../components/Field'
 import InlineConfirm from '../components/InlineConfirm'
 import Segmented from '../components/Segmented'
 import StatusWord from '../components/StatusWord'
-import AdminTabs, { AdminPageHead, pageClass } from '../components/AdminTabs'
+import AdminPageHead, { pageClass } from '../components/AdminPageHead'
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
 import type { ClassWithSections } from '../hooks/useAdminClasses'
 import type { VolunteerApplication, ExperienceLevel } from '../types/database'
@@ -292,7 +292,7 @@ export default function AdminVolunteers() {
 
   // The tab lives in the URL (?tab=applications | crew), so the sub-tab links, the top-bar search
   // and the To do links all land on the right one. ?tab=roster is the old name for Crew.
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const tab: Tab = params.get('tab') === 'crew' || params.get('tab') === 'roster' ? 'crew' : 'applications'
 
   const [week, setWeek] = useState<1 | 2>(1)
@@ -431,15 +431,24 @@ export default function AdminVolunteers() {
               <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of the crew</span>
             </Button>}
       />
-      {/* Two views of this page (?tab=); Interviews and Duties are their own pages in the shell. */}
-      <AdminTabs label="Volunteers" tabs={[
-        { to: '/admin/volunteers?tab=applications', label: 'Applications', count: appsLoading ? null : counts.pending, countLabel: 'pending', current: tab === 'applications' },
-        { to: '/admin/volunteers?tab=crew', label: 'Crew', current: tab === 'crew' },
-      ]} />
+      {/* Two views of this page, kept in the URL (?tab=). The shell links Interviews and Duties as
+          their own pages, so these are tabs over panels, not navigation. */}
+      <Segmented
+        mode="tabs"
+        idBase="vol"
+        label="Volunteers"
+        className="mb-6"
+        value={tab}
+        onChange={t => setParams({ tab: t }, { replace: true })}
+        options={[
+          { value: 'applications', label: 'Applications', count: appsLoading || counts.pending === 0 ? undefined : counts.pending, srLabel: appsLoading || counts.pending === 0 ? undefined : ' pending' },
+          { value: 'crew', label: 'Crew' },
+        ]}
+      />
 
       {/* ── Applications ── */}
       {tab === 'applications' && (
-        <div>
+        <div role="tabpanel" id="vol-panel-applications" aria-labelledby="vol-tab-applications">
           {/* The one open/close control for the form at /apply (issue #171). Closing asks first. */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pb-3 border-b-2 border-ink">
             <p className="flex-1 min-w-[min(100%,16rem)] text-pretty">
@@ -568,7 +577,7 @@ export default function AdminVolunteers() {
 
       {/* ── Crew ── */}
       {tab === 'crew' && (
-        <div>
+        <div role="tabpanel" id="vol-panel-crew" aria-labelledby="vol-tab-crew">
           <form
             onSubmit={e => { e.preventDefault(); runMatcher() }}
             aria-labelledby="fill-heading"

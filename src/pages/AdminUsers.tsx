@@ -6,7 +6,7 @@ import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input, Select } from '../components/Field'
 import Segmented from '../components/Segmented'
-import { AdminPageHead, pageClass } from '../components/AdminTabs'
+import AdminPageHead, { pageClass } from '../components/AdminPageHead'
 import { supabase } from '../lib/supabase'
 import type { UserRole } from '../types/database'
 

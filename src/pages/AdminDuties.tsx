@@ -8,7 +8,7 @@ import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input, Select } from '../components/Field'
 import Segmented from '../components/Segmented'
-import { AdminPageHead, pageClass, h2Class } from '../components/AdminTabs'
+import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
 
 type PendingDelete = { kind: 'slot'; id: string } | { kind: 'type'; id: string } | null
 

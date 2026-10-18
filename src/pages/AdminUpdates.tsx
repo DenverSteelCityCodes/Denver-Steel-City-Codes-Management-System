@@ -4,13 +4,14 @@ import { useAdminClasses } from '../hooks/useAdminClasses'
 import UpdateComposer from '../components/UpdateComposer'
 import UpdatesFeed from '../components/UpdatesFeed'
 import EmailLog from '../components/EmailLog'
-import AdminTabs, { AdminPageHead, pageClass, h2Class } from '../components/AdminTabs'
+import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
+import Segmented from '../components/Segmented'
 
 // Admin: post to everyone, all parents, all volunteers, or one section's families, with
 // "Also email" to open the mail client with the audience in BCC. Everything posted is listed.
 // Sent emails (the app's own notices to families) is the second tab, ?tab=emails.
 export default function AdminUpdates() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const tab = params.get('tab') === 'emails' ? 'emails' : 'post'
   const { updates, loading, error, postUpdate, deleteUpdate } = useUpdates(200)
   const { classes } = useAdminClasses()
@@ -21,12 +22,19 @@ export default function AdminUpdates() {
   return (
     <div className={pageClass}>
       <AdminPageHead title="Updates" tabs lede="Posts appear on parent and volunteer dashboards and in their bells." />
-      <AdminTabs label="Updates" tabs={[
-        { to: '/admin/updates', label: 'Post', current: tab === 'post' },
-        { to: '/admin/updates?tab=emails', label: 'Sent emails', current: tab === 'emails' },
-      ]} />
+      {/* Two views of this page, kept in the URL (?tab=emails for Sent emails). */}
+      <Segmented
+        mode="tabs"
+        idBase="updates"
+        label="Updates"
+        className="mb-6"
+        value={tab}
+        onChange={t => setParams(t === 'emails' ? { tab: 'emails' } : {}, { replace: true })}
+        options={[{ value: 'post', label: 'Post' }, { value: 'emails', label: 'Sent emails' }]}
+      />
 
-      <div className={tab === 'post' ? 'max-w-[720px]' : 'max-w-[960px]'}>
+      <div role="tabpanel" id={`updates-panel-${tab}`} aria-labelledby={`updates-tab-${tab}`}
+        className={tab === 'post' ? 'max-w-[720px]' : 'max-w-[960px]'}>
         {tab === 'post' ? (
           <>
             <section aria-labelledby="compose-heading">

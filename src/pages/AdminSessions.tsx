@@ -9,7 +9,7 @@ import type { ScheduleItem } from '../types/database'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input } from '../components/Field'
-import { AdminPageHead, pageClass, h2Class } from '../components/AdminTabs'
+import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
 import { useAppSettings } from '../hooks/useAppSettings'
 import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
 

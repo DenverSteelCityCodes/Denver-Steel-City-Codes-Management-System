@@ -8,7 +8,7 @@ import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import { registrationPhase } from '../lib/registrationStatus'
 import { FORM_DEFINITIONS, resolveField, type FieldConfig, type FieldDef, type FormKey } from '../lib/formFields'
 import Segmented from '../components/Segmented'
-import { AdminPageHead, pageClass } from '../components/AdminTabs'
+import AdminPageHead, { pageClass } from '../components/AdminPageHead'
 
 // One question: Show switch, the label (renamed in place, saved on leaving the field), and whether
 // it must be answered. Locked questions can be renamed but not hidden or made optional.
