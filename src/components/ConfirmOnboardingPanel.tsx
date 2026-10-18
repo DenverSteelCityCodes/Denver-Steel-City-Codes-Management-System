@@ -166,7 +166,7 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
             {errorUnder('full_name')}
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+          <div className="grid grid-cols-2 items-end gap-x-4 gap-y-5">
             <div>
               <label htmlFor="ob-2" className={labelCls}>Grade entering fall {campYear} *</label>
               <select id="ob-2" {...invalid('grade')} className={inputCls} value={form.grade ?? ''} onChange={e => set('grade', e.target.value)}>
