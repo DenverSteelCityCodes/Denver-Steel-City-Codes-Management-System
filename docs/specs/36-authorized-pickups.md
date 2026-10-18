@@ -1,6 +1,6 @@
 # 36: Authorized pickups and walk-home consent
 
-**Status:** ⬜ not started · **Issue:** #156 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
+**Status:** 🟨 in review · **Issue:** #156 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
 **Depends on:** 04 ✅, 05 ✅ · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §2; promotes backlog B6 (decided 2026-10-17)
 
@@ -15,7 +15,7 @@
 - At dismissal, the volunteer records **who** collected each camper (a listed adult, or "left alone (consented)"). An unlisted adult means the volunteer checks with an admin. The app never blocks a release, it records it.
 
 ## Scope: what to build
-- **Pickups table:** `authorized_pickups(id, student_id, name, relation, phone, created_at, updated_at)`.
+- **Pickups table:** `authorized_pickups(id, student_id, name, relation, phone, days date[] null, created_at, updated_at)`. `days` null = any day; else only those dates (built: the "Done when" needs a Wednesday-only grandparent, which the original column list couldn't hold).
   - RLS: the parent owns it; admins have full access; volunteers read through the roster RPC only.
   - Audited.
 - **Release consents:** `release_consents(id, student_id, session_id, mode text check in ('walk','bike','transit','other'), days date[] null (null = every day of the session), note, consented_by, consented_at)`. Same RLS and audit.
@@ -25,10 +25,11 @@
 - **Wizard:** a short step after emergency contacts, which can be skipped ("Only I will pick up").
 - **Volunteer roster:** `section_roster()` gains `pickup_adults jsonb` (name and relation, plus phone for the lead only) and `may_leave_alone_today bool`.
 - **Dismissal roll call:** `roll_call_marks.released_to text` and `released_mode text check in ('listed_adult','parent','alone','admin_ok')`.
+  - Built: `released_ok_by` names the admin who said OK. A recorded release stands until it is undone on purpose (no overwrite, no marking absent while collected), and release changes are audited.
   - Picking a listed adult is one tap.
   - "Someone else" asks for a name and shows "Check with an admin first".
 - **Admin:** today's dismissal board shows unreleased campers and any `admin_ok` releases. The CSV includes who collected each camper.
-- **Email:** when a parent adds a same-day pickup adult or consent during camp week, email the section lead (`pickup_changed`, outbox).
+- **Email:** when a parent adds a same-day pickup adult or consent during camp week, email the section lead (`pickup_changed`, outbox). Built: at most one per camper, section and 10 minutes, saying only that the list changed (the roll call shows the current list).
 
 ## Out of scope
 - ID scanning or QR codes.

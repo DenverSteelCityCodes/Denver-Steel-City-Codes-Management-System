@@ -110,6 +110,21 @@ describe('laptop loans (spec 29)', () => {
   })
 })
 
+describe('pickup changes (spec 36)', () => {
+  const base = { camper: 'Maya Brooks', camper_first: 'Maya', class: 'Web Development', section: 'WD-A', session: 'Week 1', student_id: 's1' }
+  it('says the list changed and points the lead at the roll call, never at one change', () => {
+    const r = render('pickup_changed', { ...base, change: 'pickup_removed' }, APP)!
+    expect(r.subject).toBe('Pickup change for Maya Brooks')
+    expect(r.text).toContain('The pickup list for Maya Brooks changed; the roll call shows the current list.')
+    expect(r.text).toContain('Web Development · WD-A, Week 1.')
+    expect(r.text).toContain(`Open roll call: ${APP}/volunteer`)
+    expect(r.text).not.toContain('/parent')
+  })
+  it('escapes the camper name', () => {
+    expect(render('pickup_changed', { ...base, camper: '<b>x</b>' }, APP)!.html).toContain('&lt;b&gt;x&lt;/b&gt;')
+  })
+})
+
 describe('volunteer interviews and onboarding (spec 35)', () => {
   const booked = { first_name: 'Riley', application_id: 'app-1', slot_id: 'slot-1', slot_datetime: '2026-10-20T22:00:00Z', duration_minutes: 15, meeting_url: 'https://meet.example.com/abc-defg' }
 

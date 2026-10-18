@@ -17,13 +17,16 @@ interface Props {
   onToggle: () => void
   // Extra lines under the row, full width (the roll-call note, spec 34).
   children?: ReactNode
+  // Dismissal (spec 36): the camper has been collected, so the toggle gives way to a fixed word
+  // (undo the release first to change the mark).
+  collected?: boolean
 }
 
 // One camper in a roll call: the name and a 44px toggle on one line, health notes and (when absent)
 // who to call full width under them. Safety information is never behind a tap (DESIGN.md › Roll
 // Call). The toggle cycles unmarked → Present → Absent → Present …, so "mark all present, then tap
 // whoever is missing" is one tap per missing camper.
-export default function RollCallRow({ student, state, pending, failed, onToggle, children }: Props) {
+export default function RollCallRow({ student, state, pending, failed, onToggle, children, collected = false }: Props) {
   const health = healthLines(student)
   const calls = state === 'absent' ? callLines(student) : []
   const name = student.full_name
@@ -47,7 +50,11 @@ export default function RollCallRow({ student, state, pending, failed, onToggle,
       state === 'absent' ? 'bg-danger-soft' : ''}`}>
       <p className="font-bold text-lg leading-[1.3] text-ink">{name}</p>
 
-      <button
+      {collected ? (
+        <span className="min-h-11 min-w-[132px] px-3 rounded border-2 font-extrabold inline-flex items-center justify-center gap-1.5 border-success bg-success-soft text-success">
+          <Check size={16} strokeWidth={3} aria-hidden="true" />Collected
+        </span>
+      ) : <button
         type="button"
         onClick={onToggle}
         // aria-disabled, not disabled: a disabled button drops keyboard focus mid-save. The panel
@@ -58,7 +65,7 @@ export default function RollCallRow({ student, state, pending, failed, onToggle,
         className={`min-h-11 min-w-[132px] px-3 rounded border-2 font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors aria-disabled:cursor-progress ${tone}`}
       >
         {icon}{label}
-      </button>
+      </button>}
 
       {health.length > 0 && <HealthNotes lines={health} className="col-span-2 mt-1" />}
 

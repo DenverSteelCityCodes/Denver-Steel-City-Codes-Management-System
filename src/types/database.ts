@@ -170,6 +170,11 @@ export interface RollCallMark {
   note: string | null
   marked_by: string | null
   marked_at: string
+  // Dismissal only (spec 36): who collected the camper, and how that was allowed.
+  released_to?: string | null
+  released_mode?: ReleaseMode | null
+  // The admin who said OK to an admin_ok release.
+  released_ok_by?: string | null
 }
 
 // week_families / week_crew name a session (migration_urgent_and_incidents.sql, spec 34).
@@ -354,4 +359,32 @@ export interface ParentProfile {
   emergency_contact_phone: string | null
   emergency_contact_relation: string | null
   updated_at: string
+}
+
+// Spec 36 (migration_authorized_pickups.sql): adults a parent allows to collect a camper, and the
+// dated consent to leave camp on their own. days null = any day (pickups) / every day of the week
+// (consents); else only those YYYY-MM-DD dates.
+export type ReleaseMode = 'listed_adult' | 'parent' | 'alone' | 'admin_ok'
+export type LeaveMode = 'walk' | 'bike' | 'transit' | 'other'
+
+export interface AuthorizedPickup {
+  id: string
+  student_id: string
+  name: string
+  relation: string
+  phone: string
+  days: string[] | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ReleaseConsent {
+  id: string
+  student_id: string
+  session_id: string
+  mode: LeaveMode
+  days: string[] | null
+  note: string | null
+  consented_by: string | null
+  consented_at: string
 }

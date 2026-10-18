@@ -73,6 +73,31 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
           ],
         },
         {
+          id: 'dismissal-pickup',
+          title: 'At dismissal: record who collected each camper',
+          keywords: 'pickup pick up release collect parent grandparent walk bike transit home alone admin ok',
+          body: [
+            { kind: 'p', text: 'A camper goes home only with their parent, an adult the parent listed for today, or on their own when the parent said yes for today. At dismissal you record who collected each camper.' },
+            {
+              kind: 'steps',
+              items: [
+                'On the **Dismissal** tab, mark everyone present as usual. Each present camper then asks **Who\'s collecting** them.',
+                'When an adult arrives, tap their name: the parent, or an adult on today\'s list ("today only" means the parent added them just for today). If the parent said the camper may go on their own today, tap **Walking home** (or biking, or transit).',
+                'Someone who isn\'t on the list? Tap **Someone else**, type their name and check with an admin before the camper leaves. If the admin says it\'s fine, tap **An admin said OK**. The same goes for **On their own** when the parent hasn\'t said yes for today.',
+                'Tapped the wrong one? Tap **Undo** next to "Collected by".',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'The list under each camper is today\'s. Families can change it until the week ends, even on the day, and the lead gets an email when they do.',
+                'Leads see a call link for each adult on the list.',
+                'Admins see who hasn\'t been collected yet, and every admin OK, on their attendance board.',
+              ],
+            },
+          ],
+        },
+        {
           id: 'roll-call-save-failed',
           title: 'A roll call tap says "Couldn\'t save"',
           keywords: 'error offline wifi connection',

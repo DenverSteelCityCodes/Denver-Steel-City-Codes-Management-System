@@ -322,6 +322,15 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       ], dashboard)
     }
 
+    // Spec 36: to a section's lead, when a family changes who may collect a camper (or the walk-home
+    // consent) during camp week. At most one per camper and 10 minutes, so it never says what
+    // changed (a later removal would be hidden): the roll call's dismissal list has the current list.
+    case 'pickup_changed':
+      return build(`Pickup change for ${p.camper ?? 'a camper'}`, 'Pickup change', [
+        `The pickup list for <strong>${esc(p.camper ?? 'a camper')}</strong> changed; the roll call shows the current list.`,
+        `${esc(p.class ?? 'Your class')}${p.section ? ` · ${esc(p.section)}` : ''}${p.session ? `, ${esc(p.session)}` : ''}. Check it before dismissal.`,
+      ], { label: 'Open roll call', url: `${appUrl}/volunteer` })
+
     // ── Volunteer applicants and crew (spec 35). One person per email; links go to /volunteer. ──
     case 'interview_booked': {
       const when = denverWhen(p.slot_datetime)

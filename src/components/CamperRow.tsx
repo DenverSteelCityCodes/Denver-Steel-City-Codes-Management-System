@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronRight, GraduationCap, Lock, Repeat } from 'l
 import InlineConfirm from './InlineConfirm'
 import ExceptionRequest from './ExceptionRequest'
 import LaptopLoanLine from './LaptopLoanLine'
+import PickupSection from './PickupSection'
 import { focusOnMount } from '../lib/focus'
 import { formatTimeRange } from '../lib/campDay'
 import { buttonClass } from '../lib/ui'
@@ -82,6 +83,7 @@ export default function CamperRow({ student, regs, sessions, leadNames, changes,
             <RegistrationBlock key={r.id} reg={r} others={regs.filter(o => o.id !== r.id)} camper={first} studentId={student.id}
               sessions={sessions} changes={changes} laptops={laptops} showName={regs.length > 1} />
           ))}
+          <PickupSection student={student} regs={regs} sessions={sessions} />
           <Link to={`/parent/classes?camper=${student.id}`} className={`${btnCls} mt-3`}>
             <GraduationCap size={20} strokeWidth={2.25} aria-hidden="true" /> {regs.length ? 'Add another week' : `Find a class for ${first}`}
           </Link>

@@ -24,7 +24,7 @@ export const PARENT_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'On [[parent-home]], tap **Start registering**. For another child later, open the menu under your initials and tap [[parent-register]].',
-                'Fill in the five steps: the camper, you and an emergency contact, health and details, the week and class, and the waiver.',
+                'Fill in the six steps: the camper, you and an emergency contact, who picks up, health and details, the week and class, and the waiver.',
                 'On the week and class step, pick a week, then one class. Classes that don\'t fit your camper\'s age or grade, or that need another class first, are shown but locked with the reason.',
                 'Tap **Submit registration**.',
               ],
@@ -176,6 +176,31 @@ export const PARENT_GUIDE: HelpGuide = {
                 'Loaners go first come, first served. When a week\'s loaners are all reserved, your camper waits in that week\'s laptop queue, and you see their place in it.',
                 'When a loaner frees up, the next camper in the queue gets it and the family gets an email.',
                 'Cancelling a spot releases its laptop. Once the week starts, laptop changes happen at check-in.',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'pickup',
+          title: 'Who can pick up your camper',
+          keywords: 'pickup pick up collect dismissal grandparent carpool walk bike transit home alone consent',
+          body: [
+            { kind: 'p', text: 'You can always collect your camper. Anyone else has to be on their pickup list, and your camper goes home on their own only if you said so for that day.' },
+            {
+              kind: 'steps',
+              items: [
+                'On [[parent-home]], tap your camper and find **Pickup**.',
+                'Tap **Add an adult**. Give their name, how they know your camper and a phone number, then choose **Any day** or **Only some days** (for example, Grandma on Wednesday).',
+                'To let your camper walk, bike or take transit home, tap **Let** your camper **leave on their own** under the week, choose how and which days, and save.',
+                'Plans changed? Tap **Change**, **Remove** or **Take it back**. You can change it until the week ends, even on the day.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'At dismissal the crew sees today\'s list and records who collected your camper.',
+                'If someone who isn\'t on the list comes, the crew checks with the camp first.',
+                'During camp week, your camper\'s lead gets an email when you change the list.',
               ],
             },
           ],
