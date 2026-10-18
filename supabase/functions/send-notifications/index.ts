@@ -27,11 +27,26 @@ Deno.serve(async () => {
   const { data: rows, error } = await db.rpc('claim_notifications', { p_limit: 50 })
   if (error) return json({ error: error.message }, 500)
 
-  let sent = 0, failed = 0
-  for (const row of (rows ?? []) as { id: number; recipient_email: string | null; template: string; payload: Record<string, unknown> }[]) {
+  let sent = 0, failed = 0, waiting = 0
+  for (const row of (rows ?? []) as { id: number; attempts: number; recipient_email: string | null; template: string; payload: Record<string, unknown> }[]) {
     const email = render(row.template, row.payload ?? {}, appUrl)
-    if (!email || !row.recipient_email) {
-      await db.rpc('finish_notification', { p_id: row.id, p_ok: false, p_error: email ? 'No recipient address' : `Unknown template ${row.template}` })
+    if (!email) {
+      // A template this deploy doesn't know yet (a migration ran before the function was
+      // redeployed): put the row back as it was, without using up an attempt, and look again in
+      // 15 minutes. Failing it would lose the email for good, since the job that queued it has
+      // already marked it sent and its dedupe key blocks a second copy.
+      console.warn(`send-notifications: unknown template "${row.template}" (notification ${row.id}); left queued until this function is redeployed with it`)
+      await db.from('notifications').update({
+        status: 'queued',
+        attempts: Math.max(0, (row.attempts ?? 1) - 1),
+        next_attempt_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+        last_error: `Waiting for a sender that knows the template ${row.template}`,
+      }).eq('id', row.id)
+      waiting++
+      continue
+    }
+    if (!row.recipient_email) {
+      await db.rpc('finish_notification', { p_id: row.id, p_ok: false, p_error: 'No recipient address' })
       failed++
       continue
     }
@@ -49,5 +64,5 @@ Deno.serve(async () => {
       failed++
     }
   }
-  return json({ sent, failed })
+  return json({ sent, failed, waiting })
 })

@@ -177,7 +177,7 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       const when = typeof p.opens_at === 'string'
         ? new Date(p.opens_at).toLocaleString('en-US', { timeZone: 'America/Denver', weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })
         : 'soon'
-      return build(`Camp registration opens ${when}`, 'Registration opens soon', [
+      return build(`Camp registration opens ${when} (Denver time)`, 'Registration opens soon', [
         `Registration for the ${esc(p.year ?? '')} coding camp opens <strong>${esc(when)} (Denver time)</strong>.`,
         'Spots are first come, first served. The dates, the place, the classes and what to bring are on the camp page.',
       ], { label: 'See the camp page', url: `${appUrl}/camp` }, unsubscribeUrl(p, appUrl))

@@ -120,7 +120,9 @@ BEGIN
   DELETE FROM interview_bookings; DELETE FROM interview_slots; DELETE FROM volunteer_applications;
   DELETE FROM section_supports; DELETE FROM sections; DELETE FROM classes;
   DELETE FROM volunteers; DELETE FROM parent_profiles; DELETE FROM sessions;
-  DELETE FROM interest_signups;   -- spec 30: visitors' "notify me" addresses don't outlive the day
+  -- Spec 30: visitors' "notify me" addresses go with every reset (audit.log's copies of them are
+  -- trimmed after 7 days, below).
+  DELETE FROM interest_signups;
   -- Every account except the demo logins and the kept owner logins (also removes visitor sign-ups).
   DELETE FROM auth.users
   WHERE id NOT IN (SELECT id FROM private.demo_keep_users)
