@@ -116,8 +116,9 @@ REVOKE ALL ON FUNCTION private.camp_status(INT) FROM PUBLIC, anon, authenticated
 -- ── 4. The public page's data ────────────────────────────────
 -- Only what a flyer would say. Weeks: name, dates, place, the days and hours classes run (earliest
 -- start to latest end) and the daily schedule. Courses: name, description, the age range across
--- their sections and, per week, whether every section is full. No section labels, rooms, crews,
--- campers or seat counts.
+-- their sections, per week whether every section is full, and the course rules (grades this fall,
+-- the class to take first, the note for families). No section labels, rooms, crews, campers or
+-- seat counts.
 CREATE OR REPLACE FUNCTION public.public_camp_info()
 RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
@@ -149,9 +150,14 @@ BEGIN
   per_week AS (
     SELECT class_id, week, min(start_date) AS start_date, bool_and(is_full) AS is_full
     FROM secs GROUP BY class_id, session_id, week)
+  -- Course rules (spec 31, migration_course_rules.sql): read through to_jsonb so this function
+  -- still works before that migration has added the columns.
   SELECT coalesce(jsonb_agg(jsonb_build_object(
            'name', c.name, 'description', c.description,
-           'age_min', a.age_min, 'age_max', a.age_max, 'weeks', w.weeks)
+           'age_min', a.age_min, 'age_max', a.age_max, 'weeks', w.weeks,
+           'grades_allowed', to_jsonb(c) -> 'grades_allowed',
+           'requires', (SELECT r.name FROM classes r WHERE r.id = (to_jsonb(c) ->> 'requires_class_id')::uuid),
+           'requirement_note', to_jsonb(c) -> 'requirement_note')
          ORDER BY c.name), '[]'::jsonb)
     INTO courses
   FROM classes c

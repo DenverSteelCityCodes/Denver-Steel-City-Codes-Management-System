@@ -21,7 +21,8 @@ begin
   insert into students (parent_id, full_name, first_name, age, grade) values (p3, 'Swap Three', 'Swap', 11, '6th') returning id into c3;
 
   insert into classes (name) values ('Swap Test') returning id into cls;
-  insert into classes (name) values ('Microcontrollers Swap Test') returning id into mc;
+  -- The grade rule is a column since spec 31 (migration_course_rules.sql), not the class name.
+  insert into classes (name, grades_allowed) values ('Microcontrollers Swap Test', '{7th,8th,9th}') returning id into mc;
   insert into sections (class_id, label, week, age_min, age_max, capacity) values (cls, 'SA', 2, 5, 17, 2) returning id into sa;
   insert into sections (class_id, label, week, age_min, age_max, capacity) values (cls, 'SB', 2, 5, 17, 1) returning id into sb;
   insert into sections (class_id, label, week, age_min, age_max, capacity) values (cls, 'W1', 1, 5, 17, 5) returning id into sw1;
@@ -64,7 +65,7 @@ begin
   begin
     perform public.swap_my_registration(r1, sm);
     res := res || E'\nMicrocontrollers for a 6th grader: ALLOWED (BAD)';
-  exception when others then res := res || E'\nMicrocontrollers for a 6th grader: refused ' || case when sqlerrm = 'Open to students entering grades 7–9' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
+  exception when others then res := res || E'\nMicrocontrollers for a 6th grader: refused ' || case when sqlerrm = 'Microcontrollers Swap Test is for grades 7–9 this fall. Request an exception?' then 'ok' else '(BAD: ' || sqlerrm || ')' end; end;
 
   -- Options: same week, eligible, other sections only, with live spots left.
   select count(*) filter (where section_id = sb and spots_left = 1) * 10
