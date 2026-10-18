@@ -20,9 +20,13 @@ import type { RegistrationStatus } from '../types/database'
 // marked, health wrapped in red and never cut short). A row opens in place: facts and health on the
 // left, each registration with a Status and a Move select on the right, history underneath.
 
+// The row a draft or confirm was made against. If the registration has changed since (the
+// database withdrew it after another save, a revert, a refresh), the draft no longer applies.
+interface Base { baseStatus: RegistrationStatus; baseSection: string }
+
 type RegAction =
-  | { kind: 'status'; regId: string; status: RegistrationStatus }
-  | { kind: 'move'; regId: string; sectionId: string }
+  | ({ kind: 'status'; regId: string; status: RegistrationStatus } & Base)
+  | ({ kind: 'move'; regId: string; sectionId: string } & Base)
   | null
 
 interface SectionOption {
@@ -96,12 +100,18 @@ function CamperDetail({
   const [pending, setPending] = useState<RegAction>(null)
   // Choosing in a select only drafts the change (an arrow key or a typed letter fires change on
   // Windows and Linux); the button next to it saves, because every save emails the family.
-  const [drafts, setDrafts] = useState<Record<string, { status?: RegistrationStatus; sectionId?: string }>>({})
+  const [drafts, setDrafts] = useState<Record<string, { status?: RegistrationStatus; sectionId?: string } & Base>>({})
   const [showHistory, setShowHistory] = useState(false)
 
-  const draft = (regId: string) => drafts[regId] ?? {}
-  const setDraft = (regId: string, patch: { status?: RegistrationStatus; sectionId?: string }) =>
-    setDrafts(d => ({ ...d, [regId]: { ...d[regId], ...patch } }))
+  const base = (reg: StudentRegistration): Base => ({ baseStatus: reg.status, baseSection: reg.section_id })
+  const fresh = (reg: StudentRegistration, b: Base | null | undefined) =>
+    !!b && b.baseStatus === reg.status && b.baseSection === reg.section_id
+  const draft = (reg: StudentRegistration): { status?: RegistrationStatus; sectionId?: string } => {
+    const d = drafts[reg.id]
+    return fresh(reg, d) ? d : {}
+  }
+  const setDraft = (reg: StudentRegistration, patch: { status?: RegistrationStatus; sectionId?: string }) =>
+    setDrafts(d => ({ ...d, [reg.id]: { ...(fresh(reg, d[reg.id]) ? d[reg.id] : {}), ...patch, ...base(reg) } }))
   const clearDraft = (regId: string) => setDrafts(d => { const n = { ...d }; delete n[regId]; return n })
   // Focus goes back to the select that started it once the change is saved or dropped.
   const refocus = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus())
@@ -126,14 +136,16 @@ function CamperDetail({
 
   // Every cancel asks first (Cancelled is how a camper is removed: the registration is kept as
   // cancelled, the database stamps it "Removed by an admin", and a freed seat is offered to the
-  // next family), and so does giving a seat in a full section. Anything else saves at once.
+  // next family), so does giving a seat up (it emails two families), and so does giving a seat in
+  // a full section. Anything else saves at once.
   function requestStatus(reg: StudentRegistration, st: RegistrationStatus) {
     if (st === reg.status) { clearDraft(reg.id); return }
     const takesSeat = holdsSeat(st) && !holdsSeat(reg.status)
-    if (st === 'cancelled' || (takesSeat && overfillNote(sectionById(reg.section_id), fillKnown, ''))) {
+    const givesSeat = holdsSeat(reg.status) && !holdsSeat(st)
+    if (st === 'cancelled' || givesSeat || (takesSeat && overfillNote(sectionById(reg.section_id), fillKnown, ''))) {
       setErr(null)
       setSaved(null)
-      setPending({ kind: 'status', regId: reg.id, status: st })
+      setPending({ kind: 'status', regId: reg.id, status: st, ...base(reg) })
     } else {
       setPending(null)
       void run(reg, `status-${reg.id}`, () => onStatusChange(reg.id, st))
@@ -162,6 +174,14 @@ function CamperDetail({
         return {
           message: `Cancel ${student.full_name}'s ${seat} in ${where}? The seat is offered to the next family on the waitlist. ${kept}`,
           confirmLabel: 'Cancel seat',
+          cancelLabel: 'Keep seat',
+          tone: 'danger' as const,
+        }
+      }
+      if (action.status === 'waitlisted' && holdsSeat(reg.status)) {
+        return {
+          message: `Put ${student.full_name} on the waitlist for ${where}? Their seat is offered to the next family on the waitlist, and both families get an email.`,
+          confirmLabel: 'Put on waitlist',
           cancelLabel: 'Keep seat',
           tone: 'danger' as const,
         }
@@ -253,8 +273,8 @@ function CamperDetail({
         ) : (
           <ul className="mt-2">
             {[...student.registrations].sort(byWeek).map((reg, i) => {
-              const d = draft(reg.id)
-              const confirming = pending?.regId === reg.id ? pending : null
+              const d = draft(reg)
+              const confirming = pending?.regId === reg.id && fresh(reg, pending) ? pending : null
               const statusValue = confirming?.kind === 'status' ? confirming.status : d.status ?? reg.status
               const moveValue = confirming?.kind === 'move' ? confirming.sectionId : d.sectionId ?? ''
               const groups = moveGroups(reg)
@@ -269,7 +289,7 @@ function CamperDetail({
                       <label htmlFor={`status-${reg.id}`} className={label}>Status</label>
                       <div className="mt-1.5 flex flex-wrap gap-2">
                         <Select id={`status-${reg.id}`} className="flex-[1_1_10rem] w-auto min-w-0" value={statusValue}
-                          onChange={e => { setSaved(null); setPending(null); setDraft(reg.id, { status: e.target.value as RegistrationStatus }) }}>
+                          onChange={e => { setSaved(null); setPending(null); setDraft(reg, { status: e.target.value as RegistrationStatus }) }}>
                           {(['confirmed', 'offered', 'waitlisted', 'cancelled', ...(reg.status === 'pending' ? ['pending' as const] : [])] as RegistrationStatus[])
                             .map(st => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}
                         </Select>
@@ -285,7 +305,7 @@ function CamperDetail({
                       <div className="mt-1.5 flex flex-wrap gap-2">
                         <Select id={`move-${reg.id}`} className="flex-[1_1_12rem] w-auto min-w-0" aria-describedby={`reg-hint-${reg.id}`}
                           value={moveValue} disabled={groups.length === 0}
-                          onChange={e => { setSaved(null); setPending(null); setDraft(reg.id, { sectionId: e.target.value || undefined }) }}>
+                          onChange={e => { setSaved(null); setPending(null); setDraft(reg, { sectionId: e.target.value || undefined }) }}>
                           <option value="">Keep in {reg.section_label}{reg.section_week ? ` · Week ${reg.section_week}` : ''}</option>
                           {groups.map(g => (
                             <optgroup key={String(g.w)} label={g.w ? `Week ${g.w}` : 'Both weeks'}>
@@ -295,7 +315,7 @@ function CamperDetail({
                         </Select>
                         {d.sectionId && !confirming && (
                           <Button variant="ink" aria-disabled={here || undefined}
-                            onClick={() => { if (!busy) { setErr(null); setPending({ kind: 'move', regId: reg.id, sectionId: d.sectionId! }) } }}>
+                            onClick={() => { if (!busy) { setErr(null); setPending({ kind: 'move', regId: reg.id, sectionId: d.sectionId!, ...base(reg) }) } }}>
                             Move
                           </Button>
                         )}
@@ -449,9 +469,10 @@ export default function AdminStudents() {
         (statusFilter === 'unregistered' && s.registrations.length === 0) ||
         s.registrations.some(r => r.status === statusFilter)
 
-      return matchesSearch && matchesStatus
+      // The open camper stays while it's open, even when a save takes it out of the filter.
+      return (matchesSearch && matchesStatus) || s.id === expandedId
     })
-  }, [students, search, statusFilter])
+  }, [students, search, statusFilter, expandedId])
 
   // Counts campers (each once per status they have), matching what the filter lists.
   const statusCounts = useMemo(() => {
