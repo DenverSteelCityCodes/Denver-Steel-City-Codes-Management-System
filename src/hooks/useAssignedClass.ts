@@ -59,6 +59,7 @@ export function useAssignedClass() {
   const [isAccepted, setIsAccepted] = useState(false)
   // Latest application status, so a rejected applicant isn't told "under review" forever.
   const [applicationStatus, setApplicationStatus] = useState<string | null>(null)
+  const [appliedAt, setAppliedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -92,7 +93,9 @@ export function useAssignedClass() {
     const lookupErr = volunteerRes.error ?? appRes.error
     if (lookupErr) { setError(lookupErr.message); setLoading(false); return }
     setIsAccepted(!!volunteerRes.data)
-    setApplicationStatus((appRes.data as { status: string } | null)?.status ?? null)
+    const app = appRes.data as { status: string; created_at: string } | null
+    setApplicationStatus(app?.status ?? null)
+    setAppliedAt(app?.created_at ?? null)
 
     if (leadRes.error) { setError(leadRes.error.message); setLoading(false); return }
     if (supportRes.error) { setError(supportRes.error.message); setLoading(false); return }
@@ -159,5 +162,5 @@ export function useAssignedClass() {
     setLoading(false)
   }
 
-  return { assignedSections, isAccepted, applicationStatus, loading, error, refetch: fetchAssignedSections }
+  return { assignedSections, isAccepted, applicationStatus, appliedAt, loading, error, refetch: fetchAssignedSections }
 }

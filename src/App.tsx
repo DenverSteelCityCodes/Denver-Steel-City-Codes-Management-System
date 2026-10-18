@@ -19,7 +19,12 @@ import AdminFormEditor from './pages/AdminFormEditor'
 import AdminAttendance from './pages/AdminAttendance'
 import AdminUpdates from './pages/AdminUpdates'
 import PrintRoster from './pages/PrintRoster'
-import VolunteerDashboard from './pages/VolunteerDashboard'
+import VolunteerLayout from './components/VolunteerLayout'
+import VolunteerToday from './pages/volunteer/VolunteerToday'
+import VolunteerClasses from './pages/volunteer/VolunteerClasses'
+import VolunteerDuties from './pages/volunteer/VolunteerDuties'
+import VolunteerUpdates from './pages/volunteer/VolunteerUpdates'
+import VolunteerProfile from './pages/volunteer/VolunteerProfile'
 import ParentDashboard from './pages/ParentDashboard'
 import ParentRegistrationPage from './pages/ParentRegistrationPage'
 import ClassBrowser from './pages/ClassBrowser'
@@ -77,7 +82,13 @@ function App() {
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['volunteer']} />}>
-            <Route path="/volunteer" element={<VolunteerDashboard />} />
+            <Route element={<VolunteerLayout />}>
+              <Route path="/volunteer" element={<VolunteerToday />} />
+              <Route path="/volunteer/classes" element={<VolunteerClasses />} />
+              <Route path="/volunteer/duties" element={<VolunteerDuties />} />
+              <Route path="/volunteer/updates" element={<VolunteerUpdates />} />
+              <Route path="/volunteer/profile" element={<VolunteerProfile />} />
+            </Route>
           </Route>
 
           {/* Paper fallback: printable section roster for admins and the section's crew */}

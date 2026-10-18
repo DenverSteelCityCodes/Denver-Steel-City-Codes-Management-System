@@ -121,7 +121,7 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
           value={body}
           onChange={e => setBody(e.target.value)}
           placeholder={mode.kind === 'lead' ? 'What we did today, what to bring tomorrow…' : 'Pickup reminders, schedule changes, thank-yous…'}
-          className="w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition resize-y"
+          className="w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand transition resize-y"
         />
         <p className="mt-1 text-right font-sans text-xs text-ink-faint tabular-nums">{body.length}/{MAX}</p>
       </div>

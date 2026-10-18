@@ -14,3 +14,29 @@ export function realNote(text: string | null | undefined): string | null {
   const t = (text ?? '').trim()
   return t && !/^(none|n\/?a|no|nope|nothing|-)\.?$/i.test(t) ? t : null
 }
+
+interface RosterFields {
+  allergies: string | null
+  medical_conditions: string | null
+  medical_info: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  parent_phone: string | null
+}
+
+// One line for the crew's health tag: "Allergies: … · Medical: …", or null when there's nothing.
+export function healthNote(s: RosterFields): string | null {
+  const allergies = realNote(s.allergies)
+  const medical = realNote(s.medical_conditions) ?? realNote(s.medical_info)
+  return [allergies && `Allergies: ${allergies}`, medical && `Medical: ${medical}`].filter(Boolean).join(' · ') || null
+}
+
+// Who the crew calls about a camper: the emergency contact when there is one, else the parent.
+export function callTarget(s: RosterFields): { number: string; who: string } | null {
+  if (s.emergency_contact_phone) return { number: s.emergency_contact_phone, who: s.emergency_contact_name ?? 'emergency contact' }
+  return s.parent_phone ? { number: s.parent_phone, who: 'parent' } : null
+}
+
+export function telHref(number: string): string {
+  return `tel:${number.replace(/[^\d+]/g, '')}`
+}
