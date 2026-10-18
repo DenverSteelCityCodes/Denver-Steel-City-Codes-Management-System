@@ -107,7 +107,7 @@ export default function ParentLayout() {
 
           <div className="ml-auto" ref={menuRef}>
             <button ref={buttonRef} type="button" onClick={() => setMenuOpen(o => !o)} aria-expanded={menuOpen} aria-controls="parent-menu"
-              aria-label={`${name}, account menu`}
+              aria-label={`${initials}: ${name}, account menu`}
               className={`w-11 h-11 grid place-items-center rounded-full border-2 border-on-shell-muted hover:border-brand text-on-shell text-sm font-bold transition-colors ${onInk}`}>
               {initials}
             </button>

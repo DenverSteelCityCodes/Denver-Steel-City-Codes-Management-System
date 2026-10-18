@@ -240,7 +240,7 @@ export default function AdminLayout() {
 
             <div className="relative" ref={menuRef}>
               <button ref={avatarRef} type="button" onClick={() => setMenuOpen(o => !o)}
-                aria-label={`${name}, account menu`} aria-expanded={menuOpen} aria-controls="account-menu"
+                aria-label={`${initials}: ${name}, account menu`} aria-expanded={menuOpen} aria-controls="account-menu"
                 className="w-11 h-11 grid place-items-center rounded-full border-2 border-on-shell-muted text-sm font-bold text-on-shell hover:border-brand transition-colors">
                 {initials}
               </button>

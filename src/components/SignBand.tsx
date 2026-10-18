@@ -32,15 +32,17 @@ export default function SignBand({ id, context, figure, unit, message, sub, to, 
   const headingId = id ? `${id}-h` : undefined
 
   const messageCls = 'col-start-1 text-[1.375rem] font-extrabold leading-[1.15] text-balance'
+  // The spaces between the parts keep their words apart in the text a link's name is checked
+  // against (WCAG 2.5.3); a grid doesn't lay out whitespace, so nothing moves.
   const body = (
     <>
-      <span className="col-span-full text-sm font-bold text-brand-on-muted">{context}</span>
+      <span className="col-span-full text-sm font-bold text-brand-on-muted">{context}</span>{' '}
       {hasFigure && (
         <span className="font-extrabold text-[3.5rem] leading-[0.92] tracking-[-0.03em] [font-variant-numeric:tabular-nums_lining-nums] break-words min-w-0">
           <span key={value} className={value !== first ? 'ui-flap' : undefined}>{value}</span>
           {unit && <small className="ml-[0.15em] text-[0.42em] tracking-normal font-extrabold">{unit}</small>}
         </span>
-      )}
+      )}{' '}
       {to && (
         <span aria-hidden="true" className="row-start-2 row-span-2 col-start-2 self-center w-12 h-12 grid place-items-center rounded bg-shell text-brand">
           <ArrowRight size={26} strokeWidth={2.5} />
@@ -48,7 +50,7 @@ export default function SignBand({ id, context, figure, unit, message, sub, to, 
       )}
       {headingId && !to
         ? <h2 id={headingId} tabIndex={-1} className={`${messageCls} focus:outline-none`}>{message}</h2>
-        : <span className={messageCls}>{message}</span>}
+        : <span className={messageCls}>{message}</span>}{' '}
       {sub && <span className="col-span-full mt-1 text-base text-brand-on-muted text-pretty">{sub}</span>}
       {children && <div className="col-span-full">{children}</div>}
     </>

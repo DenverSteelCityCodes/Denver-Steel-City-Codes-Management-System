@@ -137,10 +137,11 @@ export default function VolunteerDuties() {
               const state = has ? "You're on" : open ? `${open} open` : 'Full'
               return (
                 <button key={d.date} type="button" aria-pressed={on} onClick={() => setDayPick(d.date)}
-                  aria-label={`${formatDayLong(d.date)}, ${has ? `you're on a duty${open ? `, ${open} open` : ''}` : open ? `${open} open` : 'full'}`}
+                  aria-label={`${weekday(d.date)} ${dayNum(d.date)} ${state}: ${formatDayLong(d.date)}${has && open ? `, ${open} open` : ''}`}
                   className={`${segItemCls(on)} min-h-[76px] px-0.5 flex flex-col items-center justify-center gap-0.5`}>
-                  <span className="text-sm font-bold">{weekday(d.date)}</span>
-                  <span className="text-[1.375rem] font-extrabold leading-none">{dayNum(d.date)}</span>
+                  {/* The name starts with what the button shows (WCAG 2.5.3); the spaces keep the words apart. */}
+                  <span className="text-sm font-bold">{weekday(d.date)}</span>{' '}
+                  <span className="text-[1.375rem] font-extrabold leading-none">{dayNum(d.date)}</span>{' '}
                   <span className={`text-sm ${has ? 'font-extrabold' : 'font-normal'}`}>{state}</span>
                 </button>
               )

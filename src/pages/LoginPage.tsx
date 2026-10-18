@@ -161,7 +161,8 @@ export default function LoginPage() {
                     >
                       <span className="min-w-0">
                         <span id={`seat-${account.key}-name`} className="block text-lg font-extrabold leading-tight">
-                          {mine ? <>Signing in as {account.label}…</> : <><span className="sr-only">Sign in as </span>{account.label}</>}
+                          {/* The name starts with the seat's visible label (WCAG 2.5.3). */}
+                          {mine ? <>Signing in as {account.label}…</> : <>{account.label}<span className="sr-only">: sign in</span></>}
                         </span>
                         <span id={`seat-${account.key}`} className="block mt-0.5 text-brand-on-muted text-pretty">{account.blurb}</span>
                       </span>
