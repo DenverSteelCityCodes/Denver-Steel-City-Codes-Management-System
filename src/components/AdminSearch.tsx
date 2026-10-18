@@ -8,6 +8,8 @@ import { fetchAll } from '../lib/fetchAll'
 interface Result {
   key: string
   label: string
+  // Other names it answers to (a page's old name, e.g. Students for Campers).
+  keywords?: string[]
   hint: string
   icon: LucideIcon
   to: string
@@ -20,7 +22,7 @@ interface Result {
 const INDEX_MAX_AGE_MS = 60_000
 
 export default function AdminSearch({ pages, onEscape }: {
-  pages: { label: string; to: string; icon: LucideIcon }[]
+  pages: { label: string; to: string; icon: LucideIcon; keywords?: string[] }[]
   onEscape?: () => void
 }) {
   const navigate = useNavigate()
@@ -87,9 +89,10 @@ export default function AdminSearch({ pages, onEscape }: {
   }
 
   const q = query.trim().toLowerCase()
-  const pageResults: Result[] = pages.map(p => ({ key: `p-${p.to}`, label: p.label, hint: 'Page', icon: p.icon, to: p.to }))
+  const pageResults: Result[] = pages.map(p => ({ key: `p-${p.to}`, label: p.label, keywords: p.keywords, hint: 'Page', icon: p.icon, to: p.to }))
+  const matches = (r: Result) => r.label.toLowerCase().includes(q) || !!r.keywords?.some(k => k.toLowerCase().includes(q))
   const results = q
-    ? [...pageResults, ...(index ?? [])].filter(r => r.label.toLowerCase().includes(q)).slice(0, 8)
+    ? [...pageResults, ...(index ?? [])].filter(matches).slice(0, 8)
     : []
 
   function go(r: Result) {

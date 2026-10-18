@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
   Sun, Backpack, LayoutGrid, HandHelping, Megaphone, Settings, CircleQuestionMark,
@@ -8,48 +9,66 @@ import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import { useAdminAttention } from '../hooks/useAdminAttention'
+import { useUpdates } from '../hooks/useUpdates'
 import { supabase } from '../lib/supabase'
 import AttentionBell from './AttentionBell'
 import AdminSearch from './AdminSearch'
 import wordmark from '../../assets/sccdenver.png'
 
 // Admin shell (DESIGN.md › Navigation, A-admin §9): an ink bar with search, the bell and the
-// avatar; from 1024px a 232px ink rail of five jobs plus Setup, below it an ink tab strip with the
-// same six. Identity, dark mode, help and sign-out live in one place: the avatar menu.
+// avatar; from 1024px a 232px ink rail of five jobs plus Setup, each job's other pages listed
+// under it; below 1024px the same six as an ink tab strip, with the current job's pages as
+// sub-tabs on the floor. Every admin page has a permanent link. Identity, dark mode, help and
+// sign-out live in one place: the avatar menu.
 
-interface NavItem {
+interface Page {
   to: string
   label: string
-  icon: LucideIcon
-  // Routes that belong to this job (the rail links the page that opens it).
-  match: string[]
+  // Other names the search answers to (old page names, what's on the page).
+  keywords?: string[]
 }
 
-const JOBS: NavItem[] = [
-  { to: '/admin', label: 'Today', icon: Sun, match: ['/admin', '/admin/attendance'] },
-  { to: '/admin/students', label: 'Campers', icon: Backpack, match: ['/admin/students'] },
-  { to: '/admin/classes', label: 'Classes', icon: LayoutGrid, match: ['/admin/classes'] },
-  { to: '/admin/volunteers', label: 'Volunteers', icon: HandHelping, match: ['/admin/volunteers', '/admin/interviews', '/admin/duties'] },
-  { to: '/admin/updates', label: 'Updates', icon: Megaphone, match: ['/admin/updates'] },
-]
-const SETUP: NavItem = { to: '/admin/sessions', label: 'Setup', icon: Settings, match: ['/admin/sessions', '/admin/forms', '/admin/users'] }
-const HELP: NavItem = { to: '/admin/help', label: 'Help', icon: CircleQuestionMark, match: ['/admin/help'] }
+interface Job extends Page {
+  icon: LucideIcon
+  // What the job's own page is called among its sub-tabs (Volunteers opens on Applications).
+  home?: string
+  // The job's other pages: listed under it in the rail, as sub-tabs on a phone.
+  more?: Page[]
+}
 
-// Every page the search can jump to, by the name the admin knows it by.
-const SEARCH_PAGES = [
-  ...JOBS, SETUP,
-  { to: '/admin/attendance', label: 'Attendance', icon: Sun },
-  { to: '/admin/interviews', label: 'Interviews', icon: HandHelping },
-  { to: '/admin/duties', label: 'Duties', icon: HandHelping },
-  { to: '/admin/users', label: 'Users and roles', icon: Settings },
-  { to: '/admin/forms', label: 'Forms', icon: Settings },
-  HELP,
+const JOBS: Job[] = [
+  { to: '/admin', label: 'Today', icon: Sun, home: 'Today', keywords: ['Dashboard', 'Home', 'To do', 'Seats'],
+    more: [{ to: '/admin/attendance', label: 'Attendance', keywords: ['Roll call', 'Unaccounted', 'Attendance CSV', 'Week export'] }] },
+  { to: '/admin/students', label: 'Campers', icon: Backpack, keywords: ['Students', 'Change requests', 'Registrations'] },
+  { to: '/admin/classes', label: 'Classes', icon: LayoutGrid, keywords: ['Sections', 'Timetable', 'Rosters', 'Leads'] },
+  { to: '/admin/volunteers', label: 'Volunteers', icon: HandHelping, home: 'Applications', keywords: ['Applications', 'Crew', 'Volunteer roster'],
+    more: [
+      { to: '/admin/interviews', label: 'Interviews', keywords: ['Interview slots', 'Bookings'] },
+      { to: '/admin/duties', label: 'Duties', keywords: ['Duty schedule', 'duty', 'Duty slots'] },
+    ] },
+  { to: '/admin/updates', label: 'Updates', icon: Megaphone, keywords: ['Announcements', 'Posts', 'Emails', 'Sent emails'] },
 ]
+const SETUP: Job = {
+  to: '/admin/sessions', label: 'Setup', icon: Settings, home: 'Season', keywords: ['Sessions', 'Season', 'Weeks', 'Registration', 'Schedule'],
+  more: [
+    { to: '/admin/forms', label: 'Forms', keywords: ['Form editor', 'Questions'] },
+    { to: '/admin/users', label: 'Users and roles', keywords: ['Users & roles', 'Roles', 'Accounts', 'Admins'] },
+  ],
+}
+const HELP: Job = { to: '/admin/help', label: 'Help', icon: CircleQuestionMark, keywords: ['Guide', 'How to', 'Playbook'] }
 
-// 'page' on the item's own page, 'true' on a page inside its job, else nothing.
-function currentOf(item: NavItem, pathname: string): 'page' | 'true' | undefined {
-  if (pathname === item.to) return 'page'
-  return item.match.some(m => m !== '/admin' && (pathname === m || pathname.startsWith(`${m}/`))) ? 'true' : undefined
+// Every page the search can jump to, by the name the admin knows it by and its old names.
+const SEARCH_PAGES = [...JOBS, SETUP, HELP].flatMap(j => [
+  { to: j.to, label: j.label, icon: j.icon, keywords: j.keywords },
+  ...(j.more ?? []).map(p => ({ to: p.to, label: p.label, icon: j.icon, keywords: p.keywords })),
+])
+
+const on = (pathname: string, to: string) => pathname === to || (to !== '/admin' && pathname.startsWith(`${to}/`))
+
+// 'page' on the job's own page, 'true' on one of its other pages, else nothing.
+function jobCurrent(job: Job, pathname: string): 'page' | 'true' | undefined {
+  if (pathname === job.to) return 'page'
+  return (job.more ?? []).some(p => on(pathname, p.to)) || on(pathname, job.to) ? 'true' : undefined
 }
 
 export default function AdminLayout() {
@@ -61,21 +80,36 @@ export default function AdminLayout() {
   const [searchOpen, setSearchOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLButtonElement>(null)
+  const searchBtnRef = useRef<HTMLButtonElement>(null)
 
-  // One copy of the To do queue for the rail's Today count and the bell; it reloads quietly on
-  // every navigation so the counts reflect what was just done.
+  // One copy of the To do queue (the rail's Today count and the bell) and of the newest updates
+  // (the bell). Both reload quietly on every navigation so they reflect what was just done.
   const attention = useAdminAttention()
-  const refetchAttention = useRef(attention.refetch)
-  useEffect(() => { refetchAttention.current = attention.refetch })
-  // Volunteers count: applications waiting for a decision.
+  const { updates, refetch: refetchUpdates } = useUpdates(3)
+  const reload = useRef([attention.refetch, refetchUpdates] as const)
+  useEffect(() => { reload.current = [attention.refetch, refetchUpdates] })
+  // Volunteers: applications waiting for a decision. Interviews: those with no interview booked.
   const [pending, setPending] = useState(0)
+  const [unbooked, setUnbooked] = useState(0)
   const firstPath = useRef(true)
   useEffect(() => {
     let alive = true
-    supabase.from('volunteer_applications').select('id', { count: 'exact', head: true }).eq('status', 'pending')
-      .then(({ count, error }) => { if (alive && !error) setPending(count ?? 0) })
+    Promise.all([
+      supabase.from('volunteer_applications').select('id, status'),
+      supabase.from('interview_bookings').select('application_id'),
+    ]).then(([apps, bookings]) => {
+      if (!alive || apps.error) return
+      const booked = new Set((bookings.data ?? []).map(b => b.application_id as string))
+      const waiting = (apps.data ?? []).filter(a => a.status === 'pending')
+      setPending(waiting.length)
+      if (!bookings.error) setUnbooked(waiting.filter(a => !booked.has(a.id)).length)
+    }, () => { /* keep the last counts */ })
     if (firstPath.current) firstPath.current = false
-    else void refetchAttention.current()
+    else {
+      const [again, againUpdates] = reload.current
+      again().catch(() => { /* the queue keeps what it showed */ })
+      void againUpdates()
+    }
     return () => { alive = false }
   }, [pathname])
 
@@ -104,10 +138,16 @@ export default function AdminLayout() {
     }
   }, [menuOpen])
 
-  // The phone search opens with its field focused.
-  useEffect(() => {
-    if (searchOpen) document.getElementById('admin-search')?.focus()
-  }, [searchOpen])
+  // The phone search: the field is focused inside the tap itself, so iOS opens the keyboard;
+  // closing it (Esc or ×) hands focus back to the search button.
+  function openSearch() {
+    flushSync(() => setSearchOpen(true))
+    document.getElementById('admin-search')?.focus()
+  }
+  function closeSearch() {
+    flushSync(() => setSearchOpen(false))
+    searchBtnRef.current?.focus()
+  }
 
   const name = profile?.display_name ?? 'Admin'
   const initials = name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase() || 'A'
@@ -115,28 +155,50 @@ export default function AdminLayout() {
   const counts: Record<string, { n: number; said: string }> = {
     '/admin': { n: urgent, said: urgent === 1 ? 'item needs you' : 'items need you' },
     '/admin/volunteers': { n: pending, said: pending === 1 ? 'application pending' : 'applications pending' },
+    '/admin/interviews': { n: unbooked, said: unbooked === 1 ? 'applicant has no interview' : 'applicants have no interview' },
+  }
+  const badge = (to: string, cls: string) => {
+    const c = counts[to]
+    return c && c.n > 0 ? (
+      <span className={`ml-auto px-2 rounded-full border text-sm leading-[22px] tabular-nums ${cls}`}>
+        <span className="sr-only">, </span>{c.n}<span className="sr-only"> {c.said}</span>
+      </span>
+    ) : null
   }
 
-  const railItem = (item: NavItem) => {
-    const current = currentOf(item, pathname)
-    const count = counts[item.to]
-    const Icon = item.icon
+  const railItem = (job: Job) => {
+    const current = jobCurrent(job, pathname)
+    const Icon = job.icon
     return (
-      <Link key={item.to} to={item.to} aria-current={current}
-        className={`flex items-center gap-3 min-h-12 px-2 rounded font-bold no-underline transition-colors ${
-          current ? 'bg-shell-raised text-on-shell' : 'text-on-shell-muted hover:bg-shell-raised hover:text-on-shell'}`}>
-        <span aria-hidden="true" className={`w-10 h-10 grid place-items-center rounded shrink-0 ${current ? 'bg-brand text-brand-on' : 'bg-shell-raised'}`}>
-          <Icon size={22} strokeWidth={2.25} />
-        </span>
-        {item.label}
-        {count && count.n > 0 && (
-          <span className="ml-auto px-2 rounded-full border border-on-shell-muted bg-shell-raised text-sm leading-[22px] text-on-shell tabular-nums">
-            <span className="sr-only">, </span>{count.n}<span className="sr-only"> {count.said}</span>
+      <div key={job.to} className="grid gap-0.5">
+        <Link to={job.to} aria-current={current}
+          className={`flex items-center gap-3 min-h-12 px-2 rounded font-bold no-underline transition-colors ${
+            current ? 'bg-shell-raised text-on-shell' : 'text-on-shell-muted hover:bg-shell-raised hover:text-on-shell'}`}>
+          <span aria-hidden="true" className={`w-10 h-10 grid place-items-center rounded shrink-0 ${current ? 'bg-brand text-brand-on' : 'bg-shell-raised'}`}>
+            <Icon size={22} strokeWidth={2.25} />
           </span>
-        )}
-      </Link>
+          {job.label}
+          {badge(job.to, 'border-on-shell-muted bg-shell-raised text-on-shell')}
+        </Link>
+        {(job.more ?? []).map(p => {
+          const here = on(pathname, p.to)
+          return (
+            <Link key={p.to} to={p.to} aria-current={here ? 'page' : undefined}
+              className={`flex items-center gap-2 min-h-11 pl-[60px] pr-2 rounded no-underline transition-colors ${
+                here ? 'bg-shell-raised text-on-shell font-bold' : 'text-on-shell-muted font-semibold hover:bg-shell-raised hover:text-on-shell'}`}>
+              {p.label}
+              {badge(p.to, 'border-on-shell-muted/60 text-on-shell')}
+            </Link>
+          )
+        })}
+      </div>
     )
   }
+
+  // Below 1024px, the current job's pages as sub-tabs on the floor (ink underline; gold stays in
+  // the shell), so Attendance, Interviews, Duties, Forms and Users are a tap away too.
+  const job = [...JOBS, SETUP].find(j => jobCurrent(j, pathname))
+  const subPages = job?.more?.length ? [{ to: job.to, label: job.home ?? job.label }, ...job.more] : []
 
   const menuItem = 'flex items-center gap-3 w-full min-h-11 px-4 text-left no-underline hover:bg-bg transition-colors'
 
@@ -154,10 +216,10 @@ export default function AdminLayout() {
           </Link>
 
           <div className={`${searchOpen ? 'flex' : 'hidden'} md:flex flex-1 md:flex-initial md:basis-[400px] min-w-0`}>
-            <AdminSearch pages={SEARCH_PAGES} onEscape={() => setSearchOpen(false)} />
+            <AdminSearch pages={SEARCH_PAGES} onEscape={closeSearch} />
           </div>
           {searchOpen && (
-            <button type="button" onClick={() => setSearchOpen(false)} aria-label="Close search"
+            <button type="button" onClick={closeSearch} aria-label="Close search"
               className="ui-iconbtn md:hidden text-on-shell">
               <X size={20} strokeWidth={2.25} />
             </button>
@@ -165,11 +227,11 @@ export default function AdminLayout() {
 
           <span className={`${searchOpen ? 'max-md:hidden' : ''} flex-1`} />
           <div className={`${searchOpen ? 'max-md:hidden' : ''} flex items-center gap-1`}>
-            <button type="button" onClick={() => setSearchOpen(true)} aria-label="Search campers, classes and people"
+            <button ref={searchBtnRef} type="button" onClick={openSearch} aria-label="Search campers, classes and people"
               className="ui-iconbtn md:hidden text-on-shell-muted hover:text-on-shell">
               <Search size={20} strokeWidth={2.25} />
             </button>
-            <AttentionBell items={attention.items} loading={attention.loading} />
+            <AttentionBell items={attention.items} loading={attention.loading} updates={updates} />
 
             <div className="relative" ref={menuRef}>
               <button ref={avatarRef} type="button" onClick={() => setMenuOpen(o => !o)}
@@ -205,7 +267,7 @@ export default function AdminLayout() {
         {/* Below 1024px: the rail's six as an ink tab strip (scrolls sideways if it has to). */}
         <nav aria-label="Admin" className="lg:hidden flex overflow-x-auto [scrollbar-width:none] px-1 md:px-5">
           {[...JOBS, SETUP].map(item => {
-            const current = currentOf(item, pathname)
+            const current = jobCurrent(item, pathname)
             return (
               <Link key={item.to} to={item.to} aria-current={current}
                 className={`flex-[1_0_auto] grid place-items-center min-h-12 px-1.5 min-[480px]:px-3 whitespace-nowrap text-sm min-[480px]:text-base font-bold no-underline transition-colors [&:focus-visible]:-outline-offset-[3px] ${
@@ -229,6 +291,27 @@ export default function AdminLayout() {
         </div>
 
         <main id="main" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
+          {subPages.length > 0 && (
+            <nav aria-label={`${job?.label} pages`} className="lg:hidden px-4 sm:px-6 border-b border-border">
+              <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {subPages.map(p => {
+                  const here = pathname === p.to
+                  return (
+                    <li key={p.to} className="shrink-0">
+                      <Link to={p.to} aria-current={here ? 'page' : undefined}
+                        className={`inline-flex items-center gap-1.5 min-h-12 px-2 sm:px-3 font-bold whitespace-nowrap no-underline focus-visible:-outline-offset-[3px] ${
+                          here ? 'text-ink shadow-[inset_0_-4px_0_var(--ink)]' : 'text-ink-muted hover:text-ink'}`}>
+                        {p.label}
+                        {counts[p.to] && counts[p.to].n > 0 && p.to !== job?.to && (
+                          <span className="font-semibold tabular-nums">{counts[p.to].n}<span className="sr-only"> {counts[p.to].said}</span></span>
+                        )}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </nav>
+          )}
           <Outlet />
         </main>
       </div>

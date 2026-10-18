@@ -2,17 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, ArrowRight } from 'lucide-react'
 import type { AttentionItem } from '../hooks/useAdminAttention'
-import { useUpdates, audienceLabel } from '../hooks/useUpdates'
-import { useAuth } from '../context/AuthContext'
+import { audienceLabel, type UpdateWithSection } from '../hooks/useUpdates'
 import { timeAgo } from '../lib/campDay'
 
 // Top-bar bell: the same To do queue as Today, reachable from every page, in an inline popover
 // framed by a 2px ink rule (DESIGN.md › One Ply). The dot only shows when something is waiting.
-// The shell owns the queue (one copy, reloaded on navigation) and hands it in. Updates posted by
-// someone else (a section lead) follow the queue; the admin's own posts are on Updates.
-export default function AttentionBell({ items, loading }: { items: AttentionItem[]; loading: boolean }) {
-  const { user } = useAuth()
-  const { updates } = useUpdates(5)
+// The shell owns the queue and the three newest updates (one copy each, reloaded on navigation)
+// and hands them in.
+export default function AttentionBell({ items, loading, updates }: {
+  items: AttentionItem[]
+  loading: boolean
+  updates: UpdateWithSection[]
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -34,7 +35,7 @@ export default function AttentionBell({ items, loading }: { items: AttentionItem
   }, [open])
 
   const count = loading ? 0 : items.length
-  const fromOthers = updates.filter(u => u.author_id !== user?.id).slice(0, 3)
+  const recent = updates.slice(0, 3)
   const row = 'flex items-start gap-3 px-4 py-3 no-underline hover:bg-bg transition-colors'
 
   return (
@@ -83,11 +84,11 @@ export default function AttentionBell({ items, loading }: { items: AttentionItem
               })}
             </ul>
           )}
-          {fromOthers.length > 0 && (
+          {recent.length > 0 && (
             <div className="mt-2 pt-2 border-t-2 border-ink">
-              <p className="px-4 pt-2 pb-1 text-sm font-bold text-ink-muted">Posted by others</p>
+              <p className="px-4 pt-2 pb-1 text-sm font-bold text-ink-muted">Recent updates</p>
               <ul>
-                {fromOthers.map((u, i) => (
+                {recent.map((u, i) => (
                   <li key={u.id} className={i > 0 ? 'border-t border-border' : undefined}>
                     <Link to="/admin/updates" onClick={() => setOpen(false)} className="block px-4 py-3 no-underline hover:bg-bg transition-colors">
                       <span className="block text-sm text-ink-muted">{u.author_name} to {audienceLabel(u)} · {timeAgo(u.created_at)}</span>
