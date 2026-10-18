@@ -12,7 +12,7 @@ The only Supabase project (`rdckxazvoeixgwtjhrlf`) is the public demo. Its night
 - The demo project stays as it is: public, reset nightly, deployed to `scc.haanie.com`.
 
 ## Scope: what to build
-- **New Supabase project** `scc-prod` on Pro, in a US region. Record the region in the README and the privacy notice. No `pg_cron` reset job, and no `private.demo_*` tables.
+- **New Supabase project** `scc-prod` in a US region, on the free tier with the keep-alive and weekly backup workflows (decided 2026-10-18, [runbook](../runbooks/free-tier-operations.md)); Pro only if SCC pays for it. Record the region in the README and the privacy notice. No `pg_cron` reset job, and no `private.demo_*` tables.
 - **Convert migrations:** move the 18 `migration_*.sql` files into `supabase/migrations/<timestamp>_<name>.sql` in dependency order. Start from `schema.sql`; each file's header names what it must follow. `migration_demo_environment.sql` becomes `supabase/demo/` and is applied **only** to the demo project.
 - Prove the conversion: `supabase db reset` locally, then `supabase db diff` against the demo project must show only demo-only objects.
 - **Vercel:** connect the GitHub repo with Git integration. Prod project: `main` → production URL (❓ e.g. `register.steelcitycodes.org`; needs DNS, Q-H5); PRs → preview deploys against a **staging** Supabase project, or the demo project if no third project is affordable. The demo deploy keeps `VITE_DEMO_MODE=true`; prod must not set it.

@@ -1,0 +1,67 @@
+# Keep-alive (docs/runbooks/free-tier-operations.md): Supabase pauses a free-tier project after
+# about a week without activity. Once a day this calls public_camp_info() on each project, a real
+# database read that a signed-out visitor can already make and that returns no personal data.
+# A project whose URL or anon key isn't set is skipped, so this runs before prod exists.
+name: Keep-alive
+
+on:
+  schedule:
+    - cron: '23 14 * * *'   # daily, 14:23 UTC (an off-peak minute; GitHub delays :00 jobs)
+  workflow_dispatch:
+
+permissions:
+  actions: write   # re-enable the scheduled workflows (see the last step)
+
+jobs:
+  ping:
+    name: Ping ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: demo
+            url_secret: DEMO_SUPABASE_URL
+            key_secret: DEMO_SUPABASE_ANON_KEY
+          - target: prod
+            url_secret: PROD_SUPABASE_URL
+            key_secret: PROD_SUPABASE_ANON_KEY
+    steps:
+      - name: Call public_camp_info()
+        env:
+          SUPABASE_URL: ${{ secrets[matrix.url_secret] }}
+          ANON_KEY: ${{ secrets[matrix.key_secret] }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$ANON_KEY" ]; then
+            echo "::notice::${{ matrix.target }}: ${{ matrix.url_secret }} or ${{ matrix.key_secret }} not set, skipped"
+            exit 0
+          fi
+          # A paused project answers with an error, so this fails and GitHub emails the repo admins.
+          for attempt in 1 2 3; do
+            status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+              "$SUPABASE_URL/rest/v1/rpc/public_camp_info" \
+              -H "apikey: $ANON_KEY" -H 'Content-Type: application/json' -d '{}') || status=000
+            if [ "$status" = 200 ]; then
+              echo "${{ matrix.target }}: ok"
+              exit 0
+            fi
+            echo "${{ matrix.target }}: attempt $attempt got HTTP $status"
+            sleep 20
+          done
+          echo "::error::${{ matrix.target }}: public_camp_info() did not answer. Is the project paused? Restore it in the Supabase dashboard."
+          exit 1
+
+  stay-scheduled:
+    # GitHub turns off scheduled workflows in a public repo after 60 days without commits, which
+    # is the whole off-season. Re-enabling them through the API each day keeps them running.
+    name: Keep schedules on
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh workflow enable keep-alive.yml
+          gh workflow enable backup.yml
