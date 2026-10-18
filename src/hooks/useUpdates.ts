@@ -36,6 +36,8 @@ export function useUpdates(limit = 50) {
     const { data, error } = await supabase
       .from('updates')
       .insert({
+        // The composer names the post, so a retry after a lost answer can't post (or email) twice.
+        ...(input.id ? { id: input.id } : {}),
         audience: input.audience,
         section_id: input.audience === 'section' ? input.section_id : null,
         body: input.body.trim(),
@@ -45,6 +47,12 @@ export function useUpdates(limit = 50) {
       })
       .select(SELECT)
       .single()
+    // 23505: this id is already saved, so an earlier try went through. That's a success.
+    if (error?.code === '23505' && input.id) {
+      const { data: saved } = await supabase.from('updates').select(SELECT).eq('id', input.id).maybeSingle()
+      if (saved) setUpdates(prev => (prev.some(u => u.id === input.id) ? prev : [saved as unknown as UpdateWithSection, ...prev]))
+      return saved as unknown as UpdateWithSection
+    }
     if (error) throw new Error(error.message)
     setUpdates(prev => [data as unknown as UpdateWithSection, ...prev])
     return data as unknown as UpdateWithSection
@@ -60,6 +68,8 @@ export function useUpdates(limit = 50) {
 }
 
 export interface PostInput {
+  // Chosen by the composer once per message (spec 34), so a retried post is the same row.
+  id?: string
   audience: UpdateAudience
   section_id?: string | null
   session_id?: string | null

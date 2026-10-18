@@ -13,13 +13,14 @@
 --      priority 1. The sender claims priority rows first and in bulk, so ~300 families get it
 --      within two minutes. The dashboards show it as a banner until the end of that day.
 --   3. incidents: crew log what happened in their own section and read only their own entries;
---      admins read and update every entry. Audited. notify_incident_parent() emails the camper's
---      parent (incident_notice) and stamps parent_notified_at. Admins see an attention item for
+--      admins read and update every entry. Audited. created_at and parent_notified_at are
+--      server-owned (trigger). notify_incident_parent() emails the camper's parent (incident_notice)
+--      and stamps parent_notified_at, only when the email could be queued. Admins see an attention item for
 --      an incident with a camper and no parent notice after 24 hours (client side).
 --   4. set_roll_call_note(): the crew's quick tags (Late, Left early, Picked up by …) on a mark.
 --
--- Week membership: a section runs in a session when it is tied to it (sections.session_id) or
--- runs both weeks (no week). A family is in the week when a camper holds a seat
+-- Week membership: a section runs in a session when it is tied to it (sections.session_id), or
+-- runs both weeks (no week) and has a camper with a seat in that session's year. A family is in the week when a camper holds a seat
 -- (confirmed/pending) in one of those sections in that session's year, so every family audience
 -- stays inside the season (#145).
 
@@ -37,13 +38,17 @@ ALTER TABLE updates DROP CONSTRAINT IF EXISTS updates_session_check;
 ALTER TABLE updates ADD CONSTRAINT updates_session_check
     CHECK ((audience IN ('week_families', 'week_crew')) = (session_id IS NOT NULL));
 
--- Sections that run in a session (see the header).
+-- Sections that run in a session (see the header). A both-weeks section has no session, so it
+-- counts only when a camper holds a seat in it in that session's year: an old both-weeks section
+-- (and its crew) from a past season stays out.
 CREATE OR REPLACE FUNCTION private.week_section_ids(p_session_id UUID)
 RETURNS SETOF UUID LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT s.id FROM sections s
+  SELECT s.id FROM sections s JOIN sessions se ON se.id = p_session_id
   WHERE s.cancelled_at IS NULL
-    AND (s.session_id = p_session_id
-         OR (s.week IS NULL AND EXISTS (SELECT 1 FROM sessions se WHERE se.id = p_session_id)));
+    AND (s.session_id = se.id
+         OR (s.week IS NULL AND EXISTS (
+               SELECT 1 FROM registrations r
+               WHERE r.section_id = s.id AND r.status IN ('confirmed', 'pending') AND r.year = se.year)));
 $$;
 REVOKE ALL ON FUNCTION private.week_section_ids(UUID) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION private.week_section_ids(UUID) TO authenticated;
@@ -161,11 +166,14 @@ ALTER TABLE notifications ADD COLUMN IF NOT EXISTS priority SMALLINT NOT NULL DE
 CREATE INDEX IF NOT EXISTS notifications_priority_due_idx ON notifications (priority DESC, created_at)
     WHERE status IN ('queued', 'failed');
 
--- The ordinary claim now takes the highest priority first, then the oldest.
+-- The ordinary claim now takes the highest priority first, then the oldest. Both claims stamp
+-- next_attempt_at with the claim time, so private.requeue_stuck_notifications() (every minute)
+-- puts a row back only when the run that claimed it died 15 minutes ago, never while a slow run
+-- is still sending a backlog that was due long before.
 CREATE OR REPLACE FUNCTION public.claim_notifications(p_limit INT DEFAULT 50)
 RETURNS SETOF notifications LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
   UPDATE notifications n
-     SET status = 'sending', attempts = n.attempts + 1
+     SET status = 'sending', attempts = n.attempts + 1, next_attempt_at = now()
    WHERE n.id IN (SELECT id FROM notifications
                    WHERE status IN ('queued', 'failed') AND attempts < 3 AND next_attempt_at <= now()
                    ORDER BY priority DESC, created_at
@@ -181,7 +189,7 @@ GRANT EXECUTE ON FUNCTION public.claim_notifications(INT) TO service_role;
 CREATE OR REPLACE FUNCTION public.claim_urgent_notifications(p_limit INT DEFAULT 300)
 RETURNS SETOF notifications LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
   UPDATE notifications n
-     SET status = 'sending', attempts = n.attempts + 1
+     SET status = 'sending', attempts = n.attempts + 1, next_attempt_at = now()
    WHERE n.id IN (SELECT id FROM notifications
                    WHERE priority > 0 AND status IN ('queued', 'failed') AND attempts < 3 AND next_attempt_at <= now()
                    ORDER BY priority DESC, created_at
@@ -191,6 +199,18 @@ RETURNS SETOF notifications LANGUAGE sql SECURITY DEFINER SET search_path = publ
 $$;
 REVOKE ALL ON FUNCTION public.claim_urgent_notifications(INT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_urgent_notifications(INT) TO service_role;
+
+-- Put claimed rows back without using up an attempt: the provider said "slow down" (429), or the
+-- run is out of time before it could try them.
+CREATE OR REPLACE FUNCTION public.requeue_notifications(p_ids BIGINT[], p_delay_seconds INT DEFAULT 60)
+RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  UPDATE notifications
+     SET status = 'queued', attempts = greatest(attempts - 1, 0),
+         next_attempt_at = now() + make_interval(secs => greatest(coalesce(p_delay_seconds, 60), 0))
+   WHERE id = ANY(p_ids) AND status = 'sending';
+$$;
+REVOKE ALL ON FUNCTION public.requeue_notifications(BIGINT[], INT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.requeue_notifications(BIGINT[], INT) TO service_role;
 
 -- Posting an urgent update queues one urgent_notice per person in its audience, at priority 1.
 -- A person reached twice (a parent who also volunteers) and two accounts that share an address
@@ -276,6 +296,30 @@ CREATE POLICY "admin_update_incidents" ON incidents FOR UPDATE TO authenticated
 REVOKE ALL ON incidents FROM anon;
 GRANT SELECT, INSERT, UPDATE ON incidents TO authenticated;
 
+-- Server-owned columns: created_at is the time of logging, and parent_notified_at is set only by
+-- notify_incident_parent() (it names its reason). Nobody, admins included, writes either directly;
+-- the reporter and the logging time never change after the fact.
+CREATE OR REPLACE FUNCTION private.incidents_server_columns()
+RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    NEW.created_at := now();
+    NEW.parent_notified_at := NULL;
+  ELSE
+    NEW.created_at := OLD.created_at;
+    NEW.reported_by := OLD.reported_by;
+    IF coalesce(current_setting('app.reason', true), '') <> 'incident_notice' THEN
+      NEW.parent_notified_at := OLD.parent_notified_at;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION private.incidents_server_columns() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS incidents_server_columns ON incidents;
+CREATE TRIGGER incidents_server_columns BEFORE INSERT OR UPDATE ON incidents
+    FOR EACH ROW EXECUTE FUNCTION private.incidents_server_columns();
+
 -- Audited (spec 05).
 DO $$
 BEGIN
@@ -332,6 +376,11 @@ BEGIN
 
   PERFORM private.set_reason('incident_notice');
   PERFORM private.enqueue_notification(parent, 'incident_notice', payload, 'incident:' || inc.id);
+  -- No deliverable address: the outbox recorded it as cancelled. Undo everything (the exception
+  -- rolls back that row too) rather than say the family was told.
+  IF NOT EXISTS (SELECT 1 FROM notifications WHERE dedupe_key = 'incident:' || inc.id AND status = 'queued') THEN
+    RAISE EXCEPTION 'No email address on file for this family, so nothing was sent. Call them instead.' USING ERRCODE = 'P0001';
+  END IF;
   UPDATE incidents SET parent_notified_at = now() WHERE id = inc.id;
   PERFORM private.set_reason(NULL);
   RETURN now();

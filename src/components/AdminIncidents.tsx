@@ -69,7 +69,7 @@ function Entry({ incident: i, onNotify }: { incident: AdminIncident; onNotify: (
       setOpen(false)
       setMessage('')
     } catch (e) {
-      setError(e instanceof Error && /already|no camper|no parent/i.test(e.message) ? e.message : "Couldn't send it. Check your connection and try again.")
+      setError(e instanceof Error && /already|no camper|no parent|email address/i.test(e.message) ? e.message : "Couldn't send it. Check your connection and try again.")
     } finally {
       setBusy(false)
     }

@@ -16,6 +16,7 @@ declare
   claim_ids bigint[];
   n_a bigint; n_b bigint; n_c bigint;
   lead_email text; w1_email text; who_n int; upd2 uuid;
+  camper_c uuid; inc3 uuid; inc4 uuid; sec_both uuid; cls uuid; t2 timestamptz;
 begin
   yr := coalesce((select max(year) from sessions where is_active), extract(year from now())::int);
   select id into w1 from sessions where year = yr order by start_date limit 1;
@@ -39,6 +40,10 @@ begin
    limit 1;
   select r.student_id into camper_a from registrations r where r.section_id = sec_a and r.status = 'confirmed' limit 1;
   select r.student_id into camper_b from registrations r where r.section_id = sec_b and r.status = 'confirmed' limit 1;
+  -- A second camper in sec_a from another family (for the "no address" notice).
+  select r.student_id into camper_c from registrations r join students st on st.id = r.student_id
+   where r.section_id = sec_a and r.status = 'confirmed'
+     and st.parent_id <> (select parent_id from students where id = camper_a) limit 1;
   -- Families: only in week 2, only in week 1.
   select st.parent_id into fam_w2 from students st join registrations r on r.student_id = st.id
     join sections s on s.id = r.section_id
@@ -79,9 +84,27 @@ begin
   res := res || E'\nordinary claim: urgent first: ' || case when claim_ids = array[n_b] then 'ok' else 'BAD ' || coalesce(claim_ids::text, 'none') end;
   select array_agg(id) into claim_ids from public.claim_notifications(1);
   res := res || E'\nordinary claim: then the oldest: ' || case when claim_ids = array[n_c] then 'ok' else 'BAD ' || coalesce(claim_ids::text, 'none') end;
+  select count(*) into n from notifications where id in (n_b, n_c) and status = 'sending' and next_attempt_at > now() - interval '1 second';
+  res := res || E'\nclaims stamp the claim time (stuck-row requeue counts from it): ' || case when n = 2 then 'ok' else 'BAD' end;
+  perform private.requeue_stuck_notifications();
+  select count(*) into n from notifications where id in (n_b, n_c) and status = 'sending';
+  res := res || E'\na just-claimed row isn''t requeued as stuck: ' || case when n = 2 then 'ok' else 'BAD' end;
+  perform public.requeue_notifications(array[n_c], 60);
+  select count(*) into n from notifications where id = n_c and status = 'queued' and attempts = 0 and next_attempt_at > now() + interval '50 seconds';
+  res := res || E'\nrequeue (429 or out of time) gives the attempt back: ' || case when n = 1 then 'ok' else 'BAD' end;
   select array_agg(id) into claim_ids from public.claim_notifications(1);
   res := res || E'\nordinary claim: then the next oldest: ' || case when claim_ids = array[n_a] then 'ok' else 'BAD ' || coalesce(claim_ids::text, 'none') end;
 
+  execute 'set local role authenticated';
+
+  -- A both-weeks section (no week) led by week-1-only crew, with a seat only in last year: its
+  -- crew is not "Crew in Week 2" until a camper holds a seat in it this year.
+  execute 'reset role';
+  select class_id into cls from sections where id = sec_a;
+  insert into sections (class_id, label, age_min, age_max, capacity, week, lead_id)
+  values (cls, '[TEST] BOTH', 8, 14, 10, null, w1_vol) returning id into sec_both;
+  insert into registrations (student_id, section_id, status) values (camper_b, sec_both, 'confirmed');
+  update registrations set year = yr - 1 where section_id = sec_both;
   execute 'set local role authenticated';
 
   -- ── Admin: week audiences, an urgent notice ──
@@ -91,7 +114,18 @@ begin
   res := res || E'\nweek 2 families list leaves out a week-1 family: ' || case when 'week1-family@scc-test.invalid' = any(arr) then 'BAD (listed)' else 'ok' end;
   arr := public.week_recipient_emails('week_crew', w2);
   res := res || E'\nweek 2 crew list has the week-2 lead: ' || case when lead_email = any(arr) then 'ok' else 'BAD (missing)' end;
-  res := res || E'\nweek 2 crew list leaves out week-1-only crew: ' || case when w1_email = any(arr) then 'BAD (listed)' else 'ok' end;
+  res := res || E'\nweek 2 crew list leaves out crew of a past-season both-weeks section: ' || case when w1_email = any(arr) then 'BAD (listed)' else 'ok' end;
+  execute 'reset role';
+  update registrations set year = yr where section_id = sec_both;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  arr := public.week_recipient_emails('week_crew', w2);
+  res := res || E'\nweek 2 crew list has a both-weeks section''s crew once it has a seat this year: ' || case when w1_email = any(arr) then 'ok' else 'BAD (missing)' end;
+  execute 'reset role';
+  delete from registrations where section_id = sec_both;
+  delete from sections where id = sec_both;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
 
   insert into updates (author_id, audience, session_id, body, urgent)
   values (admin_id, 'week_families', w2, '[TEST] Site hold: stay in rooms', true) returning id into upd;
@@ -173,20 +207,21 @@ begin
     res := res || E'\ncrew log in someone else''s name: ALLOWED (BAD)';
   exception when insufficient_privilege then res := res || E'\ncrew log in someone else''s name: blocked ok';
   end;
-  begin
-    insert into incidents (section_id, student_id, kind, description, reported_by, parent_notified_at)
-    values (sec_a, camper_a, 'injury', '[TEST] pre-stamped', lead_a, now());
-    res := res || E'\ncrew stamp the parent notice themselves: ALLOWED (BAD)';
-  exception when insufficient_privilege then res := res || E'\ncrew stamp the parent notice themselves: blocked ok';
-  end;
+  insert into incidents (section_id, student_id, kind, description, reported_by, parent_notified_at, created_at)
+  values (sec_a, camper_a, 'injury', '[TEST] pre-stamped and back-dated', lead_a, now(), '2020-01-01') returning id into inc4;
+  execute 'reset role';
+  select count(*) into n from incidents where id = inc4 and parent_notified_at is null and created_at = now();
+  res := res || E'\ncrew can''t set created_at or the parent notice (server-owned): ' || case when n = 1 then 'ok' else 'BAD' end;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', lead_a, 'role', 'authenticated')::text, true);
   -- Another crew member's entry in the same section (written as the table owner).
   execute 'reset role';
   insert into incidents (section_id, student_id, kind, description, reported_by)
   values (sec_a, camper_a, 'behavior', '[TEST] by someone else', admin_id) returning id into inc2;
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('sub', lead_a, 'role', 'authenticated')::text, true);
-  select count(*) into n from incidents where id in (inc, inc_none);
-  res := res || E'\ncrew read their own entries: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from incidents where id in (inc, inc_none, inc4);
+  res := res || E'\ncrew read their own entries: ' || case when n = 3 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from incidents where id = inc2;
   res := res || E'\ncrew read someone else''s entry: ' || case when n = 0 then 'blocked ok' else 'ALLOWED (BAD)' end;
   update incidents set level = 'written_notice' where id = inc;
@@ -203,16 +238,42 @@ begin
 
   -- ── Admin: reads all, updates, tells the parent once ──
   perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
-  select count(*) into n from incidents where id in (inc, inc2, inc_none);
-  res := res || E'\nadmin read every entry: ' || case when n = 3 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from incidents where id in (inc, inc2, inc_none, inc4);
+  res := res || E'\nadmin read every entry: ' || case when n = 4 then 'ok' else 'BAD (' || n || ')' end;
   update incidents set level = 'warning' where id = inc;
   get diagnostics n = row_count;
   res := res || E'\nadmin change an entry: ' || case when n = 1 then 'ok' else 'BAD' end;
+  select created_at into t2 from incidents where id = inc;
+  update incidents set parent_notified_at = now(), created_at = '2020-01-01', reported_by = admin_id where id = inc;
+  select count(*) into n from incidents where id = inc and parent_notified_at is null and created_at = t2 and reported_by = lead_a;
+  res := res || E'\nadmin can''t stamp the notice, back-date or re-attribute by hand: ' || case when n = 1 then 'ok' else 'BAD' end;
+  -- No deliverable address (the demo's example.com): not sent, not stamped, said plainly.
+  execute 'reset role';
+  insert into parent_profiles (id, email) values ((select parent_id from students where id = camper_c), 'family@example.com')
+    on conflict (id) do update set email = excluded.email;
+  insert into incidents (section_id, student_id, kind, description, reported_by)
+  values (sec_a, camper_c, 'injury', '[TEST] no address', admin_id) returning id into inc3;
+  insert into parent_profiles (id, email) values ((select parent_id from students where id = camper_a), 'camper-a-family@scc-test.invalid')
+    on conflict (id) do update set email = excluded.email;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
+  begin
+    perform public.notify_incident_parent(inc3, 'x');
+    res := res || E'\nnotify with no deliverable address: ALLOWED (BAD)';
+  exception when raise_exception then
+    res := res || E'\nnotify with no deliverable address: refused ok (' || sqlerrm || ')';
+  end;
+  execute 'reset role';
+  select count(*) into n from incidents where id = inc3 and parent_notified_at is null;
+  select count(*) into who_n from notifications where dedupe_key = 'incident:' || inc3;
+  res := res || E'\n  ...not stamped and nothing left queued: ' || case when n = 1 and who_n = 0 then 'ok' else 'BAD' end;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
   t := public.notify_incident_parent(inc, '[TEST] She is fine; we cleaned it up.');
   execute 'reset role';
   select count(*) into n from incidents where id = inc and parent_notified_at is not null;
   res := res || E'\nnotify stamps parent_notified_at: ' || case when n = 1 then 'ok' else 'BAD' end;
-  select count(*) into n from notifications where template = 'incident_notice' and dedupe_key = 'incident:' || inc
+  select count(*) into n from notifications where template = 'incident_notice' and dedupe_key = 'incident:' || inc and status = 'queued'
      and recipient_profile = (select parent_id from students where id = camper_a) and payload ->> 'message' like '[TEST]%';
   res := res || E'\nnotify queues incident_notice to the camper''s parent: ' || case when n = 1 then 'ok' else 'BAD' end;
   select count(*) into n from audit.log where table_name = 'incidents' and row_id = inc::text;

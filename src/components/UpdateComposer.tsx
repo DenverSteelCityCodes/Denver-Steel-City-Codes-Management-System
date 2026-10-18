@@ -43,6 +43,9 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
   const [urgent, setUrgent] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+  // One id per composed message, kept across retries and cleared once it's posted: a retry after a
+  // lost answer is the same row, so an urgent notice can't go out twice.
+  const postId = useRef<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -87,8 +90,10 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
     setNote(null)
     setManualEmails(null)
     const wasUrgent = urgent
+    postId.current ??= crypto.randomUUID()
     try {
       await onPost({
+        id: postId.current,
         audience, body: text, urgent: wasUrgent,
         section_id: audience === 'section' ? sectionId : null,
         session_id: isWeek ? weekId : null,
@@ -100,6 +105,7 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
       return
     }
     // The post is saved: clear the composer even if emailing fails, so nobody posts it twice.
+    postId.current = null
     setBody('')
     setAlsoEmail(false)
     setUrgent(false)

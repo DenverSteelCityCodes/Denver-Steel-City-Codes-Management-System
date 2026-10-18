@@ -53,7 +53,7 @@ Today:
 - Browser: compose an urgent update, then check the banner on a parent account.
 
 ## As built (2026-10-18)
-- **Migration:** `migration_urgent_and_incidents.sql` (step 36 in `docs/database.md`), applied to the demo. Tests: `test-plans/urgent-incidents-tests.sql` (42 checks) and `src/lib/__tests__/spec34.test.ts`, `notificationTemplates.test.ts`.
+- **Migration:** `migration_urgent_and_incidents.sql` (step 36 in `docs/database.md`), applied to the demo. Tests: `test-plans/urgent-incidents-tests.sql` (49 checks) and `src/lib/__tests__/spec34.test.ts`, `notificationTemplates.test.ts`.
 - **Week audiences** are `updates.session_id` with `week_families` / `week_crew`. A section is in a week when tied to it or running both weeks; families are counted in that session's year. Week crew also read what that week's families were told. Addresses for "Also email": `week_recipient_emails()` (admins).
 - **Urgent:** admins only (a lead's policy refuses `urgent`). A trigger queues one `urgent_notice` per person in the audience at priority 1, one per address, ignoring `email_opt_out`. The sender claims urgent rows first (`claim_urgent_notifications`, up to 300) and sends them 100 per call through Resend's batch endpoint; `claim_notifications` orders by priority, then age. The composer asks once, inline, before sending, and offers the three prewritten starts. The red banner shows on parent Home and volunteer Today until midnight Denver time.
 - **"Also email"** for ordinary posts still opens the admin's mail app: moving it to the outbox is spec 09's follow-up, not this spec.
