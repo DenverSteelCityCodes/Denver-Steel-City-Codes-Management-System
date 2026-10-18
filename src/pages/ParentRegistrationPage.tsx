@@ -655,7 +655,12 @@ export default function ParentRegistrationPage() {
     <div className="max-w-lg mx-auto px-4 pt-8 pb-16">
         {/* Contextual back — the shell's top nav owns primary navigation now. */}
         <button
-          onClick={() => navigate('/parent')}
+          type="button"
+          onClick={() => {
+            // The autosave waits 400 ms after the last keystroke; save now so nothing typed is lost.
+            if (myDraftKey && !submitted && dirty.current) writeDraft(myDraftKey, form as unknown as Record<string, unknown>, step)
+            navigate('/parent')
+          }}
           className="ui-btn ui-btn--text text-ink-muted font-semibold gap-1.5 mb-4"
         >
           <ArrowLeft size={16} /> Save and exit

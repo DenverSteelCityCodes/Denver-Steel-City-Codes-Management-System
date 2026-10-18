@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decisions, nextCampDay, needsNewClass, roomFigure, statusSentence, timeLeft, weekLines } from '../homeDecision'
+import { decisions, nextCampDay, needsNewClass, offerDeadline, roomFigure, statusSentence, timeLeft, weekLines } from '../homeDecision'
 import type { RegistrationWithSection } from '../../hooks/useRegistrations'
 import type { Session, Student } from '../../types/database'
 
@@ -30,9 +30,9 @@ describe('decisions', () => {
     ]
     expect(decisions([maya, eli], all, WEEKS, opts).map(d => d.kind === 'offer' && d.reg.id)).toEqual(['2', '1'])
   })
-  it('asks a returning camper to re-confirm, and a confirmed camper with no class to register', () => {
+  it('puts every re-confirm before any camper who only needs a class', () => {
     const d = decisions([maya, eli, noor], [reg('1', 'm', 1, 'confirmed')], WEEKS, opts)
-    expect(d.map(x => `${x.kind}:${x.student.id}`)).toEqual(['register:e', 'reconfirm:n'])
+    expect(d.map(x => `${x.kind}:${x.student.id}`)).toEqual(['reconfirm:n', 'register:e'])
   })
   it('holds registering decisions until registration opens', () => {
     expect(decisions([noor], [], WEEKS, { ...opts, registrationOpen: false })).toEqual([])
@@ -40,7 +40,18 @@ describe('decisions', () => {
   it('asks for a new class when the camp cancelled the only one that week', () => {
     const all = [reg('1', 'm', 1, 'cancelled', { cancel_reason: 'section_cancelled' })]
     expect(decisions([maya], all, WEEKS, opts)[0].kind).toBe('cancelled')
-    expect(needsNewClass(all[0], [...all, reg('2', 'm', 1, 'confirmed')], WEEKS)).toBe(false)
+    expect(needsNewClass(all[0], [...all, reg('2', 'm', 1, 'confirmed')], WEEKS, TODAY)).toBe(false)
+  })
+  it('lets a same-week waitlist place or offer settle a cancelled class', () => {
+    const cancelled = reg('1', 'm', 1, 'cancelled', { cancel_reason: 'section_cancelled' })
+    expect(needsNewClass(cancelled, [cancelled, reg('2', 'm', 1, 'waitlisted')], WEEKS, TODAY)).toBe(false)
+    expect(needsNewClass(cancelled, [cancelled, reg('3', 'm', 1, 'offered')], WEEKS, TODAY)).toBe(false)
+    expect(needsNewClass(cancelled, [cancelled, reg('4', 'm', 2, 'waitlisted')], WEEKS, TODAY)).toBe(true)
+  })
+  it('drops a cancelled class once its week is over', () => {
+    const all = [reg('1', 'm', 1, 'cancelled', { cancel_reason: 'section_cancelled' })]
+    expect(needsNewClass(all[0], all, WEEKS, '2026-10-24')).toBe(false)
+    expect(decisions([maya], all, WEEKS, { ...opts, today: '2026-10-24' }).map(d => d.kind)).not.toContain('cancelled')
   })
 })
 
@@ -61,8 +72,13 @@ describe('weekLines', () => {
 describe('statusSentence', () => {
   it('says one thing per camper', () => {
     const all = [reg('1', 'm', 1, 'confirmed'), reg('2', 'e', 1, 'waitlisted')]
-    expect(statusSentence([maya, eli, noor], all, WEEKS))
+    expect(statusSentence([maya, eli, noor], all, WEEKS, TODAY))
       .toBe("Maya is set for Week 1. Eli is on the waitlist. Noor isn't registered yet.")
+  })
+  it('counts with the right agreement past three campers', () => {
+    const all = [reg('1', 'm', 1, 'confirmed'), reg('2', 'e', 1, 'waitlisted'), reg('3', 'a', 1, 'waitlisted')]
+    expect(statusSentence([maya, eli, noor, kid('a', 'Ava')], all, WEEKS, TODAY))
+      .toBe('1 camper is set. 2 are on a waitlist. 1 needs a class.')
   })
 })
 
@@ -81,6 +97,9 @@ describe('small formatters', () => {
   it('reads the room number for the figure', () => {
     expect(roomFigure('Room 202')).toBe('202')
     expect(roomFigure('Library')).toBe('Library')
+  })
+  it('says an offer deadline in Denver time', () => {
+    expect(offerDeadline('2026-10-17T01:00:00Z')).toBe('Fri 7:00 PM (Denver time)')
   })
   it('counts hours, then minutes, left on an offer', () => {
     const now = Date.parse('2026-10-17T12:00:00Z')

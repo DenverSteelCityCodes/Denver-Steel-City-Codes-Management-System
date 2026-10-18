@@ -8,6 +8,7 @@ import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear, campSessions } from '../hooks/useSessions'
 import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
+import { useFormConfig } from '../hooks/useFormConfig'
 import { useMyChanges } from '../hooks/useMyChanges'
 import { useMyRollCalls } from '../hooks/useMyRollCalls'
 import StudentCard from '../components/StudentCard'
@@ -23,24 +24,22 @@ import { buttonClass } from '../lib/ui'
 import { listDrafts, clearDraft } from '../lib/registrationDraft'
 import { useParentShell, parentAudience } from '../lib/parentShell'
 import {
-  camperFirstName, decisions as listDecisions, nextCampDay, openWeeksLabel, roomFigure, statusSentence, timeLeft, weekLines, weekOf,
+  camperFirstName, decisions as listDecisions, nextCampDay, offerDeadline, openWeeksLabel, roomFigure, statusSentence, timeLeft, weekLines, weekOf,
   type CampDay, type Decision,
 } from '../lib/homeDecision'
 
 type Draft = ReturnType<typeof listDrafts>[number]
 
-// A clock for the offer figure, ticking once a minute.
+// A clock for the offer figure and the opening, ticking once a minute; tick() moves it at once.
 function useNow(ms: number) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), ms)
     return () => window.clearInterval(id)
   }, [ms])
-  return now
+  return [now, () => setNow(Date.now())] as const
 }
 
-// "Fri 7:00 PM", in camp time.
-const campWhen = (iso: string) => new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
 const campTime = (iso: string) => new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
 const classOf = (d: { reg: { sections: { classes: { name: string } | null } | null } }) => d.reg.sections?.classes?.name ?? 'a class'
 const h2 = 'text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]'
@@ -57,7 +56,7 @@ function OfferSign({ d, now, onClaim, onDecline }: {
   const name = camperFirstName(d.student)
   const week = d.reg.sections?.week ? `, Week ${d.reg.sections.week}` : ''
   const left = timeLeft(d.reg.offer_expires_at, now)
-  const until = d.reg.offer_expires_at ? campWhen(d.reg.offer_expires_at) : null
+  const until = d.reg.offer_expires_at ? offerDeadline(d.reg.offer_expires_at) : null
   const room = d.reg.sections?.room
 
   async function run(fn: () => Promise<void>) {
@@ -160,7 +159,9 @@ export default function ParentDashboard() {
   const { registrations, loading: regsLoading, refetch: refetchRegistrations } = useRegistrations()
   const { sessions, loading: sessionsLoading } = useSessions()
   const campYear = activeCampYear(sessions)
-  const { settings: season, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
+  const { settings: season, loading: seasonLoading, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
+  // The admin's registration switch (Forms / Setup): closed means closed, whatever the opening time.
+  const { enabled: formEnabled, loading: formLoading } = useFormConfig('student_registration')
   const myChanges = useMyChanges(students.length > 0)
   const changes = {
     ...myChanges,
@@ -172,7 +173,7 @@ export default function ParentDashboard() {
   const today = localDateISO()
   const todayMarks = useMyRollCalls(today)
   const { posts } = useParentShell()
-  const now = useNow(60_000)
+  const [now, tick] = useNow(60_000)
   // Unfinished registrations saved on this device (spec 16).
   const [drafts, setDrafts] = useState<Draft[]>(() => (user ? listDrafts(user.id) : []))
   const discard = (key: string) => { clearDraft(key); setDrafts(d => d.filter(x => x.key !== key)) }
@@ -180,9 +181,12 @@ export default function ParentDashboard() {
   const weeks = campSessions(sessions)
   // This camp year's registrations; last summer's don't describe this summer's weeks.
   const regs = sessions.length > 0 ? registrations.filter(r => r.year == null || r.year === campYear) : registrations
-  const ready = !studentsLoading && !regsLoading && !sessionsLoading
-  const open = registrationIsOpen(season, now)
-  const counting = ready && !!season?.registration_opens_at && !open
+  // Season settings never load without sessions (the hook waits for a camp year).
+  const ready = !studentsLoading && !regsLoading && !sessionsLoading && !formLoading && (sessions.length === 0 || !seasonLoading)
+  const opened = registrationIsOpen(season, now)
+  const open = opened && formEnabled
+  // The countdown only while the switch is on: a closed form has no opening to promise.
+  const counting = ready && formEnabled && !!season?.registration_opens_at && !opened
   const list = ready ? listDecisions(students, regs, weeks, { campYear, registrationOpen: open, today }) : []
   const campDay = ready ? nextCampDay(students, regs, sessions, weeks, today) : null
   const weeksLabel = openWeeksLabel(weeks, today)
@@ -226,7 +230,7 @@ export default function ParentDashboard() {
       case 'offer':
         return (
           <DecisionRow key={d.reg.id} icon={Clock} what={`A spot opened for ${name} in ${classOf(d)}`}
-            why={`Claim it${d.reg.offer_expires_at ? ` by ${campWhen(d.reg.offer_expires_at)}` : ''}, or it goes to the next family.`}>
+            why={`Claim it${d.reg.offer_expires_at ? ` by ${offerDeadline(d.reg.offer_expires_at)}` : ''}, or it goes to the next family.`}>
             <a href={`#camper-${d.student.id}`} className={buttonClass('ink')}>Claim or decline</a>
           </DecisionRow>
         )
@@ -256,9 +260,10 @@ export default function ParentDashboard() {
   const draftName = (dr: Draft) => dr.draft.name || 'your new camper'
 
   let sign: ReactNode = null
+  let firstCamperSign = false
   if (!ready) sign = <div className="h-40 rounded bg-surface-sunken animate-pulse" aria-hidden="true" />
   else if (signDecision) sign = signFor(signDecision)
-  else if (counting) sign = <RegistrationCountdown sign opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
+  else if (counting) sign = <RegistrationCountdown sign opensAt={season?.registration_opens_at} onOpen={() => { tick(); void refetchSeason() }} />
   else if (signDraft) {
     sign = (
       <ParentSign id="draft" ctx={`Step ${signDraft.draft.step} of 5 · saved on this device`} msg={`Finish registering ${draftName(signDraft)}`}>
@@ -269,6 +274,7 @@ export default function ParentDashboard() {
       </ParentSign>
     )
   } else if (students.length === 0) {
+    firstCamperSign = true
     sign = <ParentSign to="/parent/register" ctx="No campers yet" msg="Register your first camper"
       sub="Five short steps. Have their grade, school, allergies and an emergency contact ready." />
   } else if (campDay) sign = <CampDaySign day={campDay} today={today} />
@@ -296,7 +302,7 @@ export default function ParentDashboard() {
       <h1 className="font-display text-[1.75rem] leading-[1.15] font-bold tracking-[-0.01em] text-balance">
         Hi, {firstName(profile?.display_name) || 'there'}
       </h1>
-      {ready && students.length > 0 && <p className="mt-2 text-ink-muted text-pretty">{statusSentence(students, regs, weeks)}</p>}
+      {ready && students.length > 0 && <p className="mt-2 text-ink-muted text-pretty">{statusSentence(students, regs, weeks, today)}</p>}
 
       {sign && <div className="mt-5">{sign}</div>}
 
@@ -331,6 +337,12 @@ export default function ParentDashboard() {
                 <Plus size={20} strokeWidth={2.25} aria-hidden="true" /> Register a new camper
               </Link>
             </section>
+          )}
+          {/* No campers yet and the sign is busy with something else (the countdown): still a way in. */}
+          {ready && students.length === 0 && !firstCamperSign && (
+            <Link to="/parent/register" className={buttonClass(sign ? 'secondary' : 'primary', 'justify-self-start')}>
+              <Plus size={20} strokeWidth={2.25} aria-hidden="true" /> Register a new camper
+            </Link>
           )}
         </div>
 

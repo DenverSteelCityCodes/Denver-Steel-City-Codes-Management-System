@@ -7,7 +7,7 @@ import { GRADES, gradeToAge, realNote } from '../lib/campers'
 import { formatTimeRange } from '../lib/campDay'
 import { CAMP_TIME_ZONE } from '../lib/denverTime'
 import { buttonClass } from '../lib/ui'
-import { camperFirstName, cancelledByCamp, holdsSeat, type WeekLine } from '../lib/homeDecision'
+import { camperFirstName, cancelledByCamp, holdsSeat, offerDeadline, type WeekLine } from '../lib/homeDecision'
 import type { Student } from '../types/database'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import type { SwapOption } from '../hooks/useMyChanges'
@@ -62,8 +62,6 @@ function StatusWord({ tone, icon: Icon, children }: { tone: 'ok' | 'wait' | 'dan
   )
 }
 
-// "Fri 7:00 PM", in camp time.
-const campWhen = (iso: string) => new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
 // "Oct 4", the last day online changes are open.
 const lastDayOf = (deadline: string) => new Date(new Date(deadline).getTime() - 1)
   .toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: CAMP_TIME_ZONE })
@@ -107,7 +105,7 @@ function RegistrationActions({ reg, camper, changes, offerInSign }: { reg: Regis
 
   // A waitlist offer (spec 10). The first one lives in the sign at the top of Home.
   if (reg.status === 'offered') {
-    const until = reg.offer_expires_at ? campWhen(reg.offer_expires_at) : null
+    const until = reg.offer_expires_at ? offerDeadline(reg.offer_expires_at) : null
     return (
       <div>
         <p className="mt-1 text-sm text-ink-muted">

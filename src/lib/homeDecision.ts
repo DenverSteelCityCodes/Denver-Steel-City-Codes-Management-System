@@ -2,6 +2,7 @@
 // week lines on each camper and the status sentence under the greeting. No data fetching here, so
 // tests run without the Supabase client.
 import { formatTimeRange, sessionDays } from './campDay'
+import { CAMP_TIME_ZONE } from './denverTime'
 import { daysBetween } from './volunteerHome'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import type { ScheduleItem, Session, Student } from '../types/database'
@@ -34,21 +35,23 @@ export function sessionsOf(r: Reg, sessions: Session[], weeks: Session[]): Sessi
   return weeks
 }
 
-// A class the camp cancelled still needs the family while the camper holds no other seat that week.
-export function needsNewClass(r: Reg, all: Reg[], weeks: Session[]): boolean {
+// A week a family can still sign up for: shown for sign-up and not over yet.
+const openWeek = (s: Session | undefined, today: string) => !!s && s.is_active && s.end_date >= today
+
+// A class the camp cancelled still needs the family while its week can still be joined and the
+// camper has nothing else that week: no seat, no waitlist place and no offer.
+export function needsNewClass(r: Reg, all: Reg[], weeks: Session[], today: string): boolean {
   if (!cancelledByCamp(r)) return false
   const week = weekOf(r, weeks)
-  return !all.some(o => o.student_id === r.student_id && o.id !== r.id && holdsSeat(o) &&
+  if (weeks.length > 0 && !(week == null ? weeks.some(s => openWeek(s, today)) : openWeek(weeks[week - 1], today))) return false
+  return !all.some(o => o.student_id === r.student_id && o.id !== r.id && o.status !== 'cancelled' &&
     (week == null || weekOf(o, weeks) == null || weekOf(o, weeks) === week))
 }
 
 // What Home shows for a camper: live registrations, plus camp cancellations still to replace.
-export function liveRegistrations(studentId: string, all: Reg[], weeks: Session[]): Reg[] {
-  return all.filter(r => r.student_id === studentId && (r.status !== 'cancelled' || needsNewClass(r, all, weeks)))
+export function liveRegistrations(studentId: string, all: Reg[], weeks: Session[], today: string): Reg[] {
+  return all.filter(r => r.student_id === studentId && (r.status !== 'cancelled' || needsNewClass(r, all, weeks, today)))
 }
-
-// A week a family can still sign up for: shown for sign-up and not over yet.
-const openWeek = (s: Session | undefined, today: string) => !!s && s.is_active && s.end_date >= today
 
 export interface WeekLine {
   key: string
@@ -59,7 +62,7 @@ export interface WeekLine {
 // One line per week for a camper: each registration on its week, an empty "Not registered" line
 // for a week they could still join, and one combined line when they have nothing at all.
 export function weekLines(studentId: string, all: Reg[], weeks: Session[], today: string): WeekLine[] {
-  const regs = liveRegistrations(studentId, all, weeks)
+  const regs = liveRegistrations(studentId, all, weeks, today)
   const both = regs.filter(r => weekOf(r, weeks) == null)
   const lines: WeekLine[] = both.map(r => ({ key: r.id, label: weeks.length > 1 ? 'Both weeks' : 'Week 1', reg: r }))
   const nums = weeks.length > 0 ? weeks.map((_, i) => i + 1) : [...new Set(regs.map(r => weekOf(r, weeks)).filter((n): n is number => n != null))]
@@ -86,10 +89,10 @@ export function openWeeksLabel(weeks: Session[], today: string): string {
 }
 
 // The status sentence under the greeting: one short clause per camper (three or fewer), else counts.
-export function statusSentence(students: Student[], all: Reg[], weeks: Session[]): string {
+export function statusSentence(students: Student[], all: Reg[], weeks: Session[], today: string): string {
   if (students.length === 0) return ''
   const per = students.map(s => {
-    const regs = liveRegistrations(s.id, all, weeks)
+    const regs = liveRegistrations(s.id, all, weeks, today)
     const name = camperFirstName(s)
     const seats = regs.filter(holdsSeat)
     const weeksSet = seats.map(r => weekOf(r, weeks))
@@ -97,7 +100,7 @@ export function statusSentence(students: Student[], all: Reg[], weeks: Session[]
       ? 'both weeks'
       : weeksSet.length > 0 ? `Week ${[...new Set(weeksSet)].sort().join(' and Week ')}` : ''
     if (regs.some(r => r.status === 'offered')) return { kind: 'offer', text: `A spot opened for ${name}.` }
-    if (regs.some(r => needsNewClass(r, all, weeks))) return { kind: 'cancelled', text: `${name}'s class was cancelled.` }
+    if (regs.some(r => needsNewClass(r, all, weeks, today))) return { kind: 'cancelled', text: `${name}'s class was cancelled.` }
     if (seats.length > 0) {
       const waiting = regs.some(r => r.status === 'waitlisted')
       return { kind: 'set', text: `${name} is set for ${setFor}${waiting ? ' and on a waitlist' : ''}.` }
@@ -107,11 +110,13 @@ export function statusSentence(students: Student[], all: Reg[], weeks: Session[]
   })
   if (students.length <= 3) return per.map(p => p.text).join(' ')
   const count = (k: string) => per.filter(p => p.kind === k).length
+  const one = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`
+  const needClass = count('cancelled') + count('none')
   return [
-    count('offer') && `${count('offer')} ${count('offer') === 1 ? 'spot has' : 'spots have'} opened.`,
-    count('set') && `${count('set')} campers are set.`,
-    count('wait') && `${count('wait')} on a waitlist.`,
-    count('cancelled') + count('none') && `${count('cancelled') + count('none')} need a class.`,
+    count('offer') && `${one(count('offer'), 'spot has', 'spots have')} opened.`,
+    count('set') && `${one(count('set'), 'camper is', 'campers are')} set.`,
+    count('wait') && `${one(count('wait'), 'is', 'are')} on a waitlist.`,
+    needClass && `${one(needClass, 'needs', 'need')} a class.`,
   ].filter(Boolean).join(' ')
 }
 
@@ -124,6 +129,7 @@ export type Decision =
 
 export function decisions(
   students: Student[], all: Reg[], weeks: Session[],
+  // registrationOpen: the opening time has passed and the admin's registration switch is on.
   { campYear, registrationOpen, today }: { campYear: number; registrationOpen: boolean; today: string },
 ): Decision[] {
   const byId = new Map(students.map(s => [s.id, s]))
@@ -132,17 +138,18 @@ export function decisions(
   all.filter(r => r.status === 'offered' && byId.has(r.student_id))
     .sort((a, b) => (a.offer_expires_at ?? '9').localeCompare(b.offer_expires_at ?? '9'))
     .forEach(reg => out.push({ kind: 'offer', student: byId.get(reg.student_id)!, reg }))
-  all.filter(r => byId.has(r.student_id) && needsNewClass(r, all, weeks))
+  all.filter(r => byId.has(r.student_id) && needsNewClass(r, all, weeks, today))
     .forEach(reg => out.push({ kind: 'cancelled', student: byId.get(reg.student_id)!, reg }))
   // Before registration opens there's nothing to pick yet; the countdown takes the sign instead.
   const canRegister = registrationOpen && weeks.some(s => openWeek(s, today))
   if (!canRegister) return out
-  for (const s of students) {
-    const registered = liveRegistrations(s.id, all, weeks).length > 0
-    // Every camper re-confirms their details once per camp year (#42) before registering.
-    if (s.registration_year !== campYear) out.push({ kind: 'reconfirm', student: s, registered })
-    else if (!registered) out.push({ kind: 'register', student: s })
-  }
+  // Every camper re-confirms their details once per camp year (#42) before registering, so all the
+  // re-confirms come before any "pick a class".
+  const registered = (s: Student) => liveRegistrations(s.id, all, weeks, today).length > 0
+  students.filter(s => s.registration_year !== campYear)
+    .forEach(s => out.push({ kind: 'reconfirm', student: s, registered: registered(s) }))
+  students.filter(s => s.registration_year === campYear && !registered(s))
+    .forEach(s => out.push({ kind: 'register', student: s }))
   return out
 }
 
@@ -182,6 +189,12 @@ export function nextCampDay(students: Student[], all: Reg[], sessions: Session[]
 // The figure on a room sign: "Room 202" → "202"; anything else stays as written.
 export function roomFigure(room: string): string {
   return room.replace(/^room\s+/i, '')
+}
+
+// "Fri 7:00 PM (Denver time)": when an offer runs out, in camp time whatever the phone's clock says.
+export function offerDeadline(iso: string): string {
+  const when = new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
+  return `${when} (Denver time)`
 }
 
 // "9 h" / "40 min" left on an offer; null once it has run out.
