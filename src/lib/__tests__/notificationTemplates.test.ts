@@ -49,6 +49,38 @@ describe('notify-me list (spec 30)', () => {
   })
 })
 
+describe('urgent notices and incidents (spec 34)', () => {
+  it('sends the urgent notice in full, escaped, with why it arrived', () => {
+    const r = render('urgent_notice', {
+      body: 'Site hold at the school.\nStay in your rooms.\n\nPickup <may> be late.', author: 'Jordan Rivera', posted_at: '2026-07-14T16:05:00Z',
+    }, APP)!
+    expect(r.subject).toBe('Urgent camp notice: Site hold at the school.')
+    expect(r.html).toContain('Site hold at the school.<br>')
+    expect(r.html).toContain('Pickup &lt;may&gt; be late.')
+    expect(r.text).toContain('Stay in your rooms.')
+    expect(r.text).toContain('even if you turned off camp announcements')
+    expect(r.text).toContain('10:05 AM')
+  })
+  it('shortens a long first line in the subject', () => {
+    const r = render('urgent_notice', { body: 'x'.repeat(100) }, APP)!
+    expect(r.subject.length).toBeLessThanOrEqual('Urgent camp notice: '.length + 58)
+  })
+  it("tells the family about an incident in the admin's words, not the crew's", () => {
+    const r = render('incident_notice', {
+      camper: 'Ava', class: 'Intro to Python', section: 'PY-A', kind: 'injury', occurred_at: '2026-07-14T17:30:00Z',
+      message: 'She scraped her knee at recess. We cleaned it and she rejoined the class.',
+    }, APP)!
+    expect(r.subject).toBe('About Ava at camp on Tuesday, July 14')
+    expect(r.text).toContain('an injury')
+    expect(r.text).toContain('She scraped her knee')
+    expect(r.text).toContain(`${APP}/parent`)
+  })
+  it('has a sensible incident notice with no message', () => {
+    const r = render('incident_notice', { camper: 'Ava', kind: 'nonsense' }, APP)!
+    expect(r.text).toContain('something we want you to know about')
+  })
+})
+
 describe('laptop loans (spec 29)', () => {
   const base = { camper: 'Ava', class: 'Intro to Python', section: 'PY-A', week: 2, start_date: '2027-06-14', end_date: '2027-06-18', student_id: 's1' }
   it('has a template for every laptop email the migration queues', () => {

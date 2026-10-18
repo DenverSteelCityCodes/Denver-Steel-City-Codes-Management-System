@@ -1,7 +1,8 @@
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChevronDown, CircleAlert, CircleCheck, ClockAlert, HeartPulse, Minus, Printer, RefreshCw, X } from 'lucide-react'
+import { Check, ChevronDown, CircleAlert, CircleCheck, ClockAlert, HeartPulse, Minus, Printer, RefreshCw, StickyNote, X } from 'lucide-react'
 import AttendanceExport from '../components/AttendanceExport'
+import AdminIncidents from '../components/AdminIncidents'
 import LaptopHandout from '../components/LaptopHandout'
 import SignBand from '../components/SignBand'
 import CallLink from '../components/CallLink'
@@ -66,6 +67,12 @@ function Unaccounted({ student, section }: { student: BoardStudent; section: Boa
         </div>
         <StatusWord tone="danger" icon={CircleAlert}>{why} {rollCallLabel(latest)}{at ? ` · ${at}` : ''}</StatusWord>
       </div>
+      {student.notes[latest] && (
+        <p className="mt-2 flex items-start gap-1.5 font-bold leading-snug">
+          <StickyNote size={16} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />
+          <span className="min-w-0 text-pretty break-words">Crew note: {student.notes[latest]}</span>
+        </p>
+      )}
       {student.medicalNote
         ? <p className="mt-2 flex items-start gap-1.5 font-bold leading-snug text-danger">
             <HeartPulse size={16} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />
@@ -294,7 +301,12 @@ export default function AdminAttendance() {
                                 <tbody>
                                   {s.roster.map(st => (
                                     <tr key={st.id} className="border-t border-border first:border-t-0">
-                                      <th scope="row" className="py-1.5 pr-3 text-left font-normal [overflow-wrap:anywhere]">{st.full_name}</th>
+                                      <th scope="row" className="py-1.5 pr-3 text-left font-normal [overflow-wrap:anywhere]">
+                                        {st.full_name}
+                                        {ROLL_CALLS.filter(r => st.notes[r.key]).map(r => (
+                                          <span key={r.key} className="block text-sm text-ink-muted">{r.label}: {st.notes[r.key]}</span>
+                                        ))}
+                                      </th>
                                       {ROLL_CALLS.map(r => (
                                         <td key={r.key} className="py-1.5 px-2 text-center"><span className="inline-flex justify-center"><Mark value={st.marks[r.key]} name={st.full_name} label={r.label} /></span></td>
                                       ))}
@@ -317,6 +329,7 @@ export default function AdminAttendance() {
         </>
       )}
 
+      {!loading && <AdminIncidents />}
       {!loading && <AttendanceExport />}
     </div>
   )
