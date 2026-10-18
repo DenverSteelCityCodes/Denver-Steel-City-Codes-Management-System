@@ -38,9 +38,11 @@ export default function HelpPage({ guide, framed = false }: { guide: HelpGuide; 
   // A link to /…/help#topic (from the contents, a tip or another topic) opens it, clearing any
   // search, while rendering (keyed on the navigation, so following the same link twice works);
   // the effect then brings it, or a #section, into view.
-  const [seenKey, setSeenKey] = useState<string | null>(null)
-  if (seenKey !== key) {
-    setSeenKey(key)
+  // A hash the browser changed by itself (typed, or back/forward) can keep the same key.
+  const seen = `${key}${hash}`
+  const [seenNav, setSeenNav] = useState<string | null>(null)
+  if (seenNav !== seen) {
+    setSeenNav(seen)
     const id = decodeURIComponent(hash.slice(1))
     if (index.has(id)) {
       if (query) setQuery('')
@@ -73,8 +75,30 @@ export default function HelpPage({ guide, framed = false }: { guide: HelpGuide; 
 
   return (
     <div className={framed ? 'max-w-[1200px] mx-auto px-4 sm:px-8 py-8' : undefined}>
-      <div className="lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12">
-        <div className="lg:col-start-2 max-w-[70ch]">
+      <div className="lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12 lg:items-start">
+        <nav aria-label="On this page" className="hidden lg:block sticky top-24 max-h-[calc(100dvh-7rem)] overflow-y-auto pb-4">
+          <h2 className="text-sm font-bold text-ink-muted">On this page</h2>
+          <ul role="list">
+            {guide.sections.map(s => (
+              <li key={s.id} className="mt-3">
+                <Link to={`#${s.id}`} className="inline-block py-1 font-bold text-ink underline underline-offset-[3px] decoration-[1.5px] hover:decoration-[3px]">
+                  {s.title}
+                </Link>
+                <ul role="list" className="mt-1 border-l border-border">
+                  {s.topics.map(t => (
+                    <li key={t.id}>
+                      <Link to={`#${t.id}`} className="block py-1 pl-3 text-sm text-ink-muted hover:text-ink hover:underline underline-offset-[3px] text-pretty">
+                        {t.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="min-w-0 max-w-[70ch]">
           <h1 className="font-display font-bold text-[1.75rem] leading-[1.15] tracking-[-0.01em] text-balance">{guide.title}</h1>
           <p className="mt-2 text-ink-muted text-pretty"><HelpText text={guide.intro} /></p>
 
@@ -96,31 +120,21 @@ export default function HelpPage({ guide, framed = false }: { guide: HelpGuide; 
               {searching ? (found === 0 ? `Nothing matches “${query.trim()}”. Try a shorter word.` : `${found} topic${found === 1 ? '' : 's'} match.`) : ''}
             </p>
           </div>
-        </div>
 
-        <nav aria-label="On this page" className="mt-6 lg:mt-0 lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">
-          <h2 className="text-sm font-bold text-ink-muted">On this page</h2>
-          <ul role="list" className="mt-1 flex flex-wrap gap-x-5 lg:block">
-            {guide.sections.map(s => (
-              <li key={s.id} className="lg:mt-3">
-                <Link to={`#${s.id}`} className="inline-flex items-center min-h-11 lg:min-h-0 lg:py-1 font-bold text-ink underline underline-offset-[3px] decoration-[1.5px] hover:decoration-[3px]">
-                  {s.title}
-                </Link>
-                <ul role="list" className="hidden lg:block mt-1 border-l border-border">
-                  {s.topics.map(t => (
-                    <li key={t.id}>
-                      <Link to={`#${t.id}`} className="block py-1 pl-3 text-sm text-ink-muted hover:text-ink hover:underline underline-offset-[3px] text-pretty">
-                        {t.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        </nav>
+          <nav aria-label="On this page" className="lg:hidden mt-2">
+            <h2 className="text-sm font-bold text-ink-muted">On this page</h2>
+            <ul role="list" className="flex flex-wrap gap-x-5">
+              {guide.sections.map(s => (
+                <li key={s.id}>
+                  <Link to={`#${s.id}`} className="inline-flex items-center min-h-11 font-bold text-ink underline underline-offset-[3px] decoration-[1.5px] hover:decoration-[3px]">
+                    {s.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-        <div className="lg:col-start-2 max-w-[70ch]">
+
           {shownSections.map(s => (
             <section key={s.id} id={s.id} aria-labelledby={`${s.id}-h`} className="mt-8 pt-5 border-t-2 border-ink scroll-mt-24">
               <h2 id={`${s.id}-h`} tabIndex={-1} className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em] focus:outline-none">{s.title}</h2>
