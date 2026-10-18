@@ -31,15 +31,21 @@ function SectionSeats({ cls, section, weekLabel, countsMissing }: {
     !countsMissing && waiting > 0 ? `${waiting} waitlisted` : null,
     noLead ? 'no lead' : null,
   ].filter(Boolean).join(', ')
+  // What the cell shows, word for word, so its name starts with it (WCAG 2.5.3).
+  const shown = [
+    label,
+    countsMissing ? `${capacity} seats` : `${taken}/${capacity}${waiting > 0 ? ` · ${waiting} wait` : ''}`,
+    noLead ? 'No lead' : null,
+  ].filter(Boolean).join(' ')
 
   return (
     <Link
       to={`/admin/classes?open=${encodeURIComponent(cls.id)}`}
-      aria-label={`${label}, ${weekLabel}: ${said}. Open ${cls.name} in Classes.`}
+      aria-label={`${shown}. ${weekLabel}: ${said}. Open ${cls.name} in Classes.`}
       className="grid gap-0.5 min-h-11 -mx-2 p-2 rounded no-underline transition-colors hover:bg-ink/5"
     >
       <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="text-base font-extrabold leading-[1.2] tracking-[0.02em]">{label}</span>
+        <span className="text-base font-extrabold leading-[1.2] tracking-[0.02em]">{label}</span>{' '}
         <span className="text-sm font-bold">
           {countsMissing
             ? `${capacity} seats`
@@ -51,6 +57,7 @@ function SectionSeats({ cls, section, weekLabel, countsMissing }: {
           <span className={`block h-full ${full ? 'bg-ink' : 'bg-ink-muted'}`} style={{ width: `${share * 100}%` }} />
         </span>
       )}
+      {noLead && ' '}
       {noLead && (
         <span className="inline-flex items-center gap-1.5 mt-1 text-sm font-extrabold">
           <UserRoundX size={16} strokeWidth={2.5} aria-hidden="true" /> No lead

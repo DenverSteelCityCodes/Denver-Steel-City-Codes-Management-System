@@ -4,6 +4,7 @@ import { useDutyTypes, useDutySlots, type DutySlot } from '../hooks/useDutyRoles
 import { useSessions, campSessions } from '../hooks/useSessions'
 import { shortRange } from '../lib/weekRange'
 import { sessionDays, parseLocalDate } from '../lib/campDay'
+import { closeAndFocus } from '../lib/focus'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input, Select } from '../components/Field'
@@ -129,7 +130,7 @@ export default function AdminDuties() {
       cancelLabel="Keep it"
       busy={deleting}
       onConfirm={confirmDelete}
-      onCancel={() => setPendingDelete(null)}
+      onCancel={() => closeAndFocus(() => setPendingDelete(null), `delete-slot-${slot.id}`)}
     />
   )
 
@@ -226,7 +227,7 @@ export default function AdminDuties() {
                                   )}
                                   <div>
                                     {/* Quiet until the cell is hovered or the link is focused; always shown on touch screens. */}
-                                    <button type="button" className={`${linkBtn} text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100`}
+                                    <button type="button" id={`delete-slot-${slot.id}`} className={`${linkBtn} text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100`}
                                       aria-expanded={pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id}
                                       onClick={() => setPendingDelete({ kind: 'slot', id: slot.id })}>
                                       Delete<span className="sr-only"> {t.name} on {dayLong(d)}</span>
@@ -268,7 +269,7 @@ export default function AdminDuties() {
                     <b className="font-bold">{slot.duty_type?.name ?? 'Duty'}</b> · {dayLong(slot.slot_date)} {parseLocalDate(slot.slot_date).getFullYear()}
                     <span className="block text-sm text-ink-muted">{slot.assigned_count} of {slot.capacity} signed up</span>
                   </p>
-                  <button type="button" className={`${linkBtn} text-ink-muted`}
+                  <button type="button" id={`delete-slot-${slot.id}`} className={`${linkBtn} text-ink-muted`}
                     aria-expanded={pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id}
                     onClick={() => setPendingDelete({ kind: 'slot', id: slot.id })}>
                     Delete<span className="sr-only"> {slot.duty_type?.name} on {dayLong(slot.slot_date)}</span>
@@ -322,7 +323,7 @@ export default function AdminDuties() {
               <li key={t.id} className="border-t border-border first:border-t-0">
                 <div className="flex items-center gap-4 min-h-12 py-1">
                   <span className="flex-1 min-w-0">{t.name}</span>
-                  <button type="button" className={`${linkBtn} text-ink-muted`}
+                  <button type="button" id={`remove-type-${t.id}`} className={`${linkBtn} text-ink-muted`}
                     aria-expanded={pendingDelete?.kind === 'type' && pendingDelete.id === t.id}
                     onClick={() => setPendingDelete({ kind: 'type', id: t.id })}>
                     Remove<span className="sr-only"> {t.name}</span>
@@ -337,7 +338,7 @@ export default function AdminDuties() {
                       cancelLabel="Keep it"
                       busy={deleting}
                       onConfirm={confirmDelete}
-                      onCancel={() => setPendingDelete(null)}
+                      onCancel={() => closeAndFocus(() => setPendingDelete(null), `remove-type-${t.id}`)}
                     />
                   </div>
                 )}

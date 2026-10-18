@@ -8,6 +8,7 @@ import InlineConfirm from './InlineConfirm'
 import { Input } from './Field'
 import { callLines } from '../lib/campers'
 import { firstName, formatTime } from '../lib/campDay'
+import { closeAndFocus } from '../lib/focus'
 import { leaveChip, releaseLine } from '../lib/pickups'
 import type { AssignedStudent } from '../hooks/useAssignedClass'
 import type { ReleaseMode, RollCallMark } from '../types/database'
@@ -45,6 +46,10 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
   const labelId = useId()
   const nameId = useId()
   const okId = useId()
+  // Openers, for focus to return to when Keep it / Back closes what they opened.
+  const undoId = useId()
+  const aloneId = useId()
+  const someoneId = useId()
   // After a save or an undo, focus lands on what replaced the tapped control.
   const focusNext = useRef(false)
   const lineRef = useRef<HTMLParagraphElement>(null)
@@ -100,10 +105,10 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
             <InlineConfirm tone="neutral"
               message={`Undo? ${first} will show as not collected yet. Only undo a release tapped by mistake.`}
               confirmLabel={busy === 'undo' ? 'Undoing…' : 'Undo release'} cancelLabel="Keep it" busy={busy === 'undo'}
-              onConfirm={() => void save(null, null, 'undo')} onCancel={() => { setUndoing(false); setErr(null) }} />
+              onConfirm={() => void save(null, null, 'undo')} onCancel={() => closeAndFocus(() => { setUndoing(false); setErr(null) }, undoId)} />
           </div>
         ) : (
-          <button type="button" onClick={() => { setUndoing(true); setErr(null) }}
+          <button type="button" id={undoId} onClick={() => { setUndoing(true); setErr(null) }}
             className="ui-btn ui-btn--text text-ink-muted font-semibold">
             Undo<span className="sr-only">, {first} not collected yet</span>
           </button>
@@ -137,12 +142,12 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
             <span className="text-sm text-ink-muted">parent said yes</span>
           </button>
         ) : (
-          <button type="button" className={chipCls} aria-expanded={ask?.kind === 'alone'} aria-disabled={!!busy || undefined}
+          <button type="button" id={aloneId} className={chipCls} aria-expanded={ask?.kind === 'alone'} aria-disabled={!!busy || undefined}
             onClick={() => { setAsk(a => (a?.kind === 'alone' ? null : { kind: 'alone' })); setErr(null) }}>
             <span className="font-bold">On their own</span>
           </button>
         )}
-        <button type="button" className={chipCls} aria-expanded={ask?.kind === 'someone'} aria-disabled={!!busy || undefined}
+        <button type="button" id={someoneId} className={chipCls} aria-expanded={ask?.kind === 'someone'} aria-disabled={!!busy || undefined}
           onClick={() => { setAsk(a => (a?.kind === 'someone' ? null : { kind: 'someone' })); setErr(null) }}>
           <span className="font-bold">Someone else</span>
         </button>
@@ -179,7 +184,7 @@ export default function DismissalRelease({ student, mark, sectionId, day, onSave
           <Input id={okId} type="text" autoComplete="off" maxLength={60} value={okBy}
             onChange={e => { setOkBy(e.target.value); setErr(null) }} />
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => { setAsk(null); setErr(null); setName(''); setOkBy('') }}>Back</Button>
+            <Button variant="secondary" onClick={() => closeAndFocus(() => { setAsk(null); setErr(null); setName(''); setOkBy('') }, ask.kind === 'alone' ? aloneId : someoneId)}>Back</Button>
             <Button type="submit" variant="ink" aria-disabled={!!busy || undefined} aria-busy={!!busy}>
               {busy && <LoaderCircle size={16} strokeWidth={2.5} className="animate-spin" aria-hidden="true" />}
               An admin said OK

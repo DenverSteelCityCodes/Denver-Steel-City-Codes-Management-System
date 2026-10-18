@@ -241,7 +241,7 @@ body {
   .ui-btn--danger:not(:disabled):hover { background: var(--danger-soft); }
   /* text action that still has a 44px target */
   .ui-btn--text {
-    min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink);
+    min-height: 44px; min-width: 44px; padding: 0; border: 0; background: none; color: var(--ink);
     font-weight: 700; text-decoration: underline; text-underline-offset: 3px;
   }
   .ui-btn--block { width: 100%; }

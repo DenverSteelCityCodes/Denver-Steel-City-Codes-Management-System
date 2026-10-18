@@ -5,6 +5,7 @@ import { useSessions, formatSessionDates, activeCampYear, type Session } from '.
 import SeasonSettingsCard from '../components/SeasonSettingsCard'
 import { useScheduleItems } from '../hooks/useScheduleItems'
 import { formatTime, formatTimeRange } from '../lib/campDay'
+import { closeAndFocus } from '../lib/focus'
 import type { ScheduleItem } from '../types/database'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
@@ -30,7 +31,7 @@ const label = 'block font-bold mb-1.5'
 const optional = <span className="font-normal text-ink-muted">(optional)</span>
 // An inline editor sits where the row was, framed by a 2px ink rule (no card, no modal).
 const editFrame = 'p-4 rounded border-2 border-ink space-y-4'
-const linkBtn = 'min-h-11 font-bold text-ink-muted underline underline-offset-[3px] cursor-pointer hover:text-ink'
+const linkBtn = 'min-h-11 min-w-11 font-bold text-ink-muted underline underline-offset-[3px] cursor-pointer hover:text-ink'
 
 // Inline create/edit form — renders in place of the row (or at the top for a new week).
 function SessionForm({
@@ -316,7 +317,7 @@ export default function AdminSessions() {
               <p className="mt-1 text-sm text-ink-muted">Each week is one camp session.</p>
             </div>
             {editing !== 'new' && (
-              <Button onClick={() => { setPendingDelete(null); setEditing('new') }}>
+              <Button id="add-week" onClick={() => { setPendingDelete(null); setEditing('new') }}>
                 <Plus size={18} strokeWidth={2.5} aria-hidden="true" /> Add a week
               </Button>
             )}
@@ -328,8 +329,8 @@ export default function AdminSessions() {
               <SessionForm
                 initial={BLANK}
                 submitLabel="Add week"
-                onCancel={() => setEditing(null)}
-                onSave={async payload => { await createSession(payload); setEditing(null) }}
+                onCancel={() => closeAndFocus(() => setEditing(null), 'add-week')}
+                onSave={async payload => { await createSession(payload); closeAndFocus(() => setEditing(null), 'add-week') }}
               />
             </div>
           )}
@@ -354,8 +355,8 @@ export default function AdminSessions() {
                       <SessionForm
                         initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, location: s.location ?? '', laptop_loaners: String(s.laptop_loaners ?? 0), is_active: s.is_active }}
                         submitLabel="Save"
-                        onCancel={() => setEditing(null)}
-                        onSave={async payload => { await updateSession(s.id, payload); setEditing(null) }}
+                        onCancel={() => closeAndFocus(() => setEditing(null), `edit-week-${s.id}`)}
+                        onSave={async payload => { await updateSession(s.id, payload); closeAndFocus(() => setEditing(null), `edit-week-${s.id}`) }}
                       />
                     ) : (
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -371,10 +372,10 @@ export default function AdminSessions() {
                             {laptopCounts ? loanerSummary(s.laptop_loaners ?? 0, laptopCounts.get(s.id)) : `Loaner laptops: ${s.laptop_loaners ?? 0}`}
                           </p>
                         </div>
-                        <button type="button" className={linkBtn} onClick={() => { setPendingDelete(null); setEditing(s.id) }}>
+                        <button type="button" id={`edit-week-${s.id}`} className={linkBtn} onClick={() => { setPendingDelete(null); setEditing(s.id) }}>
                           Edit<span className="sr-only"> {s.name}</span>
                         </button>
-                        <button type="button" className={linkBtn} aria-expanded={pendingDelete === s.id}
+                        <button type="button" id={`remove-week-${s.id}`} className={linkBtn} aria-expanded={pendingDelete === s.id}
                           onClick={() => { setEditing(null); setPendingDelete(s.id) }}>
                           Remove<span className="sr-only"> {s.name}</span>
                         </button>
@@ -390,7 +391,7 @@ export default function AdminSessions() {
                           cancelLabel="Keep it"
                           busy={deleting}
                           onConfirm={() => confirmDelete(s)}
-                          onCancel={() => setPendingDelete(null)}
+                          onCancel={() => closeAndFocus(() => setPendingDelete(null), `remove-week-${s.id}`)}
                         />
                       </div>
                     )}
@@ -421,8 +422,8 @@ export default function AdminSessions() {
                                   idPrefix={`item-${item.id}`}
                                   initial={{ start_time: item.start_time.slice(0, 5), end_time: item.end_time?.slice(0, 5) ?? '', title: item.title, location: item.location ?? '' }}
                                   submitLabel="Save"
-                                  onCancel={() => setEditingItem(null)}
-                                  onSave={async payload => { await updateItem(item.id, payload); setEditingItem(null) }}
+                                  onCancel={() => closeAndFocus(() => setEditingItem(null), `edit-item-${item.id}`)}
+                                  onSave={async payload => { await updateItem(item.id, payload); closeAndFocus(() => setEditingItem(null), `edit-item-${item.id}`) }}
                                 />
                               </li>
                             ) : (
@@ -433,11 +434,11 @@ export default function AdminSessions() {
                                     <b className="font-bold">{item.title}</b>{item.location && <span className="text-ink-muted"> · {item.location}</span>}
                                   </span>
                                   <span className="inline-flex gap-x-4">
-                                    <button type="button" className={linkBtn}
+                                    <button type="button" id={`edit-item-${item.id}`} className={linkBtn}
                                       onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: item.id }) }}>
                                       Edit<span className="sr-only"> {item.title}</span>
                                     </button>
-                                    <button type="button" className={linkBtn} aria-expanded={pendingItemDelete === item.id}
+                                    <button type="button" id={`remove-item-${item.id}`} className={linkBtn} aria-expanded={pendingItemDelete === item.id}
                                       onClick={() => { setEditingItem(null); setPendingItemDelete(item.id) }}>
                                       Remove<span className="sr-only"> {item.title}</span>
                                     </button>
@@ -452,7 +453,7 @@ export default function AdminSessions() {
                                       cancelLabel="Keep it"
                                       busy={itemBusy}
                                       onConfirm={() => confirmItemDelete(item)}
-                                      onCancel={() => setPendingItemDelete(null)}
+                                      onCancel={() => closeAndFocus(() => setPendingItemDelete(null), `remove-item-${item.id}`)}
                                     />
                                   </div>
                                 )}
@@ -465,11 +466,11 @@ export default function AdminSessions() {
                             idPrefix={`item-new-${s.id}`}
                             initial={{ start_time: '', end_time: '', title: '', location: '' }}
                             submitLabel="Add block"
-                            onCancel={() => setEditingItem(null)}
-                            onSave={async payload => { await createItem({ session_id: s.id, ...payload }); setEditingItem(null) }}
+                            onCancel={() => closeAndFocus(() => setEditingItem(null), `add-item-${s.id}`)}
+                            onSave={async payload => { await createItem({ session_id: s.id, ...payload }); closeAndFocus(() => setEditingItem(null), `add-item-${s.id}`) }}
                           />
                         ) : !itemsLoading && (
-                          <button type="button"
+                          <button type="button" id={`add-item-${s.id}`}
                             onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: 'new' }) }}
                             className="mt-1 inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px] cursor-pointer">
                             <Plus size={16} strokeWidth={2.5} aria-hidden="true" /> Add a time block<span className="sr-only"> to {s.name}</span>

@@ -155,15 +155,17 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => { void signInDemo(account) }}
                       disabled={busy}
-                      aria-labelledby={`seat-${account.key}-name`}
-                      aria-describedby={`seat-${account.key}`}
+                      aria-labelledby={`seat-${account.key}-name seat-${account.key}`}
                       className={`w-full grid grid-cols-[1fr_auto] items-center gap-4 min-h-[72px] px-4 py-3 lg:px-6 border-t-2 border-brand-on text-left transition-colors hover:enabled:bg-brand-hover focus-visible:-outline-offset-4 ${mine ? 'cursor-wait' : 'disabled:opacity-60 disabled:cursor-not-allowed'}`}
                     >
                       <span className="min-w-0">
                         <span id={`seat-${account.key}-name`} className="block text-lg font-extrabold leading-tight">
-                          {mine ? <>Signing in as {account.label}…</> : <><span className="sr-only">Sign in as </span>{account.label}</>}
+                          {mine ? <>Signing in as {account.label}…</> : account.label}
+                        </span>{' '}
+                        {/* The name is everything the seat shows, label first (WCAG 2.5.3), then what the tap does. */}
+                        <span id={`seat-${account.key}`} className="block mt-0.5 text-brand-on-muted text-pretty">
+                          {account.blurb}{!mine && <span className="sr-only"> Sign in.</span>}
                         </span>
-                        <span id={`seat-${account.key}`} className="block mt-0.5 text-brand-on-muted text-pretty">{account.blurb}</span>
                       </span>
                       <span aria-hidden="true" className="w-12 h-12 grid place-items-center rounded bg-shell text-brand">
                         {mine

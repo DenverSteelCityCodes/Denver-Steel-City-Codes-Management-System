@@ -80,14 +80,14 @@ export default function HelpPage({ guide, framed = false }: { guide: HelpGuide; 
           <h2 className="text-sm font-bold text-ink-muted">On this page</h2>
           <ul role="list">
             {guide.sections.map(s => (
-              <li key={s.id} className="mt-3">
-                <Link to={`#${s.id}`} className="inline-block py-1 font-bold text-ink underline underline-offset-[3px] decoration-[1.5px] hover:decoration-[3px]">
+              <li key={s.id} className="mt-1">
+                <Link to={`#${s.id}`} className="inline-flex items-center min-h-11 py-1 font-bold text-ink underline underline-offset-[3px] decoration-[1.5px] hover:decoration-[3px]">
                   {s.title}
                 </Link>
                 <ul role="list" className="mt-1 border-l border-border">
                   {s.topics.map(t => (
                     <li key={t.id}>
-                      <Link to={`#${t.id}`} className="block py-1 pl-3 text-sm text-ink-muted hover:text-ink hover:underline underline-offset-[3px] text-pretty">
+                      <Link to={`#${t.id}`} className="flex items-center min-h-11 py-1 pl-3 text-sm text-ink-muted hover:text-ink hover:underline underline-offset-[3px] text-pretty">
                         {t.title}
                       </Link>
                     </li>

@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import type { ReactNode } from 'react'
 
 // The segmented control (DESIGN.md › Inputs): one component for weeks, filters, forms, answers and
-// panel tabs. A 2px ink frame with ink dividers and 44px items (40px when `compact`); the selected
+// panel tabs. A 2px ink frame with ink dividers and 44px items, dense tables included; the selected
 // item is an ink fill with floor-coloured text, which inverts to a bone fill at night through the
 // same tokens. Never gold. Clicking the item that's already selected does nothing.
 //
@@ -21,7 +21,7 @@ export interface SegmentOption<T extends string> {
 }
 
 export default function Segmented<T extends string>({
-  label, labelledBy, options, value, onChange, mode = 'pressed', idBase, block = false, compact = false,
+  label, labelledBy, options, value, onChange, mode = 'pressed', idBase, block = false,
   disabled = false, className = '',
 }: {
   label?: string
@@ -33,8 +33,6 @@ export default function Segmented<T extends string>({
   idBase?: string
   // Items share the full width.
   block?: boolean
-  // 40px items for dense tables; 44px otherwise.
-  compact?: boolean
   disabled?: boolean
   className?: string
 }) {
@@ -82,9 +80,7 @@ export default function Segmented<T extends string>({
             disabled={disabled}
             onClick={() => pick(o.value)}
             onKeyDown={e => onKeyDown(e, i)}
-            className={`${block ? 'flex-1' : 'shrink-0'} inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 font-bold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-offset-[-4px] ${
-              compact ? 'min-h-10' : 'min-h-11'
-            } ${on
+            className={`${block ? 'flex-1' : 'shrink-0'} inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 font-bold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-offset-[-4px] min-h-11 ${on
               ? 'bg-ink text-bg focus-visible:outline-bg'
               : 'bg-transparent text-ink hover:bg-ink/[0.06]'}`}
           >

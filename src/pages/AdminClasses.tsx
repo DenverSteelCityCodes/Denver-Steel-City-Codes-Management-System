@@ -17,6 +17,7 @@ import { useVolunteers } from '../hooks/useVolunteers'
 import { useSessions, campSessions } from '../hooks/useSessions'
 import { supabase } from '../lib/supabase'
 import { formatTimeRange } from '../lib/campDay'
+import { closeAndFocus } from '../lib/focus'
 import { GRADES, healthLines } from '../lib/campers'
 import { classRuleLine } from '../lib/courseRules'
 import { seatTotals } from '../lib/registrationStatus'
@@ -33,7 +34,7 @@ const h2 = 'text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]'
 const label = 'block font-bold'
 const hint = 'mt-1.5 text-sm text-ink-muted text-pretty'
 const fieldError = 'mt-1.5 text-sm font-bold text-danger'
-const textLink = 'inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px]'
+const textLink = 'inline-flex items-center gap-1.5 min-h-11 min-w-11 font-bold underline underline-offset-[3px]'
 
 // "Oct 19–23", or "Oct 30–Nov 3" across a month end.
 function shortRange(start: string, end: string) {
@@ -701,6 +702,12 @@ export default function AdminClasses() {
     if (h && h.getBoundingClientRect().top > window.innerHeight - 160) h.scrollIntoView({ block: 'start' })
   }, [openSecId])
 
+  // Closing an inline editor (Cancel, Esc, or a save that leaves its opener in place) puts focus
+  // back on the control that opened it (lib/focus.ts).
+  function closeEditor(...returnTo: string[]) {
+    closeAndFocus(() => setEditing(null), ...returnTo)
+  }
+
   function startEditing(next: Editing) {
     setPendingDelete(null)
     setEditing(next)
@@ -861,10 +868,10 @@ export default function AdminClasses() {
           initial={classFormValues(cls)}
           courses={classes.filter(c => c.id !== cls.id)}
           submitLabel="Save class"
-          onCancel={() => setEditing(null)}
+          onCancel={() => closeEditor(`edit-class-${cls.id}`, `class-${cls.id}`)}
           onSave={async payload => {
             await updateClass(cls.id, payload)
-            setEditing(null)
+            closeEditor(`edit-class-${cls.id}`, `class-${cls.id}`)
           }}
         />
       </>, `edit-class-${cls.id}-h`)
@@ -881,7 +888,7 @@ export default function AdminClasses() {
           initialWeek={editing.week}
           people={people}
           crewSections={crewSections}
-          onCancel={() => setEditing(null)}
+          onCancel={() => closeEditor(`add-section-${cls.id}-${editing.week ?? 'both'}`, `class-${cls.id}`)}
           onSave={async (payload, supportIds) => {
             const { warning } = await createSection(payload, supportIds)
             // Close even on a partial save: the section exists now, and a second submit would
@@ -1016,7 +1023,7 @@ export default function AdminClasses() {
           )}
         </div>
         {editing?.kind !== 'new-class' && (
-          <Button onClick={() => startEditing({ kind: 'new-class' })}>
+          <Button id="new-class-btn" onClick={() => startEditing({ kind: 'new-class' })}>
             <Plus size={18} strokeWidth={2.5} aria-hidden="true" /> New class
           </Button>
         )}
@@ -1052,7 +1059,7 @@ export default function AdminClasses() {
             initial={classFormValues()}
             courses={classes}
             submitLabel="Create class"
-            onCancel={() => setEditing(null)}
+            onCancel={() => closeEditor('new-class-btn')}
             onSave={async payload => {
               const created = await createClass(payload)
               // Next step is always sections, so open the new class's section form.
@@ -1109,7 +1116,7 @@ export default function AdminClasses() {
                         {cls.description && <span className="block mt-0.5 text-sm text-ink-muted text-pretty">{cls.description}</span>}
                         {classRuleLine(cls, classes) && <span className="block mt-0.5 text-sm font-bold text-pretty">{classRuleLine(cls, classes)}</span>}
                         <span className="flex flex-wrap gap-x-4 mt-1 text-sm">
-                          <button type="button" onClick={() => startEditing({ kind: 'class', classId: cls.id })}
+                          <button type="button" id={`edit-class-${cls.id}`} onClick={() => startEditing({ kind: 'class', classId: cls.id })}
                             className={`${textLink} text-ink-muted font-semibold`}>
                             Edit<span className="sr-only"> {cls.name}</span>
                           </button>
@@ -1128,7 +1135,7 @@ export default function AdminClasses() {
                           <td key={c.key} data-label={c.label} className={`${cell} ${rule}`}>
                             <div className="grid gap-2 min-w-0">
                               {here.map(s => sectionBlock(cls, s))}
-                              <button type="button" onClick={() => startEditing({ kind: 'new-section', classId: cls.id, week })}
+                              <button type="button" id={`add-section-${cls.id}-${c.key}`} onClick={() => startEditing({ kind: 'new-section', classId: cls.id, week })}
                                 className="inline-flex items-center gap-1.5 min-h-11 justify-self-start text-sm font-bold text-ink-muted hover:text-ink hover:underline underline-offset-[3px]">
                                 <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
                                 Add section<span className="sr-only"> to {cls.name}, {c.label}</span>

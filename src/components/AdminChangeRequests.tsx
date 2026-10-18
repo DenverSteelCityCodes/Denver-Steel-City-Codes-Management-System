@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { timeAgo } from '../lib/campDay'
+import { closeAndFocus, controlsAfter, focusFirst } from '../lib/focus'
 import { classRuleLine, type RuleClass } from '../lib/courseRules'
 import { Input } from './Field'
 
@@ -22,7 +23,11 @@ interface RequestRow {
   registration: { status: string; sections: { label: string; week: number | null; classes: { name: string } | null } | null } | null
 }
 
-export default function AdminChangeRequests({ onResolved }: { onResolved?: () => void }) {
+export default function AdminChangeRequests({ onResolved, focusWhenEmpty }: {
+  onResolved?: () => void
+  // Where focus goes once the last request is resolved and this section leaves the page.
+  focusWhenEmpty?: string
+}) {
   const { hash } = useLocation()
   const [rows, setRows] = useState<RequestRow[] | null>(null)
   const [error, setError] = useState<{ what: 'load' | 'save'; message: string } | null>(null)
@@ -86,14 +91,23 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
     if (hash === '#requests' && hasRows) headingRef.current?.focus()
   }, [hash, hasRows])
 
-  async function resolve(id: string, status: 'done' | 'declined') {
+  async function resolve(id: string, status: 'done' | 'declined', btn: HTMLElement) {
+    // Once this request leaves the list, focus lands on the next request's Mark done, else the
+    // heading, else (the list is now empty and the section goes) what follows on the page.
+    const li = btn.closest('li')
+    const next = li ? controlsAfter(li, li.parentElement, '[data-resolve="done"]') : []
+    const fallback = rows && rows.length > 1 ? headingRef.current : focusWhenEmpty
     setBusy(id)
     const { error } = await supabase.from('change_requests')
       .update({ status, resolution_note: notes[id]?.trim() || null }).eq('id', id)
+    if (error) {
+      closeAndFocus(() => { setBusy(null); setError({ what: 'save', message: error.message }) }, btn)
+      return
+    }
     setBusy(null)
-    if (error) { setError({ what: 'save', message: error.message }); return }
     setError(null)
     setVersion(v => v + 1)
+    focusFirst(...next, fallback)
     onResolved?.()
   }
 
@@ -157,9 +171,9 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
                       onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))} />
                   </div>
                   <div className="flex flex-wrap gap-x-5">
-                    <button type="button" disabled={busy === r.id} onClick={() => { void resolve(r.id, 'done') }}
+                    <button type="button" data-resolve="done" disabled={busy === r.id} onClick={e => { void resolve(r.id, 'done', e.currentTarget) }}
                       className="ui-btn ui-btn--text">Mark done</button>
-                    <button type="button" disabled={busy === r.id} onClick={() => { void resolve(r.id, 'declined') }}
+                    <button type="button" disabled={busy === r.id} onClick={e => { void resolve(r.id, 'declined', e.currentTarget) }}
                       className="ui-btn ui-btn--text text-ink-muted font-semibold">Decline</button>
                   </div>
                 </div>

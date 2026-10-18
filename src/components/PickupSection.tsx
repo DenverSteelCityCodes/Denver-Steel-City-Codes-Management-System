@@ -5,6 +5,7 @@ import Segmented from './Segmented'
 import { Input } from './Field'
 import { buttonClass } from '../lib/ui'
 import { localDateISO, sessionDays } from '../lib/campDay'
+import { closeAndFocus } from '../lib/focus'
 import { camperFirstName } from '../lib/parentHome'
 import {
   LEAVE_MODES, daysAhead, daysPhrase, leaveVerb, openWeeks, pickupDraftError, shortDay,
@@ -54,10 +55,10 @@ export default function PickupSection({ student, regs, sessions }: {
             </ul>
           )}
           {adding ? (
-            <AdultForm first={first} days={days} onCancel={() => setAdding(false)}
-              onSave={async (d, ds) => { await data.savePickup(null, d, ds); setAdding(false) }} />
+            <AdultForm first={first} days={days} onCancel={() => closeAndFocus(() => setAdding(false), `${headingId}-add`)}
+              onSave={async (d, ds) => { await data.savePickup(null, d, ds); closeAndFocus(() => setAdding(false), `${headingId}-add`) }} />
           ) : (
-            <button type="button" onClick={() => setAdding(true)} className={textBtn}>
+            <button type="button" id={`${headingId}-add`} onClick={() => setAdding(true)} className={textBtn}>
               <UserRound size={16} strokeWidth={2.5} aria-hidden="true" /> Add an adult
             </button>
           )}
@@ -201,6 +202,9 @@ function ConsentLine({ week, first, today, consent, data }: { week: Session; fir
   const [mode, setMode] = useState<'idle' | 'edit' | 'remove'>('idle')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // The buttons that open the form and the confirm, for focus to come back to when they close.
+  const lid = useId()
+  const changeId = `${lid}-change`, removeId = `${lid}-remove`, letId = `${lid}-let`
 
   return (
     <li className="py-2">
@@ -215,8 +219,8 @@ function ConsentLine({ week, first, today, consent, data }: { week: Session; fir
         </span>
       </p>
       {mode === 'edit' ? (
-        <ConsentForm week={week} first={first} today={today} consent={consent} onCancel={() => setMode('idle')}
-          onSave={async (m, ds, note) => { await data.saveConsent(week.id, m, ds, note); setMode('idle') }} />
+        <ConsentForm week={week} first={first} today={today} consent={consent} onCancel={() => closeAndFocus(() => setMode('idle'), changeId, letId)}
+          onSave={async (m, ds, note) => { await data.saveConsent(week.id, m, ds, note); closeAndFocus(() => setMode('idle'), changeId, letId) }} />
       ) : mode === 'remove' && consent ? (
         <div className="mt-2">
           <InlineConfirm
@@ -224,18 +228,20 @@ function ConsentLine({ week, first, today, consent, data }: { week: Session; fir
             confirmLabel={busy ? 'Removing…' : 'Take it back'} cancelLabel="Keep" busy={busy}
             onConfirm={() => {
               setBusy(true); setErr(null)
-              data.removeConsent(consent.id).catch(e => { setErr(e instanceof Error ? e.message : 'Something went wrong'); setBusy(false) })
+              data.removeConsent(consent.id).then(
+                () => closeAndFocus(() => { setMode('idle'); setBusy(false) }, letId),
+                e => { setErr(e instanceof Error ? e.message : 'Something went wrong'); setBusy(false) })
             }}
-            onCancel={() => { setMode('idle'); setErr(null) }}
+            onCancel={() => closeAndFocus(() => { setMode('idle'); setErr(null) }, removeId)}
           />
         </div>
       ) : consent ? (
         <div className="flex flex-wrap gap-x-6">
-          <button type="button" onClick={() => setMode('edit')} className={textBtn}>Change<span className="sr-only">, {week.name}</span></button>
-          <button type="button" onClick={() => setMode('remove')} className={mutedBtn}>Take it back<span className="sr-only">, {week.name}</span></button>
+          <button type="button" id={changeId} onClick={() => setMode('edit')} className={textBtn}>Change<span className="sr-only">, {week.name}</span></button>
+          <button type="button" id={removeId} onClick={() => setMode('remove')} className={mutedBtn}>Take it back<span className="sr-only">, {week.name}</span></button>
         </div>
       ) : (
-        <button type="button" onClick={() => setMode('edit')} className={textBtn}>
+        <button type="button" id={letId} onClick={() => setMode('edit')} className={textBtn}>
           Let {first} leave on their own<span className="sr-only">, {week.name}</span>
         </button>
       )}
@@ -261,6 +267,10 @@ function ConsentForm({ week, first, today, consent, onSave, onCancel }: {
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const choices = [...new Set([...picked, ...sessionDays(week).filter(d => d >= today)])].sort()
+  // The button that opened the form is gone, so focus starts on its first answer, not <body>.
+  useEffect(() => {
+    document.querySelector<HTMLElement>(`[aria-labelledby="${id}-how"] button:not([tabindex="-1"])`)?.focus()
+  }, [id])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

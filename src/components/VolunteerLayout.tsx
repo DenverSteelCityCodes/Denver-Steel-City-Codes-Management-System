@@ -81,7 +81,7 @@ export default function VolunteerLayout() {
 
         <div className="relative ml-auto self-center" ref={menuRef}
           onKeyDown={e => { if (e.key === 'Escape' && menuOpen) { close(); avatarRef.current?.focus() } }}>
-          <button ref={avatarRef} type="button" onClick={() => setMenuOpen(o => !o)} aria-label={`${name}, account menu`}
+          <button ref={avatarRef} type="button" onClick={() => setMenuOpen(o => !o)} aria-label={`${initials}: ${name}, account menu`}
             aria-expanded={menuOpen} aria-controls="account-menu"
             className="w-11 h-11 grid place-items-center rounded-full border-2 border-on-shell-muted hover:border-brand text-sm font-bold text-on-shell transition-colors">
             {initials}
