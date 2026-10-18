@@ -47,7 +47,7 @@ describe('short Denver dates', () => {
 describe('the registration sign on Today', () => {
   const now = Date.parse('2027-02-06T15:00:00Z')   // Sat Feb 6, 8:00 AM in Denver
   const seats = { sections: 9, withSeats: 7, seatsLeft: 38, taken: 84, waitlisted: 9 }
-  const base = { formEnabled: true, opensAt: null, openingUnknown: false, seats, updated: 'Updated 7:14', now }
+  const base = { formEnabled: true, opensAt: null, openingUnknown: false, seats, updatedAt: '7:14', now }
 
   it('counts down to a scheduled opening and links to the setting', () => {
     const sign = registrationSign({ ...base, opensAt: '2027-02-07T02:00:00Z' })   // 7:00 PM that day
@@ -76,5 +76,24 @@ describe('the registration sign on Today', () => {
 
   it('never shows zeros it could not load', () => {
     expect(registrationSign({ ...base, seats: null })).toMatchObject({ figure: 'Open', message: "Seat counts didn't load" })
+  })
+
+  it("says it couldn't check, never open, when the switch couldn't be read", () => {
+    const sign = registrationSign({ ...base, formEnabled: null })
+    expect(sign).toMatchObject({
+      context: 'Registration', message: "Couldn't check whether registration is open",
+      sub: 'It tries again when you come back to this tab · Last updated 7:14', to: '/admin/sessions',
+    })
+    expect(sign.figure).toBeUndefined()
+    expect(registrationSign({ ...base, formEnabled: null, updatedAt: null }).sub).toBe('It tries again when you come back to this tab')
+  })
+
+  it("can't call an open switch open when the opening time didn't load", () => {
+    expect(registrationSign({ ...base, openingUnknown: true }).message).toBe("Couldn't check whether registration is open")
+  })
+
+  it('still says closed when the switch is off, whatever the opening time', () => {
+    const sign = registrationSign({ ...base, formEnabled: false, openingUnknown: true, opensAt: '2027-02-07T02:00:00Z' })
+    expect(sign).toMatchObject({ figure: 'Closed', sub: '84 seats taken · 9 waitlisted · Updated 7:14' })
   })
 })

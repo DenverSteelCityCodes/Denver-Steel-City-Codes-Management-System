@@ -46,7 +46,7 @@ const join = (parts: (string | null | false | undefined)[]) => parts.filter(Bool
 
 export interface SignContent {
   context: string
-  figure: string | number
+  figure?: string | number
   unit?: string
   message: string
   sub: string
@@ -55,20 +55,32 @@ export interface SignContent {
 }
 
 // What the sign says in each phase (issue #171): "Opens Sat, Feb 6 · 7:00 PM (Denver)" /
-// "Open since 7:00 PM · seats left · taken · waitlisted · Updated h:mm" / "Closed".
-export function registrationSign({ formEnabled, opensAt, openingUnknown, seats, updated, now }: {
-  formEnabled: boolean
+// "Open since 7:00 PM · seats left · taken · waitlisted · Updated h:mm" / "Closed" — and, when
+// the switch or the opening time couldn't be read, that it couldn't check, never a guess.
+export function registrationSign({ formEnabled, opensAt, openingUnknown, seats, updatedAt, now }: {
+  formEnabled: boolean | null // null when the registration form's settings couldn't be read
   opensAt: string | null
-  openingUnknown: boolean     // the season settings didn't load
-  seats: SeatTotals | null    // null when the seat counts didn't load
-  updated: string | null
+  openingUnknown: boolean     // the season settings (opening time) couldn't be read
+  seats: SeatTotals | null    // null when the seat counts couldn't be read
+  updatedAt: string | null    // "7:14", the last refresh where everything read
   now: number
 }): SignContent {
+  if (formEnabled === null || (formEnabled && openingUnknown)) {
+    const sub = join(['It tries again when you come back to this tab', updatedAt && `Last updated ${updatedAt}`])
+    return {
+      context: 'Registration',
+      message: "Couldn't check whether registration is open",
+      sub,
+      to: '/admin/sessions',
+      label: `Couldn't check whether registration is open. ${sub}. Open Sessions to see the switch.`,
+    }
+  }
+  const updated = updatedAt && `Updated ${updatedAt}`
   const phase = registrationPhase(formEnabled, opensAt, now)
   const at = (iso: string) => (isSameCampDay(iso, now) ? formatCampTime(iso) : `${formatCampDay(iso)}, ${formatCampTime(iso)}`)
 
   if (phase === 'closed') {
-    const wontOpen = opensAt && new Date(opensAt).getTime() > now
+    const wontOpen = !openingUnknown && opensAt && new Date(opensAt).getTime() > now
       ? `It won't open on ${formatCampDay(opensAt)} at ${formatCampTime(opensAt)} until you turn it on in Sessions`
       : null
     const sub = join([wontOpen ?? (seats && `${count(seats.taken, 'seat')} taken · ${seats.waitlisted} waitlisted`), updated])

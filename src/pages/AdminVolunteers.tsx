@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Wand2, Check, X, ChevronDown, ChevronUp, Copy, Download } from 'lucide-react'
 import { useVolunteers } from '../hooks/useVolunteers'
@@ -362,7 +362,7 @@ function ApplicationReview({
 export default function AdminVolunteers() {
   const { volunteers, loading: vLoading, refetch: refetchVolunteers } = useVolunteers()
   const { classes, updateSection, refetch: refetchClasses } = useAdminClasses()
-  const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
+  const { settings, loading: settingsLoading, error: settingsReadError, updateSetting } = useAppSettings()
   const { applications, loading: appsLoading, acceptApplication, rejectApplication } = useVolunteerApplications()
 
   // ?tab=applications (from the top-bar search / dashboard links) opens that tab.
@@ -383,6 +383,15 @@ export default function AdminVolunteers() {
   const [settingError, setSettingError] = useState<string | null>(null)
   const [closingApps, setClosingApps] = useState(false)
   const [settingBusy, setSettingBusy] = useState(false)
+  // When the confirm closes (cancel, Escape or done), focus goes back to the Close/Open button.
+  const appsButton = useRef<HTMLButtonElement>(null)
+  const refocusApps = useRef(false)
+  useEffect(() => {
+    if (refocusApps.current && !closingApps && !settingBusy) {
+      refocusApps.current = false
+      appsButton.current?.focus()
+    }
+  }, [closingApps, settingBusy])
   const { sessions } = useSessions()
   const weeks = campSessions(sessions)
   const weekLabels: [string, string] = [0, 1].map(i =>
@@ -396,6 +405,7 @@ export default function AdminVolunteers() {
     setSettingBusy(true); setSettingError(null)
     try {
       await updateSetting('volunteer_applications_open', open ? 'true' : 'false')
+      if (closingApps) refocusApps.current = true
       setClosingApps(false)
     } catch (e) {
       setSettingError(`Couldn't ${open ? 'open' : 'close'} applications: ${e instanceof Error ? e.message : 'unknown error'}. Try again.`)
@@ -649,6 +659,8 @@ export default function AdminVolunteers() {
               <p className="flex-1 min-w-[16rem] text-pretty">
                 {settingsLoading
                   ? 'Checking whether applications are open…'
+                  : settingsReadError
+                    ? <b title={settingsReadError} className="font-extrabold text-danger">Couldn't check whether applications are open. Reload the page to try again.</b>
                   : applicationsOpen
                     ? <><b className="font-extrabold">Applications are open</b> at <a href="/apply" target="_blank" rel="noreferrer" className="font-bold underline underline-offset-[3px]">{window.location.host}/apply</a></>
                     : <><b className="font-extrabold">Applications are closed.</b> The form at /apply isn't taking new applications.</>}
@@ -658,13 +670,14 @@ export default function AdminVolunteers() {
                   <Copy size={16} aria-hidden="true" /> Copy link
                 </Button>
               )}
-              <Button
+              {!settingsReadError && <Button
+                ref={appsButton}
                 disabled={settingsLoading || settingBusy}
                 aria-expanded={applicationsOpen ? closingApps : undefined}
                 onClick={() => { if (applicationsOpen) setClosingApps(true); else void setApplicationsOpen(true) }}
               >
                 {applicationsOpen ? 'Close applications' : 'Open applications'}
-              </Button>
+              </Button>}
             </div>
             {closingApps && applicationsOpen && (
               <InlineConfirm
@@ -674,7 +687,7 @@ export default function AdminVolunteers() {
                 cancelLabel="Keep them open"
                 busy={settingBusy}
                 onConfirm={() => { void setApplicationsOpen(false) }}
-                onCancel={() => setClosingApps(false)}
+                onCancel={() => { refocusApps.current = true; setClosingApps(false) }}
               />
             )}
 

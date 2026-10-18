@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import { useFormConfigs } from '../hooks/useFormConfigs'
 import { campInputToISO, isoToCampInput, formatCampDay, formatCampTime } from '../lib/denverTime'
@@ -14,8 +14,8 @@ const hint = 'mt-1.5 text-sm text-ink-muted text-pretty'
 // the camper registration form's `enabled` flag; the opening time is this year's season settings.
 // Parents can register only while the switch is on and the opening time (if any) has passed.
 export default function SeasonSettingsCard({ year }: { year: number }) {
-  const { settings, loading, error, save } = useSeasonSettings(year)
-  const { configs, loading: formsLoading, setFormEnabled } = useFormConfigs()
+  const { settings, loading, error, save, refetch: refetchSettings } = useSeasonSettings(year)
+  const { configs, loading: formsLoading, error: formsError, setFormEnabled, refetch: refetchForms } = useFormConfigs()
   const [form, setForm] = useState<{ opens: string; deadline: string; offer: string; final: string } | null>(null)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -23,6 +23,16 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
   const [confirming, setConfirming] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [switchErr, setSwitchErr] = useState<string | null>(null)
+
+  // When the confirm closes (cancel, Escape or done), focus goes back to the switch, not the page.
+  const switchRef = useRef<HTMLInputElement>(null)
+  const refocus = useRef(false)
+  useEffect(() => {
+    if (refocus.current && !confirming && !switching) {
+      refocus.current = false
+      switchRef.current?.focus()
+    }
+  }, [confirming, switching])
 
   // The status reads the clock; a minute's tick keeps "opens" turning into "open since".
   const [now, setNow] = useState(() => Date.now())
@@ -38,7 +48,9 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
   const when = opensAt ? `${formatCampDay(opensAt)} at ${formatCampTime(opensAt)}` : ''
   const scheduledAhead = !!opensAt && new Date(opensAt).getTime() > now
 
-  const status = phase === 'open'
+  const status = enabled && error
+    ? "On. The opening time couldn't be checked, so it may not be open yet."
+    : phase === 'open'
     ? (opensAt ? `Open since ${when} (Denver time).` : 'Open now.')
     : phase === 'scheduled'
       ? `Opens by itself ${when} (Denver time).`
@@ -48,6 +60,7 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
     setSwitching(true); setSwitchErr(null)
     try {
       await setFormEnabled('student_registration', next)
+      refocus.current = true
       setConfirming(false)
     } catch (e) {
       setSwitchErr(`Couldn't ${next ? 'open' : 'close'} registration: ${e instanceof Error ? e.message : 'unknown error'}. Try again.`)
@@ -95,6 +108,13 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
 
       {formsLoading ? (
         <div aria-hidden="true" className="mt-3 h-14 rounded bg-surface-sunken animate-pulse" />
+      ) : formsError ? (
+        <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 min-h-14">
+          <p title={formsError} className="flex-1 min-w-[16rem] font-bold text-danger text-pretty">
+            Couldn't check whether registration is on. Check your connection, then try again.
+          </p>
+          <Button onClick={() => { void refetchForms() }}>Try again</Button>
+        </div>
       ) : (
         <label htmlFor="registration-on" className="mt-2 flex items-center gap-4 min-h-14 cursor-pointer">
           <span className="flex-1 min-w-0">
@@ -102,6 +122,7 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
             <span id="registration-status" className="block text-sm text-ink-muted text-pretty">{status}</span>
           </span>
           <input
+            ref={switchRef}
             id="registration-on"
             type="checkbox"
             role="switch"
@@ -114,7 +135,7 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
           />
         </label>
       )}
-      {!formsLoading && !regForm && (
+      {!formsLoading && !formsError && !regForm && (
         <p role="alert" className="mt-2 text-sm font-bold text-danger">The registration form's settings are missing from the database, so it can't be switched here.</p>
       )}
       {confirming && (
@@ -128,14 +149,19 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
             cancelLabel={phase === 'scheduled' ? 'Keep it on' : 'Keep it open'}
             busy={switching}
             onConfirm={() => { void switchTo(false) }}
-            onCancel={() => setConfirming(false)}
+            onCancel={() => { refocus.current = true; setConfirming(false) }}
           />
         </div>
       )}
       {switchErr && <p role="alert" className="mt-2 text-sm font-bold text-danger">{switchErr}</p>}
 
-      {error && <p role="alert" className="mt-4 text-sm font-bold text-danger">Couldn't load the opening time and deadlines: {error}</p>}
-      {loading || !current ? (
+      {error && (
+        <div role="alert" className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p title={error} className="flex-1 min-w-[16rem] text-sm font-bold text-danger text-pretty">Couldn't load the opening time and deadlines. Check your connection, then try again.</p>
+          <Button onClick={() => { void refetchSettings() }}>Try again</Button>
+        </div>
+      )}
+      {error && !current ? null : loading || !current ? (
         <div aria-hidden="true" className="mt-6 h-48 rounded bg-surface-sunken animate-pulse" />
       ) : (
         <form onSubmit={submit} aria-label="Registration settings" className="mt-6 max-w-[640px] space-y-5">

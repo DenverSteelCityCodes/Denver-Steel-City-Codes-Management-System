@@ -210,7 +210,7 @@ function ScheduleItemForm({
 
 // Volunteer applications open and close on Volunteers › Applications only; this is the status.
 function ApplicationsStatus() {
-  const { settings, loading } = useAppSettings()
+  const { settings, loading, error } = useAppSettings()
   const { applications } = useVolunteerApplications()
   const open = settings['volunteer_applications_open'] === 'true'
   const pending = applications.filter(a => a.status === 'pending').length
@@ -222,12 +222,14 @@ function ApplicationsStatus() {
       ) : (
         <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <p className="text-pretty">
-            <b className="font-extrabold">{open ? 'Open' : 'Closed'}</b>
-            {open ? ' at /apply' : ". The form at /apply isn't taking applications"}
+            {error
+              ? <b title={error} className="font-extrabold text-danger">Couldn't check whether they're open</b>
+              : <b className="font-extrabold">{open ? 'Open' : 'Closed'}</b>}
+            {error ? '' : open ? ' at /apply' : ". The form at /apply isn't taking applications"}
             {pending > 0 && ` · ${pending} pending`}
           </p>
           <Link to="/admin/volunteers?tab=applications" className="inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px]">
-            {open ? 'Close them' : 'Open them'} in Volunteers <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" />
+            {error ? 'See them' : open ? 'Close them' : 'Open them'} in Volunteers <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" />
           </Link>
         </div>
       )}
@@ -293,13 +295,15 @@ export default function AdminSessions() {
       <div>
         <h1 className="font-display font-bold text-[1.75rem] leading-[1.15] tracking-[-0.01em] text-ink">Sessions</h1>
         <p className="mt-2 text-ink-muted text-pretty">
-          {!loading && sessions.length > 0 && `Season ${activeCampYear(sessions)}. `}Registration opens and closes here, and only here.
+          {!loading && `Season ${activeCampYear(sessions)}. `}Registration opens and closes here, and only here.
         </p>
       </div>
 
       <ActionError message={actionError} onDismiss={() => setActionError(null)} />
-      {!loading && sessions.length > 0 && <SeasonSettingsCard year={activeCampYear(sessions)} />}
-      {!loading && sessions.length > 0 && <ApplicationsStatus />}
+      {/* Always here once loaded, even before any session exists: this holds the only registration
+          switch. With no sessions, the season is this calendar year (activeCampYear). */}
+      {!loading && <SeasonSettingsCard year={activeCampYear(sessions)} />}
+      {!loading && <ApplicationsStatus />}
       {error && <div className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">⚠ {error}</div>}
 
       <div className="pt-5 border-t-2 border-ink flex flex-wrap items-center justify-between gap-3">

@@ -104,8 +104,8 @@ function FieldRow({
 }
 
 export default function AdminFormEditor() {
-  const { configs, loading, updateField } = useFormConfigs()
-  const { settings, loading: settingsLoading } = useAppSettings()
+  const { configs, loading, error: configsError, updateField } = useFormConfigs()
+  const { settings, loading: settingsLoading, error: settingsError } = useAppSettings()
   const { sessions, loading: sessionsLoading } = useSessions()
   const { settings: season } = useSeasonSettings(sessionsLoading ? null : activeCampYear(sessions))
   const [now] = useState(() => Date.now())
@@ -119,8 +119,8 @@ export default function AdminFormEditor() {
   // Each form opens and closes in one place only (issue #171): volunteer applications on
   // Volunteers › Applications, camper registration in Sessions. Here it's just the status.
   const status = activeForm === 'volunteer_application'
-    ? (settings['volunteer_applications_open'] === 'true' ? 'Open' : 'Closed')
-    : { open: 'Open', scheduled: 'Opens at its set time', closed: 'Closed' }[
+    ? (settingsError ? "Couldn't check" : settings['volunteer_applications_open'] === 'true' ? 'Open' : 'Closed')
+    : configsError ? "Couldn't check" : { open: 'Open', scheduled: 'Opens at its set time', closed: 'Closed' }[
         registrationPhase(activeConfig?.config.enabled !== false, season?.registration_opens_at, now)]
   const control = activeForm === 'volunteer_application'
     ? { to: '/admin/volunteers?tab=applications', label: 'Open or close it in Volunteers' }
@@ -169,6 +169,10 @@ export default function AdminFormEditor() {
         <div className="space-y-3">
           {[1, 2, 3, 4].map(i => <div key={i} className="h-12 bg-surface border border-border rounded-[14px] animate-pulse" />)}
         </div>
+      ) : !activeConfig && configsError ? (
+        <p role="alert" title={configsError} className="py-4 border-y-2 border-ink font-bold text-danger">
+          Couldn't load the form settings. Check your connection, then reload the page.
+        </p>
       ) : !activeConfig ? (
         <div className="bg-surface border border-border rounded-[14px] p-10 text-center">
           <Settings2 size={24} className="text-ink-muted mx-auto mb-3" />

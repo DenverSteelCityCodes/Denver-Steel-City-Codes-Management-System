@@ -17,11 +17,11 @@ const h2 = 'text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]'
 // serious first; Seats shows every section's fill. Refreshes on tab focus and every minute.
 export default function AdminDashboard() {
   const attention = useAdminAttention()
-  const { classes, loading: classesLoading, fillError, refetch: refetchClasses } = useAdminClasses()
+  const { classes, loading: classesLoading, error: classesError, fillError, refetch: refetchClasses } = useAdminClasses()
   const { sessions, loading: sessionsLoading } = useSessions()
   const { settings: season, loading: seasonLoading, error: seasonError, refetch: refetchSeason } =
     useSeasonSettings(sessionsLoading ? null : activeCampYear(sessions))
-  const { configs, loading: formsLoading, refetch: refetchForms } = useFormConfigs()
+  const { configs, loading: formsLoading, error: formsError, refetch: refetchForms } = useFormConfigs()
 
   // The clock the sign reads (the opening countdown, the phase), ticking every 30 seconds.
   const [now, setNow] = useState(() => Date.now())
@@ -30,35 +30,39 @@ export default function AdminDashboard() {
     return () => window.clearInterval(timer)
   }, [])
 
-  // Skeletons only until the first load; refreshes keep what's on screen.
+  // Skeletons only until the first load; refreshes keep what's on screen. "Updated" is the last
+  // time everything read, so a failed read never looks fresh.
   const firstLoad = classesLoading || seasonLoading || formsLoading
+  const anyError = !!(classesError || fillError || seasonError || formsError)
   const [loaded, setLoaded] = useState(false)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)
   if (!firstLoad && !loaded) {
     setLoaded(true)
-    setUpdatedAt(now)
+    if (!anyError) setUpdatedAt(now)
   }
 
   // Hook refetchers are new functions every render; the focus listener reads the latest ones.
   const refetchers = useRef([attention.refetch, refetchClasses, refetchSeason, refetchForms])
   useEffect(() => { refetchers.current = [attention.refetch, refetchClasses, refetchSeason, refetchForms] })
   const refresh = useCallback(() => {
-    void Promise.all(refetchers.current.map(fn => fn())).then(() => {
+    // A refetcher resolves false when its read failed.
+    void Promise.all(refetchers.current.map(fn => fn())).then(results => {
       const t = Date.now()
       setNow(t)
-      setUpdatedAt(t)
+      if (results.every(ok => ok !== false)) setUpdatedAt(t)
     })
   }, [])
   useRefetchOnFocus(refresh, 60_000)
 
   const regForm = configs.find(c => c.form_key === 'student_registration')
   const sign = registrationSign({
-    // No row means the database doesn't block on it (it only refuses when enabled is false).
-    formEnabled: regForm ? regForm.config.enabled !== false : true,
+    // A failed read is unknown, never open. After a good read, no row means the database doesn't
+    // block on it (it only refuses when enabled is false).
+    formEnabled: formsError ? null : regForm ? regForm.config.enabled !== false : true,
     opensAt: season?.registration_opens_at ?? null,
     openingUnknown: !!seasonError,
-    seats: fillError ? null : seatTotals(classes.flatMap(c => c.sections)),
-    updated: updatedAt ? `Updated ${formatCampTime(updatedAt).replace(/\s?[AP]M$/, '')}` : null,
+    seats: classesError || fillError ? null : seatTotals(classes.flatMap(c => c.sections)),
+    updatedAt: updatedAt ? formatCampTime(updatedAt).replace(/\s?[AP]M$/, '') : null,
     now,
   })
 
@@ -85,7 +89,7 @@ export default function AdminDashboard() {
           <p className="mt-2 text-sm text-ink-muted">Full sections show their waitlist. Select a section to open its class.</p>
           <div className="mt-3">
             {loaded
-              ? <SeatGrid classes={classes} weeks={campSessions(sessions)} countsMissing={!!fillError} />
+              ? <SeatGrid classes={classes} weeks={campSessions(sessions)} countsMissing={!!fillError} error={classesError} />
               : <div aria-hidden="true" className="h-64 rounded bg-surface-sunken animate-pulse" />}
           </div>
         </section>

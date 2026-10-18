@@ -60,11 +60,20 @@ function SectionSeats({ cls, section, weekLabel, countsMissing }: {
   )
 }
 
-export default function SeatGrid({ classes, weeks, countsMissing }: {
+export default function SeatGrid({ classes, weeks, countsMissing, error = null }: {
   classes: ClassWithSections[]
   weeks: Session[]          // this camp year's sessions in date order (campSessions)
   countsMissing: boolean    // the fill counts didn't load: show capacity only, never zeros
+  error?: string | null     // the classes couldn't be read: say so, never "No sections yet"
 }) {
+  if (error) {
+    return (
+      <p role="alert" className="py-4 border-y-2 border-ink font-bold text-danger text-pretty">
+        Couldn't load the sections. It tries again when you come back to this tab.
+      </p>
+    )
+  }
+
   const rows = classes
     .map(cls => ({ cls, sections: cls.sections.filter(s => !s.cancelled_at).sort((a, b) => a.label.localeCompare(b.label)) }))
     .filter(r => r.sections.length > 0)
