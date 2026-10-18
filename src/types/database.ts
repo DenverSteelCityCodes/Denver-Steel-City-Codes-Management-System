@@ -71,6 +71,41 @@ export interface Volunteer {
   availability_week_1: boolean
   availability_week_2: boolean
   created_at: string
+  // Profile and onboarding (migration_volunteer_onboarding.sql, spec 35). Rosters and parents see
+  // the preferred name; letters and certificates use the legal name. The photo is opt-in.
+  legal_name?: string | null
+  preferred_name?: string | null
+  pronunciation?: string | null
+  bio?: string | null
+  photo_path?: string | null
+  photo_consent_at?: string | null
+  photo_guardian_name?: string | null
+  photo_guardian_consent_at?: string | null
+  // When the checklist clock started (null: accepted before checklists existed).
+  accepted_at?: string | null
+  // Removed from the season: no volunteer access until accepted again.
+  removed_at?: string | null
+  removed_reason?: string | null
+  removed_by?: string | null
+}
+
+// A checklist item admins set (spec 35); due N hours after a volunteer is accepted.
+export interface OnboardingTask {
+  key: string
+  label: string
+  help_url: string | null
+  due_hours_after_accept: number
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+// A checklist item a volunteer has done; verified_by is the admin who checked it.
+export interface VolunteerTask {
+  volunteer_id: string
+  task_key: string
+  done_at: string
+  verified_by: string | null
 }
 
 export interface Class {

@@ -109,3 +109,68 @@ describe('laptop loans (spec 29)', () => {
     expect(render('laptop_promoted', { ...base, camper: '<b>Ava</b>' }, APP)!.html).not.toContain('<b>Ava</b>')
   })
 })
+
+describe('volunteer interviews and onboarding (spec 35)', () => {
+  const booked = { first_name: 'Riley', application_id: 'app-1', slot_id: 'slot-1', slot_datetime: '2026-10-20T22:00:00Z', duration_minutes: 15, meeting_url: 'https://meet.example.com/abc-defg' }
+
+  it('books in Denver time, with the private link, a link to the volunteer area and an .ics file', () => {
+    const r = render('interview_booked', booked, APP)!
+    expect(r.subject).toBe('Your interview is booked: Tuesday, October 20 at 4:00 PM')
+    expect(r.text).toContain('Hi Riley')
+    expect(r.text).toContain('https://meet.example.com/abc-defg')
+    expect(r.text).toContain(`${APP}/volunteer`)
+    expect(r.text).not.toContain('/parent')
+    expect(r.attachments).toHaveLength(1)
+    const ics = r.attachments![0]
+    expect(ics.filename).toBe('interview.ics')
+    expect(ics.contentType).toBe('text/calendar')
+    expect(ics.content).toContain('DTSTART:20261020T220000Z')
+    expect(ics.content).toContain('DTEND:20261020T221500Z')
+    expect(ics.content).toContain('URL:https://meet.example.com/abc-defg')
+    expect(ics.content.split('\r\n').every(l => new TextEncoder().encode(l).length <= 75)).toBe(true)
+  })
+
+  it('says when a booking moved, and promises the link when there is none yet', () => {
+    const r = render('interview_booked', { ...booked, moved: true, meeting_url: null }, APP)!
+    expect(r.subject).toBe('Your interview moved to Tuesday, October 20 at 4:00 PM')
+    expect(r.text).toContain('The meeting link will be on your application page')
+    expect(r.attachments![0].content).toContain('LOCATION:Online')
+  })
+
+  it('never uses a link that is not https', () => {
+    const r = render('interview_reminder', { ...booked, kind: '1h', meeting_url: 'javascript:alert(1)' }, APP)!
+    expect(r.html).not.toContain('javascript:')
+    expect(r.text).toContain(`Open your application: ${APP}/volunteer`)
+  })
+
+  it('reminds 24 hours and 1 hour before, with the link as the button', () => {
+    const day = render('interview_reminder', { ...booked, kind: '24h' }, APP)!
+    expect(day.subject).toBe('Reminder: your interview is Tuesday, October 20 at 4:00 PM')
+    expect(day.text).toContain('Join the interview: https://meet.example.com/abc-defg')
+    const hour = render('interview_reminder', { ...booked, kind: '1h' }, APP)!
+    expect(hour.subject).toBe('Your interview starts in an hour')
+  })
+
+  it('posts new times and nudges, pointing at the application page', () => {
+    const posted = render('interview_times_posted', { first_name: 'Riley', first_slot: '2026-10-21T22:30:00Z' }, APP)!
+    expect(posted.text).toContain('starting Wednesday, October 21 at 4:30 PM (Denver time)')
+    expect(posted.text).toContain(`Pick a time: ${APP}/volunteer`)
+    expect(render('interview_nudge', { first_name: 'Riley', open_times: 3 }, APP)!.text).toContain('3 times are open right now')
+    expect(render('interview_nudge', { first_name: 'Riley', open_times: 0 }, APP)!.text).toContain("We'll email you as soon as new ones are posted")
+  })
+
+  it('welcomes an accepted volunteer with the checklist and its deadlines', () => {
+    const r = render('application_accepted', { first_name: 'Riley', tasks: [{ label: 'Join the crew Discord', due_hours: 24 }, { label: 'Read the welcome doc', due_hours: 48 }, { label: 'Quick one', due_hours: 6 }] }, APP)!
+    expect(r.subject).toBe('Welcome to the crew, Riley!')
+    expect(r.text).toContain('• Join the crew Discord (within 1 day)')
+    expect(r.text).toContain('• Read the welcome doc (within 2 days)')
+    expect(r.text).toContain('• Quick one (within 6 hours)')
+  })
+
+  it('declines and removes kindly, with the camp\'s note escaped', () => {
+    expect(render('application_declined', { first_name: 'Riley' }, APP)!.text).toContain("We weren't able to offer you a spot this year")
+    const removed = render('volunteer_removed', { first_name: 'Sam', year: 2027, reason: 'Missed <b>onboarding</b>' }, APP)!
+    expect(removed.subject).toBe("You're no longer on the 2027 volunteer crew")
+    expect(removed.html).toContain('Missed &lt;b&gt;onboarding&lt;/b&gt;')
+  })
+})

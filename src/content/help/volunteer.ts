@@ -239,7 +239,14 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
                 'Pick a new time, then tap the button that names it, like **Move to Thu, Oct 22, 4:30 PM** (or **Book …** if you hadn\'t booked one). Your current time is marked **Your time**. To keep it, tap **Keep** and your current time.',
               ],
             },
-            { kind: 'p', text: 'Times are Denver time. If no times are open, check back later: new times show up on the same page.' },
+            { kind: 'p', text: 'Times are Denver time. If no times are open, we email you when new ones are posted.' },
+            {
+              kind: 'system',
+              items: [
+                'Booking or moving your time sends you an email with a calendar invite, and reminders come 24 hours and 1 hour before.',
+                'The meeting link shows on your application page (**Join the interview**) and in those emails. It\'s just for you, so please don\'t share it.',
+              ],
+            },
           ],
         },
         {
@@ -249,6 +256,54 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
           body: [
             { kind: 'p', text: 'Your application page shows each step: application received, interview, decision, and your class.' },
             { kind: 'p', text: 'Once you\'re accepted, the page turns into your volunteer area with the Today, Classes, Duties and Updates tabs. An admin assigns your class before camp starts.' },
+            { kind: 'p', text: 'Every decision comes by email too: accepted (with your onboarding checklist) or not this year.' },
+          ],
+        },
+        {
+          id: 'onboarding-checklist',
+          title: 'Finish your onboarding checklist',
+          keywords: 'checklist onboarding discord remind folder due overdue welcome',
+          body: [
+            {
+              kind: 'steps',
+              items: [
+                'Open [[volunteer-today]]. **Your onboarding checklist** lists what the camp needs from you, each with when it\'s due (Denver time).',
+                'Do each one. If it has a link, tap **Open the link** (or **Open it** for a page in this app).',
+                'Tick the box next to it. To untick, tap it again.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'Each item is due a set time after you were accepted. Admins see anything past due.',
+                '"Done, checked by the camp" means an admin confirmed it. The checklist leaves Today once everything is done.',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'volunteer-profile',
+          title: 'Fill in your profile and photo',
+          keywords: 'profile bio photo picture preferred name pronunciation legal name consent guardian meet the teachers',
+          body: [
+            {
+              kind: 'steps',
+              items: [
+                'Open [[volunteer-profile]] from your avatar.',
+                'Under **Your volunteer profile**, tap **Fill in your profile** (or **Edit**).',
+                'Add your **Preferred name**, **How to say it** if people often get it wrong, your **Legal name** and a **Short bio** (up to 300 characters).',
+                'To add a photo, tap **Choose a photo**, then tick **Parents of campers in my weeks may see my photo.** If you\'re under 18, type the name of the parent or guardian who agrees.',
+                'Tap **Save profile**.',
+              ],
+            },
+            {
+              kind: 'system',
+              items: [
+                'Parents of campers in your weeks see your preferred name, how to say it, your bio and (only with consent) your photo on their Meet the teachers page. Rosters use your preferred name.',
+                'Your legal name is only for the camp\'s letters and your service-hours certificate.',
+                'Untick the consent box, or tap **Remove photo**, and parents stop seeing it right away.',
+              ],
+            },
           ],
         },
       ],

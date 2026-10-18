@@ -15,6 +15,13 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { render } from './templates.ts'
 
+// UTF-8 text → base64 (btoa alone only takes Latin-1), for attachments (spec 35).
+const base64 = (text: string) => {
+  let bin = ''
+  for (const b of new TextEncoder().encode(text)) bin += String.fromCharCode(b)
+  return btoa(bin)
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -33,6 +40,12 @@ Deno.serve(async () => {
   // A row this run can't send: an unknown template is held, a missing address fails. Returns the
   // rendered email otherwise.
   async function prepare(row: Row) {
+    // Spec 35: an interview reminder that waited past the interview's start is withdrawn, not sent.
+    const slotAt = row.template === 'interview_reminder' ? Date.parse(String(row.payload?.slot_datetime ?? '')) : NaN
+    if (slotAt <= Date.now()) {
+      await db.from('notifications').update({ status: 'cancelled', last_error: 'The interview time had passed' }).eq('id', row.id)
+      return null
+    }
     const email = render(row.template, row.payload ?? {}, appUrl)
     if (!email) {
       // A template this deploy doesn't know yet (a migration ran before the function was
@@ -56,7 +69,11 @@ Deno.serve(async () => {
       failed++
       return null
     }
-    return { from, to: [row.recipient_email], reply_to: replyTo, subject: email.subject, html: email.html, text: email.text }
+    return {
+      from, to: [row.recipient_email], reply_to: replyTo, subject: email.subject, html: email.html, text: email.text,
+      // Spec 35: the interview's calendar file (single sends only; urgent batches never carry one).
+      ...(email.attachments?.length ? { attachments: email.attachments.map(a => ({ filename: a.filename, content: base64(a.content), content_type: a.contentType })) } : {}),
+    }
   }
 
   // ── Talking to the provider (spec 34) ──

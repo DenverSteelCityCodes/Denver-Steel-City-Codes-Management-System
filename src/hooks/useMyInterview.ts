@@ -6,6 +6,10 @@ export interface MyInterview {
   slot_id: string
   slot_datetime: string
   duration_minutes: number
+  // "Tuesday, October 20 at 4:00 PM" (Denver) and the slot's meeting link, only for the booked
+  // applicant (spec 35; the links table itself is admin-only).
+  denver_time?: string | null
+  meeting_url?: string | null
 }
 
 // The signed-in applicant's own interview time (my_interview() RPC — applicants can't read

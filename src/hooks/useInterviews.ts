@@ -8,6 +8,8 @@ export interface InterviewSlot {
   notes: string | null
   created_at: string
   booking: InterviewBooking | null
+  // The slot's private meeting link (interview_slot_links, admin-only; spec 35).
+  meeting_url: string | null
 }
 
 export interface InterviewBooking {
@@ -41,18 +43,23 @@ export function useInterviews() {
         booking:interview_bookings (
           id, slot_id, application_id, admin_notes, created_at,
           application:volunteer_applications ( first_name, last_name, email, status )
-        )
+        ),
+        link:interview_slot_links ( meeting_url )
       `)
       .order('slot_datetime', { ascending: true })
 
     setError(error?.message ?? null)
     if (error) { setLoading(false); return }
     setSlots(
-      ((data ?? []) as unknown as (Omit<InterviewSlot, 'booking'> & { booking: InterviewBooking | InterviewBooking[] | null })[]).map(s => ({
+      ((data ?? []) as unknown as (Omit<InterviewSlot, 'booking' | 'meeting_url'> & {
+        booking: InterviewBooking | InterviewBooking[] | null
+        link: { meeting_url: string } | { meeting_url: string }[] | null
+      })[]).map(({ link, ...s }) => ({
         ...s,
         booking: Array.isArray(s.booking)
           ? (s.booking[0] ?? null)
           : (s.booking ?? null),
+        meeting_url: (Array.isArray(link) ? link[0] : link)?.meeting_url ?? null,
       }))
     )
     setLoading(false)
@@ -62,12 +69,26 @@ export function useInterviews() {
     slot_datetime: string
     duration_minutes?: number
     notes?: string
+    meeting_url?: string
   }) {
-    const { error } = await supabase.from('interview_slots').insert({
+    const { data, error } = await supabase.from('interview_slots').insert({
       slot_datetime: payload.slot_datetime,
       duration_minutes: payload.duration_minutes ?? 15,
       notes: payload.notes ?? null,
-    })
+    }).select('id').single()
+    if (error) throw new Error(error.message)
+    if (payload.meeting_url) {
+      const { error: linkError } = await supabase.from('interview_slot_links').insert({ slot_id: data.id, meeting_url: payload.meeting_url })
+      if (linkError) { await fetchSlots(); throw new Error(`The slot was added, but its link wasn't saved: ${linkError.message}`) }
+    }
+    await fetchSlots()
+  }
+
+  // Set or clear a slot's meeting link (spec 35). Only the applicant booked into it sees it.
+  async function setLink(slotId: string, url: string | null) {
+    const { error } = url
+      ? await supabase.from('interview_slot_links').upsert({ slot_id: slotId, meeting_url: url })
+      : await supabase.from('interview_slot_links').delete().eq('slot_id', slotId)
     if (error) throw new Error(error.message)
     await fetchSlots()
   }
@@ -103,5 +124,5 @@ export function useInterviews() {
     await fetchSlots()
   }
 
-  return { slots, loading, error, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, refetch: fetchSlots }
+  return { slots, loading, error, createSlot, deleteSlot, bookSlot, unbookSlot, updateNotes, setLink, refetch: fetchSlots }
 }

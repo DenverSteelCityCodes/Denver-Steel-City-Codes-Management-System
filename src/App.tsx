@@ -30,6 +30,7 @@ import ParentRegistrationPage from './pages/ParentRegistrationPage'
 import ClassBrowser from './pages/ClassBrowser'
 import ParentUpdates from './pages/parent/ParentUpdates'
 import ParentFamily from './pages/parent/ParentFamily'
+import MeetTheTeachers from './pages/parent/MeetTheTeachers'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import VolunteerApplyPage from './pages/VolunteerApplyPage'
 import CampPage from './pages/CampPage'
@@ -126,6 +127,7 @@ function App() {
               <Route path="/parent/register" element={<ParentRegistrationPage />} />
               <Route path="/parent/updates" element={<ParentUpdates />} />
               <Route path="/parent/family" element={<ParentFamily />} />
+              <Route path="/parent/teachers" element={<MeetTheTeachers />} />
               <Route path="/parent/help" element={<ParentHelp />} />
             </Route>
           </Route>

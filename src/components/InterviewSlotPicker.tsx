@@ -26,7 +26,7 @@ export default function InterviewSlotPicker({
   if (slots.length === 0) {
     return (
       <p className="text-ink-muted text-pretty">
-        No interview times are open right now. You can still apply. New times show up on your volunteer page, so check back there to book one.
+        No interview times are open right now. You can still apply. We'll email you when new times are posted, and you book one on your volunteer page.
       </p>
     )
   }

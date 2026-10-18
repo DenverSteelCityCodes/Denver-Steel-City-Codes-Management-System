@@ -65,6 +65,7 @@ const SEARCH_PAGES = [...JOBS, SETUP, HELP].flatMap(j => [
   // Views inside a page (?tab=) that people search for by name.
   ...(j.to === '/admin/updates' ? [{ to: '/admin/updates?tab=emails', label: 'Sent emails', icon: j.icon, keywords: ['Emails', 'Email log'] }] : []),
   ...(j.to === '/admin/volunteers' ? [{ to: '/admin/volunteers?tab=crew', label: 'Crew', icon: j.icon, keywords: ['Volunteer roster', 'Fill open spots'] }] : []),
+  ...(j.to === '/admin/volunteers' ? [{ to: '/admin/volunteers?tab=onboarding', label: 'Onboarding', icon: j.icon, keywords: ['Checklist', 'Overdue', 'Remove from the season'] }] : []),
 ])
 
 const on = (pathname: string, to: string) => pathname === to || (to !== '/admin' && pathname.startsWith(`${to}/`))

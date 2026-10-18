@@ -5,6 +5,7 @@
 do $$
 declare
   admin_id uuid := (select id from profiles where display_name = 'Jordan Rivera');
+  kept uuid[] := array(select id from private.demo_keep_users);
   admin_claims text;
   v uuid; v_claims text; v_email text; sec uuid; future_slot uuid; past_slot uuid;
   lead2 uuid; lead2_week smallint; w date; senior uuid; senior_name text; free_slot uuid;
@@ -43,6 +44,7 @@ begin
   select se.start_date into w from sessions se where se.is_active order by se.start_date offset (lead2_week - 1) limit 1;
   select vo.id, p.display_name into senior, senior_name from volunteers vo join profiles p on p.id = vo.id
    where vo.experience_level = 'senior' and vo.id not in (v, lead2)
+     and vo.id <> all (kept)   -- the owner's logins are protected in the demo
      and case lead2_week when 1 then vo.availability_week_1 else vo.availability_week_2 end
      and not exists (select 1 from sections s2 where s2.lead_id = vo.id and s2.week = lead2_week)
      and not exists (select 1 from section_supports ss join sections s3 on s3.id = ss.section_id

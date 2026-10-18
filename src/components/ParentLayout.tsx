@@ -89,7 +89,7 @@ export default function ParentLayout() {
 
   return (
     <div className="min-h-dvh bg-bg">
-      <header className="md:sticky md:top-0 z-40 bg-shell text-on-shell pt-[env(safe-area-inset-top)] dark:shadow-[inset_0_-1px_0_var(--border)]">
+      <header className="md:sticky md:top-0 z-40 bg-shell text-on-shell pt-[env(safe-area-inset-top)] dark:shadow-[inset_0_-1px_0_var(--border)] print:hidden">
         <div className="relative max-w-[1280px] mx-auto h-14 md:h-16 flex items-center gap-4 px-4 md:px-8">
           <Link to="/parent" aria-label="Steel City Codes // Denver, Home" className={`min-h-11 flex items-center shrink-0 ${onInk}`}>
             <img src={wordmark} alt="" className="h-7 md:h-8 w-auto" />
@@ -142,7 +142,7 @@ export default function ParentLayout() {
       </header>
 
       {!registering && (
-        <nav aria-label="Parent" className="md:hidden sticky top-0 z-30 bg-shell grid grid-cols-3 px-2 border-t border-shell-raised dark:shadow-[inset_0_-1px_0_var(--border)]">
+        <nav aria-label="Parent" className="md:hidden sticky top-0 z-30 bg-shell grid grid-cols-3 px-2 border-t border-shell-raised dark:shadow-[inset_0_-1px_0_var(--border)] print:hidden">
           {TABS.map(({ to, label, end }) => (
             <NavLink key={to} to={to} end={end} onClick={close} className={({ isActive }) => `${tabCls(isActive)} h-12 px-2`}>
               {label}{to === '/parent/updates' && count}

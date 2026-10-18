@@ -15,6 +15,7 @@ export const PAGES = {
   'admin-volunteers': { label: 'Volunteers', to: '/admin/volunteers' },
   'admin-applications': { label: 'Volunteers › Applications', to: '/admin/volunteers?tab=applications' },
   'admin-crew': { label: 'Volunteers › Crew', to: '/admin/volunteers?tab=crew' },
+  'admin-onboarding': { label: 'Volunteers › Onboarding', to: '/admin/volunteers?tab=onboarding' },
   'admin-emails': { label: 'Updates › Sent emails', to: '/admin/updates?tab=emails' },
   'admin-users': { label: 'Users & roles', to: '/admin/users' },
   'admin-attendance': { label: 'Attendance', to: '/admin/attendance' },
@@ -32,6 +33,7 @@ export const PAGES = {
   'parent-family': { label: 'Family details', to: '/parent/family' },
   'parent-register': { label: 'Register a new camper', to: '/parent/register' },
   'parent-help': { label: 'Help', to: '/parent/help' },
+  'parent-teachers': { label: 'Meet the teachers', to: '/parent/teachers' },
 
   // Volunteer (top tabs and the avatar menu in VolunteerLayout)
   'volunteer-today': { label: 'Today', to: '/volunteer' },
