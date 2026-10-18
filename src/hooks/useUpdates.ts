@@ -38,9 +38,9 @@ export function useUpdates(limit = 50) {
       .insert({
         audience: input.audience,
         section_id: input.audience === 'section' ? input.section_id : null,
-        session_id: week ? input.session_id : null,
         body: input.body.trim(),
-        // Only sent when set, so a lead's post never names the column (admins only).
+        // The spec 34 columns are only named when used: a lead's ordinary post looks as it always did.
+        ...(week ? { session_id: input.session_id } : {}),
         ...(input.urgent ? { urgent: true } : {}),
       })
       .select(SELECT)
