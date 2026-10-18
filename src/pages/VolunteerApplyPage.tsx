@@ -1,151 +1,200 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ClipboardList, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleAlert, FilePenLine } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { BrandBar } from '../components/Wordmark'
-import { useSessions, activeCampYear, campSessions, formatSessionDates } from '../hooks/useSessions'
+import { useSessions, activeCampYear, campSessions } from '../hooks/useSessions'
+import type { Session } from '../hooks/useSessions'
 import { useFormConfig } from '../hooks/useFormConfig'
+import { useOpenInterviewSlots } from '../hooks/useOpenInterviewSlots'
 import InterviewSlotPicker from '../components/InterviewSlotPicker'
-import { useOpenInterviewSlots, formatSlot } from '../hooks/useOpenInterviewSlots'
+import Button from '../components/Button'
+import { Input, Select, Textarea } from '../components/Field'
+import SignBand from '../components/SignBand'
+import PublicShell, { AsideLine, ContactLink, PageHead } from '../components/PublicShell'
+import { ChoiceRow, FieldError, FormError, FormField, PasswordInput, Spinner } from '../components/PublicForm'
+import type { FieldA11y } from '../components/PublicForm'
+import {
+  CS_LANGUAGES, FALLBACK_COURSES, GRADES, INITIAL_FORM, MIN_AGE, SCHOOLS, SHIRT_SIZES, SKILLS, STEPS, STEP_COUNT,
+  applicationRow, needsGuardian, secondChoices, validateStep,
+} from '../lib/applyForm'
+import type { ApplyForm } from '../lib/applyForm'
+import { GENERIC_ERROR, authErrorMessage, classifyAuthError, isExistingAccount } from '../lib/authErrors'
+import { CAMP_SITE } from '../lib/campSite'
+import { CAMP_TIME_ZONE, formatCampTime } from '../lib/denverTime'
+import { focusOnMount } from '../lib/focus'
+import { buttonClass } from '../lib/ui'
 
-const GRADES = ['9th', '10th', '11th', '12th', 'College']
-const SCHOOLS = [
-  'Cherry Creek High School',
-  'Grandview High School',
-  'Smoky Hill High School',
-  'Eaglecrest High School',
-  'Rock Canyon High School',
-  'Other',
-]
-const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-const CS_LANGUAGES = ['Python', 'Java', 'HTML', 'CSS', 'JavaScript', 'CircuitPython', 'Other']
-const FALLBACK_COURSES = [
-  'Intro to Python',
-  'Intermediate Python',
-  'Intro to Java',
-  'Intermediate Java',
-  'Web Development',
-  'Microcontrollers',
-]
-
-interface FormData {
-  email: string
-  password: string
-  firstName: string
-  lastName: string
-  phone: string
-  age: string
-  grade: string
-  school: string
-  schoolOther: string
-  shirtSize: string
-  availabilityWeek1: boolean
-  availabilityWeek2: boolean
-  whyVolunteer: string
-  previousScc: boolean | null
-  csLanguages: string[]
-  csClasses: string
-  experienceChildren: string
-  skillPython: number | null
-  skillJava: number | null
-  skillHtml: number | null
-  skillCss: number | null
-  skillJavascript: number | null
-  skillMicrocontrollers: number | null
-  courseFirst: string
-  courseSecond: string
-  otherCurricula: string
-  volunteerSignature: string
-  guardianSignature: string
-  interviewSlotId: string
+// Short names for the "answers need attention" line under each step.
+const SHORT: Record<string, string> = {
+  firstName: 'First name', lastName: 'Last name', age: 'Age', grade: 'Grade', school: 'School', schoolOther: 'School name',
+  email: 'Email', phone: 'Phone', password: 'Password', availability: 'Weeks', shirtSize: 'T-shirt size',
+  whyVolunteer: 'Why you want to volunteer', previousScc: 'Volunteered before', csLanguages: 'Languages',
+  csClasses: 'Classes taken', experienceChildren: 'Experience', courseFirst: 'First choice', courseSecond: 'Second choice',
+  otherCurricula: 'Other classes', volunteerSignature: 'Your signature', guardianSignature: 'Guardian signature',
+  interviewSlotId: 'Interview time',
 }
 
-const INITIAL: FormData = {
-  email: '', password: '', firstName: '', lastName: '', phone: '',
-  age: '', grade: '', school: '', schoolOther: '', shirtSize: '',
-  availabilityWeek1: false, availabilityWeek2: false,
-  whyVolunteer: '', previousScc: null,
-  csLanguages: [], csClasses: '', experienceChildren: '',
-  skillPython: null, skillJava: null, skillHtml: null,
-  skillCss: null, skillJavascript: null, skillMicrocontrollers: null,
-  courseFirst: '', courseSecond: '', otherCurricula: '',
-  volunteerSignature: '', guardianSignature: '', interviewSlotId: '',
+// "Oct 19–23", or "Jun 29 – Jul 3" across a month.
+function shortDates(s: Session) {
+  const a = new Date(s.start_date + 'T12:00:00'), b = new Date(s.end_date + 'T12:00:00')
+  const m = (d: Date) => d.toLocaleDateString('en-US', { month: 'short' })
+  return a.getMonth() === b.getMonth() ? `${m(a)} ${a.getDate()}–${b.getDate()}` : `${m(a)} ${a.getDate()} – ${m(b)} ${b.getDate()}`
 }
 
-function SkillRating({
-  label, value, onChange,
-}: { label: string; value: number | null; onChange: (v: number | null) => void }) {
+const longDay = (iso: string) =>
+  new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(iso))
+
+const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+// The first control inside a field, so a failed step can put focus on what needs fixing.
+function focusField(key: string) {
+  document.querySelector(`[data-field="${key}"]`)?.querySelector<HTMLElement>('input, select, textarea, [role="radio"]')?.focus()
+}
+
+function Subhead({ id, children }: { id?: string; children: ReactNode }) {
+  return <h3 id={id} className="mt-10 mb-3 text-lg font-bold">{children}</h3>
+}
+
+// A group of real radios or checkboxes with its question, hint and error (DESIGN.md › Choice rows).
+function ChoiceGroup({ field, legend, hint, error, children }: {
+  field: string
+  legend: ReactNode
+  hint?: ReactNode
+  error?: string
+  children: (a11y: Pick<FieldA11y, 'aria-describedby' | 'aria-invalid'>) => ReactNode
+}) {
+  const hintId = hint ? `${field}-hint` : undefined
+  const errorId = error ? `${field}-err` : undefined
+  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined
   return (
-    <div className="flex items-center justify-between gap-4 py-1">
-      <span className="font-sans text-sm text-ink w-48 shrink-0">{label}</span>
-      <div className="flex items-center gap-1.5">
-        <span className="font-sans text-xs text-ink-faint mr-1">Least</span>
-        {[1, 2, 3, 4, 5].map(n => (
-          <button
-            key={n} type="button"
-            onClick={() => onChange(value === n ? null : n)}
-            className={`w-8 h-8 rounded-full text-xs font-bold transition border ${
-              value === n
-                ? 'bg-brand text-brand-on border-brand'
-                : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
-            }`}
-          >
-            {n}
-          </button>
-        ))}
-        <span className="font-sans text-xs text-ink-faint ml-1">Greatest</span>
+    <fieldset data-field={field} aria-describedby={describedBy} className="min-w-0">
+      <legend className="mb-2 font-bold">{legend}</legend>
+      {hint && <p id={hintId} className="-mt-1 mb-3 text-sm text-ink-muted text-pretty">{hint}</p>}
+      {children({ 'aria-describedby': describedBy, 'aria-invalid': error ? true : undefined })}
+      {error && <div className="mt-2"><FieldError id={errorId}>{error}</FieldError></div>}
+    </fieldset>
+  )
+}
+
+// The application's sign: on step 1 it carries the commitment (where, when, which weeks), then
+// it slims to the step label and the rail. The step label is the step's heading and takes focus
+// when the step changes.
+function StepSign({ step, headingRef, commitment }: {
+  step: number
+  headingRef: React.RefObject<HTMLHeadingElement | null>
+  commitment?: { message: string; sub: string }
+}) {
+  return (
+    <section aria-labelledby="step-h" className="grid gap-y-1 rounded bg-brand text-brand-on p-4">
+      {commitment && (
+        <>
+          <p className="text-[1.375rem] font-extrabold leading-[1.15] text-balance">{commitment.message}</p>
+          <p className="mt-1 text-brand-on-muted text-pretty">{commitment.sub}</p>
+        </>
+      )}
+      <h2 id="step-h" ref={headingRef} tabIndex={-1} className={`${commitment ? 'mt-3 ' : ''}text-lg font-extrabold leading-snug focus:outline-none`}>
+        Step {step} of {STEP_COUNT} · {STEPS[step - 1]}
+      </h2>
+      <div aria-hidden="true" className="mt-2 grid grid-flow-col gap-1">
+        {STEPS.map((name, i) => <span key={name} className={`h-1.5 rounded-[1px] ${i < step ? 'bg-brand-on' : 'bg-brand-on/20'}`} />)}
       </div>
-    </div>
+    </section>
   )
 }
 
-function StepDots({ current, total }: { current: number; total: number }) {
+// 1–5 on real radios: one joined, full-width control per skill. Fits 320px.
+function SkillScale({ name, label, value, onChange }: { name: string; label: string; value: number | null; onChange: (v: number | null) => void }) {
+  const firstRef = useRef<HTMLInputElement>(null)
   return (
-    <div className="flex items-center gap-2 justify-center mb-8">
-      {Array.from({ length: total }, (_, i) => (
-        <div
-          key={i}
-          className={`h-2 rounded-full transition-all ${
-            i + 1 === current ? 'w-6 bg-brand' : i + 1 < current ? 'w-2 bg-brand/40' : 'w-2 bg-border-strong'
-          }`}
-        />
-      ))}
-    </div>
+    <fieldset className="min-w-0">
+      <legend className="sr-only">{label}</legend>
+      {/* The visible name shares its row with Clear, which a legend can't hold without renaming the group. */}
+      <div className="flex items-center justify-between gap-3 min-h-11">
+        <span aria-hidden="true" className="font-bold">{label}</span>
+        {value !== null && (
+          <button
+            type="button"
+            onClick={() => { onChange(null); firstRef.current?.focus() }}
+            className={buttonClass('text', 'font-semibold text-ink-muted hover:text-ink')}
+          >
+            Clear<span className="sr-only"> {label} rating</span>
+          </button>
+        )}
+      </div>
+      <div className="mt-1 grid grid-cols-5 gap-[2px] bg-ink border-2 border-ink rounded overflow-hidden">
+        {[1, 2, 3, 4, 5].map(n => (
+          <label
+            key={n}
+            className="relative grid place-items-center min-h-11 bg-surface font-bold cursor-pointer has-checked:bg-shell has-checked:text-on-shell dark:has-checked:bg-ink dark:has-checked:text-bg has-focus-visible:z-10 has-focus-visible:outline-2 has-focus-visible:outline-current has-focus-visible:-outline-offset-[6px]"
+          >
+            <input
+              ref={n === 1 ? firstRef : undefined}
+              type="radio"
+              name={name}
+              value={n}
+              checked={value === n}
+              onChange={() => onChange(n)}
+              className="absolute inset-0 w-full h-full m-0 opacity-0 cursor-pointer"
+            />
+            {n}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   )
 }
+
+type Load = 'loading' | 'open' | 'closed' | 'error'
+type FormFailure = { message: string; recovery?: 'existing' | 'duplicate' }
 
 export default function VolunteerApplyPage() {
-  const [applicationsOpen, setApplicationsOpen] = useState<boolean | null>(null)
-  const [settingsLoading, setSettingsLoading] = useState(true)
+  const [load, setLoad] = useState<Load>('loading')
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [courses, setCourses] = useState<string[]>(FALLBACK_COURSES)
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState<FormData>(INITIAL)
+  const [form, setForm] = useState<ApplyForm>(INITIAL_FORM)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [failure, setFailure] = useState<FormFailure | null>(null)
   const { sessions } = useSessions()
   const campYear = activeCampYear(sessions)
   const weeks = campSessions(sessions)
   // Labels / visibility / required-ness come from the admin Form editor.
   const { field: q } = useFormConfig('volunteer_application')
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   // Interview times are booked in-app (SignUpGenius-style) as the last step.
-  const { slots: openSlots, refetch: refetchSlots } = useOpenInterviewSlots()
+  const { slots: openSlots, error: slotsError, refetch: refetchSlots } = useOpenInterviewSlots()
   // Set once the account + application are saved, so a failed booking can be retried alone.
   const [applicationSaved, setApplicationSaved] = useState(false)
-  const [bookedTime, setBookedTime] = useState<string | null>(null)
+  const [booked, setBooked] = useState<{ time: string; minutes: number | null } | null>(null)
   // The account signUp created in this page session. If the application insert then fails, a
   // retry reuses it — calling signUp again would fail with "already registered" and strand them.
   const [createdAccount, setCreatedAccount] = useState<{ email: string; userId: string | null } | null>(null)
 
+  // Focus follows the work: the new step's heading after Next/Back, the first field to fix after
+  // a step that didn't pass.
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null)
+  const pendingFocus = useRef<'step' | string | null>(null)
   useEffect(() => {
+    const target = pendingFocus.current
+    if (!target) return
+    pendingFocus.current = null
+    if (target === 'step') stepHeadingRef.current?.focus({ preventScroll: true })
+    else focusField(target)
+  }, [step, errors])
+
+  useEffect(() => {
+    let cancelled = false
     supabase
       .from('app_settings')
       .select('value')
       .eq('key', 'volunteer_applications_open')
       .maybeSingle()
-      .then(({ data }) => {
-        setApplicationsOpen(data?.value === 'true')
-        setSettingsLoading(false)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) setLoad('error')
+        else setLoad(data?.value === 'true' ? 'open' : 'closed')
       })
 
     supabase
@@ -153,585 +202,551 @@ export default function VolunteerApplyPage() {
       .select('name')
       .order('name', { ascending: true })
       .then(({ data }) => {
-        if (data && data.length > 0) setCourses(data.map(c => c.name))
+        if (!cancelled && data && data.length > 0) setCourses(data.map(c => c.name))
       })
-  }, [])
+    return () => { cancelled = true }
+  }, [loadAttempt])
 
-  function set<K extends keyof FormData>(key: K, value: FormData[K]) {
+  function set<K extends keyof ApplyForm>(key: K, value: ApplyForm[K]) {
     setForm(f => ({ ...f, [key]: value }))
+    // An answer being fixed loses its error as soon as it changes.
+    setErrors(e => {
+      if (!(key in e)) return e
+      const next = { ...e }
+      delete next[key]
+      return next
+    })
+  }
+
+  function setFirstChoice(course: string) {
+    setForm(f => ({ ...f, courseFirst: course, courseSecond: f.courseSecond === course ? '' : f.courseSecond }))
+    setErrors(e => {
+      const next = { ...e }
+      delete next.courseFirst
+      return next
+    })
   }
 
   function toggleLanguage(lang: string) {
-    setForm(f => ({
-      ...f,
-      csLanguages: f.csLanguages.includes(lang)
-        ? f.csLanguages.filter(l => l !== lang)
-        : [...f.csLanguages, lang],
-    }))
+    set('csLanguages', form.csLanguages.includes(lang) ? form.csLanguages.filter(l => l !== lang) : [...form.csLanguages, lang])
   }
 
-  function validateStep(): string | null {
-    if (step === 1) {
-      if (!form.firstName.trim()) return `${q('firstName').label} is required`
-      if (!form.lastName.trim()) return `${q('lastName').label} is required`
-      if (!form.email.trim()) return `${q('email').label} is required`
-      if (!form.password || form.password.length < 8) return 'Password must be at least 8 characters'
-      if (!form.phone.trim()) return `${q('phone').label} is required`
-      if (!form.age || isNaN(Number(form.age))) return `${q('age').label} is required`
-      if (!form.grade) return `${q('grade').label} is required`
-      if (!form.school) return `${q('school').label} is required`
-      if (form.school === 'Other' && !form.schoolOther.trim()) return 'Please enter your school name'
-      if (!form.shirtSize) return `${q('shirtSize').label} is required`
-    }
-    if (step === 2) {
-      if (!form.availabilityWeek1 && !form.availabilityWeek2) return 'Please select at least one session'
-      if (!form.whyVolunteer.trim()) return 'Please tell us why you want to volunteer'
-      if (q('previousScc').required && form.previousScc === null) return `Please answer: ${q('previousScc').label}`
-      if (q('csLanguages').required && form.csLanguages.length === 0) return `Please answer: ${q('csLanguages').label}`
-      if (q('csClasses').required && !form.csClasses.trim()) return `Please answer: ${q('csClasses').label}`
-      if (q('experienceChildren').required && !form.experienceChildren.trim()) return `Please answer: ${q('experienceChildren').label}`
-    }
-    if (step === 3) {
-      if (!form.courseFirst) return 'Please select your first choice course'
-      if (!form.courseSecond) return 'Please select your second choice course'
-      if (q('otherCurricula').required && !form.otherCurricula.trim()) return `Please answer: ${q('otherCurricula').label}`
-    }
-    if (step === 4) {
-      if (!form.volunteerSignature.trim()) return 'Your signature is required'
-      if (Number(form.age) < 18 && !form.guardianSignature.trim()) return 'Parent/guardian signature is required for applicants under 18'
-      if (openSlots && openSlots.length > 0 && !form.interviewSlotId) return 'Please pick an interview time'
-    }
-    return null
+  const activeWeeks = weeks.filter(w => w.is_active)
+  const slotMinutes = openSlots && openSlots.length > 0 && openSlots.every(s => s.duration_minutes === openSlots[0].duration_minutes)
+    ? openSlots[0].duration_minutes
+    : null
+  const hasSlots = !!openSlots && openSlots.length > 0
+
+  function goTo(next: number) {
+    setErrors({})
+    setFailure(null)
+    pendingFocus.current = 'step'
+    setStep(next)
+    window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' })
   }
 
-  function handleNext() {
-    const err = validateStep()
-    if (err) { setError(err); return }
-    setError(null)
-    setStep(s => s + 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  function handleBack() {
-    setError(null)
-    setStep(s => s - 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  function showErrors(errs: Record<string, string>) {
+    pendingFocus.current = Object.keys(errs)[0] ?? null
+    setErrors(errs)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const err = validateStep()
-    if (err) { setError(err); return }
-    setError(null)
+    if (submitting) return
+    const errs = validateStep(step, form, q, { hasSlots, weekCount: activeWeeks.length || 2 })
+    if (Object.keys(errs).length > 0) { showErrors(errs); return }
+    if (step < STEP_COUNT) { goTo(step + 1); return }
+    await send()
+  }
+
+  async function send() {
+    setFailure(null)
     setSubmitting(true)
 
     if (!applicationSaved) {
-    let userId: string | null
-    if (createdAccount && createdAccount.email === form.email) {
-      userId = createdAccount.userId
-    } else {
-      // Profile is created server-side by handle_new_user trigger with role: 'volunteer'
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: { display_name: `${form.firstName} ${form.lastName}`, role: 'volunteer' },
-          emailRedirectTo: `${window.location.origin}/login`,
-        },
-      })
+      let userId: string | null
+      if (createdAccount && createdAccount.email === form.email) {
+        userId = createdAccount.userId
+      } else {
+        // Profile is created server-side by handle_new_user trigger with role: 'volunteer'
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: {
+            data: { display_name: `${form.firstName} ${form.lastName}`, role: 'volunteer' },
+            emailRedirectTo: `${window.location.origin}/login`,
+          },
+        })
 
-      // An existing account (a parent, or an earlier applicant) with this email: with email
-      // confirmations on, Supabase "succeeds" but returns identities: []; with them off, it errors.
-      // Either way it says nothing about an application existing.
-      const existingAccount = "There's already an account with this email. If you applied before, sign in to check on it — otherwise apply with a different email."
-      if (signUpError) {
-        setError(/already registered/i.test(signUpError.message) ? existingAccount : signUpError.message)
+        // An existing account (a parent, or an earlier applicant) with this email. It says nothing
+        // about an application existing.
+        if (isExistingAccount(authData?.user, signUpError)) {
+          setFailure({
+            message: "There's already an account with this email. If you applied before, sign in to check on it. Otherwise, use a different email.",
+            recovery: 'existing',
+          })
+          setSubmitting(false)
+          return
+        }
+        if (signUpError) {
+          const kind = classifyAuthError(signUpError)
+          setSubmitting(false)
+          if (kind === 'weak-password' || kind === 'breached-password') {
+            // The password lives on step 1: go back there and say what's wrong with it.
+            pendingFocus.current = 'password'
+            setStep(1)
+            setErrors({ password: authErrorMessage(signUpError) })
+            return
+          }
+          setFailure({ message: authErrorMessage(signUpError) })
+          return
+        }
+        userId = authData.user?.id ?? null
+        setCreatedAccount({ email: form.email, userId })
+      }
+
+      const { error: insertError } = await supabase.from('volunteer_applications').insert(applicationRow(form, userId, q('previousScc').show))
+
+      if (insertError) {
+        const isDuplicate = insertError.code === '23505' || insertError.message?.includes('duplicate')
+        setFailure(isDuplicate
+          ? { message: 'An application with this email has already been sent. Sign in to check on it.', recovery: 'duplicate' }
+          : { message: GENERIC_ERROR })
         setSubmitting(false)
         return
       }
-      if (authData.user?.identities?.length === 0) {
-        setError(existingAccount)
-        setSubmitting(false)
-        return
-      }
-      userId = authData.user?.id ?? null
-      setCreatedAccount({ email: form.email, userId })
-    }
 
-    const schoolName = form.school === 'Other' ? form.schoolOther : form.school
-
-    const { error: insertError } = await supabase.from('volunteer_applications').insert({
-      user_id: userId,
-      first_name: form.firstName,
-      last_name: form.lastName,
-      email: form.email,
-      phone: form.phone,
-      age: Number(form.age),
-      grade: form.grade,
-      school: schoolName,
-      shirt_size: form.shirtSize,
-      availability_week_1: form.availabilityWeek1,
-      availability_week_2: form.availabilityWeek2,
-      why_volunteer: form.whyVolunteer,
-      previous_scc_volunteer: q('previousScc').show ? form.previousScc === true : false,
-      cs_languages: form.csLanguages,
-      cs_classes: form.csClasses || null,
-      experience_children: form.experienceChildren || null,
-      skill_python: form.skillPython,
-      skill_java: form.skillJava,
-      skill_html: form.skillHtml,
-      skill_css: form.skillCss,
-      skill_javascript: form.skillJavascript,
-      skill_microcontrollers: form.skillMicrocontrollers,
-      course_first_choice: form.courseFirst,
-      course_second_choice: form.courseSecond,
-      other_curricula: form.otherCurricula || null,
-      volunteer_signature: form.volunteerSignature,
-      guardian_signature: form.guardianSignature || null,
-      // Set to true by book_my_interview() once a time is actually booked.
-      interview_confirmed: false,
-    })
-
-    if (insertError) {
-      const isDuplicate = insertError.code === '23505' || insertError.message?.includes('duplicate')
-      setError(
-        isDuplicate
-          ? 'An application with this email has already been submitted.'
-          : 'Something went wrong saving your application. Please try again.'
-      )
-      setSubmitting(false)
-      return
-    }
-
-    setApplicationSaved(true)
+      setApplicationSaved(true)
     }
 
     if (form.interviewSlotId) {
+      const slot = openSlots?.find(s => s.id === form.interviewSlotId)
       const { data: slotTime, error: bookError } = await supabase.rpc('book_my_interview', {
         p_slot_id: form.interviewSlotId,
         p_email: form.email.trim(),
       })
       if (bookError) {
-        setError(`Your application was saved, but we couldn't book that time: ${bookError.message}`)
+        setFailure({ message: "Your application is saved, but we couldn't book that time. Someone may have just taken it: pick another time below." })
         set('interviewSlotId', '')
         refetchSlots()
         setSubmitting(false)
         return
       }
-      setBookedTime(slotTime as string)
+      setBooked({ time: slotTime as string, minutes: slot?.duration_minutes ?? null })
     }
 
     setSubmitted(true)
   }
 
-  if (settingsLoading) {
+  function switchEmail() {
+    setFailure(null)
+    pendingFocus.current = 'email'
+    setStep(1)
+    setErrors({ email: 'Use a different email, or sign in if you applied before.' })
+    window.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' })
+  }
+
+  const title = `Volunteer application, ${campYear}`
+
+  if (load === 'loading') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-      </div>
+      <PublicShell>
+        <div role="status" aria-label="Loading the application" className="animate-pulse">
+          <div className="h-8 w-3/4 max-w-sm rounded bg-surface-sunken" />
+          <div className="mt-5 h-36 rounded bg-surface-sunken" />
+          <div className="mt-8 h-12 rounded bg-surface-sunken" />
+        </div>
+      </PublicShell>
     )
   }
 
-  if (!applicationsOpen) {
+  if (load === 'error') {
     return (
-      <div className="min-h-screen bg-bg flex flex-col">
-      <BrandBar />
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10 text-center">
-        <div className="w-14 h-14 rounded-full bg-brand-soft flex items-center justify-center mb-4 mx-auto">
-          <ClipboardList size={24} className="text-brand" />
+      <PublicShell>
+        <PageHead title={title} lede="We couldn't load the application. Check your connection and try again." ledeRole="alert" />
+        <Button variant="primary" onClick={() => { setLoad('loading'); setLoadAttempt(a => a + 1) }}>Try again</Button>
+      </PublicShell>
+    )
+  }
+
+  if (load === 'closed') {
+    return (
+      <PublicShell footer={false}>
+        <PageHead title="Applications are closed" lede="Volunteer applications aren't open right now. Check back later." />
+        <p>Questions about volunteering? Email <ContactLink /></p>
+        <div className="mt-6">
+          <AsideLine>Already applied? <Link to="/login" className={buttonClass('text')}>Sign in</Link></AsideLine>
+          <AsideLine>Registering a camper? <Link to="/signup" className={buttonClass('text')}>Create a parent account</Link></AsideLine>
         </div>
-        <h1 className="font-display font-bold text-2xl text-ink mb-2">Applications are closed</h1>
-        <p className="font-sans text-ink-muted text-sm max-w-xs">
-          Volunteer applications for Denver Steel City Codes are not currently open. Check back later or email{' '}
-          <a href="mailto:denver@steelcitycodes.org" className="text-ink font-semibold hover:underline">
-            denver@steelcitycodes.org
-          </a>{' '}
-          with questions.
-        </p>
-      </main>
-      </div>
+      </PublicShell>
     )
   }
 
   if (submitted) {
+    const [clock, meridiem] = booked ? formatCampTime(booked.time).split(/\s+/) : []
+    const steps: { what: string; why: ReactNode }[] = [
+      { what: 'Confirm your email', why: <>Open the link we sent to <strong className="text-ink [overflow-wrap:anywhere]">{form.email.trim()}</strong>. You need it to sign in.</> },
+      booked
+        ? { what: 'Sign in to see your interview', why: 'Your dashboard shows the time and lets you pick another one.' }
+        : { what: 'Pick an interview time', why: 'Sign in once times are posted and choose one from your dashboard.' },
+      { what: 'Hear back after your interview', why: "We'll email you after your interview." },
+    ]
     return (
-      <div className="min-h-screen bg-bg flex flex-col">
-      <BrandBar />
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
-        <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={28} className="text-success" />
-          </div>
-          <h1 className="font-display font-bold text-2xl text-ink mb-2">Application submitted!</h1>
-          <p className="font-sans text-ink-muted text-sm mb-2">
-            Thank you, <strong className="text-ink">{form.firstName}</strong>. We've received your application.
-          </p>
-          {bookedTime ? (
-            <p className="font-sans text-sm mb-2 px-3 py-2 rounded-[10px] bg-success-soft text-success font-semibold">
-              Interview booked: {formatSlot(bookedTime)} (Denver time)
-            </p>
-          ) : (
-            <p className="font-sans text-sm mb-2 text-ink-muted">
-              Pick an interview time from your volunteer dashboard once times are posted.
-            </p>
-          )}
-          <p className="font-sans text-ink-muted text-sm mb-6">
-            Check your email for a confirmation link to activate your account. You'll hear back after your interview.
-          </p>
-          <a
-            href="https://www.steelcitycodes.org/camps"
-            className="font-sans font-semibold text-sm text-ink hover:underline"
-          >
-            Visit our website
-          </a>
-        </div>
-      </main>
-      </div>
+      <PublicShell>
+        <PageHead title="Application sent" lede={`Thanks, ${form.firstName.trim()}. Here's what happens next.`} headingRef={focusOnMount} />
+        {booked && (
+          <SignBand
+            context={`Interview booked · online${booked.minutes ? ` · ${booked.minutes} minutes` : ''} · Denver time`}
+            figure={clock}
+            unit={meridiem}
+            message={longDay(booked.time)}
+            sub="You can change the time from your dashboard once you sign in."
+          />
+        )}
+        <ol aria-label="Next steps" className={`${booked ? 'mt-8 ' : ''}border-b-2 border-ink`}>
+          {steps.map((s, i) => (
+            <li key={s.what} className="grid grid-cols-[40px_1fr] gap-x-4 py-4 border-t-2 border-ink">
+              <span aria-hidden="true" className="w-10 h-10 grid place-items-center border-2 border-ink rounded text-lg font-extrabold leading-none">{i + 1}</span>
+              <div className="min-w-0">
+                <p className="text-lg font-bold leading-snug text-pretty">{s.what}</p>
+                <p className="mt-1 text-ink-muted text-pretty">{s.why}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <Link to="/login" className={buttonClass(booked ? 'ink' : 'primary', 'mt-8', true)}>Go to sign in</Link>
+      </PublicShell>
     )
   }
 
-  const inputCls = 'ui-input'
-  const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
-  const textareaCls = 'ui-input resize-none'
+  const errorKeys = Object.keys(errors)
+  const commitment = step === 1
+    ? {
+        message: `${CAMP_SITE}, 8:30 AM–4:30 PM each day`,
+        sub: [
+          activeWeeks.length > 0
+            ? `${activeWeeks.map(w => `${w.name} (${shortDates(w)})`).join(', ')}${activeWeeks.length > 1 ? ' or both' : ''}, plus`
+            : 'Plus',
+          slotMinutes ? `a ${slotMinutes}\u2011minute online interview.` : 'a short online interview.',
+        ].join(' '),
+      }
+    : undefined
 
-  // Question label from the Form editor, with the required marker / optional hint.
-  const labelText = (key: string, hint?: string) => (
-    <>
-      {q(key).label}{q(key).required ? ' *' : <span className="font-normal text-ink-muted"> (optional)</span>}
-      {hint && <span className="font-normal text-ink-muted"> ({hint})</span>}
-    </>
-  )
+  // Questions whose wording the admin sets in the Form editor; "(optional)" when it isn't required.
+  const label = (key: string) => q(key).label
+  const optional = (key: string) => !q(key).required
 
   return (
-    <div className="min-h-screen bg-bg pb-16">
-      {/* Header */}
-      <BrandBar />
+    <PublicShell>
+      <PageHead
+        title={title}
+        lede={step === 1 ? <>Already applied? <Link to="/login" className={buttonClass('text')}>Sign in</Link></> : undefined}
+      />
+      <StepSign step={step} headingRef={stepHeadingRef} commitment={commitment} />
 
-      <main className="max-w-lg mx-auto px-4 pt-10">
-        <div className="text-center mb-8">
-          <h1 className="font-display font-bold text-2xl text-ink mb-1">{campYear} Volunteer Application</h1>
-          <p className="font-sans text-ink-muted text-sm">
-            Denver Summer Camp{weeks.some(w => w.is_active) && <> · {weeks.filter(w => w.is_active).map(w => formatSessionDates(w, false)).join(' & ')}</>}
-          </p>
-        </div>
-
-        <StepDots current={step} total={4} />
-
-        <form onSubmit={handleSubmit}>
-
-          {/* ── Step 1: Account & Contact ── */}
-          {step === 1 && (
-            <div className="space-y-5">
-              <h2 className="font-sans font-bold text-lg text-ink">Account &amp; contact info</h2>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="vol-first" className={labelCls}>{labelText('firstName')}</label>
-                  <input id="vol-first" type="text" autoComplete="given-name" className={inputCls} placeholder="Jane" value={form.firstName}
-                    onChange={e => set('firstName', e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="vol-last" className={labelCls}>{labelText('lastName')}</label>
-                  <input id="vol-last" type="text" autoComplete="family-name" className={inputCls} placeholder="Smith" value={form.lastName}
-                    onChange={e => set('lastName', e.target.value)} />
-                </div>
+      <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
+        {step === 1 && (
+          <>
+            <div className="grid gap-5 min-[480px]:grid-cols-2">
+              <div data-field="firstName">
+                <FormField id="vol-first" label={label('firstName')} error={errors.firstName}>
+                  {a => <Input {...a} type="text" autoComplete="given-name" value={form.firstName} onChange={e => set('firstName', e.target.value)} />}
+                </FormField>
               </div>
-
-              <div>
-                <label htmlFor="vol-email" className={labelCls}>{labelText('email')}</label>
-                <input id="vol-email" type="email" autoComplete="email" className={inputCls} placeholder="you@example.com"
-                  value={form.email} onChange={e => set('email', e.target.value)} />
+              <div data-field="lastName">
+                <FormField id="vol-last" label={label('lastName')} error={errors.lastName}>
+                  {a => <Input {...a} type="text" autoComplete="family-name" value={form.lastName} onChange={e => set('lastName', e.target.value)} />}
+                </FormField>
               </div>
-
-              <div>
-                <label htmlFor="vol-password" className={labelCls}>Password *</label>
-                <input id="vol-password" type="password" autoComplete="new-password" className={inputCls} placeholder="8+ characters"
-                  minLength={8} value={form.password} onChange={e => set('password', e.target.value)} />
-              </div>
-
-              <div>
-                <label htmlFor="vol-phone" className={labelCls}>{labelText('phone')}</label>
-                <input id="vol-phone" type="tel" autoComplete="tel" className={inputCls} placeholder="123-456-7890"
-                  value={form.phone} onChange={e => set('phone', e.target.value)} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="vol-age" className={labelCls}>{labelText('age')}</label>
-                  <input id="vol-age" type="number" className={inputCls} placeholder="17" min={14} max={25}
-                    value={form.age} onChange={e => set('age', e.target.value)} />
-                </div>
-                <div>
-                  <label htmlFor="vol-shirt" className={labelCls}>{labelText('shirtSize')}</label>
-                  <select id="vol-shirt" className={inputCls} value={form.shirtSize} onChange={e => set('shirtSize', e.target.value)}>
-                    <option value="">Select…</option>
-                    {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="vol-grade" className={labelCls}>{labelText('grade')}</label>
-                <select id="vol-grade" className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
-                  <option value="">Select…</option>
-                  {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="vol-school" className={labelCls}>{labelText('school')}</label>
-                <select id="vol-school" className={inputCls} value={form.school} onChange={e => set('school', e.target.value)}>
-                  <option value="">Select…</option>
-                  {SCHOOLS.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-
-              {form.school === 'Other' && (
-                <div>
-                  <label htmlFor="vol-school-other" className={labelCls}>School name *</label>
-                  <input id="vol-school-other" type="text" className={inputCls} placeholder="Your school"
-                    value={form.schoolOther} onChange={e => set('schoolOther', e.target.value)} />
-                </div>
-              )}
             </div>
-          )}
+            <div className="grid gap-5 min-[480px]:grid-cols-2">
+              <div data-field="age">
+                <FormField id="vol-age" label={label('age')} hint={`Volunteers are ${MIN_AGE} or older`} error={errors.age}>
+                  {a => <Input {...a} type="text" inputMode="numeric" autoComplete="off" maxLength={3} value={form.age} onChange={e => set('age', e.target.value)} />}
+                </FormField>
+              </div>
+              <div data-field="grade">
+                <FormField id="vol-grade" label={label('grade')} hint="This school year" error={errors.grade}>
+                  {a => (
+                    <Select {...a} value={form.grade} onChange={e => set('grade', e.target.value)}>
+                      <option value="">Choose…</option>
+                      {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                    </Select>
+                  )}
+                </FormField>
+              </div>
+            </div>
+            <div data-field="school">
+              <FormField id="vol-school" label={label('school')} error={errors.school}>
+                {a => (
+                  <Select {...a} value={form.school} onChange={e => set('school', e.target.value)}>
+                    <option value="">Choose…</option>
+                    {SCHOOLS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </Select>
+                )}
+              </FormField>
+            </div>
+            {form.school === 'Other' && (
+              <div data-field="schoolOther">
+                <FormField id="vol-school-other" label="School name" error={errors.schoolOther}>
+                  {a => <Input {...a} type="text" value={form.schoolOther} onChange={e => set('schoolOther', e.target.value)} />}
+                </FormField>
+              </div>
+            )}
 
-          {/* ── Step 2: Availability & Background ── */}
-          {step === 2 && (
-            <div className="space-y-6">
-              <h2 className="font-sans font-bold text-lg text-ink">Availability &amp; background</h2>
+            <Subhead>Contact</Subhead>
+            <div data-field="email">
+              <FormField id="vol-email" label={label('email')} error={errors.email}>
+                {a => <Input {...a} type="email" autoComplete="email" inputMode="email" value={form.email} onChange={e => set('email', e.target.value)} />}
+              </FormField>
+            </div>
+            <div data-field="phone">
+              <FormField id="vol-phone" label={label('phone')} error={errors.phone}>
+                {a => <Input {...a} type="tel" autoComplete="tel" inputMode="tel" placeholder="123-456-7890" value={form.phone} onChange={e => set('phone', e.target.value)} />}
+              </FormField>
+            </div>
 
-              <div>
-                <p id="vol-availability" className={labelCls}>{labelText('availability')}</p>
-                <p className="font-sans text-xs text-ink-muted mb-3">Volunteers stay 8:30 AM – 4:30 PM each day at Cherry Creek High School.</p>
-                <div role="group" aria-labelledby="vol-availability" className="space-y-2">
+            <Subhead>Create a password</Subhead>
+            <div data-field="password">
+              <FormField id="vol-password" label="Password" hint="At least 8 characters. You'll use it to check your application and interview time." error={errors.password}>
+                {a => <PasswordInput {...a} autoComplete="new-password" value={form.password} onChange={e => set('password', e.target.value)} />}
+              </FormField>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <ChoiceGroup field="availability" legend={label('availability')} hint={activeWeeks.length > 1 ? 'Pick one or both.' : undefined} error={errors.availability}>
+              {a => (
+                <div className="grid gap-2 min-[480px]:grid-cols-2">
                   {[
                     { key: 'availabilityWeek1' as const, session: weeks[0], fallback: 'Session 1' },
                     { key: 'availabilityWeek2' as const, session: weeks[1], fallback: 'Session 2' },
-                  ].filter(({ session }) => !session || session.is_active).map(({ key, session, fallback }) => ({
-                    key,
-                    label: session ? `${session.name}: ${formatSessionDates(session, false)}` : fallback,
-                  })).map(({ key, label }) => (
-                    <label key={key} className="flex items-center gap-3 p-3 rounded-[10px] border border-border-strong bg-surface cursor-pointer hover:bg-surface-sunken transition">
-                      <input type="checkbox" className="w-4 h-4 accent-brand"
-                        checked={form[key]} onChange={e => set(key, e.target.checked)} />
-                      <span className="font-sans text-sm text-ink">{label}</span>
-                    </label>
+                  ].filter(({ session }) => !session || session.is_active).map(({ key, session, fallback }) => (
+                    <ChoiceRow key={key} type="checkbox" {...a} checked={form[key]} onChange={e => set(key, e.target.checked)}>
+                      <span className="block font-bold">{session ? session.name : fallback}</span>
+                      {session && <span className="block text-sm text-ink-muted">{shortDates(session)}</span>}
+                    </ChoiceRow>
                   ))}
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="vol-why" className={labelCls}>{labelText('whyVolunteer', '2–3 sentences')}</label>
-                <textarea id="vol-why" className={textareaCls} rows={4} placeholder="Tell us what motivates you to teach and mentor students…"
-                  value={form.whyVolunteer} onChange={e => set('whyVolunteer', e.target.value)} />
-              </div>
-
-              {q('previousScc').show && <div>
-                <p id="vol-prev" className={labelCls}>{labelText('previousScc')}</p>
-                <div role="group" aria-labelledby="vol-prev" className="flex gap-3">
-                  {[{ v: true, label: 'Yes' }, { v: false, label: 'No' }].map(({ v, label }) => (
-                    <button key={label} type="button"
-                      onClick={() => set('previousScc', v)}
-                      className={`flex-1 h-11 rounded-[10px] font-sans font-semibold text-sm border transition ${
-                        form.previousScc === v
-                          ? 'bg-brand text-brand-on border-brand'
-                          : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>}
-
-              {q('csLanguages').show && <div>
-                <p id="vol-langs" className={labelCls}>{labelText('csLanguages')}</p>
-                <div role="group" aria-labelledby="vol-langs" className="flex flex-wrap gap-2 mt-1">
-                  {CS_LANGUAGES.map(lang => (
-                    <button key={lang} type="button"
-                      onClick={() => toggleLanguage(lang)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold border transition ${
-                        form.csLanguages.includes(lang)
-                          ? 'bg-brand text-brand-on border-brand'
-                          : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
-                      }`}
-                    >
-                      {lang}
-                    </button>
-                  ))}
-                </div>
-              </div>}
-
-              {q('csClasses').show && <div>
-                <label htmlFor="vol-cs-classes" className={labelCls}>{labelText('csClasses')}</label>
-                <textarea id="vol-cs-classes" className={textareaCls} rows={3} placeholder="e.g. AP Computer Science A, IB CS, etc."
-                  value={form.csClasses} onChange={e => set('csClasses', e.target.value)} />
-              </div>}
-
-              {q('experienceChildren').show && <div>
-                <label htmlFor="vol-experience" className={labelCls}>{labelText('experienceChildren')}</label>
-                <textarea id="vol-experience" className={textareaCls} rows={4} placeholder="List relevant experiences in a few bullet points…"
-                  value={form.experienceChildren} onChange={e => set('experienceChildren', e.target.value)} />
-              </div>}
-            </div>
-          )}
-
-          {/* ── Step 3: Skills & Course Preferences ── */}
-          {step === 3 && (
-            <div className="space-y-6">
-              <h2 className="font-sans font-bold text-lg text-ink">Skills &amp; course preferences</h2>
-
-              {q('skills').show && <div>
-                <p className={labelCls}>{q('skills').label} <span className="font-normal text-ink-muted">(leave blank if N/A)</span></p>
-                <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
-                  <SkillRating label="Python" value={form.skillPython} onChange={v => set('skillPython', v)} />
-                  <SkillRating label="Java" value={form.skillJava} onChange={v => set('skillJava', v)} />
-                  <SkillRating label="HTML" value={form.skillHtml} onChange={v => set('skillHtml', v)} />
-                  <SkillRating label="CSS" value={form.skillCss} onChange={v => set('skillCss', v)} />
-                  <SkillRating label="JavaScript" value={form.skillJavascript} onChange={v => set('skillJavascript', v)} />
-                  <SkillRating label="Microcontrollers / CircuitPython" value={form.skillMicrocontrollers} onChange={v => set('skillMicrocontrollers', v)} />
-                </div>
-              </div>}
-
-              <div>
-                <p id="vol-course-1" className={labelCls}>{labelText('courseFirst')}</p>
-                <div role="radiogroup" aria-labelledby="vol-course-1" className="space-y-2">
-                  {courses.map(c => (
-                    <label key={c} className={`flex items-center gap-3 p-3 rounded-[10px] border cursor-pointer transition ${
-                      form.courseFirst === c ? 'border-brand bg-brand-soft' : 'border-border-strong bg-surface hover:bg-surface-sunken'
-                    }`}>
-                      <input type="radio" name="courseFirst" className="w-4 h-4 accent-brand"
-                        checked={form.courseFirst === c} onChange={() => set('courseFirst', c)} />
-                      <span className="font-sans text-sm text-ink">{c}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p id="vol-course-2" className={labelCls}>{labelText('courseSecond')}</p>
-                <div role="radiogroup" aria-labelledby="vol-course-2" className="space-y-2">
-                  {courses.map(c => (
-                    <label key={c} className={`flex items-center gap-3 p-3 rounded-[10px] border cursor-pointer transition ${
-                      form.courseSecond === c ? 'border-brand bg-brand-soft' : 'border-border-strong bg-surface hover:bg-surface-sunken'
-                    }`}>
-                      <input type="radio" name="courseSecond" className="w-4 h-4 accent-brand"
-                        checked={form.courseSecond === c} onChange={() => set('courseSecond', c)} />
-                      <span className="font-sans text-sm text-ink">{c}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {q('otherCurricula').show && <div>
-                <label htmlFor="vol-other" className={labelCls}>{labelText('otherCurricula')}</label>
-                <textarea id="vol-other" className={textareaCls} rows={3} placeholder="e.g. Game Development, Processing Graphics, Greenfoot…"
-                  value={form.otherCurricula} onChange={e => set('otherCurricula', e.target.value)} />
-              </div>}
-            </div>
-          )}
-
-          {/* ── Step 4: Waiver & Submit ── */}
-          {step === 4 && (
-            <div className="space-y-6">
-              <h2 className="font-sans font-bold text-lg text-ink">Waiver &amp; submit</h2>
-
-              <div className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
-                <p className="font-semibold text-ink text-sm">Waiver &amp; Release of Liability</p>
-                <p>This Release and Waiver of Liability (the "Release") releases Steel City Codes ("Nonprofit"), a nonprofit corporation organized and existing under the laws of the State of Colorado, and each of its directors, officers, employees, and agents.</p>
-                <p><strong className="text-ink">1) WAIVER &amp; RELEASE:</strong> I, the Volunteer, release and forever discharge and hold harmless Steel City Codes and its successors and assigns from any and all liability, claims, and demands of whatever kind or nature, either in law or in equity, which arise or may hereafter arise from the services I provide to Steel City Codes. I understand and acknowledge that this Release discharges Steel City Codes from any liability or claim that I may have against Steel City Codes with respect to bodily injury, personal injury, illness, death, or property damage that may result from the services I provide.</p>
-                <p><strong className="text-ink">2) INSURANCE:</strong> I understand that Steel City Codes does not assume any responsibility for or obligation to provide me with financial or other assistance, including but not limited to medical, health, or disability benefits or insurance.</p>
-                <p><strong className="text-ink">3) MEDICAL TREATMENT:</strong> I hereby Release and forever discharge Steel City Codes from any claim whatsoever which arises or may hereafter arise on account of any first-aid treatment or other medical services rendered in connection with an emergency during my tenure as a volunteer.</p>
-                <p><strong className="text-ink">4) ASSUMPTION OF RISK:</strong> I understand that the services I provide to Steel City Codes may include activities that may be hazardous to me. As a volunteer, I hereby expressly assume risk of injury or harm from these activities.</p>
-                <p><strong className="text-ink">5) PHOTOGRAPHIC RELEASE:</strong> I grant and convey to Steel City Codes all right, title, and interests in any photographs, images, video, or audio recordings of me made in connection with my providing volunteer services.</p>
-                <p><strong className="text-ink">6) OTHER:</strong> I expressly agree that this Release is intended to be as broad and inclusive as permitted by the laws of the State of Colorado and shall be governed by and interpreted in accordance with the laws of the State of Colorado.</p>
-              </div>
-
-              <div>
-                <label htmlFor="vol-signature" className={labelCls}>{labelText('volunteerSignature')}</label>
-                <p className="font-sans text-xs text-ink-muted mb-2">Type your full legal name. This serves as your electronic signature and has the same binding effect as a handwritten signature.</p>
-                <input id="vol-signature" type="text" className={inputCls} placeholder="Jane Smith"
-                  value={form.volunteerSignature} onChange={e => set('volunteerSignature', e.target.value)} />
-              </div>
-
-              {Number(form.age) < 18 && (
-                <div>
-                  <label htmlFor="vol-guardian" className={labelCls}>{q('guardianSignature').label} *</label>
-                  <p className="font-sans text-xs text-ink-muted mb-2">Required for applicants under 18. Parent or guardian must type their full name.</p>
-                  <input id="vol-guardian" type="text" className={inputCls} placeholder="Parent Name"
-                    value={form.guardianSignature} onChange={e => set('guardianSignature', e.target.value)} />
                 </div>
               )}
-
-              <div className="bg-surface-sunken border border-border rounded-xl p-4 space-y-3">
-                <p id="vol-interview" className="font-sans font-semibold text-sm text-ink">Pick your interview time *</p>
-                <p className="font-sans text-xs text-ink-muted">
-                  Every volunteer has a short online interview (about 15 minutes). Choose a time that works — you can change it later from your volunteer dashboard.
-                </p>
-                {openSlots === null ? (
-                  <div className="h-10 bg-surface rounded-[10px] animate-pulse" />
-                ) : (
-                  <InterviewSlotPicker
-                    slots={openSlots}
-                    value={form.interviewSlotId}
-                    onChange={id => set('interviewSlotId', id)}
-                    labelledBy="vol-interview"
-                  />
+            </ChoiceGroup>
+            <div data-field="shirtSize">
+              <FormField id="vol-shirt" label={label('shirtSize')} error={errors.shirtSize}>
+                {a => (
+                  <Select {...a} value={form.shirtSize} onChange={e => set('shirtSize', e.target.value)}>
+                    <option value="">Choose…</option>
+                    {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </Select>
                 )}
-              </div>
+              </FormField>
             </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <p role="alert" className="mt-4 text-danger text-sm font-sans flex items-center gap-1.5">
-              <span>⚠</span> {error}
-            </p>
-          )}
-          {error?.startsWith("There's already an account") && (
-            <p className="mt-2 font-sans text-sm text-ink-muted">
-              <Link to="/login" className="text-ink font-semibold hover:underline">Sign in</Link>
-              {' · '}
-              <Link to="/forgot" className="text-ink font-semibold hover:underline">Forgot your password?</Link>
-            </p>
-          )}
-
-          {/* Navigation */}
-          <div className={`mt-8 flex gap-3 ${step > 1 ? 'justify-between' : 'justify-end'}`}>
-            {step > 1 && (
-              <button type="button" onClick={handleBack}
-                className="h-11 px-5 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
-              >
-                <ChevronLeft size={16} /> Back
-              </button>
+            <div data-field="whyVolunteer">
+              <FormField id="vol-why" label={label('whyVolunteer')} hint="2–3 sentences" error={errors.whyVolunteer}>
+                {a => <Textarea {...a} rows={4} value={form.whyVolunteer} onChange={e => set('whyVolunteer', e.target.value)} />}
+              </FormField>
+            </div>
+            {q('previousScc').show && (
+              <ChoiceGroup field="previousScc" legend={<>{label('previousScc')}{optional('previousScc') && <span className="font-normal text-ink-muted"> (optional)</span>}</>} error={errors.previousScc}>
+                {a => (
+                  <div className="grid gap-2 grid-cols-2">
+                    {[{ v: true, text: 'Yes' }, { v: false, text: 'No' }].map(({ v, text }) => (
+                      <ChoiceRow key={text} type="radio" name="previousScc" value={text} {...a} checked={form.previousScc === v} onChange={() => set('previousScc', v)}>{text}</ChoiceRow>
+                    ))}
+                  </div>
+                )}
+              </ChoiceGroup>
             )}
-            {step < 4 ? (
-              // Distinct keys: without them React reuses the Next <button> as Submit and the click
-              // that lands on the last step can fire a submit.
-              <button key="next" type="button" onClick={handleNext}
-                className="ui-btn ui-btn--primary"
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            {q('csLanguages').show && (
+              <ChoiceGroup
+                field="csLanguages"
+                legend={<>{label('csLanguages')}{optional('csLanguages') && <span className="font-normal text-ink-muted"> (optional)</span>}</>}
+                hint={q('csLanguages').required ? "Pick every one you've used." : 'Pick any. New to coding? Leave them all empty.'}
+                error={errors.csLanguages}
               >
-                Next <ChevronRight size={16} />
-              </button>
-            ) : (
-              <button key="submit" type="submit" disabled={submitting}
-                className="ui-btn ui-btn--primary"
-              >
-                {submitting
-                  ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
-                  : <CheckCircle2 size={16} />}
-                {submitting ? 'Submitting…' : applicationSaved ? 'Book interview time' : 'Submit application'}
-              </button>
+                {a => (
+                  <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))]">
+                    {CS_LANGUAGES.map(lang => (
+                      <ChoiceRow key={lang} type="checkbox" {...a} className="min-h-11 px-3 py-1" checked={form.csLanguages.includes(lang)} onChange={() => toggleLanguage(lang)}>{lang}</ChoiceRow>
+                    ))}
+                  </div>
+                )}
+              </ChoiceGroup>
             )}
+            {q('csClasses').show && (
+              <div data-field="csClasses">
+                <FormField id="vol-cs-classes" label={label('csClasses')} optional={optional('csClasses')} hint="For example: AP Computer Science A." error={errors.csClasses}>
+                  {a => <Textarea {...a} rows={2} className="min-h-20" value={form.csClasses} onChange={e => set('csClasses', e.target.value)} />}
+                </FormField>
+              </div>
+            )}
+            {q('experienceChildren').show && (
+              <div data-field="experienceChildren">
+                <FormField id="vol-experience" label={label('experienceChildren')} optional={optional('experienceChildren')} hint="A few short lines is plenty." error={errors.experienceChildren}>
+                  {a => <Textarea {...a} rows={3} value={form.experienceChildren} onChange={e => set('experienceChildren', e.target.value)} />}
+                </FormField>
+              </div>
+            )}
+
+            {q('skills').show && (
+              <section aria-labelledby="skills-h">
+                <Subhead id="skills-h">{label('skills')}</Subhead>
+                <p id="skills-hint" className="text-sm text-ink-muted text-pretty">1 = just starting · 5 = could teach it. Skip any you haven't used.</p>
+                <ul className="mt-1">
+                  {SKILLS.map(s => (
+                    <li key={s.key} className="pt-3 pb-4 border-t border-border first:border-t-0">
+                      <SkillScale name={s.key} label={s.label} value={form[s.key]} onChange={v => set(s.key, v)} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <Subhead>Which class would you like to teach?</Subhead>
+            <ChoiceGroup field="courseFirst" legend={label('courseFirst')} error={errors.courseFirst}>
+              {a => (
+                <div className="grid gap-2 min-[480px]:grid-cols-2">
+                  {courses.map(c => (
+                    <ChoiceRow key={c} type="radio" name="courseFirst" value={c} {...a} checked={form.courseFirst === c} onChange={() => setFirstChoice(c)}>{c}</ChoiceRow>
+                  ))}
+                </div>
+              )}
+            </ChoiceGroup>
+            <ChoiceGroup field="courseSecond" legend={label('courseSecond')} hint="Different from your first choice." error={errors.courseSecond}>
+              {a => (
+                <div className="grid gap-2 min-[480px]:grid-cols-2">
+                  {secondChoices(courses, form.courseFirst).map(c => (
+                    <ChoiceRow key={c} type="radio" name="courseSecond" value={c} {...a} checked={form.courseSecond === c} onChange={() => set('courseSecond', c)}>{c}</ChoiceRow>
+                  ))}
+                </div>
+              )}
+            </ChoiceGroup>
+            {q('otherCurricula').show && (
+              <div data-field="otherCurricula">
+                <FormField id="vol-other" label={label('otherCurricula')} optional={optional('otherCurricula')} hint="For example: game development, Processing, Greenfoot." error={errors.otherCurricula}>
+                  {a => <Textarea {...a} rows={2} className="min-h-20" value={form.otherCurricula} onChange={e => set('otherCurricula', e.target.value)} />}
+                </FormField>
+              </div>
+            )}
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <section aria-labelledby="waiver-h" className="max-w-[65ch]">
+              <h3 id="waiver-h" className="text-lg font-bold">Volunteer waiver and release</h3>
+              {/* A dashed frame means "not final" (DESIGN.md › Shapes). */}
+              <p className="mt-3 flex items-start gap-3 px-4 py-3 border-2 border-dashed border-ink rounded">
+                <FilePenLine size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 mt-0.5" />
+                <span><b>Placeholder text.</b> Steel City Codes national's official volunteer waiver replaces this section before applications open.</span>
+              </p>
+              <div className="mt-4 space-y-3 text-pretty">
+                <p>This Release and Waiver of Liability (the "Release") releases Steel City Codes ("Nonprofit"), a nonprofit corporation organized and existing under the laws of the State of Colorado, and each of its directors, officers, employees, and agents.</p>
+                <p><b>Waiver and release.</b> I, the Volunteer, release and forever discharge and hold harmless Steel City Codes and its successors and assigns from any and all liability, claims, and demands of whatever kind or nature, either in law or in equity, which arise or may hereafter arise from the services I provide to Steel City Codes. I understand and acknowledge that this Release discharges Steel City Codes from any liability or claim that I may have against Steel City Codes with respect to bodily injury, personal injury, illness, death, or property damage that may result from the services I provide.</p>
+                <p><b>Insurance.</b> I understand that Steel City Codes does not assume any responsibility for or obligation to provide me with financial or other assistance, including but not limited to medical, health, or disability benefits or insurance.</p>
+                <p><b>Medical treatment.</b> I hereby Release and forever discharge Steel City Codes from any claim whatsoever which arises or may hereafter arise on account of any first-aid treatment or other medical services rendered in connection with an emergency during my tenure as a volunteer.</p>
+                <p><b>Assumption of risk.</b> I understand that the services I provide to Steel City Codes may include activities that may be hazardous to me. As a volunteer, I hereby expressly assume risk of injury or harm from these activities.</p>
+                <p><b>Photo release.</b> I grant and convey to Steel City Codes all right, title, and interests in any photographs, images, video, or audio recordings of me made in connection with my providing volunteer services.</p>
+                <p><b>Governing law.</b> I expressly agree that this Release is intended to be as broad and inclusive as permitted by the laws of the State of Colorado and shall be governed by and interpreted in accordance with the laws of the State of Colorado.</p>
+              </div>
+            </section>
+
+            <Subhead>Sign</Subhead>
+            <div data-field="volunteerSignature">
+              <FormField id="vol-signature" label={label('volunteerSignature')} hint="Type your full legal name. This is your signature." error={errors.volunteerSignature}>
+                {a => <Input {...a} type="text" autoComplete="name" value={form.volunteerSignature} onChange={e => set('volunteerSignature', e.target.value)} />}
+              </FormField>
+            </div>
+            {needsGuardian(form) && (
+              <div data-field="guardianSignature">
+                <FormField id="vol-guardian" label={label('guardianSignature')} hint="Needed because you're under 18. Your parent or guardian types their own full name." error={errors.guardianSignature}>
+                  {a => <Input {...a} type="text" autoComplete="off" value={form.guardianSignature} onChange={e => set('guardianSignature', e.target.value)} />}
+                </FormField>
+              </div>
+            )}
+          </>
+        )}
+
+        {step === 5 && (
+          <section aria-labelledby="vol-interview" data-field="interviewSlotId">
+            <h3 id="vol-interview" className="text-lg font-bold text-balance">
+              {hasSlots ? `Pick a time for your ${slotMinutes ? `${slotMinutes}\u2011minute ` : ''}online interview` : 'Your online interview'}
+            </h3>
+            {hasSlots && <p className="mt-1 text-sm text-ink-muted">You can change it later from your dashboard.</p>}
+            <div className="mt-4">
+              {openSlots === null && slotsError ? (
+                <p className="text-ink-muted text-pretty">We couldn't load interview times. You can still send your application and book a time from your dashboard later.</p>
+              ) : openSlots === null ? (
+                <div role="status" aria-label="Loading interview times" className="h-24 rounded bg-surface-sunken animate-pulse" />
+              ) : (
+                <InterviewSlotPicker
+                  slots={openSlots}
+                  value={form.interviewSlotId}
+                  onChange={id => set('interviewSlotId', id)}
+                  labelledBy="vol-interview"
+                />
+              )}
+            </div>
+            {errors.interviewSlotId && <div className="mt-3"><FieldError id="interviewSlotId-err">{errors.interviewSlotId}</FieldError></div>}
+          </section>
+        )}
+
+        {errorKeys.length > 0 && (
+          <div role="alert" className="!mt-8 flex flex-wrap items-center gap-x-2 text-sm font-bold text-danger">
+            <CircleAlert size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />
+            <span>{errorKeys.length === 1 ? '1 answer needs attention:' : `${errorKeys.length} answers need attention:`}</span>
+            {errorKeys.map((k, i) => (
+              <span key={k}>
+                <button type="button" onClick={() => focusField(k)} className={buttonClass('text', 'text-sm text-danger')}>{SHORT[k] ?? k}</button>
+                {i < errorKeys.length - 1 && ','}
+              </span>
+            ))}
           </div>
+        )}
 
-          <p className="mt-6 text-center text-xs font-sans text-ink-faint">
-            Already have an account?{' '}
-            <Link to="/login" className="text-ink-muted hover:underline">Sign in</Link>
-          </p>
-        </form>
-      </main>
-    </div>
+        {failure && (
+          <div className="!mt-8">
+            <FormError
+              actions={failure.recovery && (
+                <>
+                  <Link to="/login" className={buttonClass('text')}>Sign in</Link>
+                  {failure.recovery === 'existing' && (
+                    <>
+                      <Link to="/forgot" className={buttonClass('text')}>Forgot your password?</Link>
+                      <button type="button" onClick={switchEmail} className={buttonClass('text')}>Use a different email</button>
+                    </>
+                  )}
+                </>
+              )}
+            >
+              {failure.message}
+            </FormError>
+          </div>
+        )}
+
+        <div className={`${errorKeys.length > 0 || failure ? '!mt-3' : '!mt-8'} flex items-center gap-3 pt-5 border-t-2 border-ink`}>
+          {step > 1 && (
+            <Button variant="secondary" onClick={() => goTo(step - 1)} disabled={submitting}>
+              <ChevronLeft size={18} strokeWidth={2.5} aria-hidden="true" />Back
+            </Button>
+          )}
+          <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:ml-auto sm:min-w-[220px]" disabled={submitting}>
+            {step < STEP_COUNT
+              ? <>Next: {STEPS[step]}<ChevronRight size={18} strokeWidth={2.5} aria-hidden="true" /></>
+              : submitting
+                ? <><Spinner />Sending…</>
+                : applicationSaved
+                  ? (form.interviewSlotId ? 'Book this time' : 'Finish without a time')
+                  : 'Send application'}
+          </Button>
+        </div>
+      </form>
+    </PublicShell>
   )
 }

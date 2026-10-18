@@ -1,25 +1,50 @@
 import { Link } from 'react-router-dom'
-import { BrandBar } from '../components/Wordmark'
+import { useAuth } from '../context/AuthContext'
+import SignBand from '../components/SignBand'
+import PublicShell, { AsideLine, PageHead } from '../components/PublicShell'
+import { buttonClass } from '../lib/ui'
+import type { UserRole } from '../types/database'
+
+// Almost always a parent (or volunteer) tapping an old link meant for another kind of account.
+// Calm, not alarming: say which account this is and send them home (the role router picks it).
+const HOME: Record<UserRole, { article: string; sub: string }> = {
+  parent: { article: 'a parent', sub: 'Your campers, their classes and updates from camp.' },
+  volunteer: { article: 'a volunteer', sub: 'Your application, or your classes, duties and updates.' },
+  admin: { article: 'an admin', sub: 'The camp: registration, campers, classes and volunteers.' },
+}
 
 export default function UnauthorizedPage() {
+  const { role, profile, session, signOut } = useAuth()
+  const home = role ? HOME[role] : null
+  const who = [profile?.display_name, session?.user.email].filter(Boolean).join(' · ')
+
   return (
-    <div className="min-h-screen bg-bg flex flex-col">
-      <BrandBar />
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10 text-center">
-      <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center mb-4">
-        <span className="text-danger text-2xl">✕</span>
-      </div>
-      <h1 className="font-display font-bold text-2xl text-ink mb-2">Access denied</h1>
-      <p className="font-sans text-ink-muted text-sm mb-6 max-w-xs">
-        You don't have permission to view this page.
-      </p>
-      <Link
-        to="/login"
-        className="font-sans font-semibold text-sm text-ink hover:underline"
-      >
-        Back to sign in
-      </Link>
-      </main>
-    </div>
+    <PublicShell>
+      <PageHead
+        title="This page isn't part of your account"
+        lede={home
+          ? `You're signed in with ${home.article} account. This page belongs to a different kind of account.`
+          : 'It belongs to a different kind of account.'}
+      />
+      {session ? (
+        <>
+          <SignBand
+            to="/"
+            label={`Go to my home page.${home ? ` ${home.sub}` : ''}`}
+            context={who || 'Signed in'}
+            message="Go to my home page"
+            sub={home?.sub}
+          />
+          <div className="mt-4">
+            <AsideLine>
+              Not your account?{' '}
+              <button type="button" onClick={() => { void signOut() }} className={buttonClass('text')}>Sign out</button>
+            </AsideLine>
+          </div>
+        </>
+      ) : (
+        <Link to="/login" className={buttonClass('primary', undefined, true)}>Sign in</Link>
+      )}
+    </PublicShell>
   )
 }
