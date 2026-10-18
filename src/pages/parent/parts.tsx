@@ -8,7 +8,7 @@ import { Check, ChevronDown, CircleAlert, Clock, Hourglass } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import UpdatesFeed from '../../components/UpdatesFeed'
 import { useUpdates } from '../../hooks/useUpdates'
-import { formatTime } from '../../lib/campDay'
+import { formatTime, formatTimeRange } from '../../lib/campDay'
 import { currentItem, toMinutes } from '../../lib/volunteerHome'
 import type { ScheduleItem } from '../../types/database'
 
@@ -99,7 +99,8 @@ export function ErrorLine({ id, children, className = '' }: { id?: string; child
   )
 }
 
-// The day at camp as a timetable: a fixed time column, and each block as tall as it is long. It
+// The day at camp as a timetable: a fixed column with each block's start and end (pickup is a
+// window, not a moment), and each block as tall as it is long. It
 // folds to drop-off and pickup; on a camp day it folds to what's on right now (open on wide screens).
 export function Schedule({ items, live }: { items: ScheduleItem[]; live: boolean }) {
   const titleId = useId()
@@ -137,9 +138,9 @@ export function Schedule({ items, live }: { items: ScheduleItem[]; live: boolean
             const past = live && !on && toMinutes(item.end_time ?? sorted[i + 1]?.start_time ?? item.start_time) <= minutes
             return (
               <li key={item.id} style={{ minHeight: `${Math.round(length(i) * 1.1)}px` }}
-                className={`grid grid-cols-[5.25rem_1fr] gap-3 py-2 ${on ? 'border-t-2 border-ink' : rowCls} ${past ? 'text-ink-faint' : ''}`}>
+                className={`grid grid-cols-[9.5rem_1fr] gap-3 py-2 ${on ? 'border-t-2 border-ink' : rowCls} ${past ? 'text-ink-faint' : ''}`}>
                 <span className={`text-sm font-bold whitespace-nowrap pt-0.5 ${past ? '' : 'text-ink'}`}>
-                  {on && <span className="sr-only">Now: </span>}{formatTime(item.start_time)}
+                  {on && <span className="sr-only">Now: </span>}{formatTimeRange(item.start_time, item.end_time)}
                 </span>
                 <span className="min-w-0">
                   <span className={`block leading-snug ${on ? 'font-extrabold' : 'font-bold'}`}>{item.title}</span>

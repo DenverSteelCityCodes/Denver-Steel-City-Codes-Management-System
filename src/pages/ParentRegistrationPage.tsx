@@ -987,7 +987,7 @@ export default function ParentRegistrationPage() {
               <div>
                 <label htmlFor="reg-guardian-sig" className={labelCls}>{labelText('guardian_signature')}</label>
                 <p className={`${hintCls} mb-2`}>Type your full legal name to confirm your consent on behalf of your student.</p>
-                <input id="reg-guardian-sig" {...invalidProps('reg-guardian-sig')} type="text" autoComplete="name" className={inputCls}
+                <input id="reg-guardian-sig" {...invalidProps('reg-guardian-sig')} type="text" autoComplete="off" className={inputCls}
                   value={form.guardian_signature} onChange={e => set('guardian_signature', e.target.value)} />
                 {fieldError('reg-guardian-sig')}
               </div>

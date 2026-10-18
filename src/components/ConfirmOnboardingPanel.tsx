@@ -247,7 +247,7 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
         <div className="mt-5 space-y-3">
           <div>
             <label htmlFor="ob-13" className={labelCls}>Type your full legal name to sign again *</label>
-            <input id="ob-13" {...invalid('guardian_signature')} className={inputCls} autoComplete="name" value={form.guardian_signature ?? ''} onChange={e => set('guardian_signature', e.target.value)} />
+            <input id="ob-13" {...invalid('guardian_signature')} className={inputCls} autoComplete="off" value={form.guardian_signature ?? ''} onChange={e => set('guardian_signature', e.target.value)} />
             {errorUnder('guardian_signature')}
           </div>
 
