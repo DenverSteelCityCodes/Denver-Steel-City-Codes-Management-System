@@ -26,7 +26,7 @@ const itemCls = 'w-full flex items-center gap-3 min-h-11 px-4 text-left text-ink
 // a strip that sticks to the top of the page, because in iOS Safari the bottom edge belongs to the
 // browser's own toolbar. From 768px the tabs move inline into the bar. Personal settings live under
 // the avatar (profile, help, dark mode) in a disclosure panel framed by a 2px ink rule. Applicants
-// see their application tracker and no tabs.
+// see their application tracker and no tabs; Help is the one other page they can open.
 export default function VolunteerLayout() {
   const { pathname, hash } = useLocation()
   const { profile, user, signOut } = useAuth()
@@ -92,15 +92,13 @@ export default function VolunteerLayout() {
                 <p className="text-sm text-ink-muted break-all">{user?.email}</p>
               </div>
               {crew && (
-                <>
-                  <Link to="/volunteer/profile" onClick={close} className={itemCls}>
-                    <UserRound size={20} strokeWidth={2.25} aria-hidden="true" /> My profile and availability
-                  </Link>
-                  <Link to="/volunteer/help" onClick={close} className={itemCls}>
-                    <CircleHelp size={20} strokeWidth={2.25} aria-hidden="true" /> Help
-                  </Link>
-                </>
+                <Link to="/volunteer/profile" onClick={close} className={itemCls}>
+                  <UserRound size={20} strokeWidth={2.25} aria-hidden="true" /> My profile and availability
+                </Link>
               )}
+              <Link to="/volunteer/help" onClick={close} className={itemCls}>
+                <CircleHelp size={20} strokeWidth={2.25} aria-hidden="true" /> Help
+              </Link>
               <label className={`${itemCls} cursor-pointer`}>
                 <Moon size={20} strokeWidth={2.25} aria-hidden="true" />
                 <span className="flex-1">Dark mode</span>
@@ -139,7 +137,7 @@ export default function VolunteerLayout() {
               Try again
             </button>
           </div>
-        ) : !crew ? (
+        ) : !crew && pathname !== '/volunteer/help' ? (
           <VolunteerApplicant status={assigned.applicationStatus} appliedAt={assigned.appliedAt} />
         ) : (
           <Outlet context={context} />
