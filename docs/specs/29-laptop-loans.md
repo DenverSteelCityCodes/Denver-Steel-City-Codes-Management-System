@@ -1,6 +1,6 @@
 # 29: Laptop loans
 
-**Status:** ⬜ not started · **Issue:** #149 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in progress (phase 1: database, parents, crew; phase 2: admin screens) · **Issue:** #149 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 09 (templates; sending waits on 02) · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1
 
@@ -62,6 +62,15 @@ What exists today is `students.laptop_available` (`migration_student_registratio
 ## Open questions
 - How many loaners in 2027, and will the host school lend them again? ❓ (non-code task).
 - Is FIFO the right order, or should free/reduced-lunch families go first? Default: FIFO.
+
+## As built (phase 1)
+- FIFO by request time, the spec's default. **In use** = reserved + handed out; released and returned don't count.
+- A handed-out laptop is never released automatically (a cancelled spot keeps it `handed_out` until an admin marks it returned), so the camp doesn't lose track of a machine.
+- `admin_set_laptop_status` also takes `reserved`, only to undo a hand-out ticked by mistake.
+- Moving a camper to another week takes the request along, keeping its request time.
+- A section with no week (runs both weeks) can't take a loan: the request explains and gives the camp's email.
+- The yearly re-confirm (class browser) stops asking `laptop_available` and points to Home; a returning camper borrows from the camper card.
+- `my_laptop_loans()` gives the parent each week's status, place in the queue, and whether it can still change.
 
 ## Notes for the builder
 - Add to the registration-day runbook (19): test the coding platform on a district student account two weeks before camp.
