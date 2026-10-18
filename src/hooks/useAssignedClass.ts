@@ -12,6 +12,7 @@ export interface AssignedStudent {
   emergency_contact_name: string | null
   emergency_contact_phone: string | null
   emergency_contact_relation: string | null
+  parent_name: string | null
   parent_phone: string | null
 }
 

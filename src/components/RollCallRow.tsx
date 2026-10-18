@@ -1,67 +1,77 @@
-import { Check, X, Phone } from 'lucide-react'
+import { Check, CircleAlert, LoaderCircle, Phone, X } from 'lucide-react'
 import type { AssignedStudent } from '../hooks/useAssignedClass'
-import MedicalFlag from './MedicalFlag'
-import { callTarget, healthNote, telHref } from '../lib/campers'
+import HealthNotes from './HealthNotes'
+import CallLink from './CallLink'
+import { callLines, healthLines } from '../lib/campers'
 
 export type MarkState = 'present' | 'absent' | null
 
 interface Props {
   student: AssignedStudent
   state: MarkState
-  disabled: boolean
+  // This camper's mark is saving; only this toggle waits, the rest of the list stays live.
+  pending: boolean
+  // The last save for this camper failed (the toggle is back to what it showed before).
+  failed: boolean
   onToggle: () => void
 }
 
-// One camper in a roll call. A single 44px toggle: unmarked → Present → Absent → Present …
-// so "mark all present, then untick the missing" is one tap per missing camper. Present is a soft
-// fill so the roll-call header stays the loudest thing on the page; absent shows a call button.
-export default function RollCallRow({ student, state, disabled, onToggle }: Props) {
-  const medicalNote = healthNote(student)
-  const call = callTarget(student)
-  const initials = student.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+// One camper in a roll call: the name and a 44px toggle on one line, health notes and (when absent)
+// who to call full width under them. Safety information is never behind a tap (DESIGN.md › Roll
+// Call). The toggle cycles unmarked → Present → Absent → Present …, so "mark all present, then tap
+// whoever is missing" is one tap per missing camper.
+export default function RollCallRow({ student, state, pending, failed, onToggle }: Props) {
+  const health = healthLines(student)
+  const calls = state === 'absent' ? callLines(student) : []
+  const name = student.full_name
 
   const tone = state === 'present'
-    ? 'bg-success-soft text-success border-success/35'
+    ? 'border-success bg-success-soft text-success'
     : state === 'absent'
-      ? 'bg-danger-soft text-danger border-danger/40'
-      : 'bg-surface text-ink border-border-strong hover:bg-success-soft hover:text-success'
+      ? 'border-danger bg-danger-soft text-danger'
+      : 'border-border-strong bg-surface text-ink hover:bg-surface-sunken'
+  const label = state === 'present' ? 'Present' : state === 'absent' ? 'Absent' : 'Mark present'
+  const spoken = state === 'present' ? `Present, ${name}. Tap to mark absent.`
+    : state === 'absent' ? `Absent, ${name}. Tap to mark present.`
+      : `Mark present, ${name}`
+  const icon = pending ? <LoaderCircle size={16} strokeWidth={2.5} className="animate-spin" aria-hidden="true" />
+    : state === 'present' ? <Check size={16} strokeWidth={3} aria-hidden="true" />
+      : state === 'absent' ? <X size={16} strokeWidth={3} aria-hidden="true" />
+        : null
 
   return (
-    <div className={`flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-border last:border-0 transition ${
-      state === 'absent' ? 'bg-danger-soft/45' : ''
-    }`}>
-      <div aria-hidden="true" className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-sans font-bold text-[13px] ${
-        state === 'present' ? 'bg-success-soft text-success' : state === 'absent' ? 'bg-danger-soft text-danger' : 'bg-surface-sunken text-ink-muted'
-      }`}>
-        {initials}
-      </div>
-
-      <div className="flex-1 min-w-0 flex items-center gap-x-2 gap-y-1 flex-wrap">
-        <span className="font-sans font-semibold text-base text-ink leading-tight">{student.full_name}</span>
-        <span className="font-sans text-sm text-ink-muted">{student.age}</span>
-        {medicalNote && <MedicalFlag info={medicalNote} footnote="Confidential — for camp staff only." />}
-      </div>
-
-      {state === 'absent' && call && (
-        <a
-          href={telHref(call.number)}
-          aria-label={`Call ${student.full_name}'s ${call.who}, ${call.number}`}
-          className="h-11 w-11 shrink-0 rounded-[10px] border border-border-strong bg-surface text-ink hover:bg-surface-sunken flex items-center justify-center transition"
-        >
-          <Phone size={17} />
-        </a>
-      )}
+    <li className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-4 sm:px-8 lg:px-4 py-3 border-t border-border first:border-t-0 ${
+      state === 'absent' ? 'bg-danger-soft' : ''}`}>
+      <p className="font-bold text-lg leading-[1.3] text-ink">{name}</p>
 
       <button
         type="button"
         onClick={onToggle}
-        disabled={disabled}
-        aria-pressed={state === 'present'}
-        aria-label={`${student.full_name}: ${state === 'present' ? 'present, tap to mark absent' : state === 'absent' ? 'absent, tap to mark present' : 'not marked, tap to mark present'}`}
-        className={`h-11 min-w-[6.5rem] px-3 shrink-0 rounded-[10px] border font-sans font-semibold text-[15px] flex items-center justify-center gap-1.5 transition disabled:opacity-50 ${tone}`}
+        disabled={pending}
+        aria-busy={pending || undefined}
+        aria-label={spoken}
+        className={`min-h-11 min-w-[132px] px-3 rounded border-2 font-extrabold inline-flex items-center justify-center gap-1.5 transition-colors disabled:cursor-progress ${tone}`}
       >
-        {state === 'present' ? <><Check size={15} /> Present</> : state === 'absent' ? <><X size={15} /> Absent</> : 'Mark'}
+        {icon}{label}
       </button>
-    </div>
+
+      {health.length > 0 && <HealthNotes lines={health} className="col-span-2 mt-1" />}
+
+      {failed && (
+        <p className="col-span-2 mt-1 flex items-start gap-1.5 text-sm font-bold text-danger">
+          <CircleAlert size={16} strokeWidth={2.5} className="shrink-0 mt-px" aria-hidden="true" />
+          Couldn't save. Check your connection and tap again.
+        </p>
+      )}
+
+      {state === 'absent' && (calls.length > 0
+        ? calls.map(c => <CallLink key={c.number} call={c} verb className="col-span-2 justify-self-start" />)
+        : (
+          <p className="col-span-2 mt-1 flex items-start gap-1.5 text-ink-muted">
+            <Phone size={16} strokeWidth={2.5} className="shrink-0 mt-1" aria-hidden="true" />
+            No phone number on file. Tell an admin.
+          </p>
+        ))}
+    </li>
   )
 }
