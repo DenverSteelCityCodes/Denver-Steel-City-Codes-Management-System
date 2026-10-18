@@ -39,6 +39,8 @@ export default function CampListLinkPage({ kind }: { kind: Kind }) {
   const [busy, setBusy] = useState(false)
   const [year, setYear] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(token ? null : 'This link is missing its code. Open it again from the email, or copy the whole link.')
+  // The database refused the link itself (not the connection), so pressing again can't help.
+  const [dead, setDead] = useState(!token)
 
   async function go() {
     setBusy(true)
@@ -46,8 +48,10 @@ export default function CampListLinkPage({ kind }: { kind: Kind }) {
     const { data, error } = await supabase.rpc(kind === 'confirm' ? 'confirm_interest' : 'leave_interest_list', { p_token: token })
     setBusy(false)
     // The database's sentence for a bad link names the fix; anything else is the generic line.
-    if (error) setError(error.code === 'P0001' ? error.message : GENERIC_ERROR)
-    else setYear(Number(data))
+    if (error) {
+      setDead(error.code === 'P0001')
+      setError(error.code === 'P0001' ? error.message : GENERIC_ERROR)
+    } else setYear(Number(data))
   }
 
   if (year !== null) {
@@ -63,7 +67,7 @@ export default function CampListLinkPage({ kind }: { kind: Kind }) {
     <PublicShell>
       <PageHead title={copy.title} lede={copy.lede} />
       <div className="grid gap-4 justify-items-start">
-        {token && (
+        {!dead && (
           <Button variant="primary" onClick={() => { void go() }} disabled={busy} className="max-[479px]:w-full">
             {busy ? <><Spinner />{copy.busy}</> : copy.button}
           </Button>

@@ -112,7 +112,8 @@ function Status({ info, role, signedIn, onOpen }: { info: CampInfo; role: UserRo
     : `Spots are first come, first served.${!signedIn ? ' Make a parent account, then add your camper.' : ''}`
   return (
     <>
-      <SignBand context={context} message={message} sub={sub} to={to} label={`${context}. ${message}. ${sub}`} />
+      {/* Named by its own text (context, message, sub), so the link's name matches what it shows. */}
+      <SignBand context={context} message={message} sub={sub} to={to} />
       {!signedIn && <p className="mt-2 text-ink-muted">Registered before? <Link to="/login" className={buttonClass('text')}>Sign in</Link></p>}
     </>
   )
@@ -159,8 +160,9 @@ function NotifyForm() {
     setBusy(false)
     if (error) {
       // The database's own sentences (a bad address, a busy minute) name the fix.
-      if (error.code === '22023') { setFieldError(error.message); inputRef.current?.focus() }
+      if (error.code === '22023') setFieldError(error.message)
       else setError(error.code === 'P0001' ? error.message : GENERIC_ERROR)
+      inputRef.current?.focus()
       return
     }
     setSentTo(email.trim())
@@ -211,7 +213,7 @@ function Weeks({ weeks }: { weeks: CampWeek[] }) {
               <span className="text-lg font-extrabold leading-snug tracking-[0.02em] break-words min-w-0">{w.name}</span>
               <span className="min-w-0">
                 <span className="block text-lg font-bold leading-snug">{weekDates(w.start_date, w.end_date)}</span>
-                {w.starts && <span className="block">Classes {w.days ? `${w.days}, ` : ''}{formatTimeRange(w.starts, w.ends)}</span>}
+                {w.starts && <span className="block">Classes {w.days ? `${w.days}, ` : ''}<span className="whitespace-nowrap">{formatTimeRange(w.starts, w.ends)}</span></span>}
                 <span className="mt-1 flex items-start gap-1.5 text-ink-muted">
                   <MapPin size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0 mt-1" />
                   <span className="min-w-0 [overflow-wrap:anywhere]">{w.location || 'Place to be announced'}</span>
