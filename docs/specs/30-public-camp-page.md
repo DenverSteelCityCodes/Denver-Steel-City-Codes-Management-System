@@ -1,6 +1,6 @@
 # 30: Public camp page and "notify me" list
 
-**Status:** ⬜ not started · **Issue:** #150 · **Priority:** P1 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in review, [PR #193](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/193) · **Issue:** #150 · **Priority:** P1 · **Effort:** M · **Phase:** B
 **Depends on:** 09, 13 · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1
 
@@ -44,10 +44,10 @@ The app has nothing public today:
 - Translations (backlog).
 
 ## Done when
-- [ ] A signed-out phone visitor sees status, dates, location, courses and the FAQ with no login.
-- [ ] Changing `sessions.location` updates the page, the wizard and the volunteer apply page.
-- [ ] A signup gets one confirm email. After confirming, exactly one "opening soon" and one "now open" email, each with a working unsubscribe.
-- [ ] `public_camp_info()` returns no personal data (SQL test as `anon`).
+- [x] A signed-out phone visitor sees status, dates, location, courses and the FAQ with no login.
+- [x] Changing `sessions.location` updates the page, the wizard and the volunteer apply page.
+- [ ] A signup gets one confirm email. After confirming, exactly one "opening soon" and one "now open" email, each with a working unsubscribe. *(Queued exactly once each, with working tokens, in `test-plans/public-camp-page-tests.sql`. Real delivery waits on redeploying `send-notifications` with the new templates and on the provider key, spec 02.)*
+- [x] `public_camp_info()` returns no personal data (SQL test as `anon`).
 
 ## Tests and verification
 - SQL as `anon`: read `public_camp_info()`. Reading `season_settings` or `interest_signups` directly fails.
@@ -57,4 +57,25 @@ The app has nothing public today:
 - Should the page say "Registration full: join the waitlist" per class? Default: yes, with no numbers.
 
 ## Notes for the builder
-- Delete interest signups 60 days after opening (add to L4).
+- Delete interest signups 60 days after opening (added to L4).
+
+## As built (2026-10-18)
+What the build changed or settled, so the next reader doesn't have to diff it:
+- **`migration_public_camp_page.sql`.** `sessions.location` was backfilled once with the venue the app used to hard-code, so nothing changed for families until an admin edits it (Setup › Sessions has a Place field). `anon` lost its unused table grant on `season_settings`, so a direct read now fails instead of returning no rows.
+- **`interest_signups.email` is `text`, stored lower-cased and trimmed with a CHECK.** It gives citext's case-insensitive uniqueness without adding the extension. One extra column, `notified_opens_at`, records which opening time the last "opening soon" announced, so a changed time sends exactly one more.
+- **Which camp.** `private.public_camp_year()`: the latest year with weeks on the sign-up forms until its last week ends, then the next year (with no weeks at all: this summer until the end of June, then next summer). The page, the list and the signed-in switch all use it.
+- **Status** (`private.camp_status()`, the same rules `registrations_before_insert()` enforces): `upcoming` while no classes are set up or the opening time is ahead; `closed` when the camper form is switched off; `open` while any class has a seat (confirmed, pending and offered seats count); `waitlist_only` when every class is full.
+- **What `public_camp_info()` returns**: weeks (name, dates, place, the days and hours classes run, from the earliest start to the latest end, and the daily schedule from `schedule_items`) and courses (name, description, age range, and per week whether every section is full). No section codes, rooms, crews, campers or counts. The open question's default is built: a full week shows "Week 1 is full: waitlist open", with no numbers.
+- **Grade rules** still come from `src/lib/courseConstraints.ts` (the Microcontrollers note) until spec 31 moves them into the database; ages come from the sections.
+- **Links.** Confirm and unsubscribe links carry `<signup id>.<HMAC>` signed with a Vault secret (`interest_link_key`, made by the migration). `/camp/confirm` and `/camp/unsubscribe` wait for a button press instead of acting on load, so a mail scanner that opens links can't confirm a stranger or unsubscribe anyone.
+- **Caps** (review, 2026-10-18). Counted on presses, never on who is on the list, and all answered with the same "try again later", so a refusal can't reveal whether an address is confirmed. Per IP (Cloudflare's `cf-connecting-ip` only, since the first `x-forwarded-for` entry is whatever the client sends; skipped without it; IPv6 grouped by /64): 5 an hour, 20 a day. Per mailbox, after lower-casing, dropping a `+tag` and, for Gmail, the dots: 3 presses a day and one confirmation email a Denver day. The whole form: 20 a minute, 300 a day. An advisory lock makes count-then-insert one step. Presses are logged only as HMAC hashes keyed by the links' Vault secret (`private.interest_join_log`, pruned after two days on each press and by the every-minute job). Addresses with `<>,;"()` or spaces are refused as malformed.
+- **Notices** (`private.send_interest_notices()`, pg_cron every minute, for the public camp year only):
+  - "Opening soon": once per announced opening time, after the season settings have been still for 10 minutes so a typo fix doesn't send two. The dedupe key carries the previous notice's stamp, so A → B → A sends one correction each time. A newer one cancels that signup's older one if it hasn't gone out, and a queued one whose time has passed is cancelled (never a row that has failed for good).
+  - "Now open": once, and only after the opening time has passed. With no opening time there's no "now open", even when classes are set up (registration is open by the database's rules then, but nobody announced a time). A new future time set after opening clears it (cancelling a copy that hadn't gone out), announces the new time, and says "now open" again when that time passes.
+  - When the public year rolls over, confirmed signups still waiting for "now open" move to the new year. Nothing is ever sent for an earlier year.
+  - Reserved `example.com` addresses are recorded as skipped, like every other email.
+- **Signed-in parents** get an "Email me when it opens" switch on the countdown card (Home, Classes, wizard step 4) and on `/camp`. It uses the login email, and only once sign-up has confirmed it, so there's no confirmation email.
+- **FAQ** says only what the app already does: free; the registration form's laptop and free-lunch questions; the daily schedule; the three roll calls parents see on their dashboard; email the camp for anything else. No loaner or lunch promises beyond the form.
+- **Opening minute.** When the countdown passes, `/camp` shows "Registration is opening…" and asks again every 5 seconds, at most 6 times, until the status changes; the status slot is never empty. An opening time with no classes yet says the classes aren't posted.
+- **Demo:** `private.reset_demo()` seeds the place and clears the list nightly. In demo mode, signed-out `/` stays on `/login` (the one-click seats), and `/camp` says the camp is made up and switches the notify form off, so the demo never collects addresses.
+- **To ship:** deploy `send-notifications` **before** applying the migration (three new templates: `interest_confirm`, `registration_opening_soon`, `registration_now_open`). The redeployed sender holds any template it doesn't know for 6 hours, without spending an attempt, instead of failing it (a shorter hold would let held rows fill every batch, since the claim takes the oldest due rows first).

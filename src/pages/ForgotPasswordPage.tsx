@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mail } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { BrandBar } from '../components/Wordmark'
+import Button from '../components/Button'
+import { Input } from '../components/Field'
+import SignBand from '../components/SignBand'
+import PublicShell, { AsideLine, PageHead } from '../components/PublicShell'
+import { FormError, FormField, Spinner } from '../components/PublicForm'
+import { classifyAuthError, authMessage, emailProblem } from '../lib/authErrors'
 import { focusOnMount } from '../lib/focus'
+import { buttonClass } from '../lib/ui'
 
 // Step 1 of a password reset: email a recovery link that lands on /reset.
 // Always shows the same confirmation, so this page never reveals whether an email has an account.
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -16,6 +23,9 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    const problem = emailProblem(email)
+    setEmailError(problem)
+    if (problem) { document.getElementById('forgot-email')?.focus(); return }
     setLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset`,
@@ -23,86 +33,52 @@ export default function ForgotPasswordPage() {
     setLoading(false)
     // Rate limits and network failures are worth saying; "no such user" is not (Supabase doesn't
     // report it either).
-    if (error && /rate limit|network|fetch/i.test(error.message)) {
-      setError("We couldn't send the link just now. Wait a minute and try again.")
+    const kind = classifyAuthError(error)
+    if (error && (kind === 'rate-limit' || kind === 'network')) {
+      setError(kind === 'rate-limit' ? "We couldn't send the link just now. Wait a minute and try again." : authMessage(kind))
       return
     }
     setSent(true)
   }
 
-  return (
-    <div className="min-h-screen bg-bg flex flex-col">
-      <BrandBar />
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-10">
-        <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8">
-          {sent ? (
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
-                <Mail size={20} className="text-success" />
-              </div>
-              <h1 ref={focusOnMount} tabIndex={-1} className="font-display font-bold text-xl text-ink mb-2 focus:outline-none">Check your email</h1>
-              <p role="status" className="font-sans text-ink-muted text-sm">
-                If <strong className="text-ink">{email.trim()}</strong> has an account, we've sent a link to choose a new password. It works for one hour.
-              </p>
-              <p className="mt-4 font-sans text-ink-muted text-xs">
-                Nothing arrived? Check your spam folder, or{' '}
-                <button type="button" onClick={() => setSent(false)} className="text-ink font-semibold hover:underline">
-                  try again
-                </button>.
-              </p>
-              <Link to="/login" className="mt-6 inline-block font-sans font-semibold text-sm text-ink hover:underline">
-                Back to sign in
-              </Link>
-            </div>
-          ) : (
-            <>
-              <h1 className="font-display font-bold text-2xl text-ink mb-1">Forgot your password?</h1>
-              <p className="font-sans text-ink-muted text-sm mb-6">Enter your email and we'll send you a link to choose a new one.</p>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block font-sans font-semibold text-sm text-ink" htmlFor="forgot-email">
-                    Email
-                  </label>
-                  <input
-                    id="forgot-email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    autoFocus
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="ui-input"
-                  />
-                </div>
-
-                {error && (
-                  <p role="alert" className="text-danger text-sm font-sans flex items-center gap-1.5">
-                    <span>⚠</span> {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="ui-btn ui-btn--primary w-full"
-                >
-                  {loading
-                    ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
-                    : <Mail size={16} />}
-                  {loading ? 'Sending…' : 'Send reset link'}
-                </button>
-              </form>
-
-              <p className="mt-6 text-center text-sm font-sans text-ink-muted">
-                Remembered it?{' '}
-                <Link to="/login" className="text-ink font-semibold hover:underline">Sign in</Link>
-              </p>
-            </>
-          )}
+  if (sent) {
+    return (
+      <PublicShell>
+        <PageHead title="Check your email" headingRef={focusOnMount} />
+        <div role="status">
+          <SignBand
+            context={<>If <span className="[overflow-wrap:anywhere]">{email.trim()}</span> has an account</>}
+            message="We've sent a link to choose a new password"
+            sub="It works once, for one hour. If you ask again, use the newest email."
+          />
         </div>
-      </main>
-    </div>
+        <div className="mt-6 grid gap-1">
+          <p>Nothing arrived? Check your spam folder first.</p>
+          <p><button type="button" onClick={() => setSent(false)} className={buttonClass('text')}>Try again</button></p>
+          <p><Link to="/login" className={buttonClass('text')}><ArrowLeft size={16} strokeWidth={2.5} aria-hidden="true" />Back to sign in</Link></p>
+        </div>
+      </PublicShell>
+    )
+  }
+
+  return (
+    <PublicShell>
+      <PageHead title="Forgot your password?" lede="Enter your email and we'll send you a link to choose a new one." />
+      <form onSubmit={handleSubmit} noValidate className="grid gap-5">
+        <FormField id="forgot-email" label="Email" error={emailError}>
+          {a => (
+            <Input {...a} type="email" autoComplete="email" inputMode="email" autoFocus
+              value={email} onChange={e => setEmail(e.target.value)} />
+          )}
+        </FormField>
+        {error && <FormError>{error}</FormError>}
+        <Button type="submit" variant="primary" block disabled={loading}>
+          {loading ? <><Spinner />Sending…</> : 'Send reset link'}
+        </Button>
+      </form>
+      <div className="mt-6">
+        <AsideLine>Remembered it? <Link to="/login" className={buttonClass('text')}>Sign in</Link></AsideLine>
+      </div>
+    </PublicShell>
   )
 }

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, UserPlus, GraduationCap } from 'lucide-react'
+import { Check, CircleAlert, Clock, UserPlus, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations, type RegistrationWithSection } from '../hooks/useRegistrations'
@@ -11,18 +12,22 @@ import { useScheduleItems } from '../hooks/useScheduleItems'
 import { useSectionLeadNames } from '../hooks/useSectionLeadNames'
 import { useMyChanges } from '../hooks/useMyChanges'
 import RegistrationCountdown from '../components/RegistrationCountdown'
-import InlineConfirm from '../components/InlineConfirm'
+import NotifyMeSwitch from '../components/NotifyMeSwitch'
+import SignBand from '../components/SignBand'
 import CamperRow from '../components/CamperRow'
 import { listDrafts, clearDraft } from '../lib/registrationDraft'
 import { formatDayLong, formatTime, formatTimeRange, localDateISO, ROLL_CALLS } from '../lib/campDay'
 import { buildSubhead, camperFirstName, homeBand, rowRegistrations, type HomeBand } from '../lib/parentHome'
-import { CAMP_SITE } from '../lib/campSite'
+import { daysBetween } from '../lib/volunteerHome'
+import { buttonClass } from '../lib/ui'
 import type { RollCallMark, ScheduleItem, Student } from '../types/database'
 import type { Session } from '../hooks/useSessions'
-import { LatestUpdate, PageHead, ScheduleBlock, Sect, btnCls, linkCls, listCls, primaryCls } from './volunteer/parts'
+import { LatestUpdate, PageHead, Schedule, Sect, framedCls, mutedTextBtn, textBtn } from './parent/parts'
 
 // Parent Home (issue #167): the status sentence, one band for what matters right now, one row per
 // camper (tap for the class and the change actions), then the day at camp and the latest update.
+// The band is the junction sign (DESIGN.md): gold, with the number to act on at display scale; on
+// a camp day it turns ink (the roll-call sign) with the pickup time in gold.
 export default function ParentDashboard() {
   const { profile, user } = useAuth()
   const { students, loading } = useStudents()
@@ -52,59 +57,68 @@ export default function ParentDashboard() {
 
   return (
     <>
-      <RegistrationCountdown opensAt={season?.registration_opens_at} />
+      <RegistrationCountdown opensAt={season?.registration_opens_at}><NotifyMeSwitch /></RegistrationCountdown>
       <PageHead title={first ? `Hi, ${first}` : 'Hi'}>
         {!loading && (students.length ? buildSubhead(students, registrations) : null)}
       </PageHead>
 
-      <div className="sm:grid sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] sm:gap-10 sm:items-start">
-        <div>
-          {band && <Band band={band} students={students} marks={marks} schedule={schedule} leadNames={leadNames}
-            onAccept={async id => { await myChanges.acceptOffer(id); await refetch() }}
-            onDecline={async id => { await myChanges.declineOffer(id); await refetch() }} />}
-
-          {drafts.map(({ key, studentId, draft }) => (
-            <div key={key} className="mt-6 bg-surface border border-border rounded-[14px] p-4">
-              <p className="font-sans text-base text-ink">
-                <span className="font-semibold">Finish registering {draft.name || 'your new camper'}.</span>{' '}
-                <span className="text-ink-muted">You're on step {draft.step} of 5. Your answers are saved on this device.</span>
-              </p>
-              <div className="flex gap-2 mt-3">
-                <Link to={`/parent/register?${studentId ? `studentId=${studentId}&` : ''}step=${draft.step}`} className={primaryCls}>Continue</Link>
-                <button type="button" onClick={() => { clearDraft(key); setDrafts(d => d.filter(x => x.key !== key)) }} className={btnCls}>Discard</button>
-              </div>
+      <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-8 lg:items-start">
+        <div className="min-w-0">
+          {band && (
+            <div className="mt-5">
+              <Band band={band} today={today} students={students} marks={marks} schedule={schedule} leadNames={leadNames}
+                onAccept={async id => { await myChanges.acceptOffer(id); await refetch() }}
+                onDecline={async id => { await myChanges.declineOffer(id); await refetch() }} />
             </div>
-          ))}
+          )}
+
+          {drafts.length > 0 && (
+            <ul aria-label="Unfinished registrations" className={`mt-8 ${framedCls}`}>
+              {drafts.map(({ key, studentId, draft }) => (
+                <li key={key} className="py-4 border-t-2 border-ink first:border-t-0">
+                  <p className="text-lg font-bold leading-snug">Finish registering {draft.name || 'your new camper'}.</p>
+                  <p className="mt-1 text-ink-muted">You're on step {draft.step} of 5. Your answers are saved on this device.</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <Link to={`/parent/register?${studentId ? `studentId=${studentId}&` : ''}step=${draft.step}`} className={buttonClass('ink')}>Continue</Link>
+                    <button type="button" onClick={() => { clearDraft(key); setDrafts(d => d.filter(x => x.key !== key)) }} className={mutedTextBtn}>Discard</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {loading ? (
-            <div className="mt-7 h-40 bg-surface-sunken rounded-[14px] animate-pulse" aria-busy="true" />
+            <div className="mt-10 h-40 rounded bg-surface-sunken animate-pulse" aria-busy="true" />
           ) : students.length > 0 && (
-            <Sect title="Your campers" id="campers-h" action={<Link to="/parent/classes" className={linkCls}>Find a class</Link>}>
-              <div className={listCls}>
+            <Sect title="Your campers" id="campers-h" action={<Link to="/parent/classes" className={textBtn}>Find a class</Link>}>
+              <ul className={framedCls}>
                 {students.map(s => (
                   <CamperRow key={s.id} student={s} regs={rowRegistrations(s.id, registrations)} sessions={sessions}
                     leadNames={leadNames} changes={changes} open={open === s.id} onToggle={() => setOpen(o => (o === s.id ? null : s.id))} />
                 ))}
-              </div>
+              </ul>
             </Sect>
           )}
         </div>
 
-        <div className="sm:pt-[18px]">
-          {students.length > 0 && <ScheduleBlock items={schedule} live={band?.kind === 'campDay'} fold />}
-          <LatestUpdate to="/parent/updates" />
+        <div className="min-w-0 lg:[&>section:first-child]:mt-5">
+          {students.length > 0 && <Schedule items={schedule} live={band?.kind === 'campDay'} />}
+          <LatestUpdate />
         </div>
       </div>
     </>
   )
 }
 
-const bandCls = 'mt-6 -mx-4 sm:mx-0 sm:rounded-[14px] bg-ink-950 dark:bg-surface-raised dark:border-y sm:dark:border dark:border-border-strong text-white px-4 sm:px-6 py-5'
-const bandText = 'mt-1.5 font-sans text-[15.5px] leading-normal text-white/80 [&_b]:text-white [&_b]:font-semibold'
-const ghostOnBand = 'h-11 px-4 rounded-[10px] border border-white/35 text-white font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 hover:bg-white/10 transition disabled:opacity-50'
+// Controls that sit on a gold sign: ink stays ink at night (a bone button would vanish on gold),
+// and focus rings are ink (the night ring is gold). `!` beats the unlayered global focus rule.
+const onSignFocus = 'focus-visible:outline-brand-on!'
+const onSignBtn = buttonClass('ink', `bg-brand-on text-brand ${onSignFocus}`)
+const onSignText = buttonClass('text', `text-brand-on ${onSignFocus}`)
 
-function Band({ band, students, marks, schedule, leadNames, onAccept, onDecline }: {
+function Band({ band, today, students, marks, schedule, leadNames, onAccept, onDecline }: {
   band: NonNullable<HomeBand>
+  today: string
   students: Student[]
   marks: RollCallMark[]
   schedule: ScheduleItem[]
@@ -118,30 +132,27 @@ function Band({ band, students, marks, schedule, leadNames, onAccept, onDecline 
   }
 
   if (band.kind === 'register') return (
-    <section aria-labelledby="band-h" className={bandCls}>
-      <h2 id="band-h" className="font-sans text-[21px] font-bold leading-tight">Register your first camper</h2>
-      <p className={bandText}>Five short steps, about ten minutes. Your answers are saved on this device as you go, so you can finish later.</p>
-      <ol className="mt-3 space-y-1.5">
+    <SignBand id="band" context="About ten minutes" figure={5} unit="steps" message="Register your first camper"
+      sub="Your answers are saved on this device as you go, so you can finish later.">
+      <ol className="mt-3 grid gap-1">
         {['The camper', 'You and an emergency contact', 'Health and details', 'Week and class', 'Waiver and consent'].map((t, i) => (
-          <li key={t} className="flex items-center gap-2.5 font-sans text-[15px] text-white/85">
-            <span aria-hidden="true" className="w-6 h-6 rounded-full border border-white/35 grid place-items-center text-[13px] font-bold">{i + 1}</span>{t}
-          </li>
+          <li key={t} className="flex gap-3"><span aria-hidden="true" className="w-3 font-extrabold">{i + 1}</span>{t}</li>
         ))}
       </ol>
-      <Link to="/parent/register" className={`${primaryCls} mt-4`}><UserPlus size={16} /> Start registering</Link>
-    </section>
+      <Link to="/parent/register" className={`${onSignBtn} mt-4`}><UserPlus size={20} strokeWidth={2.25} aria-hidden="true" /> Start registering</Link>
+    </SignBand>
   )
 
   if (band.kind === 'offer') return <OfferBand reg={band.reg} name={nameOf(band.reg)} onAccept={onAccept} onDecline={onDecline} />
 
   if (band.kind === 'cancelled') {
     const r = band.reg
+    const cls = r.sections?.classes?.name ?? 'the class'
+    const week = r.sections?.week ? ` for Week ${r.sections.week}` : ''
+    const sub = `Sorry, the camp cancelled ${cls}${week}. ${nameOf(r)} is first in line for that week's waitlists. Pick another class.`
     return (
-      <section aria-labelledby="band-h" className={bandCls}>
-        <h2 id="band-h" className="font-sans text-[21px] font-bold leading-tight">{nameOf(r)}'s class was cancelled</h2>
-        <p className={bandText}>Sorry, the camp cancelled <b>{r.sections?.classes?.name ?? 'the class'}</b>{r.sections?.week ? ` for Week ${r.sections.week}` : ''}. {nameOf(r)} is first in line for that week's waitlists.</p>
-        <Link to={`/parent/classes?camper=${r.student_id}`} className={`${primaryCls} mt-4`}><GraduationCap size={16} /> Pick another class</Link>
-      </section>
+      <SignBand id="band" to={`/parent/classes?camper=${r.student_id}`} label={`${nameOf(r)}'s class was cancelled. ${sub}`}
+        context={`${cls}${r.sections?.week ? `, Week ${r.sections.week}` : ''}`} message={`${nameOf(r)}'s class was cancelled`} sub={sub} />
     )
   }
 
@@ -150,63 +161,76 @@ function Band({ band, students, marks, schedule, leadNames, onAccept, onDecline 
   const pickup = sorted.length > 1 ? sorted[sorted.length - 1] : null
   const where = (i: ScheduleItem) => (i.location ? ` in the ${i.location.toLowerCase()}` : '')
 
-  if (band.kind === 'campDay') return (
-    <section aria-labelledby="band-h" className={bandCls}>
-      <h2 id="band-h" className="font-sans text-[21px] font-bold leading-tight">{formatDayLong(localDateISO())}: day {band.day} of camp</h2>
-      {pickup && <p className={bandText}>{pickup.title} starts at <b>{formatTime(pickup.start_time)}</b>{where(pickup)}.</p>}
-      {band.seats.map(r => {
-        const mine = marks.filter(m => m.student_id === r.student_id && m.section_id === r.section_id)
-        const arrival = mine.find(m => m.roll_call === 'arrival')
-        const time = (m: RollCallMark) => formatTime(new Date(m.marked_at).toTimeString().slice(0, 5))
-        const lead = leadNames.get(r.section_id)
-        return (
-          <div key={r.id} className="mt-3 pt-3 border-t border-white/15">
-            <p className="font-sans text-[17px] font-semibold">
-              {arrival ? (arrival.present ? `${nameOf(r)} checked in at ${time(arrival)}` : `${nameOf(r)} was marked absent at arrival`) : `${nameOf(r)} hasn't been checked in yet`}
-            </p>
-            <p className="font-sans text-[15px] text-white/80">{[r.sections?.classes?.name, r.sections?.room && `in ${r.sections.room}`, lead && `with ${lead}`].filter(Boolean).join(' ')}</p>
-            <ul aria-label={`${nameOf(r)}'s roll calls today`} className="mt-2 flex flex-wrap gap-1.5">
-              {ROLL_CALLS.map(rc => {
-                const m = mine.find(x => x.roll_call === rc.key)
-                return (
-                  <li key={rc.key} className={`inline-flex items-center gap-1 h-8 px-3 rounded-full font-sans text-sm font-semibold ${
-                    !m ? 'border border-white/25 text-white/80' : m.present ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
-                    {m?.present && <Check size={14} aria-hidden="true" />}
-                    {rc.label}{m ? `, ${m.present ? time(m) : 'absent'}` : ''}
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        )
-      })}
-    </section>
-  )
+  if (band.kind === 'campDay') {
+    const [time, meridiem] = pickup ? formatTime(pickup.start_time).split(' ') : []
+    return (
+      <InkSign id="band" context={`${formatDayLong(today)}, day ${band.day} of camp`} figure={time} unit={meridiem}
+        message={pickup ? `${pickup.title}${where(pickup)}` : `Day ${band.day} of camp`}>
+        <ul className="mt-3">
+          {band.seats.map(r => {
+            const mine = marks.filter(m => m.student_id === r.student_id && m.section_id === r.section_id)
+            const arrival = mine.find(m => m.roll_call === 'arrival')
+            const at = (m: RollCallMark) => formatTime(new Date(m.marked_at).toTimeString().slice(0, 5))
+            const lead = leadNames.get(r.section_id)
+            return (
+              <li key={r.id} className="py-3 border-t border-on-shell-muted/40">
+                <p className="text-lg font-bold leading-snug">
+                  {arrival ? (arrival.present ? `${nameOf(r)} checked in at ${at(arrival)}` : `${nameOf(r)} was marked absent at arrival`) : `${nameOf(r)} hasn't been checked in yet`}
+                </p>
+                <p className="text-on-shell-muted">{[r.sections?.classes?.name, r.sections?.room && `in ${r.sections.room}`, lead && `with ${lead}`].filter(Boolean).join(' ')}</p>
+                <ul aria-label={`${nameOf(r)}'s roll calls today`} className="mt-2 flex flex-wrap gap-2">
+                  {ROLL_CALLS.map(rc => {
+                    const m = mine.find(x => x.roll_call === rc.key)
+                    const Icon = !m ? Clock : m.present ? Check : X
+                    return (
+                      <li key={rc.key} className={`inline-flex items-center gap-1.5 rounded px-2 py-1.5 text-sm font-bold leading-none ${
+                        !m ? 'text-on-shell-muted ring-2 ring-inset ring-on-shell-muted/60' : m.present ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
+                        <Icon size={16} strokeWidth={2.5} aria-hidden="true" />
+                        {rc.label}{m ? `, ${m.present ? at(m) : 'absent'}` : <span className="sr-only">, not yet</span>}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </li>
+            )
+          })}
+        </ul>
+      </InkSign>
+    )
+  }
 
-  return <UpcomingBand session={band.session} dropOff={dropOff} pickup={pickup} where={where} />
+  return <UpcomingBand session={band.session} today={today} dropOff={dropOff} pickup={pickup} where={where} />
 }
 
-function UpcomingBand({ session, dropOff, pickup, where }: { session: Session; dropOff?: ScheduleItem; pickup: ScheduleItem | null; where: (i: ScheduleItem) => string }) {
+function UpcomingBand({ session, today, dropOff, pickup, where }: { session: Session; today: string; dropOff?: ScheduleItem; pickup: ScheduleItem | null; where: (i: ScheduleItem) => string }) {
+  const days = daysBetween(today, session.start_date)
+  const b = 'font-bold text-brand-on'
   return (
-    <section aria-labelledby="band-h" className={bandCls}>
-      <h2 id="band-h" className="font-sans text-[21px] font-bold leading-tight">{session.name} starts {formatDayLong(session.start_date)}</h2>
-      <p className={bandText}>
-        At <b>{CAMP_SITE}</b>.{' '}
-        {dropOff ? <>{dropOff.title} is <b>{formatTimeRange(dropOff.start_time, dropOff.end_time)}</b>{where(dropOff)}{pickup ? <>, and {pickup.title.toLowerCase()} starts at <b>{formatTime(pickup.start_time)}</b></> : null}.</>
-          : 'The daily schedule will be posted here before camp.'}
-      </p>
-    </section>
+    <SignBand id="band" context={session.location ? `At ${session.location}` : 'Before camp'} figure={days} unit={days === 1 ? 'day' : 'days'}
+      message={`${session.name} starts ${formatDayLong(session.start_date)}`}
+      sub={dropOff
+        ? <>{dropOff.title} is <b className={b}>{formatTimeRange(dropOff.start_time, dropOff.end_time)}</b>{where(dropOff)}{pickup ? <>, and {pickup.title.toLowerCase()} starts at <b className={b}>{formatTime(pickup.start_time)}</b></> : null}.</>
+        : 'The daily schedule will be posted here before camp.'} />
   )
 }
 
-// A waitlist offer (spec 10): claim it (confirms at once) or decline it (passes it on), asked inline.
+// A waitlist offer (spec 10): claim it (confirms at once) or decline it (passes it on), asked inline
+// on the sign. The figure is the time left, kept current while the page is open.
 function OfferBand({ reg, name, onAccept, onDecline }: { reg: RegistrationWithSection; name: string; onAccept: (id: string) => Promise<void>; onDecline: (id: string) => Promise<void> }) {
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+  const confirmId = useId()
   const until = reg.offer_expires_at
     ? new Date(reg.offer_expires_at).toLocaleString('en-US', { timeZone: 'America/Denver', weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null
+  const left = reg.offer_expires_at ? new Date(reg.offer_expires_at).getTime() - now : 0
+  const figure = left <= 0 ? null : left >= 3_600_000 ? Math.floor(left / 3_600_000) : Math.ceil(left / 60_000)
   const where = `${reg.sections?.classes?.name ?? 'the class'}${reg.sections?.week ? `, Week ${reg.sections.week}` : ''}`
 
   async function run(fn: () => Promise<void>) {
@@ -216,30 +240,55 @@ function OfferBand({ reg, name, onAccept, onDecline }: { reg: RegistrationWithSe
   }
 
   return (
-    <section aria-labelledby="band-h" className={bandCls}>
-      <h2 id="band-h" className="font-sans text-[21px] font-bold leading-tight">A spot opened for {name}</h2>
-      <p className={bandText}><b>{where}</b>.{until ? <> Claim it by <b>{until}</b> (Denver time), or it goes to the next family on the waitlist.</> : ' Claim it before the offer ends.'}</p>
+    <SignBand id="band" context={where} figure={figure} unit={left >= 3_600_000 ? 'h left' : 'min left'}
+      message={`A spot opened for ${name}`}
+      sub={until ? <>Claim it by <b className="font-bold text-brand-on">{until}</b> (Denver time), or it goes to the next family on the waitlist.</> : 'Claim it before the offer ends.'}>
       {confirming ? (
-        <div className="mt-4 -mx-4 sm:mx-0 sm:rounded-[10px] overflow-hidden">
-          <InlineConfirm
-            message={`Decline the spot in ${where}? It goes to the next family, and ${name} leaves this waitlist.`}
-            confirmLabel="Decline spot"
-            cancelLabel="Keep the offer"
-            busy={busy}
-            onConfirm={() => { void run(() => onDecline(reg.id)) }}
-            onCancel={() => { setConfirming(false); setErr(null) }}
-          />
+        <div role="group" aria-labelledby={confirmId} onKeyDown={e => { if (e.key === 'Escape') { setConfirming(false); setErr(null) } }}
+          className="mt-3 rounded border-2 border-brand-on p-4">
+          <p id={confirmId} className="font-bold text-pretty">Decline the spot in {where}? It goes to the next family, and {name} leaves this waitlist.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" autoFocus onClick={() => { setConfirming(false); setErr(null) }}
+              className={buttonClass('secondary', `border-brand-on text-brand-on ${onSignFocus}`)}>Keep the offer</button>
+            <button type="button" disabled={busy} aria-busy={busy} onClick={() => { void run(() => onDecline(reg.id)) }}
+              className={buttonClass('danger', `bg-alarm border-alarm text-on-shell hover:bg-alarm/90 ${onSignFocus}`)}>
+              {busy ? 'Declining…' : 'Decline spot'}
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" disabled={busy} onClick={() => { void run(() => onAccept(reg.id)) }} className={primaryCls}>
-            <Check size={16} /> {busy ? 'Claiming…' : 'Claim the spot'}
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <button type="button" disabled={busy} onClick={() => { void run(() => onAccept(reg.id)) }} className={onSignBtn}>
+            <Check size={20} strokeWidth={2.5} aria-hidden="true" /> {busy ? 'Claiming…' : 'Claim the spot'}
           </button>
-          <button type="button" disabled={busy} onClick={() => setConfirming(true)} className={ghostOnBand}>Decline</button>
+          <button type="button" disabled={busy} onClick={() => setConfirming(true)} className={onSignText}>Decline</button>
         </div>
       )}
-      {err && <p role="alert" className="mt-2 font-sans text-sm text-white">{err}</p>}
-    </section>
+      {err && (
+        <p role="alert" className="mt-2 flex items-start gap-1.5 text-sm font-bold">
+          <CircleAlert size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0 mt-0.5" />{err}
+        </p>
+      )}
+    </SignBand>
   )
 }
 
+// The ink sign (DESIGN.md › Sign Band, ink variant: camp-day roll call). The shared SignBand is
+// gold only, so the camp-day band keeps this local copy of its grid with ink colours and a gold
+// figure. A candidate to fold into SignBand as a variant.
+function InkSign({ id, context, figure, unit, message, children }: { id: string; context: ReactNode; figure?: string; unit?: string; message: ReactNode; children?: ReactNode }) {
+  const headingId = `${id}-h`
+  return (
+    <section id={id} aria-labelledby={headingId}
+      className="grid grid-cols-[1fr_auto] items-end gap-x-4 gap-y-1 rounded p-4 bg-shell text-on-shell scroll-mt-32 md:scroll-mt-24 dark:ring-1 dark:ring-inset dark:ring-border">
+      <span className="col-span-full text-sm font-bold text-on-shell-muted">{context}</span>
+      {figure && (
+        <span className="col-span-full font-extrabold text-[3.5rem] md:text-[4.5rem] leading-[0.92] tracking-[-0.03em] text-brand [font-variant-numeric:tabular-nums_lining-nums]">
+          {figure}{unit && <small className="ml-[0.15em] text-[0.42em] tracking-normal font-extrabold">{unit}</small>}
+        </span>
+      )}
+      <h2 id={headingId} tabIndex={-1} className="col-span-full text-[1.375rem] font-extrabold leading-[1.15] text-balance focus:outline-none">{message}</h2>
+      {children && <div className="col-span-full">{children}</div>}
+    </section>
+  )
+}

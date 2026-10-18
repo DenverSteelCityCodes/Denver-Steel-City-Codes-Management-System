@@ -18,6 +18,7 @@ interface SessionFormState {
   year: string
   start_date: string
   end_date: string
+  location: string
   is_active: boolean
 }
 
@@ -57,6 +58,7 @@ function SessionForm({
         year: Number(form.start_date.slice(0, 4)),
         start_date: form.start_date,
         end_date: form.end_date,
+        location: form.location.trim() || null,
         is_active: form.is_active,
       })
     } catch (e) {
@@ -83,6 +85,13 @@ function SessionForm({
           <Input id="session-end" type="date" value={form.end_date} min={form.start_date || undefined}
             onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
         </div>
+      </div>
+      <div>
+        <label className={label} htmlFor="session-location">Place</label>
+        <p id="session-location-hint" className="-mt-0.5 mb-1.5 text-sm text-ink-muted text-pretty">Building and address. Families see it on the public camp page, when they register and before camp.</p>
+        <Input id="session-location" value={form.location} maxLength={200} aria-describedby="session-location-hint"
+          onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+          placeholder="Building name, street address" />
       </div>
       <label className="flex items-start gap-3 min-h-11 py-2 cursor-pointer">
         <input type="checkbox" className="w-5 h-5 mt-0.5 shrink-0"
@@ -250,7 +259,9 @@ export default function AdminSessions() {
     }
   }
 
-  const BLANK: SessionFormState = { name: '', year: '', start_date: '', end_date: '', is_active: true }
+  // A new week starts at the place of the latest one, since weeks usually share a building.
+  const lastPlace = [...sessions].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]?.location ?? ''
+  const BLANK: SessionFormState = { name: '', year: '', start_date: '', end_date: '', location: lastPlace, is_active: true }
 
   async function confirmDelete(s: Session) {
     setDeleting(true)
@@ -327,7 +338,7 @@ export default function AdminSessions() {
                   <li key={s.id} className="py-4 border-t border-border first:border-t-0">
                     {editing === s.id ? (
                       <SessionForm
-                        initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, is_active: s.is_active }}
+                        initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, location: s.location ?? '', is_active: s.is_active }}
                         submitLabel="Save"
                         onCancel={() => setEditing(null)}
                         onSave={async payload => { await updateSession(s.id, payload); setEditing(null) }}
@@ -341,6 +352,7 @@ export default function AdminSessions() {
                               ? 'visible to families'
                               : <b className="inline-flex items-center gap-1 font-extrabold text-ink"><EyeOff size={16} strokeWidth={2.5} aria-hidden="true" /> Hidden from families</b>}
                           </p>
+                          <p className="text-sm text-ink-muted text-pretty">{s.location || 'No place set: families see "Place to be announced"'}</p>
                         </div>
                         <button type="button" className={linkBtn} onClick={() => { setPendingDelete(null); setEditing(s.id) }}>
                           Edit<span className="sr-only"> {s.name}</span>

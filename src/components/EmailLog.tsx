@@ -19,6 +19,7 @@ interface NotificationRow {
 const LABELS: Record<string, string> = {
   registration_confirmed: 'Spot confirmed', registration_waitlisted: 'Waitlisted', registration_moved: 'Class change',
   registration_cancelled: 'Cancelled',
+  interest_confirm: 'Notify me: confirm', registration_opening_soon: 'Registration opening soon', registration_now_open: 'Registration open',
 }
 
 function Status({ status }: { status: NotificationRow['status'] }) {

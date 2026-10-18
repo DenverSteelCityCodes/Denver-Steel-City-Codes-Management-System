@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Send, Mail } from 'lucide-react'
+import { CircleAlert, CircleCheck, Send } from 'lucide-react'
 import type { UpdateAudience } from '../types/database'
 import { fetchRecipientEmails } from '../hooks/useUpdates'
 import { openMailOrCopy } from '../lib/mailto'
@@ -15,8 +15,10 @@ interface Props {
 }
 
 const MAX = 2000
+const NEAR = 1800
 
-// Inline composer (no modal). "Also email" opens the mail client with the audience in BCC after the
+// Inline composer (no modal), set on the page: 16px fields, a 52px "Also email" choice row, and a
+// 48px Post with Cancel as a text action. "Also email" opens the mail client with the audience in BCC after the
 // post is saved; long lists are copied to the clipboard instead. Nothing is sent by the server.
 export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = true }: Props) {
   const [audience, setAudience] = useState<UpdateAudience>(mode.kind === 'lead' ? 'section' : 'everyone')
@@ -53,8 +55,8 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
     setManualEmails(null)
     try {
       await onPost({ audience, section_id: audience === 'section' ? sectionId : null, body: text })
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Couldn't post — try again")
+    } catch {
+      setErr("Couldn't post it. Check your connection and try again.")
       setBusy(false)
       return
     }
@@ -69,12 +71,12 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
         setNote(result.kind === 'opened'
           ? `Posted. Your mail app opened with ${emails.length} ${emails.length === 1 ? 'address' : 'addresses'} in BCC.`
           : result.kind === 'copied'
-            ? `Posted. ${result.count} addresses copied — paste them into BCC in your mail app.`
+            ? `Posted. ${result.count} addresses copied: paste them into BCC in your mail app.`
             : result.kind === 'draft_without_recipients'
-              ? `Posted. Your mail app opened without recipients — copy these ${result.emails.length} addresses into BCC.`
+              ? `Posted. Your mail app opened without recipients, so copy these ${result.emails.length} addresses into BCC.`
               : 'Posted. No email addresses found for this audience.')
-      } catch (e) {
-        setErr(`Posted. Couldn't fetch email addresses: ${e instanceof Error ? e.message : 'unknown error'}`)
+      } catch {
+        setErr("Posted. The email addresses couldn't be fetched, so no email was opened.")
       }
     } else {
       setNote('Posted.')
@@ -83,12 +85,12 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
   }
 
   const input = 'ui-input'
-  const label = 'block font-sans font-semibold text-sm text-ink mb-1.5'
+  const label = 'block font-bold text-ink mb-1.5'
 
   return (
-    <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') onCancel?.() }} className="space-y-3">
+    <form onSubmit={submit} onKeyDown={e => { if (e.key === 'Escape') onCancel?.() }} className="space-y-4">
       {mode.kind === 'admin' && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className={label} htmlFor="update-audience">Send to</label>
             <select id="update-audience" className={input} value={audience} onChange={e => setAudience(e.target.value as UpdateAudience)}>
@@ -110,8 +112,8 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
       )}
       <div>
         <label className={label} htmlFor="update-body">
-          {mode.kind === 'lead' ? `Message to ${mode.section.label} families` : 'Message'}
-          {mode.kind === 'admin' && <span className="font-normal text-ink-muted"> · {audienceCopy[audience]}</span>}
+          Message
+          {mode.kind === 'admin' && <span className="font-normal text-ink-muted"> to {audienceCopy[audience].charAt(0).toLowerCase() + audienceCopy[audience].slice(1)}</span>}
         </label>
         <textarea
           id="update-body"
@@ -121,30 +123,26 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
           value={body}
           onChange={e => setBody(e.target.value)}
           placeholder={mode.kind === 'lead' ? 'What we did today, what to bring tomorrow…' : 'Pickup reminders, schedule changes, thank-yous…'}
-          className="ui-input resize-y"
+          className="ui-input"
         />
-        <p className="mt-1 text-right font-sans text-xs text-ink-faint tabular-nums">{body.length}/{MAX}</p>
+        {/* The limit only matters near it. */}
+        {body.length > NEAR && <p className="mt-1 text-right text-sm font-bold text-ink-muted">{body.length} of {MAX} characters</p>}
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <label className="flex items-center gap-2 cursor-pointer font-sans text-sm text-ink">
-          <input type="checkbox" className="w-4 h-4 accent-brand" checked={alsoEmail} onChange={e => setAlsoEmail(e.target.checked)} />
-          <Mail size={14} className="text-ink-muted" /> Also email
-          <span className="text-ink-muted">(opens your mail app)</span>
-        </label>
-        <div className="flex justify-end gap-2">
-          {onCancel && (
-            <button type="button" onClick={onCancel} className="h-10 px-4 rounded-[10px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">
-              Cancel
-            </button>
-          )}
-          <button type="submit" disabled={busy || !body.trim()} className="ui-btn ui-btn--primary">
-            {busy ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Send size={15} />}
-            {busy ? 'Posting…' : 'Post update'}
-          </button>
-        </div>
+      <label className="flex items-center gap-3 min-h-[52px] px-4 py-2 bg-surface border-2 border-border has-[:checked]:border-ink rounded cursor-pointer text-ink">
+        <input type="checkbox" className="w-[22px] h-[22px] shrink-0" checked={alsoEmail} onChange={e => setAlsoEmail(e.target.checked)} />
+        <span><b className="font-bold">Also email them</b> <span className="text-ink-muted">(opens your mail app)</span></span>
+      </label>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <button type="submit" disabled={busy || !body.trim()} className="ui-btn ui-btn--primary w-full sm:w-auto">
+          {busy ? <span aria-hidden="true" className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Send size={18} strokeWidth={2.25} aria-hidden="true" />}
+          {busy ? 'Posting…' : 'Post update'}
+        </button>
+        {onCancel && (
+          <button type="button" onClick={onCancel} className="ui-btn ui-btn--text text-ink-muted">Cancel</button>
+        )}
       </div>
-      {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
-      {note && <p role="status" className="font-sans text-sm text-success">{note}</p>}
+      {err && <p role="alert" className="flex items-start gap-1.5 text-sm font-bold text-danger"><CircleAlert size={16} strokeWidth={2.5} className="shrink-0 mt-px" aria-hidden="true" />{err}</p>}
+      {note && <p role="status" className="flex items-start gap-1.5 font-bold text-success"><CircleCheck size={18} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />{note}</p>}
       {manualEmails && (
         <textarea
           readOnly
@@ -152,7 +150,7 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
           rows={3}
           value={manualEmails.join(', ')}
           onFocus={e => e.currentTarget.select()}
-          className="ui-input bg-surface-sunken resize-y"
+          className="ui-input bg-surface-sunken"
         />
       )}
     </form>
