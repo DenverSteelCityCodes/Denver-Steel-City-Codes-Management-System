@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { GraduationCap, HeartPulse, Megaphone, Printer } from 'lucide-react'
 import { useVolunteerHome } from '../../hooks/useVolunteerHome'
 import HealthNotes from '../../components/HealthNotes'
+import IncidentLog from '../../components/IncidentLog'
 import CallLink from '../../components/CallLink'
 import { callLines, healthLines } from '../../lib/campers'
 import { formatDayLong, localDateISO } from '../../lib/campDay'
@@ -76,6 +77,7 @@ export default function VolunteerClasses() {
                     : session && session.start_date > today ? `Roll calls open ${formatDayLong(session.start_date)}.`
                       : session ? `${session.name} is over.` : 'This section is not scheduled for a camp week yet.'}
                 </p>
+                <IncidentLog sectionId={s.id} sectionName={`${s.class_name}, ${s.label}`} students={s.students} />
               </div>
               <Sect title={countLabel(s.students.length, 'camper', 'campers')} id={`roster-${s.id}`} className="sm:mt-0">
                 {withNotes.length > 0 && (
