@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatCampSlot } from '../lib/denverTime'
 
 export interface OpenSlot {
   id: string
@@ -26,6 +27,7 @@ export function useOpenInterviewSlots() {
   return { slots, error, refetch: () => setVersion(v => v + 1) }
 }
 
+// Interview times are Denver times, whatever zone the applicant's device is in (#147).
 export function formatSlot(iso: string) {
-  return new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return formatCampSlot(iso)
 }
