@@ -8,7 +8,7 @@ import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input, Select } from '../components/Field'
 import Segmented from '../components/Segmented'
-import { AdminPageHead, VolunteersTabs, pageClass, h2Class } from '../components/AdminTabs'
+import { AdminPageHead, pageClass, h2Class } from '../components/AdminTabs'
 
 type PendingDelete = { kind: 'slot'; id: string } | { kind: 'type'; id: string } | null
 
@@ -131,8 +131,7 @@ export default function AdminDuties() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Volunteers" />
-      <VolunteersTabs current="duties" />
+      <AdminPageHead title="Duties" lede="Accepted volunteers sign up for these from their Duties tab." />
 
       {weeks.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -248,7 +247,6 @@ export default function AdminDuties() {
           </table>
         </div>
       )}
-      <p className="mt-3 text-sm text-ink-muted">Accepted volunteers sign up for these from their Duties tab.</p>
 
       {otherSlots.length > 0 && (
         <details className="group mt-6">

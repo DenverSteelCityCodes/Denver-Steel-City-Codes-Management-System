@@ -9,7 +9,7 @@ import type { ScheduleItem } from '../types/database'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input } from '../components/Field'
-import { AdminPageHead, SetupTabs, pageClass, h2Class } from '../components/AdminTabs'
+import { AdminPageHead, pageClass, h2Class } from '../components/AdminTabs'
 import { useAppSettings } from '../hooks/useAppSettings'
 import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
 
@@ -285,14 +285,13 @@ export default function AdminSessions() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Setup" lede={<>{!loading && `Season ${activeCampYear(sessions)}. `}Registration opens and closes here, and only here.</>} />
-      <SetupTabs current="season" />
+      <AdminPageHead title="Season" lede={<>{!loading && `Season ${activeCampYear(sessions)}. `}Registration opens and closes here, and only here.</>} />
 
       <div className="max-w-[840px]">
         {actionError && <p role="alert" className="mb-4 text-sm font-bold text-danger text-pretty">{actionError}</p>}
         {/* Always here once loaded, even before any session exists: this holds the only registration
             switch. With no sessions, the season is this calendar year (activeCampYear). */}
-        {!loading && <SeasonSettingsCard year={activeCampYear(sessions)} ruled={false} />}
+        {!loading && <SeasonSettingsCard year={activeCampYear(sessions)} />}
         {!loading && <ApplicationsStatus />}
 
         <section aria-labelledby="weeks-heading" className="mt-10 pt-5 border-t-2 border-ink">

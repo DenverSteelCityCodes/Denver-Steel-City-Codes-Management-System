@@ -20,7 +20,7 @@ export default function AdminUpdates() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Updates" lede="Posts appear on parent and volunteer dashboards and in their bells." />
+      <AdminPageHead title="Updates" tabs lede="Posts appear on parent and volunteer dashboards and in their bells." />
       <AdminTabs label="Updates" tabs={[
         { to: '/admin/updates', label: 'Post', current: tab === 'post' },
         { to: '/admin/updates?tab=emails', label: 'Sent emails', current: tab === 'emails' },

@@ -6,7 +6,7 @@ import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input, Select } from '../components/Field'
 import Segmented from '../components/Segmented'
-import { AdminPageHead, SetupTabs, pageClass } from '../components/AdminTabs'
+import { AdminPageHead, pageClass } from '../components/AdminTabs'
 import { supabase } from '../lib/supabase'
 import type { UserRole } from '../types/database'
 
@@ -119,8 +119,7 @@ export default function AdminUsers() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Setup" lede="Role changes apply the next time the person loads a page." />
-      <SetupTabs current="users" />
+      <AdminPageHead title="Users & roles" lede="Role changes apply the next time the person loads a page." />
 
       <div className="max-w-[880px]">
         <div className="mb-4 flex flex-wrap items-center gap-3">

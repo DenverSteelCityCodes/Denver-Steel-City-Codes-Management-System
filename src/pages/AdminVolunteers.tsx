@@ -16,7 +16,7 @@ import { Textarea, Select } from '../components/Field'
 import InlineConfirm from '../components/InlineConfirm'
 import Segmented from '../components/Segmented'
 import StatusWord from '../components/StatusWord'
-import { AdminPageHead, VolunteersTabs, pageClass } from '../components/AdminTabs'
+import AdminTabs, { AdminPageHead, pageClass } from '../components/AdminTabs'
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
 import type { ClassWithSections } from '../hooks/useAdminClasses'
 import type { VolunteerApplication, ExperienceLevel } from '../types/database'
@@ -422,6 +422,7 @@ export default function AdminVolunteers() {
     <div className={pageClass}>
       <AdminPageHead
         title="Volunteers"
+        tabs
         actions={tab === 'applications'
           ? <Button onClick={() => exportApplicationsCSV(applications)} disabled={appsLoading}>
               <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of applications</span>
@@ -430,7 +431,11 @@ export default function AdminVolunteers() {
               <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of the crew</span>
             </Button>}
       />
-      <VolunteersTabs current={tab} pending={appsLoading ? undefined : counts.pending} />
+      {/* Two views of this page (?tab=); Interviews and Duties are their own pages in the shell. */}
+      <AdminTabs label="Volunteers" tabs={[
+        { to: '/admin/volunteers?tab=applications', label: 'Applications', count: appsLoading ? null : counts.pending, countLabel: 'pending', current: tab === 'applications' },
+        { to: '/admin/volunteers?tab=crew', label: 'Crew', current: tab === 'crew' },
+      ]} />
 
       {/* ── Applications ── */}
       {tab === 'applications' && (

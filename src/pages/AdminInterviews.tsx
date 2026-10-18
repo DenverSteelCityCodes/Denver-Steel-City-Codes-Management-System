@@ -6,7 +6,7 @@ import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input, Select, Textarea } from '../components/Field'
-import { AdminPageHead, VolunteersTabs, pageClass, h2Class } from '../components/AdminTabs'
+import { AdminPageHead, pageClass, h2Class } from '../components/AdminTabs'
 import { supabase } from '../lib/supabase'
 import { campDateKey, campInputToISO, formatCampTime } from '../lib/denverTime'
 import { mondayOf, shortRange } from '../lib/weekRange'
@@ -422,18 +422,14 @@ export default function AdminInterviews() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Volunteers" />
-      <VolunteersTabs current="interviews" pending={appsLoading ? undefined : applications.filter(a => a.status === 'pending').length} />
+      <AdminPageHead
+        title="Interviews"
+        lede={loading || loadError ? 'All times Denver.' : `${booked.length} booked · ${open.length} open${oneDuration !== null ? ` · ${oneDuration} minutes each` : ''} · all times Denver`}
+      />
 
-      {!loading && !loadError && (
-        <p className="text-ink-muted">
-          {booked.length} booked · {open.length} open{oneDuration !== null ? ` · ${oneDuration} minutes each` : ''} · all times Denver
-        </p>
-      )}
+      {actionError && <p role="alert" className="mb-4 text-sm font-bold text-danger text-pretty">{actionError}</p>}
 
-      {actionError && <p role="alert" className="mt-4 text-sm font-bold text-danger text-pretty">{actionError}</p>}
-
-      <section aria-labelledby="need-heading" className="mt-6">
+      <section aria-labelledby="need-heading">
         <h2 id="need-heading" className={h2Class}>Needs a time{appsLoading ? '' : ` (${needsTime.length})`}</h2>
         <p className="mt-1 text-sm text-ink-muted text-pretty">Pending applicants with no interview booked yet.</p>
         {appsLoading || loading ? (

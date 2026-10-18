@@ -8,7 +8,7 @@ import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import { registrationPhase } from '../lib/registrationStatus'
 import { FORM_DEFINITIONS, resolveField, type FieldConfig, type FieldDef, type FormKey } from '../lib/formFields'
 import Segmented from '../components/Segmented'
-import { AdminPageHead, SetupTabs, pageClass } from '../components/AdminTabs'
+import { AdminPageHead, pageClass } from '../components/AdminTabs'
 
 // One question: Show switch, the label (renamed in place, saved on leaving the field), and whether
 // it must be answered. Locked questions can be renamed but not hidden or made optional.
@@ -157,8 +157,7 @@ export default function AdminFormEditor() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Setup" lede="Rename questions, hide optional ones and choose what's required. Changes apply to the live forms immediately." />
-      <SetupTabs current="forms" />
+      <AdminPageHead title="Forms" lede="Rename questions, hide optional ones and choose what's required. Changes apply to the live forms immediately." />
 
       <div className="max-w-[880px]">
         <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
