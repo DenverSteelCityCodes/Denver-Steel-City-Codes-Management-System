@@ -98,7 +98,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
               items: [
                 'Open [[volunteer-updates]] and tap **Post to your class\'s families** (or tap **Post to families** on [[volunteer-classes]]).',
                 'Write the message and tap **Post update**. Families see it on their Updates tab.',
-                'To email it too, tick **Also email (opens your mail app)** before posting. Your own mail app opens with the families\' addresses, and you send it from there.',
+                'To email it too, tick **Also email them** before posting. Your own mail app opens with the families\' addresses, and you send it from there.',
               ],
             },
           ],
@@ -202,7 +202,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
               items: [
                 'Sign in. Your application page shows your interview time.',
                 'Tap **Change time** (or pick a time if you haven\'t booked one).',
-                'Pick a new time and tap **Move my interview** (or **Book this time**). To keep the old one, tap **Keep my time**.',
+                'Pick a new time, then tap the button that names it, like **Move to Thu, Oct 22, 4:30 PM** (or **Book …** if you hadn\'t booked one). Your current time is marked **Your time**. To keep it, tap **Keep** and your current time.',
               ],
             },
             { kind: 'p', text: 'Times are Denver time. If no times are open, check back later: new times show up on the same page.' },
