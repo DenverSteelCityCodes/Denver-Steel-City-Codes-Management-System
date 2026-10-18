@@ -1,113 +1,158 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, GraduationCap, Sun, Moon, Heart, LogOut, ChevronDown } from 'lucide-react'
-import ParentBell from './ParentBell'
+import { Link, Outlet, useLocation } from 'react-router-dom'
+import { Contact, Moon, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
+import { useUpdates } from '../hooks/useUpdates'
+import type { ParentShell } from '../lib/parentShell'
 import wordmark from '../../assets/sccdenver.png'
 
-// Parent shell (handoff §5): reuse the admin shell *pattern* — real wordmark on the ink bar,
-// a notifications bell, and a parent-tinted avatar menu with sign-out — but parents don't need
-// the admin sidebar, so a light inline nav (Home · Browse classes) is enough.
+// Per user (suffixed with the user id) so parents sharing a device don't mark each other's posts read.
+const SEEN_KEY = 'scc-updates-seen'
+
+const TABS = [
+  { to: '/parent', label: 'Home', match: (p: string) => p === '/parent' },
+  { to: '/parent/classes', label: 'Classes', match: (p: string) => p.startsWith('/parent/classes') || p.startsWith('/parent/register') },
+  { to: '/parent/updates', label: 'Updates', match: (p: string) => p.startsWith('/parent/updates') },
+]
+
+// Parent shell (DESIGN.md › Navigation): an ink bar with the wordmark (a link Home) and the avatar,
+// and top tabs at every width. Phones get the tabs as a 48px strip under the bar; from 768px they sit
+// inline in the bar. Top tabs, never a bottom bar: iOS Safari's toolbar owns the bottom edge.
+// Settings live under the avatar: contact details, Dark mode, Sign out.
 export default function ParentLayout() {
-  const { pathname } = useLocation()
-  const { profile, signOut } = useAuth()
+  const { pathname, hash } = useLocation()
+  const { profile, user, signOut } = useAuth()
+  const { dark, toggle: toggleTheme } = useTheme()
+  const { updates: posts, loading: postsLoading, error: postsError } = useUpdates(20)
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const { dark, toggle: toggleTheme } = useTheme()
   const menuRef = useRef<HTMLDivElement>(null)
+  const avatarRef = useRef<HTMLButtonElement>(null)
 
-  // ── Avatar menu: close on outside click ────────────────────
+  // The menu closes on an outside tap, on Escape (focus back on the avatar) and on navigation.
   useEffect(() => {
+    if (!menuOpen) return
     function onDown(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setMenuOpen(false); avatarRef.current?.focus() }
+    }
     document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [])
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [menuOpen])
+
+  const [menuPath, setMenuPath] = useState(pathname)
+  if (menuPath !== pathname) { setMenuPath(pathname); setMenuOpen(false) }
+
+  // A new tab starts at the top, like a new page would (unless the link points into the page).
+  useEffect(() => {
+    if (!hash) window.scrollTo(0, 0)
+  }, [pathname, hash])
+
+  // Unread posts: anything newer than the last visit to the Updates tab (per user, per device).
+  const seenKey = `${SEEN_KEY}:${user?.id ?? ''}`
+  const readSeen = () => { try { return localStorage.getItem(seenKey) ?? '' } catch { return '' } }
+  const [seen, setSeen] = useState(() => ({ key: seenKey, at: readSeen() }))
+  if (seen.key !== seenKey) setSeen({ key: seenKey, at: readSeen() })
+  const onUpdates = pathname.startsWith('/parent/updates')
+  const latest = posts[0]?.created_at ?? ''
+  if (onUpdates && latest && seen.at < latest) setSeen({ key: seenKey, at: latest })
+  useEffect(() => {
+    if (!seen.at) return
+    try { localStorage.setItem(seen.key, seen.at) } catch { /* private mode */ }
+  }, [seen])
+  const unread = onUpdates ? 0 : posts.filter(p => p.created_at > seen.at).length
 
   const name = profile?.display_name ?? 'Parent'
-  const initials =
-    name
-      .split(/\s+/)
-      .map(p => p[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase() || 'P'
+  const initials = name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase() || 'P'
+  const shell: ParentShell = { posts, postsLoading, postsError }
 
-  const navCls = ({ isActive }: { isActive: boolean }) =>
-    `hidden sm:inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] font-sans text-sm font-semibold transition ${
-      isActive ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'
-    }`
+  const tabs = (inline: boolean) => TABS.map(t => {
+    const current = t.match(pathname)
+    return (
+      <Link
+        key={t.to}
+        to={t.to}
+        aria-current={current ? 'page' : undefined}
+        className={`${inline ? 'px-4' : 'flex-1 min-h-12 px-2'} flex items-center justify-center font-bold transition-colors ${
+          current ? 'text-on-shell shadow-[inset_0_-4px_0_var(--color-brand)]' : 'text-on-shell-muted hover:text-on-shell'}`}
+      >
+        {t.label}
+        {t.label === 'Updates' && unread > 0 && (
+          <>
+            <span aria-hidden="true" className="ml-1.5 w-2 h-2 rounded-full bg-on-shell" />
+            <span className="sr-only">, {unread} new</span>
+          </>
+        )}
+      </Link>
+    )
+  })
 
   return (
-    <div className="min-h-screen bg-bg">
-      {/* ── Top bar ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 h-16 bg-ink-950 flex items-center gap-3 px-4 sm:px-6">
-        <img src={wordmark} alt="Steel City Codes // Denver" className="h-8 w-auto" />
+    <div className="min-h-dvh bg-bg flex flex-col">
+      <header className="sticky top-0 z-40 bg-shell text-on-shell pt-[env(safe-area-inset-top)] dark:shadow-[inset_0_-1px_0_#2E2A25]">
+        <div ref={menuRef} className="relative max-w-[1280px] mx-auto h-14 md:h-16 flex items-center gap-4 px-4 md:px-8">
+          <Link to="/parent" className="inline-flex items-center min-h-11 shrink-0">
+            <img src={wordmark} alt="Steel City Codes // Denver, home" className="h-7 md:h-8 w-auto" />
+          </Link>
 
-        <nav className="ml-4 flex items-center gap-1">
-          <NavLink to="/parent" end className={navCls}>
-            <Home size={16} /> Home
-          </NavLink>
-          <NavLink to="/parent/classes" className={navCls}>
-            <GraduationCap size={16} /> Browse classes
-          </NavLink>
-        </nav>
+          <nav aria-label="Main" className="hidden md:flex self-stretch gap-1">{tabs(true)}</nav>
 
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
           <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="ui-iconbtn text-on-shell-muted hover:text-on-shell"
+            ref={avatarRef}
+            type="button"
+            onClick={() => setMenuOpen(o => !o)}
+            aria-expanded={menuOpen}
+            aria-controls="parent-menu"
+            aria-label={`${name}, account menu`}
+            className="ml-auto w-11 h-11 shrink-0 grid place-items-center rounded-full border-2 border-on-shell-muted hover:border-brand text-sm font-bold transition-colors"
           >
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
+            {initials}
           </button>
 
-          <ParentBell key={pathname} />
-
-          {/* Avatar menu — parent-tinted, holds sign-out */}
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(o => !o)}
-              className="flex items-center gap-2 min-h-11 pl-1.5 pr-2 rounded-full hover:bg-white/10 transition"
-              aria-label="Account menu"
-            >
-              <span className="w-8 h-8 rounded-full bg-role-parent-soft text-role-parent ring-2 ring-on-shell-muted flex items-center justify-center font-sans font-bold text-xs">
-                {initials}
-              </span>
-              <ChevronDown size={14} className="text-white/60 hidden sm:block" />
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-52 bg-surface-raised border border-border rounded-[12px] shadow-lg p-1.5 z-50">
-                <div className="px-3 py-2 border-b border-border mb-1">
-                  <div className="font-sans font-semibold text-sm text-ink truncate">{name}</div>
-                  <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold bg-role-parent-soft text-role-parent">
-                    <Heart size={10} /> Parent
-                  </span>
-                </div>
-                <button
-                  onClick={signOut}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] font-sans text-sm text-ink hover:bg-surface-sunken transition"
-                >
-                  <LogOut size={15} /> Sign out
-                </button>
+          {menuOpen && (
+            <div id="parent-menu" className="absolute right-4 md:right-8 top-full mt-1 w-[min(320px,calc(100vw-2rem))] bg-surface text-ink border-2 border-ink rounded py-2 z-50">
+              <div className="px-4 py-3 border-b border-border">
+                <p className="font-bold">{name}</p>
+                {user?.email && <p className="text-sm text-ink-muted break-all">{user.email}</p>}
               </div>
-            )}
-          </div>
+              <Link to="/parent/contact" className="flex items-center gap-3 min-h-11 px-4 hover:bg-bg">
+                <Contact size={20} strokeWidth={2.25} aria-hidden="true" /> Your contact details
+              </Link>
+              <label className="flex items-center gap-3 min-h-11 px-4 cursor-pointer hover:bg-bg">
+                <Moon size={20} strokeWidth={2.25} aria-hidden="true" />
+                <span className="flex-1">Dark mode</span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={dark}
+                  onChange={toggleTheme}
+                  className="appearance-none relative w-11 h-6 shrink-0 rounded-full bg-border-strong checked:bg-ink cursor-pointer transition-colors before:content-[''] before:absolute before:top-1 before:left-1 before:w-4 before:h-4 before:rounded-full before:bg-surface before:transition-transform checked:before:translate-x-5"
+                />
+              </label>
+              <button type="button" onClick={signOut} className="w-full flex items-center gap-3 min-h-11 px-4 text-left hover:bg-bg">
+                <LogOut size={20} strokeWidth={2.25} aria-hidden="true" /> Sign out
+              </button>
+            </div>
+          )}
         </div>
+
+        <nav aria-label="Main" className="md:hidden flex max-w-[1280px] mx-auto px-2">{tabs(false)}</nav>
       </header>
 
-      {/* ── Page content ──────────────────────────────────────── */}
-      <main className="min-w-0">
-        <Outlet />
+      <main className="flex-1 min-w-0">
+        <Outlet context={shell} />
       </main>
 
       {/* Every parent page shows how to reach the camp (spec 11). */}
-      <footer className="max-w-[1200px] mx-auto px-4 sm:px-6 pb-10 font-sans text-sm text-ink-muted">
-        Questions or changes? Email the camp at{' '}
-        <a href="mailto:denver@steelcitycodes.org" className="font-semibold text-ink hover:underline">denver@steelcitycodes.org</a>.
+      <footer className="w-full max-w-[1280px] mx-auto px-4 md:px-8 pt-6 pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-sm text-ink-muted">
+        Questions or changes?{' '}
+        <a href="mailto:denver@steelcitycodes.org" className="inline-flex items-center min-h-11 font-bold text-ink underline underline-offset-[3px]">
+          denver@steelcitycodes.org
+        </a>
       </footer>
     </div>
   )
