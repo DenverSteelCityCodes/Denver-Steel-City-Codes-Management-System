@@ -108,10 +108,11 @@ begin
   res := res || E'\nasking again keeps the reservation: ' || case when st = 'reserved' then 'ok' else 'BAD (' || st || ')' end;
 
   -- ── RLS: parents read their own campers' loans only; no client writes ──
-  select count(*) into n from laptop_loans;
+  -- (Counted over the fixture: the demo seed may give these families loans of their own.)
+  select count(*) into n from laptop_loans where registration_id in (r1, r2, r3, r4, r5, rc);
   res := res || E'\nparent 1 reads only their own loan: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
   perform set_config('request.jwt.claims', json_build_object('sub', p3, 'role', 'authenticated')::text, true);
-  select count(*) into n from laptop_loans;
+  select count(*) into n from laptop_loans where registration_id in (r1, r2, r3, r4, r5, rc);
   res := res || E'\nparent 3 reads their two: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
   begin
     update laptop_loans set status = 'reserved' where registration_id = r3;
