@@ -6,7 +6,7 @@ import HistoryStrip from '../components/HistoryStrip'
 import AdminChangeRequests from '../components/AdminChangeRequests'
 import Button from '../components/Button'
 import Segmented from '../components/Segmented'
-import StatusWord from '../components/StatusWord'
+import RegistrationStatusWord from '../components/RegistrationStatusWord'
 import { Input, Select } from '../components/Field'
 import { supabase } from '../lib/supabase'
 import { healthLines, telHref } from '../lib/campers'
@@ -533,7 +533,7 @@ export default function AdminStudents() {
                               ? <span className="text-sm font-bold text-ink-muted">Not registered</span>
                               : regs.map(r => (
                                 <span key={r.id} className="block">
-                                  {r.class_name}, {weekWord(r.section_week)}{r.status !== 'confirmed' && <> <StatusWord status={r.status} /></>}
+                                  {r.class_name}, {weekWord(r.section_week)}{r.status !== 'confirmed' && <> <RegistrationStatusWord status={r.status} /></>}
                                 </span>
                               ))}
                           </td>

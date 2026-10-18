@@ -6,7 +6,7 @@ import InlineConfirm from '../components/InlineConfirm'
 import HistoryStrip from '../components/HistoryStrip'
 import Button from '../components/Button'
 import Segmented from '../components/Segmented'
-import StatusWord from '../components/StatusWord'
+import RegistrationStatusWord from '../components/RegistrationStatusWord'
 import CapacityMeter from '../components/CapacityMeter'
 import { Input, Select } from '../components/Field'
 import {
@@ -422,7 +422,7 @@ function RosterTable({ rows }: { rows: RosterEntry[] }) {
             <tr key={i} className={`max-md:block max-md:py-3 ${i > 0 ? '[&>td]:border-t [&>td]:border-border max-md:border-t max-md:border-border max-md:[&>td]:border-0' : ''}`}>
               <td className={td}>
                 <span className="font-bold">{r.studentName}</span>
-                {r.status !== 'confirmed' && <> <StatusWord status={r.status} /></>}
+                {r.status !== 'confirmed' && <> <RegistrationStatusWord status={r.status} /></>}
               </td>
               <td className={`${td} tabular-nums`}><span className="md:hidden text-ink-muted">Age </span>{r.studentAge}</td>
               <td className={td}>
@@ -724,7 +724,7 @@ export default function AdminClasses() {
           {whenLine(s) && <span className="text-sm text-ink-muted">{whenLine(s)}</span>}
         </span>
         {s.cancelled_at ? (
-          <span><StatusWord status="cancelled" /></span>
+          <span><RegistrationStatusWord status="cancelled" /></span>
         ) : (
           <>
             <span className="text-sm font-bold">
@@ -836,7 +836,7 @@ export default function AdminClasses() {
             {cls.name} · {s.label} · {s.week ? `Week ${s.week}` : 'Both weeks'}
           </h2>
           <p className="mt-1 text-sm text-ink-muted text-pretty">
-            {meta}{s.cancelled_at && <> · <StatusWord status="cancelled" /></>}
+            {meta}{s.cancelled_at && <> · <RegistrationStatusWord status="cancelled" /></>}
           </p>
         </div>
         <button type="button" onClick={() => closePanel(s.id)} className={`${textLink} text-ink-muted font-semibold`}>

@@ -1,25 +1,30 @@
-import { Hourglass, Clock, Ban, CircleDashed } from 'lucide-react'
-import type { RegistrationStatus } from '../types/database'
+import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
 
-// A registration's status as a word (DESIGN.md › Status Words), only for the exceptions: a confirmed
-// seat is the normal case and says nothing. Waiting states (waitlisted, offered) are ink text in a
-// 2px ink frame; cancelled and pending are plain muted words. None of them is red: a cancelled seat
-// is not a safety problem.
-const WORDS: Partial<Record<RegistrationStatus, { label: string; icon: typeof Clock; wait: boolean }>> = {
-  waitlisted: { label: 'Waitlisted', icon: Hourglass, wait: true },
-  offered: { label: 'Offered', icon: Clock, wait: true },
-  cancelled: { label: 'Cancelled', icon: Ban, wait: false },
-  pending: { label: 'Pending', icon: CircleDashed, wait: false },
+// Status words (DESIGN.md › Status Words): 14px 700, 4px corners, each with a drawn icon.
+//   ok      — done: green on green wash
+//   danger  — safety or failure: red on red wash
+//   waiting — needs a person: ink text in a 2px inset ink frame
+//   plain   — muted text, no box
+export type StatusTone = 'ok' | 'danger' | 'waiting' | 'plain'
+
+const TONE: Record<StatusTone, string> = {
+  ok: 'bg-success-soft text-success px-2 py-1.5',
+  danger: 'bg-danger-soft text-danger px-2 py-1.5',
+  waiting: 'text-ink shadow-[inset_0_0_0_2px_var(--ink)] px-2 py-1.5',
+  plain: 'text-ink-muted',
 }
 
-export default function StatusWord({ status }: { status: RegistrationStatus }) {
-  const word = WORDS[status]
-  if (!word) return null
-  const Icon = word.icon
+export default function StatusWord({ tone, icon: Icon, children, className = '' }: {
+  tone: StatusTone
+  icon?: LucideIcon
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <span className={`inline-flex items-center gap-1.5 align-middle rounded text-sm font-bold leading-none whitespace-nowrap ${
-      word.wait ? 'px-2 py-1.5 text-ink shadow-[inset_0_0_0_2px_var(--ink)]' : 'py-1.5 text-ink-muted'}`}>
-      <Icon size={14} strokeWidth={2.5} aria-hidden="true" />{word.label}
+    <span className={`inline-flex items-center gap-1.5 rounded text-sm font-bold leading-[1.3] whitespace-nowrap ${TONE[tone]} ${className}`}>
+      {Icon && <Icon size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />}
+      {children}
     </span>
   )
 }
