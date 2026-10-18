@@ -1,10 +1,10 @@
 // Pure helpers behind the parent Home (issue #173): the one next decision for the sign band, the
 // week lines on each camper and the status sentence under the greeting. No data fetching here, so
 // tests run without the Supabase client.
-import { sessionDays } from './campDay'
+import { formatTimeRange, sessionDays } from './campDay'
 import { daysBetween } from './volunteerHome'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
-import type { Session, Student } from '../types/database'
+import type { ScheduleItem, Session, Student } from '../types/database'
 
 type Reg = RegistrationWithSection
 
@@ -191,4 +191,12 @@ export function timeLeft(expiresAt: string | null | undefined, now: number): { v
   if (ms <= 0) return null
   const minutes = Math.floor(ms / 60_000)
   return minutes >= 60 ? { value: Math.floor(minutes / 60), unit: 'h' } : { value: Math.max(1, minutes), unit: 'min' }
+}
+
+// "8:30 AM – 3:30 PM": the daily schedule from the first block's start to the last block's end.
+export function scheduleSpan(items: Pick<ScheduleItem, 'start_time' | 'end_time'>[]): string {
+  if (items.length === 0) return ''
+  const starts = items.map(i => i.start_time).sort()
+  const end = items.map(i => i.end_time ?? i.start_time).sort().at(-1)
+  return formatTimeRange(starts[0], end)
 }
