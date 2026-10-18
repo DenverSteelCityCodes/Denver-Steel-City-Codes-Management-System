@@ -78,7 +78,7 @@ function Entry({ incident: i, onNotify }: { incident: AdminIncident; onNotify: (
   return (
     <li className="py-4 border-t border-border first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-0 flex-1">
+        <div className="flex-1 min-w-[min(100%,16rem)]">
           <p className="text-lg font-bold leading-[1.3]">{kindLabel(i.kind)} · {levelLabel(i.level)}</p>
           <p className="text-sm text-ink-muted text-pretty">
             {i.students?.full_name ?? (i.student_id ? 'A camper' : 'No camper named')} · {where} · {formatCampSlot(i.occurred_at)}

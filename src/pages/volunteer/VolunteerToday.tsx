@@ -17,7 +17,7 @@ import type { AssignedSection } from '../../hooks/useAssignedClass'
 // where to show up; before a class is assigned, what the camp will assign from. An urgent notice
 // from camp (spec 34) comes first, until the end of its day.
 export default function VolunteerToday() {
-  return <><UrgentBanner className="mt-4 mb-2" /><TodayBody /></>
+  return <><UrgentBanner className="mt-4 mb-6" /><TodayBody /></>
 }
 
 function TodayBody() {

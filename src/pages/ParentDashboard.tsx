@@ -60,7 +60,7 @@ export default function ParentDashboard() {
   return (
     <>
       {/* An urgent notice from camp (spec 34) comes before everything else, until the end of its day. */}
-      <UrgentBanner className="mt-4 mb-2" />
+      <UrgentBanner className="mt-4 mb-6" />
       <RegistrationCountdown opensAt={season?.registration_opens_at}><NotifyMeSwitch /></RegistrationCountdown>
       <PageHead title={first ? `Hi, ${first}` : 'Hi'}>
         {!loading && (students.length ? buildSubhead(students, registrations) : null)}
