@@ -36,7 +36,8 @@ export default function VolunteerToday() {
           {dayLine(running)}
           {dutiesToday.length > 0 && <> You're also on <b>{dutiesToday.join(' and ')}</b>.</>}
         </PageHead>
-        <div className="sm:grid sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] sm:gap-10 sm:items-start">
+        {/* One column until 1024px: the roll call needs the full width for its band and toggles. */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-10 lg:items-start">
           <div className="space-y-8 mt-6">
             {running.map(sec => <RollCallPanel key={sec.id} section={sec} showClass={running.length > 1} />)}
           </div>

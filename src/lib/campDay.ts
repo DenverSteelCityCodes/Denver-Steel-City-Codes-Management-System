@@ -23,6 +23,34 @@ export function rollCallLabel(kind: RollCallKind): string {
   return ROLL_CALLS.find(r => r.key === kind)?.label ?? kind
 }
 
+// One camper in one roll call.
+export function markKey(studentId: string, rollCall: RollCallKind): string {
+  return `${studentId}:${rollCall}`
+}
+
+// Roll call saves each tap on its own while the volunteer keeps tapping, so a read of the marks can
+// start before a write lands and come back after it. A guard maps a mark's key to the number of the
+// first read sure to include this screen's write (Infinity while the write is still in flight).
+// Reads are numbered in the order they start. Returns the keys this read must leave as they are on
+// screen, and drops the guards it has caught up with.
+export function heldKeys(guards: Map<string, number>, readSeq: number): Set<string> {
+  const held = new Set<string>()
+  for (const [key, firstRead] of guards) {
+    if (readSeq >= firstRead) guards.delete(key)
+    else held.add(key)
+  }
+  return held
+}
+
+// A fresh read of the marks, keeping the held ones (this screen's newer taps) as they are on screen.
+export function mergeMarks<T extends { student_id: string; roll_call: RollCallKind }>(
+  onScreen: T[], fresh: T[], held: Set<string>,
+): T[] {
+  if (held.size === 0) return fresh
+  const isHeld = (m: T) => held.has(markKey(m.student_id, m.roll_call))
+  return [...fresh.filter(m => !isHeld(m)), ...onScreen.filter(isHeld)]
+}
+
 // Local calendar date as YYYY-MM-DD (never toISOString, which drifts to UTC after ~6 pm Denver).
 export function localDateISO(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

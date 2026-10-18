@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { GraduationCap, Megaphone, Phone, Printer } from 'lucide-react'
+import { GraduationCap, HeartPulse, Megaphone, Printer } from 'lucide-react'
 import { useVolunteerHome } from '../../hooks/useVolunteerHome'
-import MedicalFlag from '../../components/MedicalFlag'
-import { callTarget, healthNote, telHref } from '../../lib/campers'
+import HealthNotes from '../../components/HealthNotes'
+import CallLink from '../../components/CallLink'
+import { callLines, healthLines } from '../../lib/campers'
 import { formatDayLong, localDateISO } from '../../lib/campDay'
 import { countLabel, whereWhen } from '../../lib/volunteerHome'
-import { PageHead, Sect, btnCls, linkCls, listCls } from './parts'
+import { PageHead, Sect, btnCls, linkCls } from './parts'
 import type { AssignedSection } from '../../hooks/useAssignedClass'
 
 // Classes tab: one week at a time (volunteers think "week + my class"), the class details, and a
-// read-only roster from section_roster() with health notes behind a tap (spec 04).
+// read-only roster from section_roster(). Every health note and who to call is on screen, never
+// behind a tap (DESIGN.md › Roll Call; issue #172).
 export default function VolunteerClasses() {
   const { assigned: { assignedSections }, sessions } = useVolunteerHome()
   const [pick, setPick] = useState<string | null>(null)
@@ -56,7 +58,7 @@ export default function VolunteerClasses() {
         {groups.get(key)!.map(s => {
           const session = sessionOf(s)
           const live = !!session && session.start_date <= today && session.end_date >= today
-          const health = s.students.filter(st => healthNote(st)).length
+          const withNotes = s.students.filter(st => healthLines(st).length > 0)
           return (
             <div key={s.id} className="sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] sm:gap-10 sm:items-start">
               <div>
@@ -75,35 +77,40 @@ export default function VolunteerClasses() {
                       : session ? `${session.name} is over.` : 'This section is not scheduled for a camp week yet.'}
                 </p>
               </div>
-              <Sect title={countLabel(s.students.length, 'camper', 'campers')} id={`roster-${s.id}`}
-                action={health > 0 ? <span className="font-sans text-sm text-ink-muted">{countLabel(health, 'with a health note', 'with health notes')}</span> : undefined}
-                className="sm:mt-0">
+              <Sect title={countLabel(s.students.length, 'camper', 'campers')} id={`roster-${s.id}`} className="sm:mt-0">
+                {withNotes.length > 0 && (
+                  <p className="flex items-start gap-1.5 font-bold text-danger -mt-1 mb-3">
+                    <HeartPulse size={16} strokeWidth={2.5} className="shrink-0 mt-[3px]" aria-hidden="true" />
+                    <span>
+                      Health notes:{' '}
+                      {withNotes.map((st, i) => (
+                        <span key={st.id}>{i > 0 && ', '}<a href={`#camper-${st.id}`} className="underline underline-offset-[3px]">{st.full_name}</a></span>
+                      ))}
+                    </span>
+                  </p>
+                )}
                 {s.students.length === 0 ? (
-                  <p className="font-sans text-[15px] text-ink-muted">No campers enrolled in this section yet.</p>
+                  <p className="text-ink-muted">No campers enrolled in this section yet.</p>
                 ) : (
-                  <div className={listCls}>
+                  <ul className="border-y-2 border-ink">
                     {s.students.map(st => {
-                      const note = healthNote(st)
-                      const call = callTarget(st)
-                      const initials = st.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                      const health = healthLines(st)
+                      const calls = callLines(st)
                       return (
-                        <div key={st.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 border-b border-border last:border-0">
-                          <span aria-hidden="true" className="w-9 h-9 rounded-full bg-surface-sunken text-ink-muted grid place-items-center font-sans font-bold text-[13px] shrink-0">{initials}</span>
-                          <span className="flex-1 min-w-0 flex items-center gap-x-2 gap-y-1 flex-wrap">
-                            <span className="font-sans font-semibold text-base text-ink leading-tight">{st.full_name}</span>
-                            <span className="font-sans text-sm text-ink-muted">{st.age}</span>
-                            {note && <MedicalFlag info={note} footnote="Confidential — for camp staff only." />}
-                          </span>
-                          {call && (
-                            <a href={telHref(call.number)} aria-label={`Call ${st.full_name}'s ${call.who}, ${call.number}`}
-                              className="h-11 w-11 shrink-0 rounded-[10px] border border-border-strong bg-surface text-ink hover:bg-surface-sunken grid place-items-center transition">
-                              <Phone size={17} />
-                            </a>
+                        <li key={st.id} id={`camper-${st.id}`} className="py-3 border-t border-border first:border-t-0 scroll-mt-16">
+                          <p className="font-bold text-lg leading-[1.3] text-ink">{st.full_name}</p>
+                          {health.length > 0 && <HealthNotes lines={health} className="mt-1" />}
+                          {calls.length > 0 ? (
+                            <div className="flex flex-col items-start lg:flex-row lg:flex-wrap lg:gap-x-6">
+                              {calls.map(c => <CallLink key={c.number} call={c} />)}
+                            </div>
+                          ) : (
+                            <p className="mt-1 text-ink-muted">No phone number on file. Tell an admin.</p>
                           )}
-                        </div>
+                        </li>
                       )
                     })}
-                  </div>
+                  </ul>
                 )}
               </Sect>
             </div>

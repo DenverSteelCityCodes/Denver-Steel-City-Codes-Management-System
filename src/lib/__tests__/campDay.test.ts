@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { firstName, formatTime, formatTimeRange, localDateISO, rollCallForTime, sessionDays, sessionOnDay } from '../campDay'
+import { firstName, formatTime, formatTimeRange, heldKeys, localDateISO, markKey, mergeMarks, rollCallForTime, sessionDays, sessionOnDay } from '../campDay'
 import type { Session } from '../../types/database'
 
 describe('camp-day helpers', () => {
@@ -32,5 +32,36 @@ describe('camp-day helpers', () => {
   it('takes a first name', () => {
     expect(firstName('  Maya  Brooks ')).toBe('Maya')
     expect(firstName(null)).toBe('')
+  })
+})
+
+describe('roll-call writes and reads', () => {
+  const mark = (student_id: string, present: boolean) => ({ student_id, roll_call: 'arrival' as const, present })
+  const a = markKey('a', 'arrival')
+  const b = markKey('b', 'arrival')
+
+  it('keeps a tap that a read started before it landed would undo', () => {
+    // A was saved before read 3 started; B is still in flight.
+    const guards = new Map([[a, 3], [b, Infinity]])
+    const onScreen = [mark('a', false), mark('b', false)]
+    const read2 = [mark('a', true)]
+    const held = heldKeys(guards, 2)
+    expect([...held].sort()).toEqual([a, b])
+    expect(mergeMarks(onScreen, read2, held)).toEqual(onScreen)
+  })
+
+  it('takes the database value once a read includes the write', () => {
+    const guards = new Map([[a, 3], [b, Infinity]])
+    const held = heldKeys(guards, 3)
+    expect([...held]).toEqual([b])
+    expect(guards.has(a)).toBe(false)
+    // A co-volunteer's "absent" wins over this screen's optimistic "present" for A.
+    expect(mergeMarks([mark('a', true), mark('b', true)], [mark('a', false)], held))
+      .toEqual([mark('a', false), mark('b', true)])
+  })
+
+  it('passes a read through when nothing is held', () => {
+    const fresh = [mark('a', true)]
+    expect(mergeMarks([mark('a', false)], fresh, heldKeys(new Map(), 1))).toBe(fresh)
   })
 })

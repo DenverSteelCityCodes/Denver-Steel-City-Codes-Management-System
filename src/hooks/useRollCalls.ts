@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useRefetchOnFocus } from './useRefetchOnFocus'
+import { heldKeys, markKey, mergeMarks } from '../lib/campDay'
 import type { RollCallKind, RollCallMark } from '../types/database'
 
 // Roll-call marks for one section on one day. Writes are upserts keyed on
@@ -11,17 +12,29 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
   const [marks, setMarks] = useState<RollCallMark[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Reads are numbered as they start; a slower, older read never replaces a newer one.
+  const reads = useRef({ started: 0, applied: 0 })
+  // This screen's own writes by mark key: the first read sure to include each (see heldKeys).
+  const guards = useRef(new Map<string, number>())
 
   const fetchMarks = useCallback(() => {
     if (!sectionId) return Promise.resolve()
+    const seq = ++reads.current.started
     return supabase
       .from('roll_call_marks')
       .select('*')
       .eq('section_id', sectionId)
       .eq('day', day)
       .then(({ data, error }) => {
+        if (seq < reads.current.applied) return
+        reads.current.applied = seq
         if (error) setError(error.message)
-        else { setMarks((data ?? []) as RollCallMark[]); setError(null) }
+        else {
+          const held = heldKeys(guards.current, seq)
+          const fresh = (data ?? []) as RollCallMark[]
+          setMarks(prev => mergeMarks(prev, fresh, held))
+          setError(null)
+        }
         setLoading(false)
       })
   }, [sectionId, day])
@@ -49,18 +62,25 @@ export function useRollCalls(sectionId: string | undefined, day: string) {
       section_id: sectionId, student_id: r.student_id, day, roll_call: r.roll_call,
       present: r.present, marked_by: user.id, marked_at: new Date().toISOString(),
     }))
-    // Optimistic: apply locally first so a phone tap feels instant.
-    setMarks(prev => {
-      const next = prev.filter(m => !rows.some(r => r.student_id === m.student_id && r.roll_call === m.roll_call))
-      return [...next, ...payload.map(p => ({ ...p, id: crypto.randomUUID(), note: null }))]
-    })
+    const keys = new Set(rows.map(r => markKey(r.student_id, r.roll_call)))
+    const isMine = (m: RollCallMark) => keys.has(markKey(m.student_id, m.roll_call))
+    const before = marks.filter(isMine)
+    // Optimistic: apply locally first so a phone tap feels instant. Other rows stay live meanwhile,
+    // so hold these marks until a read that includes the write.
+    for (const k of keys) guards.current.set(k, Infinity)
+    setMarks(prev => [...prev.filter(m => !isMine(m)), ...payload.map(p => ({ ...p, id: crypto.randomUUID(), note: null }))])
     const { error } = await supabase
       .from('roll_call_marks')
       .upsert(payload, { onConflict: 'section_id,student_id,day,roll_call', ignoreDuplicates: keepExisting })
     if (error) {
+      // Show what the screen had before the tap, then read the truth.
+      for (const k of keys) guards.current.delete(k)
+      setMarks(prev => [...prev.filter(m => !isMine(m)), ...before])
       await fetchMarks()
       throw new Error(error.message)
     }
+    // Every read that starts from here on includes this write.
+    for (const k of keys) guards.current.set(k, reads.current.started + 1)
     await fetchMarks()
   }
 
