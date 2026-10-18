@@ -54,7 +54,8 @@ export default function MfaPage() {
         friendlyName: `Authenticator ${new Date().toISOString().slice(0, 16)}`,
       })
       if (!alive) return
-      if (enErr || !en) { setMode({ kind: 'error' }); return }
+      // A response without a TOTP secret (a proxy, an outage) is an error, not a crash.
+      if (enErr || !en?.totp?.qr_code) { setMode({ kind: 'error' }); return }
       setMode({ kind: 'enroll', factorId: en.id, qr: en.totp.qr_code, secret: en.totp.secret })
     })()
     return () => { alive = false }

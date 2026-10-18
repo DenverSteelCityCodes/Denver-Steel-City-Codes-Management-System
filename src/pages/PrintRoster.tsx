@@ -27,14 +27,18 @@ export default function PrintRoster() {
   const [msg, setMsg] = useState<string | null>(null)
   const timer = useRef<number | undefined>(undefined)
 
+  // Parent emails are for this section's crew and admins: the same people section_roster lets in.
+  // So they're read only once the roster has loaded; a section that isn't yours (or doesn't exist)
+  // never asks, rather than logging a 403.
+  const canEmail = !!section && section.id === sectionId
   useEffect(() => {
-    if (!sectionId) return
+    if (!sectionId || !canEmail) return
     let cancelled = false
     supabase
       .rpc('update_recipient_emails', { p_audience: 'section', p_section_id: sectionId })
       .then(({ data }) => { if (!cancelled && Array.isArray(data)) setEmails(data as string[]) })
     return () => { cancelled = true }
-  }, [sectionId])
+  }, [sectionId, canEmail])
 
   useEffect(() => () => window.clearTimeout(timer.current), [])
 
@@ -108,7 +112,7 @@ export default function PrintRoster() {
           <Printer size={18} strokeWidth={2.25} aria-hidden="true" /> Print
         </button>
         <span className="flex-1" />
-        <span role="group" aria-labelledby="emails-label" className="inline-flex flex-wrap items-center gap-x-4">
+        {canEmail && <span role="group" aria-labelledby="emails-label" className="inline-flex flex-wrap items-center gap-x-4">
           <span id="emails-label" className="text-sm font-bold text-ink-muted">Parent emails:</span>
           <button type="button" className={buttonClass('text')} onClick={() => void copyAll()}>
             <Copy size={16} strokeWidth={2.5} aria-hidden="true" /> Copy
@@ -116,7 +120,7 @@ export default function PrintRoster() {
           <a href={buildMailto(emails, '', '')} onClick={e => void emailAll(e)} className={buttonClass('text')}>
             <Mail size={16} strokeWidth={2.5} aria-hidden="true" /> Email
           </a>
-        </span>
+        </span>}
         {msg && <p role="status" className="basis-full text-sm font-bold text-ink-muted">{msg}</p>}
       </nav>
 
