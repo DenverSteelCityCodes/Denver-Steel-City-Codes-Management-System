@@ -72,29 +72,15 @@ export function useAdminUsers() {
       if (adminCount <= 1) throw new Error('Cannot demote the last admin account')
     }
 
-    // A volunteer moving to another role leaves every crew spot, so no section keeps a lead or
-    // support who can't use the volunteer area. Cleared first: if the role update then fails,
-    // nobody ends up on a crew without the volunteer role.
-    const leavesCrew = current.role === 'volunteer' && newRole !== 'volunteer'
-    if (leavesCrew) {
-      const [{ error: leadErr }, { error: supErr }] = await Promise.all([
-        supabase.from('sections').update({ lead_id: null }).eq('lead_id', userId),
-        supabase.from('section_supports').delete().eq('volunteer_id', userId),
-      ])
-      const crewErr = leadErr ?? supErr
-      if (crewErr) throw new Error(`Couldn't clear their section assignments, so the role wasn't changed: ${crewErr.message}`)
-    }
-
+    // A volunteer moving to another role leaves every crew spot and upcoming duty slot. The
+    // database does that in the same transaction as the role change (trigger
+    // profiles_release_volunteer, #143), so a failed change leaves the crew untouched.
     const { error } = await supabase
       .from('profiles')
       .update({ role: newRole })
       .eq('id', userId)
 
-    if (error) {
-      throw new Error(leavesCrew
-        ? `Their section assignments were cleared, but the role change failed: ${error.message}`
-        : error.message)
-    }
+    if (error) throw new Error(error.message)
     await fetchUsers()
   }
 
