@@ -1,167 +1,68 @@
-import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CalendarX, CircleAlert, ClipboardCheck, Clock, FilePen, GraduationCap, Plus } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Plus, GraduationCap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useStudents } from '../hooks/useStudents'
-import { useRegistrations } from '../hooks/useRegistrations'
-import { useSessions, activeCampYear, campSessions } from '../hooks/useSessions'
-import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
-import { useFormConfig } from '../hooks/useFormConfig'
-import { useMyChanges } from '../hooks/useMyChanges'
-import { useMyRollCalls } from '../hooks/useMyRollCalls'
+import { useRegistrations, type RegistrationWithSection } from '../hooks/useRegistrations'
 import StudentCard from '../components/StudentCard'
 import ThisWeekCard from '../components/ThisWeekCard'
 import RollCallStatus from '../components/RollCallStatus'
+import { useMyRollCalls } from '../hooks/useMyRollCalls'
+import { useUpdates } from '../hooks/useUpdates'
+import UpdatesFeed from '../components/UpdatesFeed'
+import { Megaphone } from 'lucide-react'
+import { localDateISO } from '../lib/campDay'
+import { useSessions, activeCampYear } from '../hooks/useSessions'
+import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import RegistrationCountdown from '../components/RegistrationCountdown'
-import ParentSign from '../components/ParentSign'
-import ParentConfirm from '../components/ParentConfirm'
-import { firstName, formatTimeRange, localDateISO, timeAgo } from '../lib/campDay'
-import { CAMP_TIME_ZONE } from '../lib/denverTime'
-import { relativeDay } from '../lib/volunteerHome'
-import { buttonClass } from '../lib/ui'
 import { listDrafts, clearDraft } from '../lib/registrationDraft'
-import { useParentShell, parentAudience } from '../lib/parentShell'
-import {
-  camperFirstName, decisions as listDecisions, nextCampDay, offerDeadline, openWeeksLabel, roomFigure, statusSentence, timeLeft, weekLines, weekOf,
-  type CampDay, type Decision,
-} from '../lib/homeDecision'
+import { useMyChanges } from '../hooks/useMyChanges'
+import ContactDetailsCard from '../components/ContactDetailsCard'
+import type { Student } from '../types/database'
 
-type Draft = ReturnType<typeof listDrafts>[number]
+// Status-aware subhead (§3 / DS §10): a warm, one-line rollup of real enrollment status.
+function buildSubhead(students: Student[], registrations: RegistrationWithSection[]): string {
+  if (students.length === 0) return 'Add your first camper to get started.'
 
-// A clock for the offer figure and the opening, ticking once a minute; tick() moves it at once.
-function useNow(ms: number) {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), ms)
-    return () => window.clearInterval(id)
-  }, [ms])
-  return [now, () => setNow(Date.now())] as const
-}
-
-const campTime = (iso: string) => new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
-const classOf = (d: { reg: { sections: { classes: { name: string } | null } | null } }) => d.reg.sections?.classes?.name ?? 'a class'
-const h2 = 'text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]'
-
-// The waitlist offer on the sign: the hours left at monumental scale, claim (ink) or decline with an
-// inline confirm. The only gold on the view is the sign itself.
-function OfferSign({ d, now, onClaim, onDecline }: {
-  d: Extract<Decision, { kind: 'offer' }>; now: number
-  onClaim: () => Promise<void>; onDecline: () => Promise<void>
-}) {
-  const [confirming, setConfirming] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-  const name = camperFirstName(d.student)
-  const week = d.reg.sections?.week ? `, Week ${d.reg.sections.week}` : ''
-  const left = timeLeft(d.reg.offer_expires_at, now)
-  const until = d.reg.offer_expires_at ? offerDeadline(d.reg.offer_expires_at) : null
-  const room = d.reg.sections?.room
-
-  async function run(fn: () => Promise<void>) {
-    setBusy(true); setErr(null)
-    try { await fn(); setConfirming(false) } catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong') }
-    finally { setBusy(false) }
+  const active = registrations.filter(r => r.status !== 'cancelled')
+  if (active.length === 0) {
+    return students.length === 1
+      ? "Your camper isn't signed up yet — browse classes to find a fit."
+      : 'No sign-ups yet — browse classes to find a fit for your campers.'
   }
 
-  return (
-    <ParentSign
-      id="offer"
-      ctx={`${name} · ${classOf(d)}${week}`}
-      fig={left ? { value: String(left.value), unit: left.unit } : null}
-      msg={until ? `Claim the spot by ${until}` : 'Claim the spot'}
-      sub={`A seat opened${room ? ` in ${room}` : ''} and it's held for ${name}.${until && d.reg.offer_expires_at ? ` After ${campTime(d.reg.offer_expires_at)} it goes to the next family on the waitlist.` : ''}`}
-    >
-      {confirming ? (
-        <ParentConfirm
-          tone="sign"
-          message={`Decline the spot in ${classOf(d)}? It goes to the next family on the waitlist.`}
-          confirmLabel="Decline the spot" cancelLabel="Keep the offer" busy={busy}
-          onConfirm={() => { void run(onDecline) }}
-          onCancel={() => { setConfirming(false); setErr(null) }}
-        />
-      ) : (
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-          <button type="button" disabled={busy} onClick={() => { void run(onClaim) }} className={buttonClass('ink', 'dark:bg-ink-950 dark:text-brand')}>
-            {busy ? 'Claiming…' : `Claim ${name}'s spot`}
-          </button>
-          <button type="button" disabled={busy} onClick={() => setConfirming(true)} className={buttonClass('text', 'text-brand-on')}>Decline</button>
-        </div>
-      )}
-      {err && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 font-bold">
-          <CircleAlert size={16} strokeWidth={2.5} className="shrink-0 mt-1" aria-hidden="true" /> {err}
-        </p>
-      )}
-    </ParentSign>
-  )
-}
-
-// The next camp day as a sign: the room is the figure, then where and when.
-function CampDaySign({ day, today }: { day: CampDay; today: string }) {
-  const when = relativeDay(today, day.day)
-  const When = when.charAt(0).toUpperCase() + when.slice(1)
-  const first = day.seats[0]
-  const sec = first.reg.sections
-  const start = [...day.seats].map(s => s.reg.sections?.start_time).filter((t): t is string => !!t).sort()[0]
-  const startLabel = start ? formatTimeRange(start, null) : ''
-  const ctx = day.dayNumber
-    ? `${day.session.name}, day ${day.dayNumber} of camp`
-    : `${day.session.name} starts ${when}`
-  if (day.seats.length === 1) {
-    const name = camperFirstName(first.student)
-    return (
-      <ParentSign
-        id="next-day"
-        ctx={`${name} · ${sec?.classes?.name ?? 'Class'} · ${ctx}`}
-        fig={sec?.room ? { value: roomFigure(sec.room) } : startLabel ? { value: startLabel.replace(/ (AM|PM)$/, ''), unit: startLabel.slice(-2) } : null}
-        msg={sec?.room
-          ? `${sec.room}, ${When.toLowerCase() === 'today' ? 'today' : When}${startLabel ? ` ${startLabel}` : ''}`
-          : `${When}${startLabel ? ` at ${startLabel}` : ''}`}
-        sub={sec?.room ? (sec.start_time ? `${sec.days} ${formatTimeRange(sec.start_time, sec.end_time)}` : undefined) : 'The room will be posted here.'}
-      />
-    )
+  // A waitlist offer needs the parent first (spec 10).
+  const offered = active.find(r => r.status === 'offered')
+  if (offered) {
+    const who = students.find(s => s.id === offered.student_id)
+    return `A spot opened up for ${who ? (who.first_name ?? who.full_name.split(' ')[0]) : 'your camper'}! Claim it below before the offer ends.`
   }
-  return (
-    <ParentSign
-      id="next-day"
-      ctx={ctx}
-      fig={startLabel ? { value: startLabel.replace(/ (AM|PM)$/, ''), unit: startLabel.slice(-2) } : null}
-      msg={day.seats.map(s => `${camperFirstName(s.student)}: ${s.reg.sections?.room ?? 'room to come'}`).join(' · ')}
-      sub={`${When}. Each camper's class and lead are under This week.`}
-    />
-  )
+  // Registrations auto-confirm (spec 14); a legacy 'pending' row counts as confirmed.
+  const waitlisted = active.filter(r => r.status === 'waitlisted').length
+  const confirmedIds = new Set(active.filter(r => r.status === 'confirmed' || r.status === 'pending').map(r => r.student_id))
+  const unenrolled = students.filter(s => !active.some(r => r.student_id === s.id))
+  const firstName = (s: Student) => s.first_name ?? s.full_name.split(' ')[0]
+
+  const subject = students.length === 1 ? 'Your camper is' : 'Your campers are'
+  const waitNote = waitlisted > 0 ? ` ${waitlisted === 1 ? 'One spot is' : `${waitlisted} spots are`} on a waitlist.` : ''
+  const unenrolledNote = unenrolled.length === 0 ? ''
+    : unenrolled.length === 1 ? ` ${firstName(unenrolled[0])} isn't signed up yet.`
+    : ` ${unenrolled.length} campers aren't signed up yet.`
+
+  if (confirmedIds.size === 0) return `${subject} on a waitlist — we'll reach out if a spot opens.${unenrolledNote}`
+  // Only say "all set" for the campers who actually have a confirmed spot.
+  const lead = confirmedIds.size === students.length
+    ? `${subject} all set for camp.`
+    : confirmedIds.size === 1
+      ? `${firstName(students.find(s => confirmedIds.has(s.id))!)} is all set for camp.`
+      : `${confirmedIds.size} of your campers are all set for camp.`
+  return `${lead}${waitNote}${unenrolledNote}`
 }
 
-// One line of "Needs you" (DESIGN.md › Decision List): pictogram, the decision, why, one action.
-function DecisionRow({ icon: Icon, what, why, children }: { icon: LucideIcon; what: string; why: string; children: ReactNode }) {
-  return (
-    <li className="grid grid-cols-[40px_1fr] gap-x-4 gap-y-2 py-4 border-t-2 border-ink first:border-t-0">
-      <span aria-hidden="true" className="w-10 h-10 grid place-items-center rounded bg-shell text-white dark:bg-[#2E2A25]">
-        <Icon size={22} strokeWidth={2.25} />
-      </span>
-      <div className="min-w-0">
-        <p className="text-lg font-bold leading-[1.3] text-pretty">{what}</p>
-        <p className="mt-1 text-ink-muted text-pretty">{why}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">{children}</div>
-      </div>
-    </li>
-  )
-}
-
-// Parent Home (issue #173): the one next decision in the gold sign, then the campers with one line
-// per week, then this week (only near a session, schedule folded). Posts live on the Updates tab
-// and contact details under the avatar.
 export default function ParentDashboard() {
   const { profile, user } = useAuth()
-  const { students, loading: studentsLoading, updateStudent } = useStudents()
-  const { registrations, loading: regsLoading, refetch: refetchRegistrations } = useRegistrations()
-  const { sessions, loading: sessionsLoading } = useSessions()
-  const campYear = activeCampYear(sessions)
-  const { settings: season, loading: seasonLoading, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
-  // The admin's registration switch (Forms / Setup): closed means closed, whatever the opening time.
-  const { enabled: formEnabled, loading: formLoading } = useFormConfig('student_registration')
+  const { students, loading, updateStudent } = useStudents()
+  const { registrations, refetch: refetchRegistrations } = useRegistrations()
   const myChanges = useMyChanges(students.length > 0)
   const changes = {
     ...myChanges,
@@ -170,209 +71,122 @@ export default function ParentDashboard() {
     declineOffer: async (id: string) => { await myChanges.declineOffer(id); await refetchRegistrations() },
     swapSpot: async (id: string, sectionId: string) => { await myChanges.swapSpot(id, sectionId); await refetchRegistrations() },
   }
-  const today = localDateISO()
-  const todayMarks = useMyRollCalls(today)
-  const { posts } = useParentShell()
-  const [now, tick] = useNow(60_000)
+  const todayMarks = useMyRollCalls(localDateISO())
+  const { updates: posts, loading: postsLoading } = useUpdates(20)
+  const { sessions } = useSessions()
+  const { settings: season } = useSeasonSettings(sessions.length > 0 ? activeCampYear(sessions) : null)
+
+  const subhead = buildSubhead(students, registrations)
   // Unfinished registrations saved on this device (spec 16).
-  const [drafts, setDrafts] = useState<Draft[]>(() => (user ? listDrafts(user.id) : []))
-  const discard = (key: string) => { clearDraft(key); setDrafts(d => d.filter(x => x.key !== key)) }
-
-  const weeks = campSessions(sessions)
-  // This camp year's registrations; last summer's don't describe this summer's weeks.
-  const regs = sessions.length > 0 ? registrations.filter(r => r.year == null || r.year === campYear) : registrations
-  // Season settings never load without sessions (the hook waits for a camp year).
-  const ready = !studentsLoading && !regsLoading && !sessionsLoading && !formLoading && (sessions.length === 0 || !seasonLoading)
-  const opened = registrationIsOpen(season, now)
-  const open = opened && formEnabled
-  // The countdown only while the switch is on: a closed form has no opening to promise.
-  const counting = ready && formEnabled && !!season?.registration_opens_at && !opened
-  const list = ready ? listDecisions(students, regs, weeks, { campYear, registrationOpen: open, today }) : []
-  const campDay = ready ? nextCampDay(students, regs, sessions, weeks, today) : null
-  const weeksLabel = openWeeksLabel(weeks, today)
-  const reconfirmIds = new Set(list.filter(d => d.kind === 'reconfirm').map(d => d.student.id))
-  if (ready && sessions.length > 0 && open) {
-    students.filter(s => s.registration_year !== campYear).forEach(s => reconfirmIds.add(s.id))
-  }
-
-  // The sign: an offer or a cancelled class first; before opening, the countdown; then the rest of
-  // the decisions, an unfinished registration, or (when nothing needs the parent) the next camp day.
-  const urgent = list[0] && (list[0].kind === 'offer' || list[0].kind === 'cancelled')
-  const signDecision = urgent || !counting ? list[0] ?? null : null
-  const restDecisions = signDecision ? list.slice(1) : list
-  const signDraft = !signDecision && !counting ? drafts[0] ?? null : null
-  const restDrafts = signDraft ? drafts.slice(1) : drafts
-
-  function signFor(d: Decision): ReactNode {
-    const name = camperFirstName(d.student)
-    const pick = `/parent/classes?camper=${d.student.id}`
-    switch (d.kind) {
-      case 'offer':
-        return <OfferSign d={d} now={now} onClaim={() => changes.acceptOffer(d.reg.id)} onDecline={() => changes.declineOffer(d.reg.id)} />
-      case 'cancelled':
-        return <ParentSign to={pick} ctx={`${name} · ${classOf(d)}, Week ${weekOf(d.reg, weeks) ?? ''}`.replace(/, Week $/, '')}
-          msg={`Pick another class for ${name}`} sub="The camp cancelled this class. You're first in line for that week's waitlists." />
-      case 'reconfirm':
-        return <ParentSign to={pick}
-          ctx={d.registered ? `${name} · yearly check for ${campYear}` : `${name} · not registered for ${weeksLabel}`}
-          msg={d.registered ? `Confirm ${name}'s details for ${campYear}` : `Confirm ${name}'s details, then pick a class`}
-          sub="Camp needs current details every summer." />
-      case 'register':
-        return <ParentSign to={pick} ctx={`${name} · not registered for ${weeksLabel}`} msg={`Pick a class for ${name}`}
-          sub="Seats go first come, first served." />
-    }
-  }
-
-  function rowFor(d: Decision): ReactNode {
-    const name = camperFirstName(d.student)
-    const pick = `/parent/classes?camper=${d.student.id}`
-    switch (d.kind) {
-      case 'offer':
-        return (
-          <DecisionRow key={d.reg.id} icon={Clock} what={`A spot opened for ${name} in ${classOf(d)}`}
-            why={`Claim it${d.reg.offer_expires_at ? ` by ${offerDeadline(d.reg.offer_expires_at)}` : ''}, or it goes to the next family.`}>
-            <a href={`#camper-${d.student.id}`} className={buttonClass('ink')}>Claim or decline</a>
-          </DecisionRow>
-        )
-      case 'cancelled':
-        return (
-          <DecisionRow key={d.reg.id} icon={CalendarX} what={`${name}'s ${classOf(d)} class was cancelled`} why="You're first in line for that week's waitlists.">
-            <Link to={pick} className={buttonClass('ink')}>Pick another class</Link>
-          </DecisionRow>
-        )
-      case 'reconfirm':
-        return (
-          <DecisionRow key={`re-${d.student.id}`} icon={ClipboardCheck} what={`Confirm ${name}'s details for ${campYear}`}
-            why={d.registered ? 'Camp needs current details every summer.' : 'Camp needs current details every summer. Then pick a class.'}>
-            <Link to={pick} className={buttonClass('ink')}>Review {name}'s details</Link>
-          </DecisionRow>
-        )
-      case 'register':
-        return (
-          <DecisionRow key={`reg-${d.student.id}`} icon={GraduationCap} what={`${name} isn't registered yet`} why={`Pick a class for ${weeksLabel}.`}>
-            <Link to={pick} className={buttonClass('ink')}>Pick a class</Link>
-          </DecisionRow>
-        )
-    }
-  }
-
-  const draftLink = (dr: Draft) => `/parent/register?${dr.studentId ? `studentId=${dr.studentId}&` : ''}step=${dr.draft.step}`
-  const draftName = (dr: Draft) => dr.draft.name || 'your new camper'
-
-  let sign: ReactNode = null
-  let firstCamperSign = false
-  if (!ready) sign = <div className="h-40 rounded bg-surface-sunken animate-pulse" aria-hidden="true" />
-  else if (signDecision) sign = signFor(signDecision)
-  else if (counting) sign = <RegistrationCountdown sign opensAt={season?.registration_opens_at} onOpen={() => { tick(); void refetchSeason() }} />
-  else if (signDraft) {
-    sign = (
-      <ParentSign id="draft" ctx={`Step ${signDraft.draft.step} of 5 · saved on this device`} msg={`Finish registering ${draftName(signDraft)}`}>
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Link to={draftLink(signDraft)} className={buttonClass('ink', 'dark:bg-ink-950 dark:text-brand')}>Continue</Link>
-          <button type="button" onClick={() => discard(signDraft.key)} className={buttonClass('text', 'text-brand-on')}>Discard</button>
-        </div>
-      </ParentSign>
-    )
-  } else if (students.length === 0) {
-    firstCamperSign = true
-    sign = <ParentSign to="/parent/register" ctx="No campers yet" msg="Register your first camper"
-      sub="Five short steps. Have their grade, school, allergies and an emergency contact ready." />
-  } else if (campDay) sign = <CampDaySign day={campDay} today={today} />
-
-  const needsYou = restDecisions.length + restDrafts.length > 0 && (
-    <section aria-labelledby="needs-h">
-      <h2 id="needs-h" className={h2}>Needs you</h2>
-      <ul className="mt-3 border-y-2 border-ink">
-        {restDecisions.map(rowFor)}
-        {restDrafts.map(dr => (
-          <DecisionRow key={dr.key} icon={FilePen} what={`Finish registering ${draftName(dr)}`} why={`Step ${dr.draft.step} of 5, saved on this device.`}>
-            <Link to={draftLink(dr)} className={buttonClass('ink')}>Continue</Link>
-            <button type="button" onClick={() => discard(dr.key)} className={buttonClass('text', 'text-ink-muted font-semibold')}>Discard</button>
-          </DecisionRow>
-        ))}
-      </ul>
-    </section>
-  )
-
-  const offerInSign = signDecision?.kind === 'offer' ? signDecision.reg.id : null
-  const latest = posts[0]
+  const [drafts, setDrafts] = useState(() => (user ? listDrafts(user.id) : []))
 
   return (
-    <div className="max-w-[1280px] mx-auto px-4 md:px-8 pt-5 md:pt-8 pb-12">
-      <h1 className="font-display text-[1.75rem] leading-[1.15] font-bold tracking-[-0.01em] text-balance">
-        Hi, {firstName(profile?.display_name) || 'there'}
-      </h1>
-      {ready && students.length > 0 && <p className="mt-2 text-ink-muted text-pretty">{statusSentence(students, regs, weeks, today)}</p>}
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-10">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
+          <div>
+            <h1 className="font-display text-[32px] leading-[38px] sm:text-[40px] sm:leading-[46px] font-bold tracking-[-0.01em] text-ink mb-1">
+              Welcome, {profile?.display_name?.split(' ')[0]}
+            </h1>
+            <p className="font-slab text-ink-muted text-lg">{subhead}</p>
+          </div>
 
-      {sign && <div className="mt-5">{sign}</div>}
-
-      <div className="mt-8 grid gap-10 lg:grid-cols-[7fr_5fr] lg:gap-x-8 lg:items-start">
-        <div className="grid gap-10 min-w-0">
-          {needsYou}
-          {(!ready || students.length > 0) && (
-            <section aria-labelledby="campers-h">
-              <h2 id="campers-h" className={h2}>Your campers</h2>
-              {!ready ? (
-                <div className="mt-3 grid gap-3" aria-busy="true">
-                  {[1, 2].map(i => <div key={i} className="h-28 rounded bg-surface-sunken animate-pulse" />)}
-                </div>
-              ) : (
-                <ul className="mt-1 border-b-2 border-ink">
-                  {students.map(student => (
-                    <StudentCard
-                      key={student.id}
-                      student={student}
-                      lines={weekLines(student.id, regs, weeks, today)}
-                      needsReconfirm={reconfirmIds.has(student.id)}
-                      offerInSign={offerInSign}
-                      onSave={async (id, patch) => { await updateStudent(id, patch) }}
-                      changes={changes}
-                    />
-                  ))}
-                </ul>
-              )}
-              {/* New campers go through the full registration (waiver + emergency contact). Gold only when
-                  nothing else on the view is. */}
-              <Link to="/parent/register" className={buttonClass(sign ? 'secondary' : 'primary', 'mt-6')}>
-                <Plus size={20} strokeWidth={2.25} aria-hidden="true" /> Register a new camper
-              </Link>
-            </section>
-          )}
-          {/* No campers yet and the sign is busy with something else (the countdown): still a way in. */}
-          {ready && students.length === 0 && !firstCamperSign && (
-            <Link to="/parent/register" className={buttonClass(sign ? 'secondary' : 'primary', 'justify-self-start')}>
-              <Plus size={20} strokeWidth={2.25} aria-hidden="true" /> Register a new camper
+          {/* Action hierarchy (§3): one secondary (Browse classes) + one gold primary (Add camper).
+              The per-camper Register action now lives on each StudentCard footer. */}
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to="/parent/classes"
+              className="h-11 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition shadow-sm"
+            >
+              <GraduationCap size={16} />
+              Browse classes
             </Link>
-          )}
+            {/* New campers go through the full registration (waiver + emergency contact), not a quick add. */}
+            <Link
+              to="/parent/register"
+              className="ui-btn ui-btn--primary"
+            >
+              <Plus size={16} />
+              Add camper
+            </Link>
+          </div>
         </div>
 
-        {ready && (
-          <div className="grid gap-10 min-w-0">
-            <ThisWeekCard
-              students={students}
-              registrations={regs}
-              sessions={sessions}
-              weeks={weeks}
-              today={today}
-              renderStatus={(st, reg) => <RollCallStatus marks={todayMarks.filter(m => m.student_id === st.id && m.section_id === reg.section_id)} />}
-            />
-            {latest && (
-              <section aria-labelledby="latest-h">
-                <h2 id="latest-h" className={h2}>Latest from camp</h2>
-                <Link to="/parent/updates" className="mt-3 grid gap-1 py-3 border-y-2 border-ink no-underline">
-                  <span className="text-sm text-ink-muted">
-                    <b className="text-ink">{latest.author_name}</b><span className="px-[0.35em]">·</span>{parentAudience(latest)}<span className="px-[0.35em]">·</span>{timeAgo(latest.created_at)}
-                  </span>
-                  <span className="line-clamp-2">{latest.body}</span>
-                  <span className="inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px]">
-                    All updates <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                  </span>
-                </Link>
-              </section>
-            )}
+        <RegistrationCountdown opensAt={season?.registration_opens_at} />
+
+        {drafts.map(({ key, studentId, draft }) => (
+          <div key={key} className="bg-surface border border-brand/40 rounded-xl shadow-sm px-4 sm:px-5 py-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="flex-1 font-sans text-sm text-ink">
+              <span className="font-semibold">Finish registering {draft.name || 'your new camper'}.</span>{' '}
+              <span className="text-ink-muted">You're on step {draft.step} of 5. Your answers are saved on this device.</span>
+            </p>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => { clearDraft(key); setDrafts(d => d.filter(x => x.key !== key)) }}
+                className="h-10 px-3 rounded-[10px] font-sans font-semibold text-sm text-ink-muted hover:text-ink hover:bg-surface-sunken transition"
+              >
+                Discard
+              </button>
+              <Link
+                to={`/parent/register?${studentId ? `studentId=${studentId}&` : ''}step=${draft.step}`}
+                className="ui-btn ui-btn--primary"
+              >
+                Continue
+              </Link>
+            </div>
+          </div>
+        ))}
+
+        <ThisWeekCard
+          students={students}
+          registrations={registrations}
+          renderStatus={(st, reg) => <RollCallStatus marks={todayMarks.filter(m => m.student_id === st.id && m.section_id === reg.section_id)} />}
+        />
+
+        <section id="updates" aria-labelledby="updates-heading" className="bg-surface border border-border rounded-xl shadow-sm px-4 sm:px-5 py-4 mb-8">
+          <h2 id="updates-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5 mb-1">
+            <Megaphone size={13} /> Updates from camp
+          </h2>
+          <UpdatesFeed updates={posts} loading={postsLoading} compact emptyText="Nothing from camp yet — updates from the admin and your camper's lead will show here." />
+        </section>
+
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-surface border border-border rounded-xl shadow-sm p-5 animate-pulse h-24" />
+            ))}
+          </div>
+        ) : students.length === 0 ? (
+          <div className="bg-surface border border-border rounded-xl shadow-sm p-12 text-center">
+            <div className="w-14 h-14 rounded-full bg-brand-soft flex items-center justify-center mx-auto mb-4">
+              <GraduationCap size={24} className="text-warning" />
+            </div>
+            <h2 className="font-sans font-semibold text-xl text-ink mb-2">No campers yet</h2>
+            <p className="font-slab text-ink-muted mb-6">Add your first camper to get started.</p>
+            <Link
+              to="/parent/register"
+              className="ui-btn ui-btn--primary"
+            >
+              <Plus size={16} /> Register a camper
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {students.map(student => (
+              <StudentCard
+                key={student.id}
+                student={student}
+                registrations={registrations.filter(r => r.student_id === student.id)}
+                onSave={async (id, patch) => { await updateStudent(id, patch) }}
+                changes={changes}
+              />
+            ))}
           </div>
         )}
-      </div>
+
+        <div className="mt-8">
+          <ContactDetailsCard />
+        </div>
     </div>
   )
 }
