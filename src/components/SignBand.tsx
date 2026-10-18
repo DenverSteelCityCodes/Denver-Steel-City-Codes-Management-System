@@ -26,7 +26,7 @@ export default function SignBand({ context, figure, unit, message, sub, to, labe
   const body = (
     <>
       <span className="col-span-full text-sm font-bold text-brand-on-muted">{context}</span>
-      <span className="font-extrabold text-[3.5rem] md:text-[4.5rem] leading-[0.92] tracking-[-0.03em] [font-variant-numeric:tabular-nums_lining-nums]">
+      <span className="font-extrabold text-[3.5rem] leading-[0.92] tracking-[-0.03em] [font-variant-numeric:tabular-nums_lining-nums]">
         <span key={value} className={value !== first ? 'ui-flap' : undefined}>{value}</span>
         {unit && <small className="ml-[0.15em] text-[0.42em] tracking-normal font-extrabold">{unit}</small>}
       </span>

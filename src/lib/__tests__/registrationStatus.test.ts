@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { registrationPhase, seatTotals } from '../registrationStatus'
+import { registrationPhase, registrationSign, seatTotals } from '../registrationStatus'
 import { formatCampDay, formatCampTime, isSameCampDay } from '../denverTime'
 
 describe('registration phase', () => {
@@ -41,5 +41,40 @@ describe('short Denver dates', () => {
   it('compares calendar days in Denver, not UTC', () => {
     expect(isSameCampDay('2027-02-07T02:00:00Z', '2027-02-06T15:00:00Z')).toBe(true)
     expect(isSameCampDay('2027-02-07T08:00:00Z', '2027-02-06T15:00:00Z')).toBe(false)
+  })
+})
+
+describe('the registration sign on Today', () => {
+  const now = Date.parse('2027-02-06T15:00:00Z')   // Sat Feb 6, 8:00 AM in Denver
+  const seats = { sections: 9, withSeats: 7, seatsLeft: 38, taken: 84, waitlisted: 9 }
+  const base = { formEnabled: true, opensAt: null, openingUnknown: false, seats, updated: 'Updated 7:14', now }
+
+  it('counts down to a scheduled opening and links to the setting', () => {
+    const sign = registrationSign({ ...base, opensAt: '2027-02-07T02:00:00Z' })   // 7:00 PM that day
+    expect(sign).toMatchObject({
+      context: 'Registration opens today · Denver time', figure: '7:00', unit: 'PM',
+      message: 'Opens in 11 hours', sub: '38 seats ready in 9 sections · Updated 7:14', to: '/admin/sessions',
+    })
+  })
+
+  it('shows seats left once open, with taken, waitlisted and when it was updated', () => {
+    const sign = registrationSign({ ...base, opensAt: '2027-02-06T02:00:00Z' })   // Fri 7:00 PM
+    expect(sign).toMatchObject({
+      context: 'Registration open since Fri, Feb 5, 7:00 PM', figure: 38,
+      message: 'seats left in 7 sections', sub: '84 seats taken · 9 waitlisted · Updated 7:14', to: '/admin/classes',
+    })
+    expect(registrationSign(base).context).toBe('Registration is open')
+  })
+
+  it('says closed, and warns when a set opening time will not happen', () => {
+    expect(registrationSign({ ...base, formEnabled: false })).toMatchObject({
+      figure: 'Closed', message: "Families can't register or join a waitlist", sub: '84 seats taken · 9 waitlisted · Updated 7:14',
+    })
+    expect(registrationSign({ ...base, formEnabled: false, opensAt: '2027-02-07T02:00:00Z' }).sub)
+      .toBe("It won't open on Sat, Feb 6 at 7:00 PM until you turn it on in Sessions · Updated 7:14")
+  })
+
+  it('never shows zeros it could not load', () => {
+    expect(registrationSign({ ...base, seats: null })).toMatchObject({ figure: 'Open', message: "Seat counts didn't load" })
   })
 })

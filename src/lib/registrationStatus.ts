@@ -1,3 +1,5 @@
+import { formatCampDay, formatCampTime, isSameCampDay, timeUntil } from './denverTime'
+
 // Whether parents can register right now, read the way the database decides it
 // (register_student trigger, migration_one_class_per_week.sql): the camper registration form must
 // be on, and a scheduled opening time, if any, must have passed.
@@ -37,4 +39,81 @@ export function seatTotals(sections: SectionSeats[]): SeatTotals {
     waitlisted += s.waitlist_count
   }
   return { sections: live.length, withSeats, seatsLeft, taken, waitlisted }
+}
+
+const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+const join = (parts: (string | null | false | undefined)[]) => parts.filter(Boolean).join(' · ')
+
+export interface SignContent {
+  context: string
+  figure: string | number
+  unit?: string
+  message: string
+  sub: string
+  to: string
+  label: string
+}
+
+// What the sign says in each phase (issue #171): "Opens Sat, Feb 6 · 7:00 PM (Denver)" /
+// "Open since 7:00 PM · seats left · taken · waitlisted · Updated h:mm" / "Closed".
+export function registrationSign({ formEnabled, opensAt, openingUnknown, seats, updated, now }: {
+  formEnabled: boolean
+  opensAt: string | null
+  openingUnknown: boolean     // the season settings didn't load
+  seats: SeatTotals | null    // null when the seat counts didn't load
+  updated: string | null
+  now: number
+}): SignContent {
+  const phase = registrationPhase(formEnabled, opensAt, now)
+  const at = (iso: string) => (isSameCampDay(iso, now) ? formatCampTime(iso) : `${formatCampDay(iso)}, ${formatCampTime(iso)}`)
+
+  if (phase === 'closed') {
+    const wontOpen = opensAt && new Date(opensAt).getTime() > now
+      ? `It won't open on ${formatCampDay(opensAt)} at ${formatCampTime(opensAt)} until you turn it on in Sessions`
+      : null
+    const sub = join([wontOpen ?? (seats && `${count(seats.taken, 'seat')} taken · ${seats.waitlisted} waitlisted`), updated])
+    return {
+      context: 'Registration',
+      figure: 'Closed',
+      message: "Families can't register or join a waitlist",
+      sub,
+      to: '/admin/sessions',
+      label: `Registration is closed. Families can't register or join a waitlist. ${sub}. Open it in Sessions.`,
+    }
+  }
+
+  if (phase === 'scheduled' && opensAt) {
+    const [clock, period] = formatCampTime(opensAt).split(' ')
+    const day = isSameCampDay(opensAt, now) ? 'today' : formatCampDay(opensAt)
+    const until = timeUntil(new Date(opensAt).getTime() - now)
+    const sub = join([seats && `${count(seats.seatsLeft, 'seat')} ready in ${count(seats.sections, 'section')}`, updated])
+    return {
+      context: `Registration opens ${day} · Denver time`,
+      figure: clock,
+      unit: period,
+      message: `Opens in ${until}`,
+      sub,
+      to: '/admin/sessions',
+      label: `Registration opens ${day} at ${clock} ${period}, Denver time, in ${until}. ${sub}. Change the opening time in Sessions.`,
+    }
+  }
+
+  const context = openingUnknown
+    ? "Registration form is on · the opening time didn't load"
+    : opensAt ? `Registration open since ${at(opensAt)}` : 'Registration is open'
+  if (!seats) {
+    const sub = join(["They'll load again when you come back to this tab", updated])
+    return {
+      context, figure: 'Open', message: "Seat counts didn't load", sub, to: '/admin/classes',
+      label: `${context}. Seat counts didn't load. ${sub}. Open Classes.`,
+    }
+  }
+  const message = seats.seatsLeft === 0
+    ? 'seats left. Every section is full'
+    : `${seats.seatsLeft === 1 ? 'seat' : 'seats'} left in ${count(seats.withSeats, 'section')}`
+  const sub = join([`${count(seats.taken, 'seat')} taken`, `${seats.waitlisted} waitlisted`, updated])
+  return {
+    context, figure: seats.seatsLeft, message, sub, to: '/admin/classes',
+    label: `${context}. ${seats.seatsLeft} ${message}. ${sub}. Open Classes to see every section.`,
+  }
 }
