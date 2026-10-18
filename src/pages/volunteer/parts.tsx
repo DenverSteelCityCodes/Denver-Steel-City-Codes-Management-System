@@ -57,7 +57,7 @@ export function Segmented({ label, options, value, onChange, className = '' }: {
   return (
     <div role="group" aria-label={label} className={`${segCls} ${className}`}>
       {options.map(o => (
-        <button key={o.value} type="button" aria-pressed={o.value === value} onClick={() => onChange(o.value)} className={segItemCls(o.value === value)}>
+        <button key={o.value} type="button" aria-pressed={o.value === value} onClick={() => onChange(o.value)} className={`${segItemCls(o.value === value)} min-h-11 px-3`}>
           {o.label}
         </button>
       ))}

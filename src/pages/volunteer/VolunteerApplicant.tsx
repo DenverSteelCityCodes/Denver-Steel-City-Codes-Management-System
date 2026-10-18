@@ -118,7 +118,7 @@ function InterviewStep({ interview, book }: { interview: Interview; book: (slotI
           message={longDay(interview.slot_datetime)}
           sub={`${interview.duration_minutes} minutes, online. The time is Denver time.`}>
           {!choosing && (
-            <button type="button" onClick={() => { setMoved(null); setChoosing(true) }}
+            <button type="button" onClick={() => { setMoved(null); setChoosing(true); requestAnimationFrame(() => document.getElementById('pick-h')?.focus()) }}
               className="ui-btn ui-btn--secondary mt-3 border-brand-on text-brand-on hover:bg-brand-on/10">
               Change time
             </button>
@@ -136,7 +136,7 @@ function InterviewStep({ interview, book }: { interview: Interview; book: (slotI
 
       {showPicker && options && (
         <section aria-labelledby="pick-h" className="mt-6">
-          <h2 id="pick-h" className={h2Cls}>{interview ? 'Pick a new time' : 'Pick a time'}</h2>
+          <h2 id="pick-h" tabIndex={-1} className={`${h2Cls} scroll-mt-6 focus:outline-none`}>{interview ? 'Pick a new time' : 'Pick a time'}</h2>
           <div className="mt-2">
             <InterviewSlotPicker slots={options} value={value} onChange={id => { setErr(null); setPicked(id) }} labelledBy="pick-h" currentId={current || undefined} />
           </div>
