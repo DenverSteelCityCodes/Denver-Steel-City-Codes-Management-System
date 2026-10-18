@@ -33,13 +33,15 @@ Deno.serve(async () => {
     if (!email) {
       // A template this deploy doesn't know yet (a migration ran before the function was
       // redeployed): put the row back as it was, without using up an attempt, and look again in
-      // 15 minutes. Failing it would lose the email for good, since the job that queued it has
-      // already marked it sent and its dedupe key blocks a second copy.
-      console.warn(`send-notifications: unknown template "${row.template}" (notification ${row.id}); left queued until this function is redeployed with it`)
+      // 6 hours. Failing it would lose the email for good, since the job that queued it has
+      // already marked it sent and its dedupe key blocks a second copy. The long hold matters:
+      // the claim takes the oldest due rows first, so held rows due every few minutes would fill
+      // every batch and starve registration confirmations and waitlist offers.
+      console.warn(`send-notifications: unknown template "${row.template}" (notification ${row.id}); held 6 hours, until this function is redeployed with it`)
       await db.from('notifications').update({
         status: 'queued',
         attempts: Math.max(0, (row.attempts ?? 1) - 1),
-        next_attempt_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+        next_attempt_at: new Date(Date.now() + 6 * 3600_000).toISOString(),
         last_error: `Waiting for a sender that knows the template ${row.template}`,
       }).eq('id', row.id)
       waiting++
