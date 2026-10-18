@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronRight, ChevronLeft, CheckCircle2, Lock } from 'lucide-react'
+import { Check, ChevronRight, ChevronLeft, CheckCircle2, CircleAlert, FilePenLine, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
@@ -15,6 +15,9 @@ import { GRADES, gradeToAge } from '../lib/campers'
 import { draftKey, readDraft, writeDraft, clearDraft } from '../lib/registrationDraft'
 import { fetchSectionFill } from '../lib/sectionFill'
 import { CAMP_SITE } from '../lib/campSite'
+import { formatTimeRange } from '../lib/campDay'
+import { buttonClass } from '../lib/ui'
+import { Segmented, hintCls, labelCls } from './parent/parts'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -120,11 +123,20 @@ const FIELD_IDS: Record<string, string> = {
   candy_consent: 'reg-candy', waiver_signature: 'reg-waiver-sig', guardian_signature: 'reg-guardian-sig',
 }
 
+// Yes / No as a segmented control: the selected answer fills ink, never gold.
+function YesNo({ id, value, invalid, onChange }: { id: string; value: boolean | null; invalid: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <Segmented labelledBy={id} invalid={invalid} describedBy={invalid ? 'reg-error' : undefined}
+      items={[true, false].map(v => ({ key: String(v), label: v ? 'Yes' : 'No', on: value === v, onClick: () => onChange(v) }))} />
+  )
+}
+
+// The step rail inside the sticky step sign (DESIGN.md › Sign Band: wizards add 6px segments).
 function StepBar({ current, total }: { current: number; total: number }) {
   return (
-    <div aria-hidden="true" className="grid gap-1 mt-2.5" style={{ gridTemplateColumns: `repeat(${total}, 1fr)` }}>
+    <div aria-hidden="true" className="grid gap-1 mt-3" style={{ gridTemplateColumns: `repeat(${total}, 1fr)` }}>
       {Array.from({ length: total }, (_, i) => (
-        <div key={i} className={`h-[5px] rounded-full ${i < current ? 'bg-brand-hover' : 'bg-border-strong'}`} />
+        <div key={i} className={`h-1.5 rounded-[1px] ${i < current ? 'bg-brand-on' : 'bg-brand-on/20'}`} />
       ))}
     </div>
   )
@@ -389,8 +401,8 @@ export default function ParentRegistrationPage() {
       if (q('candy_consent').required && !form.candy_consent) return fail('candy_consent', `Please confirm: ${q('candy_consent').label}`)
     }
     if (stepNow === 4) {
-      if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet — no camp sessions are scheduled"
-      if (!registrationIsOpen(season)) return `Registration opens ${formatCampDateTime(season!.registration_opens_at!)} (Denver time). You can finish the other steps now and submit once it opens.`
+      if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet. No camp sessions are scheduled."
+      if (!registrationIsOpen(season)) return `Registration opens ${formatCampDateTime(season!.registration_opens_at!)} (Denver time). Your answers are saved on this device, so you can pick the class here once it opens.`
       if (!form.session1 && !form.session2) return 'Please select at least one session'
       if (form.session1 && !isSelectable(1, form.class_week1)) return `Please select a class for ${campSessions[0]?.name ?? 'Session 1'}`
       if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
@@ -563,7 +575,6 @@ export default function ParentRegistrationPage() {
   }
 
   const inputCls = 'ui-input'
-  const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
   // Question label from the Form editor, with the required marker / optional hint.
   const labelText = (key: string, hint?: string) => (
     <>
@@ -575,31 +586,42 @@ export default function ParentRegistrationPage() {
   const invalidProps = (id: string) => error && errorField === id
     ? { 'aria-invalid': true as const, 'aria-describedby': 'reg-error' }
     : {}
-  const yesNoCls = (val: boolean | null, target: boolean) =>
-    `flex-1 h-12 rounded-[10px] font-sans font-semibold text-base border transition ${
-      val === target ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
-    }`
+  // A blocking error: red 14px 700 with an icon. It sits under the field it is about (DESIGN.md ›
+  // Inputs); one that isn't about a field on screen sits above the buttons.
+  const errorLine = (className: string) => (
+    <p id="reg-error" ref={errorRef} role="alert" tabIndex={-1} className={`flex items-start gap-1.5 text-sm font-bold text-danger text-pretty focus:outline-none ${className}`}>
+      <CircleAlert size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0 mt-0.5" />
+      <span>{error}{authExpired && <> <Link to="/login" className="underline underline-offset-[3px]">Sign in again</Link></>}</span>
+    </p>
+  )
+  const shown = new Set<string>()
+  const fieldError = (id: string) => {
+    shown.add(id)
+    return error && errorField === id ? errorLine('mt-1.5') : null
+  }
+  // Choice rows (DESIGN.md › Inputs): real checkboxes and radios in 52px white rows; the selected
+  // row gets a 2px ink frame.
+  const choiceCls = 'flex items-center gap-3 min-h-[52px] px-4 py-2 rounded border-2 border-border bg-surface cursor-pointer has-[input:checked]:border-ink has-[input:disabled]:opacity-55 has-[input:disabled]:cursor-not-allowed'
+  const checkRowCls = 'flex items-start gap-3 min-h-11 py-2.5 cursor-pointer'
+  const pageTitle = 'font-display font-bold text-[1.75rem] leading-[1.15] tracking-[-0.01em] text-balance'
 
   if (submitted) {
     return (
-      <div className="max-w-sm mx-auto py-10 text-center">
-          <h1 className="font-display font-bold text-[28px] text-ink mb-2 flex items-center justify-center gap-2">
-            <CheckCircle2 size={26} aria-hidden="true" className="text-success shrink-0" />
+      <div className="max-w-[640px] mx-auto">
+          <h1 className={`${pageTitle} flex items-center gap-2`}>
+            <CheckCircle2 size={28} strokeWidth={2.25} aria-hidden="true" className="text-success shrink-0" />
             {waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}
           </h1>
-          <p className="font-sans text-ink text-base mb-6">
+          <p className="mt-2 text-pretty">
             {waitlistedCount === 0 ? (
-              <><strong className="text-ink">{studentFullName}</strong>'s spot is confirmed. You'll find the class, time and room on Home.</>
+              <><strong className="font-bold">{studentFullName}</strong>'s spot is confirmed. You'll find the class, time and room on Home.</>
             ) : waitlistedCount === registeredCount ? (
-              <>That class is full, so <strong className="text-ink">{studentFullName}</strong> is on the waitlist. We'll reach out if a spot opens.</>
+              <>That class is full, so <strong className="font-bold">{studentFullName}</strong> is on the waitlist. We'll reach out if a spot opens.</>
             ) : (
-              <><strong className="text-ink">{studentFullName}</strong>'s spot is confirmed in one class. The other was full, so they're on its waitlist. We'll reach out if a spot opens.</>
+              <><strong className="font-bold">{studentFullName}</strong>'s spot is confirmed in one class. The other was full, so they're on its waitlist. We'll reach out if a spot opens.</>
             )}
           </p>
-          <button
-            onClick={() => navigate('/parent')}
-            className="ui-btn ui-btn--primary"
-          >
+          <button type="button" onClick={() => navigate('/parent')} className={buttonClass('primary', 'mt-5')}>
             Back to Home
           </button>
       </div>
@@ -608,17 +630,14 @@ export default function ParentRegistrationPage() {
 
   if (!formConfigLoading && !registrationOpen) {
     return (
-      <div className="max-w-lg mx-auto px-4 pt-16 pb-16 text-center">
-        <h1 className="font-display font-bold text-2xl text-ink mb-2">{formConfigError ? "Couldn't load the form" : 'Registration is closed'}</h1>
-        <p className="font-sans text-sm text-ink-muted mb-6">
+      <div className="max-w-[640px] mx-auto">
+        <h1 className={pageTitle}>{formConfigError ? "Couldn't load the form" : 'Registration is closed'}</h1>
+        <p className="mt-2 text-ink-muted text-pretty">
           {formConfigError
             ? 'Check your connection and reload the page to try again.'
             : "Camper registration isn't open right now. Your existing campers and registrations are unchanged."}
         </p>
-        <button
-          onClick={() => navigate('/parent')}
-          className="ui-btn ui-btn--primary"
-        >
+        <button type="button" onClick={() => navigate('/parent')} className={buttonClass('primary', 'mt-5')}>
           Back to Home
         </button>
       </div>
@@ -627,53 +646,50 @@ export default function ParentRegistrationPage() {
 
   if (camperPrefillPending || camperPrefillError) {
     return (
-      <div className="max-w-lg mx-auto px-4 pt-16 pb-16 text-center">
+      <div className="max-w-[640px] mx-auto">
         {camperPrefillError ? (
           <>
-            <h1 className="font-display font-bold text-2xl text-ink mb-2">Couldn't load your camper</h1>
-            <p role="alert" className="font-sans text-sm text-ink-muted mb-6">{camperPrefillError}</p>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => setPrefillAttempt(a => a + 1)}
-                className="ui-btn ui-btn--primary"
-              >
+            <h1 className={pageTitle}>Couldn't load your camper</h1>
+            <p role="alert" className="mt-2 text-ink-muted text-pretty">{camperPrefillError}</p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button type="button" onClick={() => setPrefillAttempt(a => a + 1)} className={buttonClass('primary')}>
                 Retry
               </button>
-              <button
-                onClick={() => navigate('/parent')}
-                className="h-11 px-6 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition"
-              >
+              <button type="button" onClick={() => navigate('/parent')} className={buttonClass('secondary')}>
                 Back to Home
               </button>
             </div>
           </>
         ) : (
-          <div className="flex justify-center"><div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" /></div>
+          <div role="status" className="flex justify-center py-10">
+            <span aria-hidden="true" className="w-8 h-8 rounded-full border-2 border-ink border-t-transparent animate-spin" />
+            <span className="sr-only">Loading your camper's details</span>
+          </div>
         )}
       </div>
     )
   }
 
   return (
-    <div className="max-w-lg mx-auto">
-        {/* Sticky step header: where you are, and a way out that keeps the draft. */}
-        <div className="sticky top-0 sm:top-16 z-20 -mx-4 sm:mx-0 -mt-5 sm:-mt-8 mb-6 px-4 sm:px-0 pt-2.5 pb-3 bg-bg border-b border-border">
+    <div className="max-w-[640px] mx-auto">
+        {/* Sticky step sign: where you are, and a way out that keeps the draft. Gold, full bleed and
+            square on a phone (DESIGN.md › Sign Band, sticky); under the bar from 768px. */}
+        <div className="sticky top-0 md:top-16 z-20 -mx-4 md:mx-0 -mt-5 md:-mt-8 mb-6 px-4 md:px-5 pt-1 pb-3 bg-brand text-brand-on md:rounded-b">
           <div className="flex items-center justify-between gap-3">
-            <p aria-hidden="true" className="font-sans text-sm font-semibold text-ink-muted">Step {step} of 5</p>
-            <button type="button" onClick={saveAndExit}
-              className="min-h-11 font-sans text-[15px] font-semibold text-ink underline decoration-brand-hover decoration-2 underline-offset-4">
+            <p aria-hidden="true" className="text-sm font-bold text-brand-on-muted">Step {step} of 5</p>
+            <button type="button" onClick={saveAndExit} className={buttonClass('text', 'text-brand-on focus-visible:outline-brand-on!')}>
               Save and exit
             </button>
           </div>
-          <h1 ref={stepRef} tabIndex={-1} className="font-display font-bold text-[22px] leading-tight text-ink focus:outline-none">
+          <h1 ref={stepRef} tabIndex={-1} className={`${pageTitle} focus:outline-none`}>
             <span className="sr-only">Step {step} of 5: </span>{STEP_NAMES[step - 1]}
           </h1>
           <StepBar current={step} total={5} />
         </div>
         {restoredDraft && (
-          <p role="status" className="mb-6 font-sans text-sm text-ink-muted bg-surface-sunken border border-border rounded-[10px] px-3 py-2">
+          <p role="status" className="-mt-2 mb-6 text-sm text-ink-muted">
             Picked up where you left off (saved {new Date(restoredDraft.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}).{' '}
-            <button type="button" onClick={startOver} className="font-semibold text-ink hover:underline">Start over</button>
+            <button type="button" onClick={startOver} className={buttonClass('text', 'text-ink')}>Start over</button>
           </p>
         )}
 
@@ -683,22 +699,25 @@ export default function ParentRegistrationPage() {
           {step === 1 && (
             <div className="space-y-5">
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-5">
                 <div>
                   <label htmlFor="reg-first" className={labelCls}>{labelText('first_name')}</label>
-                  <input id="reg-first" {...invalidProps('reg-first')} type="text" className={inputCls} placeholder="Jane"
+                  <input id="reg-first" {...invalidProps('reg-first')} type="text" autoComplete="off" className={inputCls}
                     value={form.first_name} onChange={e => set('first_name', e.target.value)} />
+                  {fieldError('reg-first')}
                 </div>
                 <div>
                   <label htmlFor="reg-last" className={labelCls}>{labelText('last_name')}</label>
-                  <input id="reg-last" {...invalidProps('reg-last')} type="text" className={inputCls} placeholder="Smith"
+                  <input id="reg-last" {...invalidProps('reg-last')} type="text" autoComplete="off" className={inputCls}
                     value={form.last_name} onChange={e => set('last_name', e.target.value)} />
+                  {fieldError('reg-last')}
                 </div>
               </div>
               {q('email').show && <div>
                 <label htmlFor="reg-email" className={labelCls}>{labelText('email')}</label>
-                <input id="reg-email" {...invalidProps('reg-email')} type="email" className={inputCls} placeholder="student@example.com"
+                <input id="reg-email" {...invalidProps('reg-email')} type="email" autoComplete="off" className={inputCls}
                   value={form.email} onChange={e => set('email', e.target.value)} />
+                {fieldError('reg-email')}
               </div>}
               {q('school_district').show && <div>
                 <label htmlFor="reg-district" className={labelCls}>{labelText('school_district')}</label>
@@ -706,19 +725,22 @@ export default function ParentRegistrationPage() {
                   <option value="">Select…</option>
                   {SCHOOL_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
+                {fieldError('reg-district')}
               </div>}
               {q('school_name').show && <div>
                 <label htmlFor="reg-school" className={labelCls}>{labelText('school_name')}</label>
                 <input id="reg-school" {...invalidProps('reg-school')} type="text" className={inputCls} placeholder="e.g. Campus Middle School"
                   value={form.school_name} onChange={e => set('school_name', e.target.value)} />
+                {fieldError('reg-school')}
               </div>}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-5">
                 <div>
                   <label htmlFor="reg-grade" className={labelCls}>{labelText('grade')}</label>
                   <select id="reg-grade" {...invalidProps('reg-grade')} className={inputCls} value={form.grade} onChange={e => set('grade', e.target.value)}>
                     <option value="">Select…</option>
                     {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
+                  {fieldError('reg-grade')}
                 </div>
                 {q('shirt_size').show && <div>
                   <label htmlFor="reg-shirt" className={labelCls}>{labelText('shirt_size')}</label>
@@ -726,32 +748,35 @@ export default function ParentRegistrationPage() {
                     <option value="">Select…</option>
                     {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
+                  {fieldError('reg-shirt')}
                 </div>}
               </div>
               {q('laptop_available').show && <div>
                 <p id="reg-laptop" className={labelCls}>{labelText('laptop_available')}</p>
-                <div role="group" aria-labelledby="reg-laptop" {...invalidProps('reg-laptop')} className="flex gap-3">
-                  <button type="button" aria-pressed={form.laptop_available === true} onClick={() => set('laptop_available', true)} className={yesNoCls(form.laptop_available, true)}>Yes</button>
-                  <button type="button" aria-pressed={form.laptop_available === false} onClick={() => set('laptop_available', false)} className={yesNoCls(form.laptop_available, false)}>No</button>
-                </div>
+                <YesNo id="reg-laptop" value={form.laptop_available} invalid={!!error && errorField === 'reg-laptop'} onChange={v => set('laptop_available', v)} />
+                {fieldError('reg-laptop')}
               </div>}
               {q('ethnic_background').show && <div>
                 <p id="reg-ethnic" className={labelCls}>{labelText('ethnic_background', 'for grant reporting only')}</p>
                 <div role="group" aria-labelledby="reg-ethnic" {...invalidProps('reg-ethnic')} className="flex flex-wrap gap-2">
-                  {ETHNIC_OPTIONS.map(opt => (
-                    <button key={opt} type="button" aria-pressed={form.ethnic_background.includes(opt)} onClick={() => toggleEthnic(opt)}
-                      className={`min-h-11 px-3.5 py-2 rounded-full text-[15px] font-semibold border transition ${
-                        form.ethnic_background.includes(opt) ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
-                      }`}>
-                      {opt}
-                    </button>
-                  ))}
+                  {ETHNIC_OPTIONS.map(opt => {
+                    const on = form.ethnic_background.includes(opt)
+                    return (
+                      <button key={opt} type="button" aria-pressed={on} onClick={() => toggleEthnic(opt)}
+                        className={`min-h-11 px-3.5 py-2 rounded border-2 font-bold text-left inline-flex items-center gap-1.5 transition-colors ${
+                          on ? 'bg-ink border-ink text-bg' : 'bg-surface border-border-strong text-ink hover:border-ink'}`}>
+                        {on && <Check size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />}{opt}
+                      </button>
+                    )
+                  })}
                 </div>
+                {fieldError('reg-ethnic')}
               </div>}
               {q('gender').show && <div>
                 <label htmlFor="reg-gender" className={labelCls}>{labelText('gender')}</label>
                 <input id="reg-gender" {...invalidProps('reg-gender')} type="text" className={inputCls} placeholder="e.g. Female, Male, Non-binary, Prefer not to say"
                   value={form.gender} onChange={e => set('gender', e.target.value)} />
+                {fieldError('reg-gender')}
               </div>}
             </div>
           )}
@@ -762,31 +787,37 @@ export default function ParentRegistrationPage() {
               <div>
                 <label htmlFor="reg-parent-name" className={labelCls}>{labelText('parent_name')}</label>
                 <input id="reg-parent-name" {...invalidProps('reg-parent-name')} type="text" autoComplete="name" className={inputCls} value={form.parent_name} onChange={e => set('parent_name', e.target.value)} />
+                {fieldError('reg-parent-name')}
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              {/* Email gets the full width on a phone so it never truncates. */}
+              <div className="grid min-[480px]:grid-cols-2 gap-x-4 gap-y-5">
                 <div>
                   <label htmlFor="reg-parent-email" className={labelCls}>{labelText('parent_email')}</label>
                   <input id="reg-parent-email" {...invalidProps('reg-parent-email')} type="email" autoComplete="email" className={inputCls} value={form.parent_email} onChange={e => set('parent_email', e.target.value)} />
+                  {fieldError('reg-parent-email')}
                 </div>
                 <div>
                   <label htmlFor="reg-parent-phone" className={labelCls}>{labelText('parent_phone')}</label>
                   <input id="reg-parent-phone" {...invalidProps('reg-parent-phone')} type="tel" autoComplete="tel" className={inputCls} placeholder="303-555-0100" value={form.parent_phone} onChange={e => set('parent_phone', e.target.value)} />
+                  {fieldError('reg-parent-phone')}
                 </div>
               </div>
-              <hr className="border-border" />
-              <h3 className="font-sans font-semibold text-base text-ink">Emergency contact</h3>
+              <h2 className="pt-5 border-t-2 border-ink text-lg font-bold">Emergency contact</h2>
               <div>
                 <label htmlFor="reg-emergency-name" className={labelCls}>{labelText('emergency_name')}</label>
                 <input id="reg-emergency-name" {...invalidProps('reg-emergency-name')} type="text" className={inputCls} value={form.emergency_name} onChange={e => set('emergency_name', e.target.value)} />
+                {fieldError('reg-emergency-name')}
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid min-[480px]:grid-cols-2 gap-x-4 gap-y-5">
                 <div>
                   <label htmlFor="reg-emergency-phone" className={labelCls}>{labelText('emergency_phone')}</label>
                   <input id="reg-emergency-phone" {...invalidProps('reg-emergency-phone')} type="tel" className={inputCls} value={form.emergency_phone} onChange={e => set('emergency_phone', e.target.value)} />
+                  {fieldError('reg-emergency-phone')}
                 </div>
                 <div>
                   <label htmlFor="reg-emergency-relation" className={labelCls}>{labelText('emergency_relation')}</label>
                   <input id="reg-emergency-relation" {...invalidProps('reg-emergency-relation')} type="text" className={inputCls} placeholder="e.g. Aunt, Grandparent" value={form.emergency_relation} onChange={e => set('emergency_relation', e.target.value)} />
+                  {fieldError('reg-emergency-relation')}
                 </div>
               </div>
             </div>
@@ -798,27 +829,28 @@ export default function ParentRegistrationPage() {
               <div>
                 <label htmlFor="reg-allergies" className={labelCls}>{labelText('allergies', 'enter "None" if not applicable')}</label>
                 <textarea id="reg-allergies" {...invalidProps('reg-allergies')} className={textareaCls} rows={2} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
+                {fieldError('reg-allergies')}
               </div>
               <div>
                 <label htmlFor="reg-medical" className={labelCls}>{labelText('medical_conditions', 'enter "None" if not applicable')}</label>
                 <textarea id="reg-medical" {...invalidProps('reg-medical')} className={textareaCls} rows={3} value={form.medical_conditions} onChange={e => set('medical_conditions', e.target.value)} />
+                {fieldError('reg-medical')}
               </div>
               {q('other_info').show && <div>
                 <label htmlFor="reg-other" className={labelCls}>{labelText('other_info')}</label>
                 <textarea id="reg-other" {...invalidProps('reg-other')} className={textareaCls} rows={2} value={form.other_info} onChange={e => set('other_info', e.target.value)} />
+                {fieldError('reg-other')}
               </div>}
               {q('free_reduced_lunch').show && <div>
                 <p id="reg-lunch" className={labelCls}>{labelText('free_reduced_lunch')}</p>
-                <div role="group" aria-labelledby="reg-lunch" {...invalidProps('reg-lunch')} className="flex gap-3">
-                  <button type="button" aria-pressed={form.free_reduced_lunch === true} onClick={() => set('free_reduced_lunch', true)} className={yesNoCls(form.free_reduced_lunch, true)}>Yes</button>
-                  <button type="button" aria-pressed={form.free_reduced_lunch === false} onClick={() => set('free_reduced_lunch', false)} className={yesNoCls(form.free_reduced_lunch, false)}>No</button>
-                </div>
+                <YesNo id="reg-lunch" value={form.free_reduced_lunch} invalid={!!error && errorField === 'reg-lunch'} onChange={v => set('free_reduced_lunch', v)} />
+                {fieldError('reg-lunch')}
               </div>}
               {form.free_reduced_lunch && q('lunch_provision').show && (
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-5 h-5 accent-brand shrink-0" checked={form.lunch_provision}
+                <label className={checkRowCls}>
+                  <input type="checkbox" className="w-6 h-6 shrink-0" checked={form.lunch_provision}
                     onChange={e => set('lunch_provision', e.target.checked)} />
-                  <span className="font-sans text-sm text-ink">{q('lunch_provision').label}</span>
+                  <span className="text-pretty">{q('lunch_provision').label}</span>
                 </label>
               )}
               {q('how_heard').show && <div>
@@ -827,13 +859,12 @@ export default function ParentRegistrationPage() {
                   <option value="">Select…</option>
                   {HOW_HEARD.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
+                {fieldError('reg-how-heard')}
               </div>}
               {q('previous_program').show && <div>
                 <p id="reg-previous" className={labelCls}>{labelText('previous_program')}</p>
-                <div role="group" aria-labelledby="reg-previous" {...invalidProps('reg-previous')} className="flex gap-3">
-                  <button type="button" aria-pressed={form.previous_program === true} onClick={() => set('previous_program', true)} className={yesNoCls(form.previous_program, true)}>Yes</button>
-                  <button type="button" aria-pressed={form.previous_program === false} onClick={() => set('previous_program', false)} className={yesNoCls(form.previous_program, false)}>No</button>
-                </div>
+                <YesNo id="reg-previous" value={form.previous_program} invalid={!!error && errorField === 'reg-previous'} onChange={v => set('previous_program', v)} />
+                {fieldError('reg-previous')}
               </div>}
               {form.previous_program === true && q('previous_program').show && (
                 <div>
@@ -842,14 +873,18 @@ export default function ParentRegistrationPage() {
                     <option value="">Select…</option>
                     {PREVIOUS_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
+                  {fieldError('reg-previous-program')}
                 </div>
               )}
               {q('candy_consent').show && (
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input id="reg-candy" {...invalidProps('reg-candy')} type="checkbox" className="w-5 h-5 accent-brand shrink-0" checked={form.candy_consent}
-                    onChange={e => set('candy_consent', e.target.checked)} />
-                  <span className="font-sans text-sm text-ink">{q('candy_consent').label}{q('candy_consent').required && ' *'}</span>
-                </label>
+                <div>
+                  <label className={checkRowCls}>
+                    <input id="reg-candy" {...invalidProps('reg-candy')} type="checkbox" className="w-6 h-6 shrink-0" checked={form.candy_consent}
+                      onChange={e => set('candy_consent', e.target.checked)} />
+                    <span className="text-pretty">{q('candy_consent').label}{q('candy_consent').required && ' *'}</span>
+                  </label>
+                  {fieldError('reg-candy')}
+                </div>
               )}
             </div>
           )}
@@ -858,14 +893,13 @@ export default function ParentRegistrationPage() {
           {step === 4 && (
             <div className="space-y-6">
               <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
-              <p className="font-sans text-sm text-ink-muted">Camp is held at {CAMP_SITE}, 8:00 AM – 4:00 PM each day.</p>
+              {/* Hours vary by class, so each class row shows its own days, time and room. */}
+              <p className="text-ink-muted">Camp is held at {CAMP_SITE}.</p>
 
               {sessionsLoading || classesLoading ? (
-                <p className="font-sans text-sm text-ink-muted">Loading sessions…</p>
+                <p className="text-ink-muted">Loading sessions…</p>
               ) : !campSessions.some(s => s.is_active) ? (
-                <div className="border border-border rounded-[14px] p-4 bg-surface-sunken font-sans text-sm text-ink-muted">
-                  Registration isn't open yet — no camp sessions are scheduled for {campYear}.
-                </div>
+                <p className="font-bold">Registration isn't open yet. No camp sessions are scheduled for {campYear}.</p>
               ) : campSessions.map((session, i) => {
                 if (!session.is_active) return null
                 const week = (i + 1) as 1 | 2
@@ -873,36 +907,37 @@ export default function ParentRegistrationPage() {
                 const classKey = week === 1 ? 'class_week1' as const : 'class_week2' as const
                 const options = classOptions(week)
                 return (
-                  <div key={session.id} className={`border rounded-[14px] p-4 transition ${form[key] ? 'border-brand bg-brand-soft' : 'border-border bg-surface'}`}>
-                    <label className="flex items-center gap-3 min-h-11 cursor-pointer">
-                      <input type="checkbox" className="w-5 h-5 accent-brand shrink-0" checked={form[key]}
+                  <div key={session.id}>
+                    <label className={choiceCls}>
+                      <input type="checkbox" className="w-[22px] h-[22px] shrink-0" checked={form[key]}
                         onChange={e => { set(key, e.target.checked); if (!e.target.checked) set(classKey, '') }} />
-                      <span className="font-sans font-semibold text-base text-ink">{session.name}: {formatSessionDates(session)}</span>
+                      <span className="font-bold">{session.name}: {formatSessionDates(session)}</span>
                     </label>
                     {form[key] && (
-                      <div className="mt-3">
-                        <label className={labelCls}>Class preference *</label>
+                      <fieldset className="mt-4">
+                        <legend className={labelCls}>Class preference *</legend>
                         {options.length === 0 ? (
-                          <p className="font-sans text-xs text-ink-muted">No classes are offered this session yet.</p>
+                          <p className="text-sm text-ink-muted">No classes are offered this session yet.</p>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="grid gap-2">
                             {options.map(o => {
-                              const selected = !!o.section && form[classKey] === o.section.id
-                              const spotsLeft = o.section ? o.section.capacity - o.section.registered_count : 0
+                              const sec = o.section
+                              const selected = !!sec && form[classKey] === sec.id
+                              const spotsLeft = sec ? sec.capacity - sec.registered_count : 0
+                              const when = sec ? [sec.days, sec.start_time && formatTimeRange(sec.start_time, sec.end_time), sec.room].filter(Boolean).join(', ') : ''
                               return (
-                                <label key={o.classId} className={`flex items-center gap-3 px-3 py-2.5 min-h-14 rounded-[10px] border transition ${
-                                  !o.section ? 'border-dashed border-border-strong bg-surface-sunken cursor-not-allowed'
-                                    : selected ? 'border-brand bg-surface cursor-pointer'
-                                    : 'border-border-strong bg-surface hover:bg-surface-sunken cursor-pointer'
-                                }`}>
-                                  <input type="radio" name={classKey} className="w-5 h-5 accent-brand shrink-0" disabled={!o.section}
-                                    checked={selected} onChange={() => o.section && set(classKey, o.section.id)} />
+                                <label key={o.classId} className={choiceCls}>
+                                  <input type="radio" name={classKey} className="w-[22px] h-[22px] shrink-0" disabled={!sec}
+                                    checked={selected} onChange={() => sec && set(classKey, sec.id)} />
                                   <span className="flex-1 min-w-0">
-                                    <span className="block font-sans text-[15.5px] font-semibold text-ink">{o.name}</span>
-                                    <span className={`block font-sans text-xs ${o.reason ? 'text-ink-muted' : o.full ? 'text-warning' : 'text-ink-muted'}`}>
-                                      {o.reason ? (
-                                        <span className="inline-flex items-center gap-1"><Lock size={11} /> {o.reason}</span>
-                                      ) : o.full ? 'Full — joins the waitlist' : `Ages ${o.section!.age_min}–${o.section!.age_max} · ${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}
+                                    <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                      <span className="font-bold">{o.name}</span>
+                                      {sec && <span className="text-sm font-bold">{o.full ? 'Full, joins the waitlist' : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}</span>}
+                                    </span>
+                                    <span className="block text-sm text-ink-muted">
+                                      {o.reason
+                                        ? <span className="inline-flex items-center gap-1"><Lock size={14} strokeWidth={2.5} aria-hidden="true" /> {o.reason}</span>
+                                        : [`Ages ${sec!.age_min}–${sec!.age_max}`, when].filter(Boolean).join(' · ')}
                                     </span>
                                   </span>
                                 </label>
@@ -910,7 +945,7 @@ export default function ParentRegistrationPage() {
                             })}
                           </div>
                         )}
-                      </div>
+                      </fieldset>
                     )}
                   </div>
                 )
@@ -921,61 +956,64 @@ export default function ParentRegistrationPage() {
           {/* Step 5: Waiver */}
           {step === 5 && (
             <div className="space-y-6">
+              {/* The official waiver is still coming from SCC national (PRODUCT.md), so the text sits
+                  in a dashed "not final" frame (DESIGN.md › Shapes) and says so. */}
+              <section aria-labelledby="waiver-h">
+                <h2 id="waiver-h" className="text-lg font-bold">Steel City Codes {campYear} participant waiver</h2>
+                <div className="mt-3 max-w-[65ch] rounded border-2 border-dashed border-border-strong p-4 space-y-3 text-pretty">
+                  <p className="flex items-start gap-2 font-bold">
+                    <FilePenLine size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 mt-0.5" />
+                    Placeholder text. Steel City Codes national is writing the official waiver, and it will replace this.
+                  </p>
+                  <p>This Release and Waiver of Liability releases Steel City Codes ("Nonprofit"), its directors, officers, employees, and agents from any liability arising from your student's participation in the Denver Summer Camp program.</p>
+                  <p><b className="font-bold">Assumption of risk.</b> I acknowledge that participation in the Steel City Codes program involves physical and other risks. I voluntarily assume all risks associated with my student's participation.</p>
+                  <p><b className="font-bold">Medical authorization.</b> I authorize Steel City Codes staff to seek emergency medical treatment for my student if I cannot be reached. I agree to be responsible for any medical costs incurred.</p>
+                  <p><b className="font-bold">Photo and media release.</b> I grant Steel City Codes the right to use photographs and video taken at camp activities for educational and promotional purposes.</p>
+                  <p><b className="font-bold">Technology addendum.</b> I understand my student will use computers and technology during camp. I agree to the acceptable use policy for these resources.</p>
+                  <p><b className="font-bold">Code of conduct.</b> I agree that my student will follow the Steel City Codes Code of Conduct. Violations may result in dismissal from the program without refund.</p>
+                  <p>By signing below, I confirm that I have read, understood, and agree to all terms above.</p>
+                </div>
+              </section>
 
-              <div tabIndex={0} role="region" aria-label="Waiver and consent text" className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-focus space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
-                <p className="font-semibold text-ink text-sm">Steel City Codes {campYear} Participant Waiver</p>
-                <p>This Release and Waiver of Liability releases Steel City Codes ("Nonprofit"), its directors, officers, employees, and agents from any liability arising from your student's participation in the Denver Summer Camp program.</p>
-                <p><strong className="text-ink">ASSUMPTION OF RISK:</strong> I acknowledge that participation in the Steel City Codes program involves physical and other risks. I voluntarily assume all risks associated with my student's participation.</p>
-                <p><strong className="text-ink">MEDICAL AUTHORIZATION:</strong> I authorize Steel City Codes staff to seek emergency medical treatment for my student if I cannot be reached. I agree to be responsible for any medical costs incurred.</p>
-                <p><strong className="text-ink">PHOTO/MEDIA RELEASE:</strong> I grant Steel City Codes the right to use photographs and video taken at camp activities for educational and promotional purposes.</p>
-                <p><strong className="text-ink">TECHNOLOGY ADDENDUM:</strong> I understand my student will use computers and technology during camp. I agree to the acceptable use policy for these resources.</p>
-                <p><strong className="text-ink">CODE OF CONDUCT:</strong> I agree that my student will follow the Steel City Codes Code of Conduct. Violations may result in dismissal from the program without refund.</p>
-                <p>By signing below, I confirm that I have read, understood, and agree to all terms above.</p>
-              </div>
-
+              {/* No placeholders here: a placeholder that equals the expected name looks already signed. */}
               <div>
                 <label htmlFor="reg-waiver-sig" className={labelCls}>{labelText('waiver_signature')}</label>
-                <p className="font-sans text-xs text-ink-muted mb-2">Type the student's full legal name as an electronic signature.</p>
-                <input id="reg-waiver-sig" {...invalidProps('reg-waiver-sig')} type="text" className={inputCls} placeholder={studentFullName || 'Student full name'}
+                <p className={`${hintCls} mb-2`}>Type the student's full legal name as an electronic signature.</p>
+                <input id="reg-waiver-sig" {...invalidProps('reg-waiver-sig')} type="text" autoComplete="off" className={inputCls}
                   value={form.waiver_signature} onChange={e => set('waiver_signature', e.target.value)} />
+                {fieldError('reg-waiver-sig')}
               </div>
 
               <div>
                 <label htmlFor="reg-guardian-sig" className={labelCls}>{labelText('guardian_signature')}</label>
-                <p className="font-sans text-xs text-ink-muted mb-2">Type your full legal name to confirm your consent on behalf of your student.</p>
-                <input id="reg-guardian-sig" {...invalidProps('reg-guardian-sig')} type="text" className={inputCls} placeholder={form.parent_name || 'Parent/guardian full name'}
+                <p className={`${hintCls} mb-2`}>Type your full legal name to confirm your consent on behalf of your student.</p>
+                <input id="reg-guardian-sig" {...invalidProps('reg-guardian-sig')} type="text" autoComplete="name" className={inputCls}
                   value={form.guardian_signature} onChange={e => set('guardian_signature', e.target.value)} />
+                {fieldError('reg-guardian-sig')}
               </div>
             </div>
           )}
 
-          {error && (
-            <p id="reg-error" ref={errorRef} role="alert" tabIndex={-1} className="mt-4 text-danger text-sm font-sans focus:outline-none">
-              ⚠ {error}
-              {authExpired && <> <Link to="/login" className="font-semibold underline">Sign in again</Link></>}
-            </p>
-          )}
+          {error && !(errorField && shown.has(errorField)) && errorLine('mt-5')}
 
-          <div className="mt-8 flex gap-3">
+          {/* Back and Continue in flow (Safari's toolbar owns the bottom edge); a 2px rule closes the form. */}
+          <div className="mt-8 pt-5 border-t-2 border-ink flex gap-3">
             {step > 1 && (
-              <button type="button" onClick={handleBack}
-                className="h-12 px-5 bg-surface border border-border-strong text-ink font-sans font-semibold text-base rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition">
-                <ChevronLeft size={16} /> Back
+              <button type="button" onClick={handleBack} className={buttonClass('secondary', 'px-4')}>
+                <ChevronLeft size={20} strokeWidth={2.25} aria-hidden="true" /> Back
               </button>
             )}
             {step < 5 ? (
               // Distinct keys: without them React reuses the Next <button> as Submit and the click
               // that lands on the last step can fire a submit.
-              <button key="next" type="button" onClick={handleNext}
-                className="ui-btn ui-btn--primary flex-1">
-                Continue <ChevronRight size={16} />
+              <button key="next" type="button" onClick={handleNext} className={buttonClass('primary', 'flex-1')}>
+                Continue <ChevronRight size={20} strokeWidth={2.25} aria-hidden="true" />
               </button>
             ) : (
-              <button key="submit" type="submit" disabled={submitting}
-                className="ui-btn ui-btn--primary flex-1">
+              <button key="submit" type="submit" disabled={submitting} className={buttonClass('primary', 'flex-1')}>
                 {submitting
-                  ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
-                  : <CheckCircle2 size={16} />}
+                  ? <span aria-hidden="true" className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
+                  : <CheckCircle2 size={20} strokeWidth={2.25} aria-hidden="true" />}
                 {submitting ? 'Submitting…' : 'Submit registration'}
               </button>
             )}

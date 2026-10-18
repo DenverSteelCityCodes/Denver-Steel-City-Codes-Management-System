@@ -50,10 +50,10 @@ export function Sect({ title, action, id, children, className = '' }: { title: s
 // than three items wrap as separate framed toggles so a long family never overflows the phone.
 export interface SegItem { key: string; label: ReactNode; on: boolean; onClick: () => void }
 
-export function Segmented({ labelledBy, items, invalid = false, className = '' }: { labelledBy: string; items: SegItem[]; invalid?: boolean; className?: string }) {
+export function Segmented({ labelledBy, items, invalid = false, describedBy, className = '' }: { labelledBy: string; items: SegItem[]; invalid?: boolean; describedBy?: string; className?: string }) {
   const joined = items.length <= 3
   return (
-    <div role="group" aria-labelledby={labelledBy} aria-invalid={invalid || undefined}
+    <div role="group" aria-labelledby={labelledBy} aria-invalid={invalid || undefined} aria-describedby={describedBy}
       className={joined
         ? `flex rounded border-2 ${invalid ? 'border-danger' : 'border-ink'} ${className}`
         : `flex flex-wrap gap-2 ${className}`}>
