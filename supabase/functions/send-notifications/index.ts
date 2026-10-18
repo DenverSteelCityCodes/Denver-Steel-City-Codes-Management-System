@@ -1,6 +1,8 @@
 // send-notifications: drains the notifications outbox (spec 09). Called every minute by pg_cron
 // (migration_notifications.sql). Claims up to 50 due emails, renders each template, sends it
 // through the provider and records the result; failures retry up to 3 times.
+// Urgent safety notices (spec 34, priority > 0) go first: up to 300 per run through the
+// provider's batch endpoint, 100 per call, so a whole week's families have them within two minutes.
 //
 // Secrets (Supabase → Edge Functions → Secrets):
 //   RESEND_API_KEY   the provider key. Without it nothing is sent and rows stay queued.
@@ -24,11 +26,12 @@ Deno.serve(async () => {
   const appUrl = (Deno.env.get('APP_URL') ?? 'https://scc.haanie.com').replace(/\/$/, '')
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-  const { data: rows, error } = await db.rpc('claim_notifications', { p_limit: 50 })
-  if (error) return json({ error: error.message }, 500)
-
+  type Row = { id: number; attempts: number; recipient_email: string | null; template: string; payload: Record<string, unknown> }
   let sent = 0, failed = 0, waiting = 0
-  for (const row of (rows ?? []) as { id: number; attempts: number; recipient_email: string | null; template: string; payload: Record<string, unknown> }[]) {
+
+  // A row this run can't send: an unknown template is held, a missing address fails. Returns the
+  // rendered email otherwise.
+  async function prepare(row: Row) {
     const email = render(row.template, row.payload ?? {}, appUrl)
     if (!email) {
       // A template this deploy doesn't know yet (a migration ran before the function was
@@ -45,18 +48,55 @@ Deno.serve(async () => {
         last_error: `Waiting for a sender that knows the template ${row.template}`,
       }).eq('id', row.id)
       waiting++
-      continue
+      return null
     }
     if (!row.recipient_email) {
       await db.rpc('finish_notification', { p_id: row.id, p_ok: false, p_error: 'No recipient address' })
       failed++
-      continue
+      return null
     }
+    return { from, to: [row.recipient_email], reply_to: replyTo, subject: email.subject, html: email.html, text: email.text }
+  }
+
+  // ── Urgent first, in bulk (spec 34). A database without the urgent claim yet just skips this. ──
+  const { data: urgent, error: urgentError } = await db.rpc('claim_urgent_notifications', { p_limit: 300 })
+  if (urgentError) console.warn(`send-notifications: no urgent claim (${urgentError.message}); sending in order`)
+  const ready: { id: number; message: Record<string, unknown> }[] = []
+  for (const row of (urgent ?? []) as Row[]) {
+    const message = await prepare(row)
+    if (message) ready.push({ id: row.id, message })
+  }
+  for (let i = 0; i < ready.length; i += 100) {
+    const chunk = ready.slice(i, i + 100)
+    let ok = false, detail: string | null = null
+    try {
+      const res = await fetch('https://api.resend.com/emails/batch', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(chunk.map(c => c.message)),
+      })
+      ok = res.ok
+      detail = res.ok ? null : `${res.status} ${(await res.text()).slice(0, 400)}`
+    } catch (e) {
+      detail = e instanceof Error ? e.message : String(e)
+    }
+    // The batch is all or nothing: every row in it is sent, or every row retries.
+    await Promise.all(chunk.map(c => db.rpc('finish_notification', { p_id: c.id, p_ok: ok, p_error: detail })))
+    if (ok) sent += chunk.length; else failed += chunk.length
+  }
+
+  // ── Everything else, one email per call, highest priority then oldest ──
+  const { data: rows, error } = await db.rpc('claim_notifications', { p_limit: 50 })
+  if (error) return json({ error: error.message, sent, failed, waiting }, 500)
+
+  for (const row of (rows ?? []) as Row[]) {
+    const message = await prepare(row)
+    if (!message) continue
     try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from, to: [row.recipient_email], reply_to: replyTo, subject: email.subject, html: email.html, text: email.text }),
+        body: JSON.stringify(message),
       })
       const detail = res.ok ? null : `${res.status} ${(await res.text()).slice(0, 400)}`
       await db.rpc('finish_notification', { p_id: row.id, p_ok: res.ok, p_error: detail })

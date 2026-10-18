@@ -189,9 +189,45 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
         'Make a parent account, or sign in if you have one, and register your camper.',
       ], { label: 'Register a camper', url: `${appUrl}/camp` }, unsubscribeUrl(p, appUrl))
 
+    // Spec 34: an admin's urgent safety notice, sent to everyone in the post's audience at once.
+    // It ignores the announcements opt-out, so it says why it arrived.
+    case 'urgent_notice': {
+      const body = String(p.body ?? '').trim()
+      const first = body.split('\n')[0].trim()
+      const posted = typeof p.posted_at === 'string'
+        ? new Date(p.posted_at).toLocaleString('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit', weekday: 'long' })
+        : ''
+      return build(`Urgent camp notice: ${first.length > 60 ? `${first.slice(0, 57)}…` : first}`, 'Urgent camp notice', [
+        ...textParagraphs(body),
+        `Sent by ${esc(p.author ?? 'the camp')}${posted ? ` on ${esc(posted)} (Denver time)` : ''}. This is a safety notice, so it reaches you even if you turned off camp announcements.`,
+      ], { label: 'Open the camp site', url: `${appUrl}/` })
+    }
+
+    // Spec 34: an admin tells a camper's family about an incident, in the admin's own words.
+    case 'incident_notice': {
+      const on = typeof p.occurred_at === 'string'
+        ? new Date(p.occurred_at).toLocaleDateString('en-US', { timeZone: 'America/Denver', weekday: 'long', month: 'long', day: 'numeric' })
+        : ''
+      const what: Record<string, string> = {
+        injury: 'an injury', behavior: 'a behavior concern', conduct: 'a concern about a crew member’s conduct',
+        safety: 'a safety concern', other: 'something we want you to know about',
+      }
+      const where = `${esc(p.class ?? 'camp')}${p.section ? ` · ${esc(p.section)}` : ''}`
+      return build(`About ${p.camper ?? 'your camper'} at camp${on ? ` on ${on}` : ''}`, `A note from camp about ${p.camper ?? 'your camper'}`, [
+        `We're writing about <strong>${camper}</strong> in ${where}${on ? ` on ${esc(on)}` : ''}: ${what[String(p.kind)] ?? what.other}.`,
+        ...textParagraphs(String(p.message ?? '')),
+        'Please reply to this email if you have questions or would like to talk it through.',
+      ], dashboard)
+    }
+
     default:
       return null
   }
+}
+
+// A plain-text message as escaped paragraphs: blank lines split paragraphs, single line breaks stay.
+function textParagraphs(text: string): string[] {
+  return text.trim() ? text.trim().split(/\n\s*\n/).map(t => esc(t.trim()).replace(/\n/g, '<br>\n')) : []
 }
 
 function unsubscribeUrl(p: Payload, appUrl: string): string {
