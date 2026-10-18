@@ -20,7 +20,7 @@ import {
 } from '../lib/applyForm'
 import type { ApplyForm } from '../lib/applyForm'
 import { GENERIC_ERROR, authErrorMessage, classifyAuthError, isExistingAccount } from '../lib/authErrors'
-import { CAMP_SITE } from '../lib/campSite'
+import { sharedPlace } from '../lib/campSite'
 import { CAMP_TIME_ZONE, formatCampTime } from '../lib/denverTime'
 import { focusOnMount } from '../lib/focus'
 import { buttonClass } from '../lib/ui'
@@ -420,12 +420,15 @@ export default function VolunteerApplyPage() {
   }
 
   const errorKeys = Object.keys(errors)
+  // The place is each week's sessions.location (spec 30): named once when the weeks share it,
+  // else beside each week.
+  const place = sharedPlace(activeWeeks)
   const commitment = step === 1
     ? {
-        message: `${CAMP_SITE}, 8:30 AM–4:30 PM each day`,
+        message: place ? `${place}, 8:30 AM–4:30 PM each day` : 'In person, 8:30 AM–4:30 PM each day',
         sub: [
           activeWeeks.length > 0
-            ? `${activeWeeks.map(w => `${w.name} (${shortDates(w)})`).join(', ')}${activeWeeks.length > 1 ? ' or both' : ''}, plus`
+            ? `${activeWeeks.map(w => `${w.name} (${shortDates(w)}${!place && w.location ? `, at ${w.location}` : ''})`).join(', ')}${activeWeeks.length > 1 ? ' or both' : ''}, plus`
             : 'Plus',
           slotMinutes ? `a ${slotMinutes}\u2011minute online interview.` : 'a short online interview.',
         ].join(' '),

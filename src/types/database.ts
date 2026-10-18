@@ -173,6 +173,8 @@ export interface Session {
   start_date: string
   end_date: string
   is_active: boolean
+  // Building and address of this week (migration_public_camp_page.sql, spec 30).
+  location?: string | null
   created_at: string
 }
 

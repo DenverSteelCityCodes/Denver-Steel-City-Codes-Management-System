@@ -5,10 +5,11 @@ import { buttonClass } from '../lib/ui'
 
 // The signed-out frame (DESIGN.md › Layout › Signed out): the ink bar alone, not sticky, then one
 // 640px column on the concourse floor, and the camp's address at the foot so no page is a dead end.
-export default function PublicShell({ children, footer = true }: { children: ReactNode; footer?: boolean }) {
+// `bar` puts one link at the bar's right (the camp page's "Sign in").
+export default function PublicShell({ children, footer = true, bar }: { children: ReactNode; footer?: boolean; bar?: ReactNode }) {
   return (
     <div className="min-h-dvh flex flex-col bg-bg text-ink">
-      <BrandBar />
+      <BrandBar>{bar}</BrandBar>
       <main className="flex-1 w-full max-w-[640px] mx-auto px-4 md:px-8 pt-5 pb-10">{children}</main>
       {footer && (
         <footer className="w-full max-w-[640px] mx-auto px-4 md:px-8 pt-2 pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-sm text-ink-muted">

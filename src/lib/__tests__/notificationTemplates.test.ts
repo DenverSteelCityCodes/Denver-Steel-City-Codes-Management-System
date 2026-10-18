@@ -25,3 +25,25 @@ describe('change_request_resolved', () => {
     expect(declined.text).toContain("The camp's reply: That section is full")
   })
 })
+
+describe('notify-me list (spec 30)', () => {
+  it('asks for a confirmation through /camp/confirm, with no unsubscribe line yet', () => {
+    const r = render('interest_confirm', { year: 2027, token: 'abc.def' }, APP)!
+    expect(r.subject).toBe('Confirm: email me when camp registration opens')
+    expect(r.text).toContain(`${APP}/camp/confirm?t=abc.def`)
+    expect(r.text).not.toContain('Unsubscribe')
+  })
+  it('announces the opening time in Denver time, with a working unsubscribe link', () => {
+    const r = render('registration_opening_soon', { year: 2027, opens_at: '2027-02-06T16:00:00Z', token: 'abc.def' }, APP)!
+    expect(r.subject).toContain('February 6')
+    expect(r.text).toContain('9:00 AM')
+    expect(r.text).toContain(`${APP}/camp`)
+    expect(r.text).toContain(`Unsubscribe: ${APP}/camp/unsubscribe?t=abc.def`)
+    expect(r.html).toContain(`href="${APP}/camp/unsubscribe?t=abc.def"`)
+  })
+  it('says registration is open, with a working unsubscribe link', () => {
+    const r = render('registration_now_open', { year: 2027, token: 'abc.def' }, APP)!
+    expect(r.subject).toBe('Camp registration is open')
+    expect(r.text).toContain(`Unsubscribe: ${APP}/camp/unsubscribe?t=abc.def`)
+  })
+})

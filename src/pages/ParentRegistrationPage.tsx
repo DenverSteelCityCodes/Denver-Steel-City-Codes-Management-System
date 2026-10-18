@@ -7,6 +7,7 @@ import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useSessions, activeCampYear, campSessions as activeSessions, formatSessionDates } from '../hooks/useSessions'
 import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
 import RegistrationCountdown from '../components/RegistrationCountdown'
+import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import { formatCampDateTime } from '../lib/denverTime'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useFormConfig } from '../hooks/useFormConfig'
@@ -14,7 +15,7 @@ import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import { GRADES, gradeToAge } from '../lib/campers'
 import { draftKey, readDraft, writeDraft, clearDraft } from '../lib/registrationDraft'
 import { fetchSectionFill } from '../lib/sectionFill'
-import { CAMP_SITE } from '../lib/campSite'
+import { placeSentence } from '../lib/campSite'
 import { formatTimeRange } from '../lib/campDay'
 import { buttonClass } from '../lib/ui'
 import { Segmented, hintCls, labelCls } from './parent/parts'
@@ -159,6 +160,8 @@ export default function ParentRegistrationPage() {
   const campYear = activeCampYear(sessions)
   const { settings: season, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
   const campSessions = activeSessions(sessions)
+  // Where camp is, from each week's sessions.location (spec 30).
+  const placeLine = placeSentence(campSessions.filter(s => s.is_active))
   // The step lives in the URL (?step=3), so the browser's back button and a reload keep the
   // parent where they were (spec 16). Answers are kept as a draft on this device.
   const step = Math.min(5, Math.max(1, Number(searchParams.get('step')) || 1))
@@ -892,9 +895,9 @@ export default function ParentRegistrationPage() {
           {/* Step 4: Session & class selection */}
           {step === 4 && (
             <div className="space-y-6">
-              <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
+              <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }}><NotifyMeSwitch /></RegistrationCountdown>
               {/* Hours vary by class, so each class row shows its own days, time and room. */}
-              <p className="text-ink-muted">Camp is held at {CAMP_SITE}.</p>
+              {placeLine && <p className="text-ink-muted">{placeLine}</p>}
 
               {sessionsLoading || classesLoading ? (
                 <p className="text-ink-muted">Loading sessions…</p>

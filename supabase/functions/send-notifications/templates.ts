@@ -37,7 +37,8 @@ function classLine(p: Payload): string {
   return parts.join(', ')
 }
 
-function layout(title: string, paragraphs: string[], cta: { label: string; url: string } | null): string {
+// The notify-me emails (spec 30) end with their own unsubscribe link.
+function layout(title: string, paragraphs: string[], cta: { label: string; url: string } | null, unsubscribe?: string): string {
   const body = paragraphs.map(t => `<p style="margin:0 0 14px;font-size:15px;line-height:1.5;color:#4A4138">${t}</p>`).join('')
   const button = cta
     ? `<p style="margin:20px 0"><a href="${esc(cta.url)}" style="display:inline-block;background:#F1C446;color:#1A1613;font-weight:600;text-decoration:none;padding:11px 18px;border-radius:10px">${esc(cta.label)}</a></p>`
@@ -50,16 +51,18 @@ function layout(title: string, paragraphs: string[], cta: { label: string; url: 
 <h1 style="margin:0 0 14px;font-size:20px;color:#262019">${esc(title)}</h1>
 ${body}${button}
 <p style="margin:18px 0 0;font-size:13px;color:#7A6E60">Questions? Reply to this email or write to <a href="mailto:${CONTACT}" style="color:#4A4138">${CONTACT}</a>.</p>
+${unsubscribe ? `<p style="margin:10px 0 0;font-size:13px;color:#7A6E60">You asked to hear when camp registration opens. <a href="${esc(unsubscribe)}" style="color:#4A4138">Unsubscribe</a>.</p>` : ''}
 </td></tr></table></td></tr></table></body></html>`
 }
 
-function textVersion(title: string, paragraphs: string[], cta: { label: string; url: string } | null): string {
+function textVersion(title: string, paragraphs: string[], cta: { label: string; url: string } | null, unsubscribe?: string): string {
   const strip = (s: string) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-  return [title, '', ...paragraphs.map(strip), ...(cta ? ['', `${cta.label}: ${cta.url}`] : []), '', `Questions? Reply to this email or write to ${CONTACT}.`].join('\n')
+  return [title, '', ...paragraphs.map(strip), ...(cta ? ['', `${cta.label}: ${cta.url}`] : []), '', `Questions? Reply to this email or write to ${CONTACT}.`,
+    ...(unsubscribe ? ['', `You asked to hear when camp registration opens. Unsubscribe: ${unsubscribe}`] : [])].join('\n')
 }
 
-function build(subject: string, title: string, paragraphs: string[], cta: { label: string; url: string } | null): Rendered {
-  return { subject, text: textVersion(title, paragraphs, cta), html: layout(title, paragraphs, cta) }
+function build(subject: string, title: string, paragraphs: string[], cta: { label: string; url: string } | null, unsubscribe?: string): Rendered {
+  return { subject, text: textVersion(title, paragraphs, cta, unsubscribe), html: layout(title, paragraphs, cta, unsubscribe) }
 }
 
 // Returns null for an unknown template (the sender marks it failed).
@@ -160,7 +163,37 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       ], dashboard)
     }
 
+    // Spec 30: the notify-me list. The payload carries the camp year and a signed token; the links
+    // open /camp/confirm or /camp/unsubscribe, which ask for a press before acting.
+    case 'interest_confirm': {
+      const confirm = `${appUrl}/camp/confirm?t=${encodeURIComponent(String(p.token ?? ''))}`
+      return build('Confirm: email me when camp registration opens', 'Confirm your email', [
+        `Someone, we hope you, asked Steel City Codes Denver to email this address when registration opens for the ${esc(p.year ?? '')} coding camp.`,
+        'Press the button to confirm. If you didn\'t ask, ignore this email and you won\'t be added.',
+      ], { label: 'Yes, email me', url: confirm })
+    }
+
+    case 'registration_opening_soon': {
+      const when = typeof p.opens_at === 'string'
+        ? new Date(p.opens_at).toLocaleString('en-US', { timeZone: 'America/Denver', weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+        : 'soon'
+      return build(`Camp registration opens ${when}`, 'Registration opens soon', [
+        `Registration for the ${esc(p.year ?? '')} coding camp opens <strong>${esc(when)} (Denver time)</strong>.`,
+        'Spots are first come, first served. The dates, the place, the classes and what to bring are on the camp page.',
+      ], { label: 'See the camp page', url: `${appUrl}/camp` }, unsubscribeUrl(p, appUrl))
+    }
+
+    case 'registration_now_open':
+      return build('Camp registration is open', 'Registration is open', [
+        `Registration for the ${esc(p.year ?? '')} coding camp is open now. Spots are first come, first served.`,
+        'Make a parent account, or sign in if you have one, and register your camper.',
+      ], { label: 'Register a camper', url: `${appUrl}/camp` }, unsubscribeUrl(p, appUrl))
+
     default:
       return null
   }
+}
+
+function unsubscribeUrl(p: Payload, appUrl: string): string {
+  return `${appUrl}/camp/unsubscribe?t=${encodeURIComponent(String(p.token ?? ''))}`
 }
