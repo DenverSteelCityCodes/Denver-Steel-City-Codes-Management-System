@@ -27,7 +27,7 @@ Deno.serve(async () => {
   const appUrl = (Deno.env.get('APP_URL') ?? 'https://scc.haanie.com').replace(/\/$/, '')
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-  type Row = { id: number; attempts: number; recipient_email: string | null; template: string; payload: Record<string, unknown> }
+  type Row = { id: number; attempts: number; recipient_email: string | null; template: string; payload: Record<string, unknown>; batch_key?: string | null }
   let sent = 0, failed = 0, waiting = 0
 
   // A row this run can't send: an unknown template is held, a missing address fails. Returns the
@@ -60,13 +60,23 @@ Deno.serve(async () => {
   }
 
   // ── Talking to the provider (spec 34) ──
-  // Every call carries an Idempotency-Key made from the notification ids, so a retry of a call
-  // whose answer was lost (timeout, dropped connection, 5xx) can't send the same email twice. An
-  // ambiguous failure is retried unchanged in this run before the rows are marked failed. Calls are
-  // spaced 550 ms apart (the provider allows about 2 a second). A 429 puts the rows back without
-  // using up an attempt. The run stops starting new calls well before the platform's time limit
-  // and puts back what it didn't try; if it dies anyway, the claim time stamped on each row lets
-  // private.requeue_stuck_notifications() put them back after 15 minutes.
+  // Every call carries an Idempotency-Key: this project's ref plus the notification id, or, for a
+  // batch, a hash of its sorted ids. A batch's key is stored on its rows before the call, so if the
+  // answer never comes (timeout, 5xx, or this run dies) the rows go out again together under the
+  // same key and the provider can't deliver them twice. An ambiguous failure is first retried
+  // unchanged in this run. Calls are spaced 550 ms apart (the provider allows about 2 a second).
+  // The first 429 stops this run's sending: everything left goes back to the queue, without using
+  // up an attempt, until Retry-After (else 15 minutes), with the reason in last_error. The run also
+  // stops starting calls well before the platform's time limit and puts back what it didn't try;
+  // if it dies anyway, the claim time on each row lets private.requeue_stuck_notifications() put
+  // them back after 15 minutes.
+  const project = new URL(Deno.env.get('SUPABASE_URL')!).hostname.split('.')[0]
+  const singleKey = (id: number) => `${project}-n-${id}`
+  async function batchKey(ids: number[]) {
+    const sorted = [...ids].sort((a, b) => a - b).join(',')
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sorted))
+    return `${project}-b-${[...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('')}`
+  }
   const started = Date.now()
   const timeLeft = () => 110_000 - (Date.now() - started)
   const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
@@ -76,12 +86,11 @@ Deno.serve(async () => {
     if (wait > 0) await sleep(wait)
     lastCall = Date.now()
   }
-  async function idempotencyKey(kind: string, ids: number[]) {
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ids.join(',')))
-    return `scc-${kind}-${[...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('')}`
-  }
 
-  type Outcome = { kind: 'ok' | 'rejected' | 'rate_limited' | 'ambiguous'; detail: string | null }
+  type Outcome = { kind: 'ok' | 'rejected' | 'rate_limited' | 'ambiguous'; detail: string | null; retryAfter?: number }
+  // Set by the first 429: no more provider calls this run.
+  let throttled = null as { retryAfter: number; detail: string } | null
+
   async function call(url: string, body: unknown, idemKey: string): Promise<Outcome> {
     let detail: string | null = null
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -99,7 +108,11 @@ Deno.serve(async () => {
         })
         if (res.ok) return { kind: 'ok', detail: null }
         detail = `${res.status} ${(await res.text()).slice(0, 400)}`
-        if (res.status === 429) return { kind: 'rate_limited', detail }
+        if (res.status === 429) {
+          const ra = res.headers.get('retry-after')
+          const secs = ra === null ? NaN : Number.isFinite(Number(ra)) ? Number(ra) : (Date.parse(ra) - Date.now()) / 1000
+          return { kind: 'rate_limited', detail, retryAfter: Number.isFinite(secs) && secs > 0 ? Math.ceil(secs) : 900 }
+        }
         // 409: the same key is still being processed, so the outcome isn't known yet; like a 5xx.
         if (res.status < 500 && res.status !== 409) return { kind: 'rejected', detail }
       } catch (e) {
@@ -112,60 +125,81 @@ Deno.serve(async () => {
   const finish = (ids: number[], ok: boolean, detail: string | null) =>
     Promise.all(ids.map(id => db.rpc('finish_notification', { p_id: id, p_ok: ok, p_error: detail })))
   // Back in the queue without using up an attempt.
-  const requeue = (ids: number[], delaySeconds: number) =>
-    ids.length ? db.rpc('requeue_notifications', { p_ids: ids, p_delay_seconds: delaySeconds }) : Promise.resolve()
-
-  async function sendOne(id: number, message: Record<string, unknown>) {
-    const out = await call('https://api.resend.com/emails', message, await idempotencyKey('one', [id]))
-    if (out.kind === 'ok') { await finish([id], true, null); sent++ }
-    else if (out.kind === 'rate_limited') { await requeue([id], 60); waiting++ }
-    else { await finish([id], false, out.detail); failed++ }
+  async function requeue(ids: number[], delaySeconds: number, reason: string) {
+    if (ids.length === 0) return
+    await db.rpc('requeue_notifications', { p_ids: ids, p_delay_seconds: delaySeconds, p_error: reason })
+    waiting += ids.length
+  }
+  const throttleReason = () => `Provider rate limit or quota (429), waiting ${throttled!.retryAfter}s: ${throttled!.detail}`.slice(0, 500)
+  function noteThrottle(out: Outcome) {
+    throttled = { retryAfter: out.retryAfter ?? 900, detail: out.detail ?? '429' }
   }
 
-  // Sends one by one until time runs short; whatever is left goes back to the queue untried.
+  // One by one, paced; stops at the first 429 or when time runs short, putting the rest back.
   async function sendEach(items: { id: number; message: Record<string, unknown> }[]) {
     for (let i = 0; i < items.length; i++) {
-      if (timeLeft() < 15_000) { await requeue(items.slice(i).map(x => x.id), 0); waiting += items.length - i; return }
-      await sendOne(items[i].id, items[i].message)
+      if (throttled) return requeue(items.slice(i).map(x => x.id), throttled.retryAfter, throttleReason())
+      if (timeLeft() < 15_000) return requeue(items.slice(i).map(x => x.id), 0, 'Out of time this run; next run sends it')
+      const { id, message } = items[i]
+      const out = await call('https://api.resend.com/emails', message, singleKey(id))
+      if (out.kind === 'ok') { await finish([id], true, null); sent++ }
+      else if (out.kind === 'rate_limited') { noteThrottle(out); await requeue([id], throttled!.retryAfter, throttleReason()) }
+      else { await finish([id], false, out.detail); failed++ }
     }
   }
 
   // ── Urgent first, in bulk (spec 34). A database without the urgent claim yet just skips this. ──
   const { data: urgent, error: urgentError } = await db.rpc('claim_urgent_notifications', { p_limit: 300 })
   if (urgentError) console.warn(`send-notifications: no urgent claim (${urgentError.message}); sending in order`)
-  const ready: { id: number; message: Record<string, unknown> }[] = []
-  for (const row of (urgent ?? []) as Row[]) {
+  type Ready = { id: number; message: Record<string, unknown>; batchKey: string | null }
+  const ready: Ready[] = []
+  for (const row of ((urgent ?? []) as Row[]).sort((a, b) => a.id - b.id)) {
     const message = await prepare(row)
-    if (message) ready.push({ id: row.id, message })
+    if (message) ready.push({ id: row.id, message, batchKey: row.batch_key ?? null })
   }
-  for (let i = 0; i < ready.length; i += 100) {
-    const chunk = ready.slice(i, i + 100)
-    const ids = chunk.map(c => c.id)
-    if (timeLeft() < 20_000) {
-      await requeue(ready.slice(i).map(c => c.id), 0)
-      waiting += ready.length - i
-      break
-    }
-    const out = await call('https://api.resend.com/emails/batch', chunk.map(c => c.message), await idempotencyKey('batch', ids))
+  // Batches with an unknown outcome go again as they were (same rows, same key); the rest are
+  // chunked by id, 100 to a call.
+  const groups: { key: string | null; items: Ready[] }[] = []
+  const unfinished = new Map<string, Ready[]>()
+  const fresh: Ready[] = []
+  for (const r of ready) {
+    if (r.batchKey) unfinished.set(r.batchKey, [...(unfinished.get(r.batchKey) ?? []), r])
+    else fresh.push(r)
+  }
+  for (const [k, items] of unfinished) groups.push({ key: k, items })
+  for (let i = 0; i < fresh.length; i += 100) groups.push({ key: null, items: fresh.slice(i, i + 100) })
+
+  for (let g = 0; g < groups.length; g++) {
+    const rest = () => groups.slice(g).flatMap(x => x.items.map(i => i.id))
+    if (throttled) { await requeue(rest(), throttled.retryAfter, throttleReason()); break }
+    if (timeLeft() < 20_000) { await requeue(rest(), 0, 'Out of time this run; next run sends it'); break }
+    const { items } = groups[g]
+    const ids = items.map(x => x.id)
+    const k = groups[g].key ?? await batchKey(ids)
+    if (!groups[g].key) await db.rpc('set_notification_batch', { p_ids: ids, p_batch_key: k })
+    const out = await call('https://api.resend.com/emails/batch', items.map(x => x.message), k)
     if (out.kind === 'ok') {
       await finish(ids, true, null)
-      sent += chunk.length
+      sent += ids.length
     } else if (out.kind === 'rejected') {
-      // The batch is all or nothing: one address the provider rejects would hold back the rest.
-      // Send this chunk one by one instead (paced), so only the bad address fails.
-      await sendEach(chunk)
+      // The batch is all or nothing and the provider refused it, so nothing in it was sent: one bad
+      // address would hold back the rest. Send this chunk one by one instead, so only it fails.
+      await db.rpc('set_notification_batch', { p_ids: ids, p_batch_key: null })
+      await sendEach(items)
     } else if (out.kind === 'rate_limited') {
-      await requeue(ready.slice(i).map(c => c.id), 60)
-      waiting += ready.length - i
+      noteThrottle(out)
+      await requeue(rest(), throttled!.retryAfter, throttleReason())
       break
     } else {
-      // Still no answer after the retries: these rows try again in 5 minutes, with the same keys.
+      // Still no answer after the retries: these rows keep the batch key and try again in
+      // 5 minutes, together, under the same key.
       await finish(ids, false, out.detail)
-      failed += chunk.length
+      failed += ids.length
     }
   }
 
   // ── Everything else, one email per call, highest priority then oldest ──
+  if (throttled) return json({ sent, failed, waiting, note: throttleReason() })
   if (timeLeft() < 40_000) return json({ sent, failed, waiting, note: 'Out of time; the rest waits for the next run.' })
   const { data: rows, error } = await db.rpc('claim_notifications', { p_limit: 50 })
   if (error) return json({ error: error.message, sent, failed, waiting }, 500)
@@ -176,5 +210,6 @@ Deno.serve(async () => {
     if (message) singles.push({ id: row.id, message })
   }
   await sendEach(singles)
+  if (throttled) return json({ sent, failed, waiting, note: throttleReason() })
   return json({ sent, failed, waiting })
 })

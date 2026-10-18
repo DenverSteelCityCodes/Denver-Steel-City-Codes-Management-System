@@ -165,8 +165,14 @@ GRANT EXECUTE ON FUNCTION public.week_recipient_emails(TEXT, UUID) TO authentica
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS priority SMALLINT NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS notifications_priority_due_idx ON notifications (priority DESC, created_at)
     WHERE status IN ('queued', 'failed');
+-- The provider batch an urgent row was last sent in, set just before the call. If the answer never
+-- came (timeout, 5xx, or the run died), the rows keep it and go out again together under the same
+-- Idempotency-Key, so the provider can't deliver them twice.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS batch_key TEXT;
+CREATE INDEX IF NOT EXISTS notifications_batch_key_idx ON notifications (batch_key) WHERE batch_key IS NOT NULL;
 
--- The ordinary claim now takes the highest priority first, then the oldest. Both claims stamp
+-- The ordinary claim now takes the highest priority first, then the oldest. Rows of an unfinished
+-- batch are left to the urgent claim, which keeps them together. Both claims stamp
 -- next_attempt_at with the claim time, so private.requeue_stuck_notifications() (every minute)
 -- puts a row back only when the run that claimed it died 15 minutes ago, never while a slow run
 -- is still sending a backlog that was due long before.
@@ -176,6 +182,7 @@ RETURNS SETOF notifications LANGUAGE sql SECURITY DEFINER SET search_path = publ
      SET status = 'sending', attempts = n.attempts + 1, next_attempt_at = now()
    WHERE n.id IN (SELECT id FROM notifications
                    WHERE status IN ('queued', 'failed') AND attempts < 3 AND next_attempt_at <= now()
+                     AND batch_key IS NULL
                    ORDER BY priority DESC, created_at
                    LIMIT least(greatest(coalesce(p_limit, 50), 1), 200)
                    FOR UPDATE SKIP LOCKED)
@@ -185,32 +192,65 @@ REVOKE ALL ON FUNCTION public.claim_notifications(INT) FROM PUBLIC, anon, authen
 GRANT EXECUTE ON FUNCTION public.claim_notifications(INT) TO service_role;
 
 -- Urgent rows only, in bulk: the sender sends these through the provider's batch endpoint
--- (100 per call), so a whole week's families go out in one run.
+-- (100 per call), so a whole week's families go out in one run. A row that was in a batch with an
+-- unknown outcome brings the rest of that batch with it.
 CREATE OR REPLACE FUNCTION public.claim_urgent_notifications(p_limit INT DEFAULT 300)
 RETURNS SETOF notifications LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  WITH picked AS (
+    SELECT id, batch_key FROM notifications
+     WHERE priority > 0 AND status IN ('queued', 'failed') AND attempts < 3 AND next_attempt_at <= now()
+     ORDER BY priority DESC, created_at
+     LIMIT least(greatest(coalesce(p_limit, 300), 1), 500)
+     FOR UPDATE SKIP LOCKED)
   UPDATE notifications n
      SET status = 'sending', attempts = n.attempts + 1, next_attempt_at = now()
-   WHERE n.id IN (SELECT id FROM notifications
-                   WHERE priority > 0 AND status IN ('queued', 'failed') AND attempts < 3 AND next_attempt_at <= now()
-                   ORDER BY priority DESC, created_at
-                   LIMIT least(greatest(coalesce(p_limit, 300), 1), 500)
-                   FOR UPDATE SKIP LOCKED)
+   WHERE n.status IN ('queued', 'failed') AND n.attempts < 3
+     AND (n.id IN (SELECT id FROM picked)
+          OR (n.batch_key IS NOT NULL AND n.batch_key IN (SELECT batch_key FROM picked WHERE batch_key IS NOT NULL)))
   RETURNING n.*;
 $$;
 REVOKE ALL ON FUNCTION public.claim_urgent_notifications(INT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_urgent_notifications(INT) TO service_role;
 
--- Put claimed rows back without using up an attempt: the provider said "slow down" (429), or the
--- run is out of time before it could try them.
-CREATE OR REPLACE FUNCTION public.requeue_notifications(p_ids BIGINT[], p_delay_seconds INT DEFAULT 60)
+-- Record the batch a set of claimed rows is about to go out in (null: not in a batch any more,
+-- e.g. the provider refused the batch outright, so it was never sent and goes one by one).
+CREATE OR REPLACE FUNCTION public.set_notification_batch(p_ids BIGINT[], p_batch_key TEXT)
+RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  UPDATE notifications SET batch_key = p_batch_key WHERE id = ANY(p_ids) AND status = 'sending';
+$$;
+REVOKE ALL ON FUNCTION public.set_notification_batch(BIGINT[], TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_notification_batch(BIGINT[], TEXT) TO service_role;
+
+-- Put claimed rows back without using up an attempt, with the reason in last_error: the provider
+-- said "slow down" or the quota is used up (429; the sender passes Retry-After, else 15 minutes),
+-- or the run is out of time before it could try them. (An earlier draft of this PR had a 2-argument
+-- version; it never shipped.)
+DROP FUNCTION IF EXISTS public.requeue_notifications(BIGINT[], INT);
+CREATE OR REPLACE FUNCTION public.requeue_notifications(p_ids BIGINT[], p_delay_seconds INT DEFAULT 60, p_error TEXT DEFAULT NULL)
 RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
   UPDATE notifications
      SET status = 'queued', attempts = greatest(attempts - 1, 0),
-         next_attempt_at = now() + make_interval(secs => greatest(coalesce(p_delay_seconds, 60), 0))
+         next_attempt_at = now() + make_interval(secs => greatest(coalesce(p_delay_seconds, 60), 0)),
+         last_error = coalesce(left(p_error, 500), last_error)
    WHERE id = ANY(p_ids) AND status = 'sending';
 $$;
-REVOKE ALL ON FUNCTION public.requeue_notifications(BIGINT[], INT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.requeue_notifications(BIGINT[], INT) TO service_role;
+REVOKE ALL ON FUNCTION public.requeue_notifications(BIGINT[], INT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.requeue_notifications(BIGINT[], INT, TEXT) TO service_role;
+
+-- A run that died leaves rows in 'sending'. Put them back after 15 minutes, keeping the attempt
+-- the claim counted (a row that kills the sender can't loop forever); the third time it's failed
+-- for good, so it shows on the admin's list instead of sitting queued where no claim takes it.
+CREATE OR REPLACE FUNCTION private.requeue_stuck_notifications()
+RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  UPDATE notifications
+     SET status = CASE WHEN attempts >= 3 THEN 'failed' ELSE 'queued' END,
+         last_error = CASE WHEN attempts >= 3 THEN 'The sender stopped while sending this, three times' ELSE last_error END
+   WHERE status = 'sending' AND next_attempt_at < now() - interval '15 minutes';
+$$;
+REVOKE ALL ON FUNCTION private.requeue_stuck_notifications() FROM PUBLIC, anon, authenticated;
+-- Rows the old version put back with every attempt used were never claimed again: fail them.
+UPDATE notifications SET status = 'failed', last_error = coalesce(last_error, 'The sender stopped while sending this, three times')
+ WHERE status = 'queued' AND attempts >= 3;
 
 -- Posting an urgent update queues one urgent_notice per person in its audience, at priority 1.
 -- A person reached twice (a parent who also volunteers) and two accounts that share an address

@@ -89,9 +89,10 @@ begin
   perform private.requeue_stuck_notifications();
   select count(*) into n from notifications where id in (n_b, n_c) and status = 'sending';
   res := res || E'\na just-claimed row isn''t requeued as stuck: ' || case when n = 2 then 'ok' else 'BAD' end;
-  perform public.requeue_notifications(array[n_c], 60);
-  select count(*) into n from notifications where id = n_c and status = 'queued' and attempts = 0 and next_attempt_at > now() + interval '50 seconds';
-  res := res || E'\nrequeue (429 or out of time) gives the attempt back: ' || case when n = 1 then 'ok' else 'BAD' end;
+  perform public.requeue_notifications(array[n_c], 900, 'Provider rate limit or quota (429)');
+  select count(*) into n from notifications where id = n_c and status = 'queued' and attempts = 0
+     and next_attempt_at > now() + interval '14 minutes' and last_error = 'Provider rate limit or quota (429)';
+  res := res || E'\nrequeue (429 or out of time) gives the attempt back, backs off and says why: ' || case when n = 1 then 'ok' else 'BAD' end;
   select array_agg(id) into claim_ids from public.claim_notifications(1);
   res := res || E'\nordinary claim: then the next oldest: ' || case when claim_ids = array[n_a] then 'ok' else 'BAD ' || coalesce(claim_ids::text, 'none') end;
 
@@ -105,6 +106,28 @@ begin
   values (cls, '[TEST] BOTH', 8, 14, 10, null, w1_vol) returning id into sec_both;
   insert into registrations (student_id, section_id, status) values (camper_b, sec_both, 'confirmed');
   update registrations set year = yr - 1 where section_id = sec_both;
+  -- ── Unfinished batches go again whole; stuck rows can't sit queued forever ──
+  update notifications set next_attempt_at = now() + interval '1 day' where status in ('queued', 'failed');
+  insert into notifications (recipient_email, template, priority, created_at, batch_key) values ('g1@scc-test.invalid', 'urgent_notice', 1, now() - interval '3 minutes', 'k-test') returning id into n_a;
+  insert into notifications (recipient_email, template, priority, created_at, batch_key) values ('g2@scc-test.invalid', 'urgent_notice', 1, now() - interval '1 minute', 'k-test') returning id into n_b;
+  insert into notifications (recipient_email, template, priority, created_at) values ('g3@scc-test.invalid', 'urgent_notice', 1, now() - interval '2 minutes') returning id into n_c;
+  select array_agg(id) into claim_ids from public.claim_notifications(10);
+  res := res || E'\nordinary claim leaves an unfinished batch to the urgent claim: ' || case when claim_ids = array[n_c] then 'ok' else 'BAD ' || coalesce(claim_ids::text, 'none') end;
+  update notifications set status = 'queued', attempts = 0 where id = n_c;
+  select array_agg(id order by id) into claim_ids from public.claim_urgent_notifications(1);
+  res := res || E'\nurgent claim takes a batch whole, past its limit: ' || case when claim_ids = array[n_a, n_b] then 'ok' else 'BAD ' || coalesce(claim_ids::text, 'none') end;
+  perform public.set_notification_batch(array[n_a, n_c], null);
+  select count(*) into n from notifications where (id = n_a and batch_key is null) or (id = n_c and batch_key is null);
+  res := res || E'\nbatch key changes only on claimed rows: ' || case when n = 2 then 'ok' else 'BAD' end;
+  select count(*) into n from notifications where id = n_c and status = 'queued';
+  update notifications set status = 'sending', attempts = 3, next_attempt_at = now() - interval '20 minutes' where id = n_a;
+  update notifications set status = 'sending', attempts = 1, next_attempt_at = now() - interval '20 minutes' where id = n_b;
+  perform private.requeue_stuck_notifications();
+  select count(*) into n from notifications where id = n_a and status = 'failed';
+  res := res || E'\nstuck row with every attempt used is failed for good: ' || case when n = 1 then 'ok' else 'BAD' end;
+  select count(*) into n from notifications where id = n_b and status = 'queued' and attempts = 1 and batch_key = 'k-test';
+  res := res || E'\nstuck row with attempts left is queued again, keeping its batch: ' || case when n = 1 then 'ok' else 'BAD' end;
+
   execute 'set local role authenticated';
 
   -- ── Admin: week audiences, an urgent notice ──
