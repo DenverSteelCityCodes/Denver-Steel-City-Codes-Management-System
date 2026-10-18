@@ -25,7 +25,7 @@ export default function ParentSign({ id, ctx, fig, msg, sub, to, children }: Pro
       <div className="mt-1 grid grid-cols-[1fr_auto] items-end gap-x-4">
         <div className="min-w-0">
           {fig && (
-            <p className="font-extrabold text-[3.5rem] md:text-[4.5rem] leading-[0.92] tracking-[-0.03em] [font-variant-numeric:tabular-nums_lining-nums] break-words">
+            <p className="font-extrabold text-[3.5rem] leading-[0.92] tracking-[-0.03em] [font-variant-numeric:tabular-nums_lining-nums] break-words">
               {fig.value}
               {fig.unit && <small className="ml-[0.15em] text-[0.42em] font-extrabold tracking-normal">{fig.unit}</small>}
             </p>
