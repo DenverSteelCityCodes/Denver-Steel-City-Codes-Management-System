@@ -12,6 +12,13 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { render } from './templates.ts'
 
+// UTF-8 text → base64 (btoa alone only takes Latin-1).
+const base64 = (text: string) => {
+  let bin = ''
+  for (const b of new TextEncoder().encode(text)) bin += String.fromCharCode(b)
+  return btoa(bin)
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
@@ -56,7 +63,11 @@ Deno.serve(async () => {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from, to: [row.recipient_email], reply_to: replyTo, subject: email.subject, html: email.html, text: email.text }),
+        body: JSON.stringify({
+          from, to: [row.recipient_email], reply_to: replyTo, subject: email.subject, html: email.html, text: email.text,
+          // Spec 35: the interview's calendar file. The provider takes base64 content.
+          ...(email.attachments?.length ? { attachments: email.attachments.map(a => ({ filename: a.filename, content: base64(a.content), content_type: a.contentType })) } : {}),
+        }),
       })
       const detail = res.ok ? null : `${res.status} ${(await res.text()).slice(0, 400)}`
       await db.rpc('finish_notification', { p_id: row.id, p_ok: res.ok, p_error: detail })
