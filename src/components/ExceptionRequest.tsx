@@ -39,7 +39,7 @@ export default function ExceptionRequest({ camper, className, sent, onSend, idPr
   if (!open) {
     return (
       <button ref={openerRef} type="button" onClick={() => setOpen(true)} className={buttonClass('text')}>
-        Request an exception
+        Request an exception<span className="sr-only"> for {className}</span>
       </button>
     )
   }

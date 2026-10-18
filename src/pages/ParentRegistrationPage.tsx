@@ -466,8 +466,9 @@ export default function ParentRegistrationPage() {
       for (const week of [1, 2] as const) {
         if (!(week === 1 ? form.session1 : form.session2)) continue
         const ex = exceptionFor(week)
+        if (isSelectable(week, week === 1 ? form.class_week1 : form.class_week2)) continue
         if (ex && !ex.message.trim()) return fail(`exception${week}`, `Tell the camp why ${studentFirst} is ready for ${ex.name}, or pick another class.`)
-        if (!isSelectable(week, week === 1 ? form.class_week1 : form.class_week2) && !ex) return `Please select a class for ${campSessions[week - 1]?.name ?? `Session ${week}`}`
+        if (!ex) return `Please select a class for ${campSessions[week - 1]?.name ?? `Session ${week}`}`
       }
       if (q('place_with').required && !form.place_with.trim()) return fail('place_with', `${q('place_with').label} is required`)
       // A class whose section runs both weeks fills both weeks: it can't be paired with another.
