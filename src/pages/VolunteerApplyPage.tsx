@@ -368,7 +368,7 @@ export default function VolunteerApplyPage() {
           </p>
           {bookedTime ? (
             <p className="font-sans text-sm mb-2 px-3 py-2 rounded-[10px] bg-success-soft text-success font-semibold">
-              Interview booked: {formatSlot(bookedTime)}
+              Interview booked: {formatSlot(bookedTime)} (Denver time)
             </p>
           ) : (
             <p className="font-sans text-sm mb-2 text-ink-muted">
