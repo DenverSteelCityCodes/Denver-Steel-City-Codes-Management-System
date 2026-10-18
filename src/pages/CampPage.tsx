@@ -22,6 +22,7 @@ import { focusOnMount } from '../lib/focus'
 import { buttonClass } from '../lib/ui'
 import { DEMO_ACCOUNTS } from '../lib/demo'
 import type { UserRole, ScheduleItem } from '../types/database'
+import { LAPTOP_DEVICES, LAPTOP_ON_SITE } from '../lib/laptopLoans'
 
 // The public camp page (spec 30): what a family asks before registering, answered from the
 // database so it is always current: whether registration is open, the weeks with their dates,
@@ -309,8 +310,8 @@ function Courses({ courses, weekCount }: { courses: CampCourse[]; weekCount: num
 }
 
 // ── Good to know ──
-// Each answer says only what the app already does: the registration form's laptop and lunch
-// questions, the daily schedule above, and the three roll calls parents see on their dashboard.
+// Each answer says only what the app already does: the registration form's laptop (spec 29) and
+// lunch questions, the daily schedule above, and the three roll calls parents see on their dashboard.
 
 function Faq({ hasSchedule }: { hasSchedule: boolean }) {
   const email = <a href={`mailto:${CONTACT_EMAIL}`} className="font-bold underline underline-offset-[3px]">email us</a>
@@ -318,7 +319,7 @@ function Faq({ hasSchedule }: { hasSchedule: boolean }) {
     { q: 'What does it cost?', a: 'Nothing. Camp is free.' },
     {
       q: 'Does my camper need a laptop?',
-      a: <>Campers code on a laptop. The registration form asks whether your camper has one. If they don't, say so there, or {email}.</>,
+      a: <>Campers code on their own device. {LAPTOP_DEVICES} If yours doesn't have one, the camp lends a few loaners each week, first come first served: say so when you register, or ask on your Home page later. {LAPTOP_ON_SITE} Questions? {email}.</>,
     },
     {
       q: 'What about lunch?',

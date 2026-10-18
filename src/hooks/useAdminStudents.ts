@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { fetchAll } from '../lib/fetchAll'
-import type { RegistrationStatus } from '../types/database'
+import type { LaptopLoanStatus, RegistrationStatus } from '../types/database'
 
 export interface StudentRegistration {
   id: string
@@ -13,6 +13,8 @@ export interface StudentRegistration {
   class_id: string
   // The family's "place with a friend or sibling" request (spec 31).
   place_with: string | null
+  // That week's loaner laptop (spec 29), null when none was asked for.
+  laptop: LaptopLoanStatus | null
 }
 
 // Row shape of the students → parent profile / registrations → section → class select.
@@ -38,6 +40,8 @@ interface RawStudent {
     status: RegistrationStatus
     section_id: string
     sections: { id: string; label: string; week: 1 | 2 | null; class_id: string; classes: { id: string; name: string } | null } | null
+    // One-to-one (the loan's key is the registration), but read either shape.
+    laptop_loans: { status: LaptopLoanStatus } | { status: LaptopLoanStatus }[] | null
   }[] | null
 }
 
@@ -89,6 +93,7 @@ export function useAdminStudents() {
         profiles:parent_id ( display_name ),
         registrations (
           id, status, section_id,
+          laptop_loans ( status ),
           sections (
             id, label, week, class_id,
             classes ( id, name )
@@ -136,6 +141,7 @@ export function useAdminStudents() {
         class_name: r.sections?.classes?.name ?? '—',
         class_id: r.sections?.class_id ?? '',
         place_with: placeWith.get(r.id) ?? null,
+        laptop: (Array.isArray(r.laptop_loans) ? r.laptop_loans[0] : r.laptop_loans)?.status ?? null,
       })),
     }))
 
