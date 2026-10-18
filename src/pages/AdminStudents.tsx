@@ -92,35 +92,51 @@ function CamperDetail({
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<{ regId: string; text: string } | null>(null)
+  const [saved, setSaved] = useState<string | null>(null)
   const [pending, setPending] = useState<RegAction>(null)
-  // A routine status change shows its new value while it saves.
-  const [saving, setSaving] = useState<{ regId: string; status: RegistrationStatus } | null>(null)
+  // Choosing in a select only drafts the change (an arrow key or a typed letter fires change on
+  // Windows and Linux); the button next to it saves, because every save emails the family.
+  const [drafts, setDrafts] = useState<Record<string, { status?: RegistrationStatus; sectionId?: string }>>({})
   const [showHistory, setShowHistory] = useState(false)
 
-  async function run(regId: string, fn: () => Promise<void>) {
-    setBusy(regId)
+  const draft = (regId: string) => drafts[regId] ?? {}
+  const setDraft = (regId: string, patch: { status?: RegistrationStatus; sectionId?: string }) =>
+    setDrafts(d => ({ ...d, [regId]: { ...d[regId], ...patch } }))
+  const clearDraft = (regId: string) => setDrafts(d => { const n = { ...d }; delete n[regId]; return n })
+  // Focus goes back to the select that started it once the change is saved or dropped.
+  const refocus = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus())
+
+  async function run(reg: StudentRegistration, back: string, fn: () => Promise<void>) {
+    if (busy) return
+    setBusy(reg.id)
     setErr(null)
-    try { await fn(); setPending(null) }
-    catch (e) { setErr({ regId, text: e instanceof Error ? e.message : 'Something went wrong' }) }
+    setSaved(null)
+    try {
+      await fn()
+      setPending(null)
+      clearDraft(reg.id)
+      setSaved(reg.id)
+      refocus(back)
+    }
+    catch (e) { setErr({ regId: reg.id, text: e instanceof Error ? e.message : 'Something went wrong' }) }
     finally { setBusy(null) }
   }
 
   const sectionById = (id: string) => allSections.find(sec => sec.id === id)
 
-  // Routine status changes apply at once; cancelling a confirmed seat, or giving a seat in a
-  // full section, asks first. Cancelled is also how a camper is removed: the registration is kept
-  // as cancelled (the database stamps it "Removed by an admin") and its seat is freed.
+  // Every cancel asks first (Cancelled is how a camper is removed: the registration is kept as
+  // cancelled, the database stamps it "Removed by an admin", and a freed seat is offered to the
+  // next family), and so does giving a seat in a full section. Anything else saves at once.
   function requestStatus(reg: StudentRegistration, st: RegistrationStatus) {
-    if (st === reg.status) { setPending(null); return }
-    const cancelsSeat = reg.status === 'confirmed' && st === 'cancelled'
+    if (st === reg.status) { clearDraft(reg.id); return }
     const takesSeat = holdsSeat(st) && !holdsSeat(reg.status)
-    if (cancelsSeat || (takesSeat && overfillNote(sectionById(reg.section_id), fillKnown, ''))) {
+    if (st === 'cancelled' || (takesSeat && overfillNote(sectionById(reg.section_id), fillKnown, ''))) {
       setErr(null)
+      setSaved(null)
       setPending({ kind: 'status', regId: reg.id, status: st })
     } else {
       setPending(null)
-      setSaving({ regId: reg.id, status: st })
-      void run(reg.id, () => onStatusChange(reg.id, st)).finally(() => setSaving(null))
+      void run(reg, `status-${reg.id}`, () => onStatusChange(reg.id, st))
     }
   }
 
@@ -137,9 +153,14 @@ function CamperDetail({
       if (over) {
         return { message: over, confirmLabel: `Set ${action.status} anyway`, cancelLabel: `Keep ${reg.status}`, tone: 'danger' as const }
       }
-      if (reg.status === 'confirmed' && action.status === 'cancelled') {
+      if (action.status === 'cancelled') {
+        const kept = 'The registration stays on file as cancelled, attendance already taken stays on file, and the family gets an email.'
+        if (reg.status === 'waitlisted') {
+          return { message: `Take ${student.full_name} off the waitlist for ${where}? ${kept}`, confirmLabel: 'Take off waitlist', cancelLabel: 'Keep on waitlist', tone: 'danger' as const }
+        }
+        const seat = reg.status === 'offered' ? 'offered seat' : reg.status === 'pending' ? 'seat' : 'confirmed seat'
         return {
-          message: `Cancel ${student.full_name}'s confirmed seat in ${where}? The seat is freed for someone else; the registration stays on file as cancelled. Attendance already taken stays on file.`,
+          message: `Cancel ${student.full_name}'s ${seat} in ${where}? The seat is offered to the next family on the waitlist. ${kept}`,
           confirmLabel: 'Cancel seat',
           cancelLabel: 'Keep seat',
           tone: 'danger' as const,
@@ -170,8 +191,8 @@ function CamperDetail({
   }
 
   function confirmAction(reg: StudentRegistration, action: NonNullable<RegAction>) {
-    if (action.kind === 'status') return run(reg.id, () => onStatusChange(reg.id, action.status))
-    return run(reg.id, () => onMoveSection(reg.id, action.sectionId, moveStatus(reg)))
+    if (action.kind === 'status') return run(reg, `status-${reg.id}`, () => onStatusChange(reg.id, action.status))
+    return run(reg, `move-${reg.id}`, () => onMoveSection(reg.id, action.sectionId, moveStatus(reg)))
   }
 
   // Move targets by week, each saying its seats and ages so the choice needs no lookup.
@@ -192,7 +213,7 @@ function CamperDetail({
   const health = healthLines(student)
   const ec = student.emergency_contact_name || student.emergency_contact_phone
   const label = 'block font-bold'
-  const tel = (n: string) => <a href={telHref(n)} className="font-bold underline underline-offset-[3px] inline-flex items-center min-h-11 md:min-h-0">{n}</a>
+  const tel = (n: string) => <a href={telHref(n)} className="font-bold underline underline-offset-[3px] inline-flex items-center min-h-11">{n}</a>
 
   return (
     <div className="grid gap-x-8 gap-y-6 min-[1100px]:grid-cols-[5fr_7fr]">
@@ -232,59 +253,76 @@ function CamperDetail({
         ) : (
           <ul className="mt-2">
             {[...student.registrations].sort(byWeek).map((reg, i) => {
-              const statusValue = pending?.kind === 'status' && pending.regId === reg.id ? pending.status
-                : saving?.regId === reg.id ? saving.status : reg.status
+              const d = draft(reg.id)
+              const confirming = pending?.regId === reg.id ? pending : null
+              const statusValue = confirming?.kind === 'status' ? confirming.status : d.status ?? reg.status
+              const moveValue = confirming?.kind === 'move' ? confirming.sectionId : d.sectionId ?? ''
               const groups = moveGroups(reg)
+              const here = busy === reg.id
               return (
-                <li key={reg.id} aria-busy={busy === reg.id} className={`py-4 ${i > 0 ? 'border-t border-border' : 'pt-1'}`}>
+                <li key={reg.id} aria-busy={here} className={`py-4 ${i > 0 ? 'border-t border-border' : 'pt-1'}`}>
                   <p className="text-lg font-bold leading-[1.3]">
                     {reg.class_name} · {reg.section_label} · {weekWord(reg.section_week)}
                   </p>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <div>
+                  <div className="mt-3 grid gap-x-4 gap-y-3 min-[1280px]:grid-cols-2">
+                    <div className="min-w-0">
                       <label htmlFor={`status-${reg.id}`} className={label}>Status</label>
-                      <Select id={`status-${reg.id}`} className="mt-1.5" value={statusValue} disabled={!!busy}
-                        onChange={e => requestStatus(reg, e.target.value as RegistrationStatus)}>
-                        {(['confirmed', 'offered', 'waitlisted', 'cancelled', ...(reg.status === 'pending' ? ['pending' as const] : [])] as RegistrationStatus[])
-                          .map(st => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}
-                      </Select>
+                      <div className="mt-1.5 flex flex-wrap gap-2">
+                        <Select id={`status-${reg.id}`} className="flex-[1_1_10rem] w-auto min-w-0" value={statusValue}
+                          onChange={e => { setSaved(null); setPending(null); setDraft(reg.id, { status: e.target.value as RegistrationStatus }) }}>
+                          {(['confirmed', 'offered', 'waitlisted', 'cancelled', ...(reg.status === 'pending' ? ['pending' as const] : [])] as RegistrationStatus[])
+                            .map(st => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}
+                        </Select>
+                        {d.status && d.status !== reg.status && !confirming && (
+                          <Button variant="ink" aria-disabled={here || undefined} onClick={() => requestStatus(reg, d.status!)}>
+                            {here ? 'Saving…' : 'Set status'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label htmlFor={`move-${reg.id}`} className={label}>Move to</label>
-                      <Select id={`move-${reg.id}`} className="mt-1.5" aria-describedby={`move-hint-${reg.id}`}
-                        value={pending?.kind === 'move' && pending.regId === reg.id ? pending.sectionId : ''}
-                        disabled={!!busy || groups.length === 0}
-                        onChange={e => {
-                          const target = e.target.value
-                          setErr(null)
-                          setPending(target ? { kind: 'move', regId: reg.id, sectionId: target } : null)
-                        }}>
-                        <option value="">Keep in {reg.section_label}{reg.section_week ? ` · Week ${reg.section_week}` : ''}</option>
-                        {groups.map(g => (
-                          <optgroup key={String(g.w)} label={g.w ? `Week ${g.w}` : 'Both weeks'}>
-                            {g.list.map(sec => <option key={sec.id} value={sec.id}>{optionText(sec)}</option>)}
-                          </optgroup>
-                        ))}
-                      </Select>
+                      <div className="mt-1.5 flex flex-wrap gap-2">
+                        <Select id={`move-${reg.id}`} className="flex-[1_1_12rem] w-auto min-w-0" aria-describedby={`reg-hint-${reg.id}`}
+                          value={moveValue} disabled={groups.length === 0}
+                          onChange={e => { setSaved(null); setPending(null); setDraft(reg.id, { sectionId: e.target.value || undefined }) }}>
+                          <option value="">Keep in {reg.section_label}{reg.section_week ? ` · Week ${reg.section_week}` : ''}</option>
+                          {groups.map(g => (
+                            <optgroup key={String(g.w)} label={g.w ? `Week ${g.w}` : 'Both weeks'}>
+                              {g.list.map(sec => <option key={sec.id} value={sec.id}>{optionText(sec)}</option>)}
+                            </optgroup>
+                          ))}
+                        </Select>
+                        {d.sectionId && !confirming && (
+                          <Button variant="ink" aria-disabled={here || undefined}
+                            onClick={() => { if (!busy) { setErr(null); setPending({ kind: 'move', regId: reg.id, sectionId: d.sectionId! }) } }}>
+                            Move
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <p id={`move-hint-${reg.id}`} className="mt-1.5 text-sm text-ink-muted text-pretty">
-                    A move or a cancelled seat asks first. Cancelled frees the seat for the waitlist.
+                  <p id={`reg-hint-${reg.id}`} className="mt-1.5 text-sm text-ink-muted text-pretty">
+                    Nothing changes until you press the button. Moves and cancellations ask first; every change emails the family.
                   </p>
-                  {busy === reg.id && <p role="status" className="mt-2 text-sm font-bold">Saving…</p>}
+                  <div aria-live="polite" className="text-sm font-bold">
+                    {here && <p className="mt-2">Saving…</p>}
+                    {saved === reg.id && !here && <p className="mt-2">Saved. The family gets an email.</p>}
+                  </div>
                   {err?.regId === reg.id && (
                     <p role="alert" className="mt-2 font-bold text-danger text-pretty">Couldn't save that change: {err.text}</p>
                   )}
-                  {pending?.regId === reg.id && (
+                  {confirming && (
                     <div className="mt-3">
                       <InlineConfirm
-                        {...confirmProps(reg, pending)}
-                        busy={busy === reg.id}
-                        onConfirm={() => void confirmAction(reg, pending)}
-                        // Back to the select that asked, so the keyboard keeps its place.
+                        {...confirmProps(reg, confirming)}
+                        busy={here}
+                        onConfirm={() => void confirmAction(reg, confirming)}
+                        // Keep means keep: the draft goes, and focus goes back to the select that asked.
                         onCancel={() => {
-                          document.getElementById(`${pending.kind === 'status' ? 'status' : 'move'}-${reg.id}`)?.focus()
+                          refocus(`${confirming.kind === 'status' ? 'status' : 'move'}-${reg.id}`)
                           setPending(null)
+                          clearDraft(reg.id)
                         }}
                       />
                     </div>
@@ -345,10 +383,11 @@ function exportCamperCSV(students: AdminStudent[]) {
   downloadCsv(`campers-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(headers, rows))
 }
 
-// Confirmed seats are the normal case, so they stay in All.
-type StatusFilter = 'all' | 'waitlisted' | 'offered' | 'cancelled' | 'unregistered'
+// Confirmed is here too because Export CSV exports what the filter shows.
+type StatusFilter = 'all' | 'confirmed' | 'waitlisted' | 'offered' | 'cancelled' | 'unregistered'
 const FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All' },
+  { value: 'confirmed', label: 'Confirmed' },
   { value: 'waitlisted', label: 'Waitlisted' },
   { value: 'offered', label: 'Offered' },
   { value: 'cancelled', label: 'Cancelled' },
@@ -463,8 +502,7 @@ export default function AdminStudents() {
               onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
           <Segmented label="Show" options={FILTERS.map(f => ({
-            value: f.value,
-            label: <>{f.label} <span className="font-semibold tabular-nums">{statusCounts[f.value] ?? 0}</span></>,
+            value: f.value, label: f.label, count: statusCounts[f.value] ?? 0,
           }))} value={statusFilter} onChange={setStatusFilter} />
         </div>
 
@@ -513,7 +551,7 @@ export default function AdminStudents() {
                           <td className={`${td} ${line}`}>
                             <button type="button" onClick={() => setExpandedId(open ? null : s.id)}
                               aria-expanded={open} aria-controls={`camper-${s.id}`}
-                              className="inline-flex items-center gap-1.5 min-h-11 md:min-h-9 text-left font-bold text-lg md:text-base leading-[1.3] hover:underline underline-offset-[3px]">
+                              className="inline-flex items-center gap-1.5 min-h-11 text-left font-bold text-lg md:text-base leading-[1.3] hover:underline underline-offset-[3px]">
                               {s.full_name}
                               <ChevronDown size={18} strokeWidth={2.25} aria-hidden="true" className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
                             </button>
@@ -523,7 +561,7 @@ export default function AdminStudents() {
                             <span className="break-words">{s.parent_name}</span>
                             {s.parent_phone && (
                               <a href={telHref(s.parent_phone)} aria-label={`Call ${s.parent_name}, ${s.parent_phone}`}
-                                className="flex max-md:inline-flex max-md:ml-2 items-center w-fit min-h-8 max-md:min-h-11 text-sm text-ink-muted underline underline-offset-[3px] hover:text-ink">
+                                className="flex max-md:inline-flex max-md:ml-2 items-center w-fit min-h-11 text-sm text-ink-muted underline underline-offset-[3px] hover:text-ink">
                                 {s.parent_phone}
                               </a>
                             )}
