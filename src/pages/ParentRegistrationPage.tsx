@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, ChevronLeft, CheckCircle2, Lock } from 'lucide-react'
+import { ChevronRight, ChevronLeft, CheckCircle2, Lock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
@@ -14,6 +14,7 @@ import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
 import { GRADES, gradeToAge } from '../lib/campers'
 import { draftKey, readDraft, writeDraft, clearDraft } from '../lib/registrationDraft'
 import { fetchSectionFill } from '../lib/sectionFill'
+import { CAMP_SITE } from '../lib/campSite'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -119,13 +120,11 @@ const FIELD_IDS: Record<string, string> = {
   candy_consent: 'reg-candy', waiver_signature: 'reg-waiver-sig', guardian_signature: 'reg-guardian-sig',
 }
 
-function StepDots({ current, total }: { current: number; total: number }) {
+function StepBar({ current, total }: { current: number; total: number }) {
   return (
-    <div aria-hidden="true" className="flex items-center gap-2 justify-center mb-3">
+    <div aria-hidden="true" className="grid gap-1 mt-2.5" style={{ gridTemplateColumns: `repeat(${total}, 1fr)` }}>
       {Array.from({ length: total }, (_, i) => (
-        <div key={i} className={`h-2 rounded-full transition-all ${
-          i + 1 === current ? 'w-6 bg-brand' : i + 1 < current ? 'w-2 bg-brand/40' : 'w-2 bg-border-strong'
-        }`} />
+        <div key={i} className={`h-[5px] rounded-full ${i < current ? 'bg-brand-hover' : 'bg-border-strong'}`} />
       ))}
     </div>
   )
@@ -318,12 +317,18 @@ export default function ParentRegistrationPage() {
   }, [error, errorField])
 
   // A new step is announced: focus moves to its "Step N of 5" line (not on first load).
-  const stepRef = useRef<HTMLParagraphElement>(null)
+  const stepRef = useRef<HTMLHeadingElement>(null)
   const firstStep = useRef(true)
   useEffect(() => {
     if (firstStep.current) { firstStep.current = false; return }
     stepRef.current?.focus({ preventScroll: true })
   }, [step])
+
+  // "Save and exit" writes the draft now (the debounced save may not have run yet) and goes Home.
+  function saveAndExit() {
+    if (myDraftKey && !submitted && dirty.current) writeDraft(myDraftKey, form as unknown as Record<string, unknown>, step)
+    navigate('/parent')
+  }
 
   function startOver() {
     if (myDraftKey) clearDraft(myDraftKey)
@@ -571,21 +576,20 @@ export default function ParentRegistrationPage() {
     ? { 'aria-invalid': true as const, 'aria-describedby': 'reg-error' }
     : {}
   const yesNoCls = (val: boolean | null, target: boolean) =>
-    `flex-1 h-11 rounded-[10px] font-sans font-semibold text-sm border transition ${
+    `flex-1 h-12 rounded-[10px] font-sans font-semibold text-base border transition ${
       val === target ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
     }`
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4">
-        <div className="w-full max-w-sm bg-surface border border-border rounded-xl shadow-sm p-8 text-center">
-          <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 size={28} className="text-success" />
-          </div>
-          <h1 className="font-display font-bold text-2xl text-ink mb-2">{waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}</h1>
-          <p className="font-sans text-ink-muted text-sm mb-6">
+      <div className="max-w-sm mx-auto py-10 text-center">
+          <h1 className="font-display font-bold text-[28px] text-ink mb-2 flex items-center justify-center gap-2">
+            <CheckCircle2 size={26} aria-hidden="true" className="text-success shrink-0" />
+            {waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}
+          </h1>
+          <p className="font-sans text-ink text-base mb-6">
             {waitlistedCount === 0 ? (
-              <><strong className="text-ink">{studentFullName}</strong>'s spot is confirmed. You'll find the class, time and room on your dashboard.</>
+              <><strong className="text-ink">{studentFullName}</strong>'s spot is confirmed. You'll find the class, time and room on Home.</>
             ) : waitlistedCount === registeredCount ? (
               <>That class is full, so <strong className="text-ink">{studentFullName}</strong> is on the waitlist. We'll reach out if a spot opens.</>
             ) : (
@@ -596,9 +600,8 @@ export default function ParentRegistrationPage() {
             onClick={() => navigate('/parent')}
             className="ui-btn ui-btn--primary"
           >
-            Back to dashboard
+            Back to Home
           </button>
-        </div>
       </div>
     )
   }
@@ -616,7 +619,7 @@ export default function ParentRegistrationPage() {
           onClick={() => navigate('/parent')}
           className="ui-btn ui-btn--primary"
         >
-          Back to dashboard
+          Back to Home
         </button>
       </div>
     )
@@ -640,7 +643,7 @@ export default function ParentRegistrationPage() {
                 onClick={() => navigate('/parent')}
                 className="h-11 px-6 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition"
               >
-                Back to dashboard
+                Back to Home
               </button>
             </div>
           </>
@@ -652,16 +655,21 @@ export default function ParentRegistrationPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-8 pb-16">
-        {/* Contextual back — the shell's top nav owns primary navigation now. */}
-        <button
-          onClick={() => navigate('/parent')}
-          className="inline-flex items-center gap-1.5 font-sans text-sm font-semibold text-ink-muted hover:text-ink transition mb-6"
-        >
-          <ArrowLeft size={16} /> Back to dashboard
-        </button>
-        <StepDots current={step} total={5} />
-        <p ref={stepRef} tabIndex={-1} className="text-center font-sans text-xs font-semibold text-ink-muted mb-6 focus:outline-none">Step {step} of 5: {STEP_NAMES[step - 1]}</p>
+    <div className="max-w-lg mx-auto">
+        {/* Sticky step header: where you are, and a way out that keeps the draft. */}
+        <div className="sticky top-0 sm:top-16 z-20 -mx-4 sm:mx-0 -mt-5 sm:-mt-8 mb-6 px-4 sm:px-0 pt-2.5 pb-3 bg-bg border-b border-border">
+          <div className="flex items-center justify-between gap-3">
+            <p aria-hidden="true" className="font-sans text-sm font-semibold text-ink-muted">Step {step} of 5</p>
+            <button type="button" onClick={saveAndExit}
+              className="min-h-11 font-sans text-[15px] font-semibold text-ink underline decoration-brand-hover decoration-2 underline-offset-4">
+              Save and exit
+            </button>
+          </div>
+          <h1 ref={stepRef} tabIndex={-1} className="font-display font-bold text-[22px] leading-tight text-ink focus:outline-none">
+            <span className="sr-only">Step {step} of 5: </span>{STEP_NAMES[step - 1]}
+          </h1>
+          <StepBar current={step} total={5} />
+        </div>
         {restoredDraft && (
           <p role="status" className="mb-6 font-sans text-sm text-ink-muted bg-surface-sunken border border-border rounded-[10px] px-3 py-2">
             Picked up where you left off (saved {new Date(restoredDraft.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}).{' '}
@@ -674,7 +682,6 @@ export default function ParentRegistrationPage() {
           {/* Step 1: Student info */}
           {step === 1 && (
             <div className="space-y-5">
-              <h2 className="font-sans font-bold text-lg text-ink">Student information</h2>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -733,7 +740,7 @@ export default function ParentRegistrationPage() {
                 <div role="group" aria-labelledby="reg-ethnic" {...invalidProps('reg-ethnic')} className="flex flex-wrap gap-2">
                   {ETHNIC_OPTIONS.map(opt => (
                     <button key={opt} type="button" aria-pressed={form.ethnic_background.includes(opt)} onClick={() => toggleEthnic(opt)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                      className={`min-h-11 px-3.5 py-2 rounded-full text-[15px] font-semibold border transition ${
                         form.ethnic_background.includes(opt) ? 'bg-brand text-brand-on border-brand' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'
                       }`}>
                       {opt}
@@ -752,7 +759,6 @@ export default function ParentRegistrationPage() {
           {/* Step 2: Parent & Emergency contact */}
           {step === 2 && (
             <div className="space-y-5">
-              <h2 className="font-sans font-bold text-lg text-ink">Parent &amp; emergency contact</h2>
               <div>
                 <label htmlFor="reg-parent-name" className={labelCls}>{labelText('parent_name')}</label>
                 <input id="reg-parent-name" {...invalidProps('reg-parent-name')} type="text" autoComplete="name" className={inputCls} value={form.parent_name} onChange={e => set('parent_name', e.target.value)} />
@@ -789,7 +795,6 @@ export default function ParentRegistrationPage() {
           {/* Step 3: Medical & misc */}
           {step === 3 && (
             <div className="space-y-5">
-              <h2 className="font-sans font-bold text-lg text-ink">Medical &amp; miscellaneous</h2>
               <div>
                 <label htmlFor="reg-allergies" className={labelCls}>{labelText('allergies', 'enter "None" if not applicable')}</label>
                 <textarea id="reg-allergies" {...invalidProps('reg-allergies')} className={textareaCls} rows={2} value={form.allergies} onChange={e => set('allergies', e.target.value)} />
@@ -811,7 +816,7 @@ export default function ParentRegistrationPage() {
               </div>}
               {form.free_reduced_lunch && q('lunch_provision').show && (
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-brand" checked={form.lunch_provision}
+                  <input type="checkbox" className="w-5 h-5 accent-brand shrink-0" checked={form.lunch_provision}
                     onChange={e => set('lunch_provision', e.target.checked)} />
                   <span className="font-sans text-sm text-ink">{q('lunch_provision').label}</span>
                 </label>
@@ -841,7 +846,7 @@ export default function ParentRegistrationPage() {
               )}
               {q('candy_consent').show && (
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <input id="reg-candy" {...invalidProps('reg-candy')} type="checkbox" className="w-4 h-4 accent-brand" checked={form.candy_consent}
+                  <input id="reg-candy" {...invalidProps('reg-candy')} type="checkbox" className="w-5 h-5 accent-brand shrink-0" checked={form.candy_consent}
                     onChange={e => set('candy_consent', e.target.checked)} />
                   <span className="font-sans text-sm text-ink">{q('candy_consent').label}{q('candy_consent').required && ' *'}</span>
                 </label>
@@ -852,9 +857,8 @@ export default function ParentRegistrationPage() {
           {/* Step 4: Session & class selection */}
           {step === 4 && (
             <div className="space-y-6">
-              <h2 className="font-sans font-bold text-lg text-ink">Session &amp; class selection</h2>
               <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
-              <p className="font-sans text-sm text-ink-muted">Camp is held at Cherry Creek High School, 8:00 AM – 4:00 PM each day.</p>
+              <p className="font-sans text-sm text-ink-muted">Camp is held at {CAMP_SITE}, 8:00 AM – 4:00 PM each day.</p>
 
               {sessionsLoading || classesLoading ? (
                 <p className="font-sans text-sm text-ink-muted">Loading sessions…</p>
@@ -870,10 +874,10 @@ export default function ParentRegistrationPage() {
                 const options = classOptions(week)
                 return (
                   <div key={session.id} className={`border rounded-[14px] p-4 transition ${form[key] ? 'border-brand bg-brand-soft' : 'border-border bg-surface'}`}>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 accent-brand" checked={form[key]}
+                    <label className="flex items-center gap-3 min-h-11 cursor-pointer">
+                      <input type="checkbox" className="w-5 h-5 accent-brand shrink-0" checked={form[key]}
                         onChange={e => { set(key, e.target.checked); if (!e.target.checked) set(classKey, '') }} />
-                      <span className="font-sans font-semibold text-sm text-ink">{session.name}: {formatSessionDates(session)}</span>
+                      <span className="font-sans font-semibold text-base text-ink">{session.name}: {formatSessionDates(session)}</span>
                     </label>
                     {form[key] && (
                       <div className="mt-3">
@@ -886,15 +890,15 @@ export default function ParentRegistrationPage() {
                               const selected = !!o.section && form[classKey] === o.section.id
                               const spotsLeft = o.section ? o.section.capacity - o.section.registered_count : 0
                               return (
-                                <label key={o.classId} className={`flex items-center gap-3 p-2.5 rounded-[10px] border transition ${
+                                <label key={o.classId} className={`flex items-center gap-3 px-3 py-2.5 min-h-14 rounded-[10px] border transition ${
                                   !o.section ? 'border-dashed border-border-strong bg-surface-sunken cursor-not-allowed'
                                     : selected ? 'border-brand bg-surface cursor-pointer'
                                     : 'border-border-strong bg-surface hover:bg-surface-sunken cursor-pointer'
                                 }`}>
-                                  <input type="radio" name={classKey} className="w-4 h-4 accent-brand" disabled={!o.section}
+                                  <input type="radio" name={classKey} className="w-5 h-5 accent-brand shrink-0" disabled={!o.section}
                                     checked={selected} onChange={() => o.section && set(classKey, o.section.id)} />
                                   <span className="flex-1 min-w-0">
-                                    <span className="block font-sans text-sm text-ink">{o.name}</span>
+                                    <span className="block font-sans text-[15.5px] font-semibold text-ink">{o.name}</span>
                                     <span className={`block font-sans text-xs ${o.reason ? 'text-ink-muted' : o.full ? 'text-warning' : 'text-ink-muted'}`}>
                                       {o.reason ? (
                                         <span className="inline-flex items-center gap-1"><Lock size={11} /> {o.reason}</span>
@@ -917,7 +921,6 @@ export default function ParentRegistrationPage() {
           {/* Step 5: Waiver */}
           {step === 5 && (
             <div className="space-y-6">
-              <h2 className="font-sans font-bold text-lg text-ink">Waiver &amp; consent</h2>
 
               <div tabIndex={0} role="region" aria-label="Waiver and consent text" className="bg-surface border border-border rounded-xl p-4 max-h-64 overflow-y-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-focus space-y-3 text-xs font-sans text-ink-muted leading-relaxed">
                 <p className="font-semibold text-ink text-sm">Steel City Codes {campYear} Participant Waiver</p>
@@ -953,10 +956,10 @@ export default function ParentRegistrationPage() {
             </p>
           )}
 
-          <div className={`mt-8 flex gap-3 ${step > 1 ? 'justify-between' : 'justify-end'}`}>
+          <div className="mt-8 flex gap-3">
             {step > 1 && (
               <button type="button" onClick={handleBack}
-                className="h-11 px-5 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition">
+                className="h-12 px-5 bg-surface border border-border-strong text-ink font-sans font-semibold text-base rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition">
                 <ChevronLeft size={16} /> Back
               </button>
             )}
@@ -964,12 +967,12 @@ export default function ParentRegistrationPage() {
               // Distinct keys: without them React reuses the Next <button> as Submit and the click
               // that lands on the last step can fire a submit.
               <button key="next" type="button" onClick={handleNext}
-                className="ui-btn ui-btn--primary">
-                Next <ChevronRight size={16} />
+                className="ui-btn ui-btn--primary flex-1">
+                Continue <ChevronRight size={16} />
               </button>
             ) : (
               <button key="submit" type="submit" disabled={submitting}
-                className="ui-btn ui-btn--primary">
+                className="ui-btn ui-btn--primary flex-1">
                 {submitting
                   ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
                   : <CheckCircle2 size={16} />}

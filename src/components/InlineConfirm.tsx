@@ -64,7 +64,7 @@ export default function InlineConfirm({
           autoFocus
           type="button"
           onClick={onCancel}
-          className="h-9 px-3.5 rounded-[8px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition"
+          className="h-11 px-4 rounded-[10px] border border-border-strong bg-surface text-ink font-sans font-semibold text-sm hover:bg-surface-sunken transition"
         >
           {cancelLabel}
         </button>
@@ -72,7 +72,7 @@ export default function InlineConfirm({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className={`h-9 px-3.5 rounded-[8px] font-sans font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center gap-2 ${
+          className={`h-11 px-4 rounded-[10px] font-sans font-semibold text-sm hover:opacity-90 transition disabled:opacity-50 flex items-center gap-2 ${
             tone === 'danger' ? 'bg-danger text-surface' : 'bg-brand text-brand-on'
           }`}
         >

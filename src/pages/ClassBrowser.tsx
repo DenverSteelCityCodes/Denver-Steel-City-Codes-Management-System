@@ -1,403 +1,283 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Search, Lock, CheckCircle, List, ShieldCheck, Info } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { ChevronDown, CircleCheck, Info, List, Lock, Plus } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import { useStudents } from '../hooks/useStudents'
 import { useRegistrations } from '../hooks/useRegistrations'
-import { useSessions, activeCampYear } from '../hooks/useSessions'
+import { useSessions, activeCampYear, campSessions } from '../hooks/useSessions'
 import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
 import RegistrationCountdown from '../components/RegistrationCountdown'
-import CapacityMeter from '../components/CapacityMeter'
 import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useAuth } from '../context/AuthContext'
 import { useFormConfig } from '../hooks/useFormConfig'
 import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
-import type { RegistrationStatus, OnboardingConfirmation } from '../types/database'
+import { formatTimeRange } from '../lib/campDay'
+import { camperFirstName, holdsSeat } from '../lib/parentHome'
+import type { OnboardingConfirmation, Student } from '../types/database'
+import { PageHead, Sect, btnCls, listCls, primaryCls } from './volunteer/parts'
 
-// ── Section card ──────────────────────────────────────────────
-
-interface SectionCardProps {
-  section: SectionWithCount
-  studentName?: string
-  studentAge?: number
-  registrationStatus?: RegistrationStatus
-  onRegister?: () => void
-  registering?: boolean
-  // Disables Register without the spinner (e.g. while the camp year is still loading).
-  disabled?: boolean
-  // Course-level grade restriction (#44), e.g. Microcontrollers is rising 7–9 only.
-  gradeBlock?: string | null
-  // Name of the class this camper already holds a spot in for the same week (one class per week).
-  weekClash?: string | null
-}
-
-function SectionCard({ section, studentName, studentAge, registrationStatus, onRegister, registering, disabled, gradeBlock, weekClash }: SectionCardProps) {
-  const ageEligible = studentAge !== undefined
-    ? studentAge >= section.age_min && studentAge <= section.age_max
-    : true
-  // Age range fails first; otherwise a course grade rule may still disqualify the camper.
-  const ineligibleReason = !ageEligible
-    ? `Ages ${section.age_min}–${section.age_max}`
-    : (gradeBlock ?? null)
-
-  const isFull = section.registered_count >= section.capacity
-
-  if (ineligibleReason) {
-    return (
-      <div className="bg-surface-sunken border border-dashed border-border-strong rounded-xl p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-sans font-semibold text-sm text-ink truncate">{section.label}</span>
-          {section.week && (
-            <span className="shrink-0 px-2 py-0.5 rounded-full bg-surface text-ink-muted text-xs font-semibold border border-border-strong">W{section.week}</span>
-          )}
-        </div>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface text-ink-muted text-xs font-semibold border border-border-strong w-fit">
-          <Lock size={11} /> {ineligibleReason}
-        </span>
-        {studentName && (
-          <p className="font-sans text-xs text-ink-muted">Not eligible for {studentName}</p>
-        )}
-        <CapacityMeter registered={section.registered_count} capacity={section.capacity} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="bg-surface border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-sans font-semibold text-sm text-ink truncate">{section.label}</span>
-        {section.week && (
-          <span className="shrink-0 px-2 py-0.5 rounded-full bg-brand-soft text-warning text-xs font-semibold border border-brand/20">W{section.week}</span>
-        )}
-      </div>
-
-      {studentName && studentAge !== undefined && (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-soft text-success text-xs font-semibold w-fit">
-          <CheckCircle size={11} /> Ages {section.age_min}–{section.age_max} · {studentName} fits
-        </span>
-      )}
-
-      <CapacityMeter registered={section.registered_count} capacity={section.capacity} />
-
-      {registrationStatus ? (
-        <div className="flex items-center gap-2 text-sm font-sans font-semibold">
-          {registrationStatus === 'confirmed' && <><CheckCircle size={16} className="text-success" /><span className="text-success">Confirmed</span></>}
-          {registrationStatus === 'pending' && <><CheckCircle size={16} className="text-success" /><span className="text-success">Confirmed</span></>}
-          {registrationStatus === 'waitlisted' && <><List size={16} className="text-info" /><span className="text-info">Waitlisted</span></>}
-          {registrationStatus === 'cancelled' && <span className="text-ink-muted">Cancelled</span>}
-          {registrationStatus === 'offered' && <span className="text-warning">Spot offered: claim it on your dashboard</span>}
-          {studentName && <span className="text-ink-muted font-normal">· {studentName}</span>}
-        </div>
-      ) : weekClash ? (
-        // One class per camper per week, and no same-week waitlist backups (spec 10a): offers skip
-        // campers who already hold a spot that week, so a backup could never become a spot.
-        <p className="flex items-start gap-1.5 font-sans text-sm text-ink-muted">
-          <Info size={15} className="shrink-0 mt-0.5" />
-          Already in {weekClash} this week
-        </p>
-      ) : onRegister ? (
-        <button
-          onClick={onRegister}
-          disabled={registering || disabled}
-          className="ui-btn ui-btn--primary w-full"
-        >
-          {registering
-            ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
-            : isFull ? 'Join waitlist' : `Register ${studentName ?? 'camper'}`}
-        </button>
-      ) : null}
-    </div>
-  )
-}
-
-// ── Main page ─────────────────────────────────────────────────
-
+// Classes tab (issue #167): pick the camper and the week first, then only the classes that camper
+// can take that week. The rest fold away with the reason. The yearly check opens inside the class
+// tapped, and the result shows in that class.
 export default function ClassBrowser() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
   // Keep "spots left" honest during the opening rush: refresh seat counts every 30 s and on focus (spec 16).
   useRefetchOnFocus(refetchClasses, 30_000)
-  const { students, confirmOnboarding } = useStudents()
-  const { registrations, registerStudent, isRegistered, getRegistration } = useRegistrations()
+  const { students, loading: studentsLoading, confirmOnboarding } = useStudents()
+  const { registrations, registerStudent, getRegistration } = useRegistrations()
   const { sessions, loading: sessionsLoading } = useSessions()
   const { profile } = useAuth()
   const { profile: parentProfile } = useParentProfile()
   // "Close form" in the admin form editor closes registration here too (the database enforces it).
   const { enabled: registrationOpen } = useFormConfig('student_registration')
 
-  // Pre-select the camper when deep-linked from a StudentCard ("Register for another class").
-  const [selectedStudentId, setSelectedStudentId] = useState<string>(searchParams.get('camper') ?? '')
-  const [search, setSearch] = useState('')
-  const [registeringSectionId, setRegisteringSectionId] = useState<string | null>(null)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null)
-  // A section awaiting onboarding confirmation before its registration can proceed (#42).
-  const [pendingSection, setPendingSection] = useState<SectionWithCount | null>(null)
-  const [confirming, setConfirming] = useState(false)
-
-  const selectedStudent = students.find(s => s.id === selectedStudentId)
-
-  // Active camp year: the year of the open session(s). Campers must have confirmed their
-  // onboarding for THIS year before they can register — they re-confirm every summer (#42).
-  // It falls back to the calendar year until sessions load, so Register stays disabled until
-  // then; otherwise a quick click could skip the confirmation gate.
+  // Active camp year: the year of the open session(s). Campers re-confirm their details every
+  // summer before they can register (#42). Register stays disabled until sessions load, so a quick
+  // click can't skip the confirmation.
   const campYear = activeCampYear(sessions)
   const { settings: season, refetch: refetchSeason } = useSeasonSettings(sessions.length > 0 ? campYear : null)
   const isOpen = registrationIsOpen(season)
-  const needsConfirmation = (student?: typeof selectedStudent) =>
-    !!student && student.registration_year !== campYear
+  const weeks = campSessions(sessions).map((s, i) => ({ n: i + 1, session: s })).filter(w => w.session.is_active)
 
-  const filtered = classes.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.description ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  const student = students.find(s => s.id === searchParams.get('camper')) ?? students[0]
+  // A seat this camper holds in a given week (a both-weeks section counts for every week).
+  const seatIn = (st: Student | undefined, week: number) => st && registrations.find(r =>
+    r.student_id === st.id && holdsSeat(r) && r.year === campYear && !!r.sections &&
+    (r.sections.week == null || r.sections.week === week))
+  // Start on the first week the camper isn't in yet.
+  const firstFree = weeks.find(w => !seatIn(student, w.n))?.n ?? weeks[0]?.n ?? 1
+  const week = Number(searchParams.get('week')) || firstFree
 
-  function showToast(message: string, type: 'success' | 'info') {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 4000)
+  const [pending, setPending] = useState<string | null>(null)        // section awaiting the yearly check
+  const [busy, setBusy] = useState<string | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  function pick(params: { camper?: string; week?: number }) {
+    const next = new URLSearchParams(searchParams)
+    if (params.camper) { next.set('camper', params.camper); next.delete('week') }
+    if (params.week) next.set('week', String(params.week))
+    setSearchParams(next, { replace: true })
+    setPending(null)
+    setErrors({})
   }
 
-  // Gate: a camper whose onboarding isn't confirmed for the active year must review & confirm
-  // it first. Otherwise register immediately.
-  function handleRegister(section: SectionWithCount) {
-    if (!selectedStudentId || sessionsLoading) return
-    if (!registrationOpen) { showToast('Camper registration is closed right now.', 'info'); return }
-    if (needsConfirmation(selectedStudent)) {
-      setPendingSection(section)
-      return
-    }
-    void doRegister(section)
-  }
+  const needsConfirmation = !!student && student.registration_year !== campYear
 
   async function doRegister(section: SectionWithCount) {
-    if (!selectedStudentId) return
-    setRegisteringSectionId(section.id)
+    if (!student) return
+    setBusy(section.id)
+    setErrors(e => ({ ...e, [section.id]: '' }))
     try {
-      const reg = await registerStudent(selectedStudentId, section.id, section.registered_count, section.capacity)
-      const msg = reg.status === 'waitlisted'
-        ? `${selectedStudent?.full_name} added to the waitlist.`
-        : `${selectedStudent?.full_name} is in! Their spot is confirmed.`
-      showToast(msg, reg.status === 'waitlisted' ? 'info' : 'success')
+      await registerStudent(student.id, section.id, section.registered_count, section.capacity)
       void refetchClasses()   // fill meters now include this camper
     } catch (err) {
       // The server enforces age range and capacity; show its reason rather than a generic error.
       const reason = err instanceof Error ? err.message : ''
-      showToast(reason.includes('duplicate key')
-        ? `${selectedStudent?.full_name} is already registered for that section.`
-        : reason || 'Something went wrong. Please try again.', 'info')
+      setErrors(e => ({ ...e, [section.id]: reason.includes('duplicate key')
+        ? `${camperFirstName(student)} is already registered for that class.`
+        : reason || 'Something went wrong. Please try again.' }))
     } finally {
-      setRegisteringSectionId(null)
+      setBusy(null)
     }
   }
 
-  // After the parent reviews/edits and attests, persist + stamp the year, then continue the
-  // registration that triggered the prompt.
-  async function handleConfirmOnboarding(fields: OnboardingConfirmation) {
-    if (!selectedStudentId) return
-    setConfirming(true)
+  function handleRegister(section: SectionWithCount) {
+    if (!student || sessionsLoading) return
+    if (!registrationOpen) { setErrors(e => ({ ...e, [section.id]: 'Camper registration is closed right now.' })); return }
+    if (needsConfirmation) { setPending(section.id); return }
+    void doRegister(section)
+  }
+
+  // After the parent reviews, edits and re-signs, save it and stamp the year, then register.
+  async function handleConfirm(section: SectionWithCount, fields: OnboardingConfirmation) {
+    if (!student) return
+    setBusy(section.id)
     try {
-      await confirmOnboarding(selectedStudentId, fields, campYear)
-      const section = pendingSection
-      setPendingSection(null)
-      if (section) await doRegister(section)
+      await confirmOnboarding(student.id, fields, campYear)
+      setPending(null)
+      await doRegister(section)
     } catch {
-      showToast('Could not save your confirmation. Please try again.', 'info')
+      setErrors(e => ({ ...e, [section.id]: 'Could not save your confirmation. Please try again.' }))
     } finally {
-      setConfirming(false)
+      setBusy(null)
     }
   }
+
+  if (!studentsLoading && students.length === 0) {
+    return (
+      <>
+        <PageHead title="Find a class">Classes are picked as part of registering a camper.</PageHead>
+        <Link to="/parent/register" className={`${primaryCls} mt-5`}><Plus size={16} /> Register a camper</Link>
+      </>
+    )
+  }
+
+  const first = student ? camperFirstName(student) : 'your camper'
+  const held = seatIn(student, week)
+  const rows = classes.flatMap(cls => {
+    const constraint = courseConstraint(cls.name)
+    return cls.sections
+      .filter(sec => sec.week === week || sec.week == null)
+      .map(sec => {
+        const reason = !student ? null
+          : student.age < sec.age_min || student.age > sec.age_max ? `For ages ${sec.age_min} to ${sec.age_max}`
+          : gradeBlockReason(constraint, student.grade)
+        return { cls, sec, constraint, reason }
+      })
+  })
+  const fits = rows.filter(r => !r.reason)
+  const notFit = rows.filter(r => r.reason)
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
-        {/* Contextual back — the shell's top nav owns primary navigation now. */}
-        <button
-          onClick={() => navigate('/parent')}
-          className="inline-flex items-center gap-1.5 font-sans text-sm font-semibold text-ink-muted hover:text-ink transition"
-        >
-          <ArrowLeft size={16} /> Back to dashboard
-        </button>
+    <div className="max-w-[760px]">
+      <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
+      <PageHead title="Find a class" />
+      {!registrationOpen && (
+        <p role="status" className="mt-4 font-sans text-[15px] text-ink bg-surface border border-border rounded-[12px] px-4 py-3">
+          Camper registration is closed right now. Existing registrations are unchanged.
+        </p>
+      )}
 
-        {!registrationOpen && (
-          <p role="status" className="font-sans text-sm text-ink bg-surface-sunken border border-border rounded-[10px] px-4 py-3">
-            Camper registration is closed right now. Existing registrations are unchanged.
-          </p>
-        )}
+      <div className="mt-5">
+        <p id="who-l" className="font-sans text-sm font-semibold text-ink-muted mb-1.5">Who is it for?</p>
+        <div role="group" aria-labelledby="who-l" className="flex flex-wrap gap-2">
+          {students.map(s => {
+            const on = s.id === student?.id
+            const ini = s.full_name.split(/\s+/).map(n => n.match(/\p{L}/u)?.[0] ?? '').join('').toUpperCase().slice(0, 2)
+            return (
+              <button key={s.id} type="button" aria-pressed={on} onClick={() => pick({ camper: s.id })}
+                className={`h-11 pl-1.5 pr-3.5 rounded-full border inline-flex items-center gap-2 font-sans font-semibold text-[15px] transition ${
+                  on ? 'bg-ink border-ink text-bg' : 'bg-surface border-border-strong text-ink hover:bg-surface-sunken'}`}>
+                <span aria-hidden="true" className="w-8 h-8 rounded-full bg-role-parent-soft text-role-parent grid place-items-center text-xs font-bold">{ini}</span>
+                {camperFirstName(s)}, {s.age}
+              </button>
+            )
+          })}
+          <Link to="/parent/register" className="h-11 px-3.5 rounded-full border border-dashed border-border-strong inline-flex items-center gap-1.5 font-sans font-semibold text-[15px] text-ink-muted hover:text-ink hover:bg-surface-sunken transition">
+            <Plus size={16} /> New camper
+          </Link>
+        </div>
+      </div>
 
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <label htmlFor="browse-camper" className="sr-only">Camper</label>
-          <select
-            id="browse-camper"
-            value={selectedStudentId}
-            onChange={e => setSelectedStudentId(e.target.value)}
-            className="ui-input sm:w-64"
-          >
-            <option value="">Select a camper to enroll…</option>
-            {students.map(s => (
-              <option key={s.id} value={s.id}>{s.full_name} (age {s.age})</option>
+      {weeks.length > 1 && (
+        <div className="mt-4">
+          <p id="week-l" className="font-sans text-sm font-semibold text-ink-muted mb-1.5">Which week?</p>
+          <div role="group" aria-labelledby="week-l" className="grid grid-flow-col auto-cols-fr border border-border-strong rounded-[10px] overflow-hidden bg-surface">
+            {weeks.map(w => (
+              <button key={w.n} type="button" aria-pressed={week === w.n} onClick={() => pick({ week: w.n })}
+                className={`min-h-12 py-1 border-l first:border-l-0 border-border-strong font-sans font-semibold text-[15px] leading-tight transition ${
+                  week === w.n ? 'bg-ink text-bg' : 'text-ink hover:bg-surface-sunken'}`}>
+                {w.session.name}
+                <span className="block font-medium text-[13px] opacity-80">{shortDates(w.session.start_date, w.session.end_date)}</span>
+              </button>
             ))}
-          </select>
-
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-            <label htmlFor="browse-search" className="sr-only">Search courses</label>
-            <input
-              id="browse-search"
-              type="search"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search courses…"
-              className="ui-input pl-9 pr-3.5"
-            />
           </div>
         </div>
+      )}
 
-        {/* Eligibility banner */}
-        {selectedStudent && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-brand-soft text-warning border border-brand/20 rounded-[10px] font-sans text-sm font-semibold">
-            Showing eligibility for {selectedStudent.full_name} (age {selectedStudent.age}) — eligible sections are highlighted in green.
-          </div>
-        )}
+      {held && (
+        <p className="mt-4 flex items-start gap-2.5 bg-surface border border-border rounded-[12px] px-4 py-3 font-sans text-[15px] text-ink">
+          <Info size={17} className="shrink-0 mt-0.5 text-ink-muted" />
+          <span>{first} is in <b className="font-semibold">{held.sections?.classes?.name}</b> this week. Campers take one class a week; to change it, open {first} on Home and tap Switch class.</span>
+        </p>
+      )}
 
-        {/* Per-summer confirmation notice (#42): registering prompts a quick review first. */}
-        <RegistrationCountdown opensAt={season?.registration_opens_at} onOpen={() => { void refetchSeason() }} />
-
-        {selectedStudent && needsConfirmation(selectedStudent) && (
-          <div className="flex items-start gap-2.5 px-4 py-3 bg-info-soft text-info border border-info/20 rounded-[10px] font-sans text-sm">
-            <ShieldCheck size={16} className="shrink-0 mt-0.5" />
-            <span>
-              <span className="font-semibold">Quick check before you register.</span> Confirm {selectedStudent.full_name}'s
-              details are up to date for the {campYear} camp — we'll ask you to review them when you register.
-            </span>
-          </div>
-        )}
-
-        {/* Per-summer onboarding confirmation gate — opens in place, above the classes */}
-        {pendingSection && selectedStudent && (
-          <ConfirmOnboardingPanel
-            key={`${selectedStudent.id}-${pendingSection.id}`}
-            student={selectedStudent}
-            parentDefaults={{
-              parent_name: profile?.display_name,
-              parent_phone: parentProfile?.phone,
-              emergency_contact_name: parentProfile?.emergency_contact_name,
-              emergency_contact_phone: parentProfile?.emergency_contact_phone,
-              emergency_contact_relation: parentProfile?.emergency_contact_relation,
-            }}
-            campYear={campYear}
-            submitting={confirming}
-            onConfirm={handleConfirmOnboarding}
-            onClose={() => setPendingSection(null)}
-          />
-        )}
-
-        {!selectedStudentId && (
-          <p className="text-sm font-sans font-semibold bg-warning-soft text-warning px-4 py-3 rounded-[10px]">
-            Select a camper above to see eligibility and register.
-          </p>
-        )}
-
+      <Sect title={classesLoading ? 'Classes' : `${fits.length} ${fits.length === 1 ? 'class' : 'classes'} for ${first}`} id="classes-h">
         {classesLoading ? (
-          <div className="space-y-8">
-            {[1, 2].map(i => (
-              <div key={i} className="space-y-3">
-                <div className="h-7 bg-surface border border-border rounded-lg animate-pulse w-48" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[1, 2, 3].map(j => (
-                    <div key={j} className="bg-surface border border-border rounded-xl h-36 animate-pulse" />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-sans text-ink-muted">No classes found.</p>
-          </div>
+          <div className="h-48 bg-surface-sunken rounded-[14px] animate-pulse" aria-busy="true" />
+        ) : fits.length === 0 ? (
+          <p className="font-sans text-[15px] text-ink-muted">No class this week fits {first}'s age and grade.</p>
         ) : (
-          <div className="space-y-10">
-            {filtered.map(cls => {
-              const constraint = courseConstraint(cls.name)
-              const gradeBlock = gradeBlockReason(constraint, selectedStudent?.grade)
+          <div className={listCls}>
+            {fits.map(({ cls, sec, constraint }) => {
+              const reg = student ? getRegistration(student.id, sec.id) : null
+              const left = sec.capacity - sec.registered_count
+              const full = left <= 0
+              const pct = Math.min(100, Math.round((sec.registered_count / Math.max(sec.capacity, 1)) * 100))
+              const time = sec.start_time ? `${sec.days}, ${formatTimeRange(sec.start_time, sec.end_time)}` : sec.days
               return (
-              <div key={cls.id} className="space-y-4">
-                {/* Course header */}
-                <div>
-                  <h2 className="font-slab font-bold text-xl text-ink">{cls.name}</h2>
-                  {cls.description && (
-                    <p className="font-sans text-ink-muted text-sm mt-1">{cls.description}</p>
-                  )}
-                  {constraint?.requirementNote && (
-                    <p className="mt-2 inline-flex items-start gap-1.5 font-sans text-xs font-semibold bg-info-soft text-info px-2.5 py-1.5 rounded-[8px]">
-                      <Info size={13} className="shrink-0 mt-0.5" /> {constraint.requirementNote}
-                    </p>
-                  )}
-                </div>
-
-                {cls.sections.length === 0 ? (
-                  <p className="font-sans text-sm text-ink-faint">No sections available yet.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {cls.sections.map(sec => {
-                      const existingReg = selectedStudentId
-                        ? getRegistration(selectedStudentId, sec.id)
-                        : null
-                      const alreadyRegistered = selectedStudentId
-                        ? isRegistered(selectedStudentId, sec.id)
-                        : false
-
-                      // One held spot per camper per week (also enforced by the database).
-                      const weekClash = selectedStudentId
-                        ? registrations.find(r =>
-                            r.student_id === selectedStudentId &&
-                            r.section_id !== sec.id &&
-                            (r.status === 'pending' || r.status === 'confirmed') &&
-                            r.year === campYear &&
-                            // a both-weeks section (week = null) clashes with every week
-                            !!r.sections &&
-                            (r.sections.week == null || sec.week == null || r.sections.week === sec.week),
-                          )?.sections?.classes?.name ?? null
-                        : null
-
-                      return (
-                        <SectionCard
-                          key={sec.id}
-                          weekClash={weekClash}
-                          section={sec}
-                          studentName={selectedStudent?.full_name}
-                          studentAge={selectedStudent?.age}
-                          registrationStatus={existingReg?.status}
-                          onRegister={
-                            selectedStudentId && !alreadyRegistered
-                              ? () => handleRegister(sec)
-                              : undefined
-                          }
-                          registering={registeringSectionId === sec.id}
-                          disabled={sessionsLoading || !isOpen}
-                          gradeBlock={gradeBlock}
-                        />
-                      )
-                    })}
+                <article key={sec.id} className="p-4 border-b border-border last:border-0">
+                  <h3 className="font-sans text-[17.5px] font-bold text-ink leading-snug">{cls.name}, {sec.label}</h3>
+                  {cls.description && <p className="mt-1 font-sans text-[15px] text-ink-muted leading-normal">{cls.description}</p>}
+                  <p className="mt-2 font-sans text-[14.5px] text-ink leading-normal">
+                    Ages {sec.age_min} to {sec.age_max}{constraint?.requirementNote ? `. ${constraint.requirementNote}` : ''}
+                    <br />{[time, sec.room].filter(Boolean).join(', ')}
+                  </p>
+                  <div className="mt-2.5 h-1.5 rounded-full bg-surface-sunken overflow-hidden" aria-hidden="true">
+                    <div className={`h-full rounded-full ${full ? 'bg-danger' : left <= 2 ? 'bg-brand-hover' : 'bg-success'}`} style={{ width: `${pct}%` }} />
                   </div>
-                )}
-              </div>
+                  <p className="mt-1 flex justify-between font-sans text-sm text-ink-muted">
+                    <span>{full ? `Full${sec.waitlist_count ? `, ${sec.waitlist_count} on the waitlist` : ''}` : `${left} ${left === 1 ? 'spot' : 'spots'} left`}</span>
+                    <span>{sec.capacity} seats</span>
+                  </p>
+
+                  {reg && reg.status !== 'cancelled' ? (
+                    <p role="status" className={`mt-3 flex items-start gap-2 font-sans text-[15px] font-semibold ${holdsSeat(reg) ? 'text-success' : 'text-info'}`}>
+                      {holdsSeat(reg) ? <CircleCheck size={18} className="shrink-0 mt-0.5" /> : <List size={18} className="shrink-0 mt-0.5" />}
+                      {holdsSeat(reg) ? `${first} is in. Their spot is confirmed.`
+                        : reg.status === 'offered' ? `A spot opened for ${first}. Claim it on Home.`
+                        : `${first} is on the waitlist. We'll email you if a spot opens.`}
+                    </p>
+                  ) : held ? null : pending === sec.id && student ? (
+                    <ConfirmOnboardingPanel
+                      key={`${student.id}-${sec.id}`}
+                      student={student}
+                      parentDefaults={{
+                        parent_name: profile?.display_name,
+                        parent_phone: parentProfile?.phone,
+                        emergency_contact_name: parentProfile?.emergency_contact_name,
+                        emergency_contact_phone: parentProfile?.emergency_contact_phone,
+                        emergency_contact_relation: parentProfile?.emergency_contact_relation,
+                      }}
+                      campYear={campYear}
+                      full={full}
+                      submitting={busy === sec.id}
+                      onConfirm={fields => handleConfirm(sec, fields)}
+                      onClose={() => setPending(null)}
+                    />
+                  ) : (
+                    <button type="button" onClick={() => handleRegister(sec)} disabled={!!busy || sessionsLoading || !isOpen}
+                      className={`${btnCls} w-full mt-3`}>
+                      {busy === sec.id ? 'Registering…' : full ? 'Join the waitlist' : `Register ${first}`}
+                    </button>
+                  )}
+                  {errors[sec.id] && <p role="alert" className="mt-2 font-sans text-sm text-danger">{errors[sec.id]}</p>}
+                </article>
               )
             })}
           </div>
         )}
+      </Sect>
 
-      {/* Toast */}
-      {toast && (
-        <div role="status" aria-live="polite" className={`fixed bottom-6 right-6 left-6 sm:left-auto max-w-sm px-4 py-3 rounded-xl shadow-lg font-sans text-sm font-semibold border-l-4 ${
-          toast.type === 'success'
-            ? 'bg-surface-raised border-success text-ink'
-            : 'bg-surface-raised border-info text-ink'
-        }`}>
-          {toast.message}
-        </div>
+      {notFit.length > 0 && (
+        <details className="group mt-7">
+          <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer min-h-11 flex items-center justify-between gap-3">
+            <span className="font-sans text-[15px] font-semibold text-ink">Not open to {first} ({notFit.length})</span>
+            <ChevronDown size={16} aria-hidden="true" className="text-ink-muted transition group-open:rotate-180" />
+          </summary>
+          <div className={`${listCls} mt-2`}>
+            {notFit.map(({ cls, sec, reason }) => (
+              <div key={sec.id} className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-0">
+                <span className="flex-1 min-w-0">
+                  <span className="block font-sans text-base font-semibold text-ink">{cls.name}, {sec.label}</span>
+                  <span className="block font-sans text-sm text-ink-muted">{reason}</span>
+                </span>
+                <Lock size={16} aria-hidden="true" className="text-ink-muted shrink-0" />
+              </div>
+            ))}
+          </div>
+        </details>
       )}
     </div>
   )
+}
+
+// "Oct 19 to 23" (or "Oct 30 to Nov 3")
+function shortDates(start: string, end: string): string {
+  const a = new Date(`${start}T12:00:00`), b = new Date(`${end}T12:00:00`)
+  const m = (d: Date) => d.toLocaleDateString('en-US', { month: 'short' })
+  return `${m(a)} ${a.getDate()} to ${m(a) === m(b) ? '' : `${m(b)} `}${b.getDate()}`
 }

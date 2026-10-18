@@ -28,6 +28,8 @@ import VolunteerProfile from './pages/volunteer/VolunteerProfile'
 import ParentDashboard from './pages/ParentDashboard'
 import ParentRegistrationPage from './pages/ParentRegistrationPage'
 import ClassBrowser from './pages/ClassBrowser'
+import ParentUpdates from './pages/parent/ParentUpdates'
+import ParentFamily from './pages/parent/ParentFamily'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import VolunteerApplyPage from './pages/VolunteerApplyPage'
 import MfaGate from './components/MfaGate'
@@ -103,6 +105,8 @@ function App() {
               <Route path="/parent" element={<ParentDashboard />} />
               <Route path="/parent/classes" element={<ClassBrowser />} />
               <Route path="/parent/register" element={<ParentRegistrationPage />} />
+              <Route path="/parent/updates" element={<ParentUpdates />} />
+              <Route path="/parent/family" element={<ParentFamily />} />
             </Route>
           </Route>
 
