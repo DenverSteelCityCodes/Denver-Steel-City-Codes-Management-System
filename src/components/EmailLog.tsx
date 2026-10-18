@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Mail } from 'lucide-react'
+import { CircleAlert, CircleCheck, Hourglass, MailWarning, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import StatusWord from './StatusWord'
 
 // Admin: the emails the app itself sends (spec 09), newest first. RLS lets only admins read them.
 interface NotificationRow {
@@ -20,10 +21,16 @@ const LABELS: Record<string, string> = {
   registration_cancelled: 'Cancelled',
   interest_confirm: 'Notify me: confirm', registration_opening_soon: 'Registration opening soon', registration_now_open: 'Registration open',
 }
-const STATUS: Record<NotificationRow['status'], string> = {
-  queued: 'bg-warning-soft text-warning', sending: 'bg-info-soft text-info', sent: 'bg-success-soft text-success',
-  failed: 'bg-danger-soft text-danger', cancelled: 'bg-surface-sunken text-ink-muted',
+
+function Status({ status }: { status: NotificationRow['status'] }) {
+  if (status === 'sent') return <StatusWord tone="ok" icon={CircleCheck}>Sent</StatusWord>
+  if (status === 'failed') return <StatusWord tone="danger" icon={CircleAlert}>Failed</StatusWord>
+  if (status === 'sending') return <StatusWord tone="waiting" icon={Send}>Sending</StatusWord>
+  if (status === 'queued') return <StatusWord tone="waiting" icon={Hourglass}>Waiting</StatusWord>
+  return <StatusWord tone="plain">Skipped</StatusWord>
 }
+
+const when = (iso: string) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 export default function EmailLog() {
   const [rows, setRows] = useState<NotificationRow[] | null>(null)
@@ -47,41 +54,69 @@ export default function EmailLog() {
     return () => { alive = false }
   }, [])
 
+  const th = 'px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap'
+  const mobileLabel = 'md:hidden text-sm font-bold text-ink-muted'
+
   return (
-    <section aria-labelledby="email-log-heading" className="bg-surface border border-border rounded-[14px] shadow-sm px-4 sm:px-5 py-4">
-      <h2 id="email-log-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted mb-1 flex items-center gap-1.5">
-        <Mail size={13} /> Emails the app sent
-      </h2>
-      <p className="font-sans text-sm text-ink-muted mb-3">
-        Confirmations, waitlist and change notices go to families automatically. Addresses at example.com (the demo) are skipped.
-      </p>
+    <section aria-labelledby="email-log-heading">
+      <h2 id="email-log-heading" className="sr-only">Sent emails</h2>
       {stuck > 0 && (
-        <p role="alert" className="mb-3 font-sans text-sm text-warning bg-warning-soft rounded-[8px] px-3 py-2">
-          {stuck} email{stuck === 1 ? ' is' : 's are'} waiting to be sent. If this doesn't clear, the email provider isn't set up yet (spec 02).
-        </p>
+        <div role="note" className="mb-5 py-3 flex items-start gap-3 border-y-2 border-ink">
+          <MailWarning size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 mt-0.5" />
+          <p className="text-pretty">
+            <b className="block font-extrabold">{stuck} email{stuck === 1 ? ' is' : 's are'} waiting to send.</b>
+            If this doesn't clear, the email service isn't connected yet. They go out to families once it is.
+          </p>
+        </div>
       )}
-      {error && <p role="alert" className="font-sans text-sm text-danger">Couldn't load the email log: {error}</p>}
+      <p className="text-ink-muted text-pretty max-w-[65ch]">
+        Confirmations, waitlist and change notices go to families by themselves. Addresses at example.com (the demo) are skipped. The 50 newest are here, newest first.
+      </p>
+      {error && <p role="alert" title={error} className="mt-4 font-bold text-danger">Couldn't load the sent emails. Reload the page to try again.</p>}
       {!rows && !error ? (
-        <div className="h-16 bg-surface-sunken rounded-[10px] animate-pulse" />
+        <div aria-busy="true" aria-label="Loading sent emails" className="mt-4 border-y-2 border-ink">
+          {[1, 2, 3].map(i => <div key={i} className="h-12 my-1 rounded bg-surface-sunken animate-pulse" />)}
+        </div>
       ) : rows && rows.length === 0 ? (
-        <p className="font-sans text-sm text-ink-muted">No emails yet.</p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {rows?.map(r => (
-            <li key={r.id} className="py-2 flex items-start gap-3 font-sans text-sm">
-              <span className={`shrink-0 mt-0.5 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${STATUS[r.status]}`}>{r.status === 'cancelled' ? 'skipped' : r.status}</span>
-              <div className="min-w-0 flex-1">
-                <p className="text-ink truncate">
-                  {[LABELS[r.template] ?? r.template, [r.payload?.camper_full ?? r.payload?.camper, r.payload?.class].filter(Boolean).map(String).join(' · ')].filter(Boolean).join(': ')}
-                </p>
-                <p className="text-xs text-ink-muted truncate">
-                  {r.recipient_email ?? 'no address'} · {new Date(r.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                  {r.last_error ? ` · ${r.last_error}` : ''}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-4 py-4 border-y-2 border-ink font-bold">No emails yet.</p>
+      ) : rows && (
+        <table className="mt-4 w-full bg-surface border-y-2 border-ink max-md:block">
+          <caption className="sr-only">Emails the app sent, newest first</caption>
+          <thead className="max-md:sr-only">
+            <tr>
+              <th scope="col" className={th}>Email</th>
+              <th scope="col" className={th}>To</th>
+              <th scope="col" className={th}>Queued</th>
+              <th scope="col" className={th}>Status</th>
+            </tr>
+          </thead>
+          <tbody className="max-md:block">
+            {rows.map(r => {
+              const camper = String(r.payload?.camper_full ?? r.payload?.camper ?? '')
+              const cls = String(r.payload?.class ?? '')
+              return (
+                <tr key={r.id} className="border-t border-border first:border-t-0 max-md:block max-md:py-3">
+                  <td className="px-3 py-3 align-top max-md:block max-md:p-0">
+                    <b className="font-bold">{LABELS[r.template] ?? r.template}</b>
+                    {(camper || cls) && <span className="block text-sm text-ink-muted">{[camper, cls].filter(Boolean).join(' · ')}</span>}
+                  </td>
+                  <td className="px-3 py-3 align-top break-words max-md:block max-md:p-0 max-md:pt-1">
+                    <span className={mobileLabel}>To </span>{r.recipient_email ?? <span className="text-ink-muted">No address</span>}
+                  </td>
+                  <td className="px-3 py-3 align-top whitespace-nowrap max-md:block max-md:p-0">
+                    <span className={mobileLabel}>Queued </span>{when(r.created_at)}
+                  </td>
+                  <td className="px-3 py-3 align-top max-md:block max-md:p-0 max-md:pt-2">
+                    <Status status={r.status} />
+                    {r.last_error && (
+                      <span className={`block mt-1 text-sm text-pretty ${r.status === 'failed' ? 'font-bold text-danger' : 'text-ink-muted'}`}>{r.last_error}</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       )}
     </section>
   )

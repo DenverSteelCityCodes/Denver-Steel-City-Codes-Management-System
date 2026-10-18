@@ -14,6 +14,8 @@ export const PAGES = {
   'admin-students': { label: 'Campers', to: '/admin/students' },
   'admin-volunteers': { label: 'Volunteers', to: '/admin/volunteers' },
   'admin-applications': { label: 'Volunteers › Applications', to: '/admin/volunteers?tab=applications' },
+  'admin-crew': { label: 'Volunteers › Crew', to: '/admin/volunteers?tab=crew' },
+  'admin-emails': { label: 'Updates › Sent emails', to: '/admin/updates?tab=emails' },
   'admin-users': { label: 'Users & roles', to: '/admin/users' },
   'admin-attendance': { label: 'Attendance', to: '/admin/attendance' },
   'admin-classes': { label: 'Classes', to: '/admin/classes' },

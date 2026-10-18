@@ -42,12 +42,12 @@ const JOBS: Job[] = [
     more: [{ to: '/admin/attendance', label: 'Attendance', keywords: ['Roll call', 'Unaccounted', 'Attendance CSV', 'Week export'] }] },
   { to: '/admin/students', label: 'Campers', icon: Backpack, keywords: ['Students', 'Change requests', 'Registrations'] },
   { to: '/admin/classes', label: 'Classes', icon: LayoutGrid, keywords: ['Sections', 'Timetable', 'Rosters', 'Leads'] },
-  { to: '/admin/volunteers', label: 'Volunteers', icon: HandHelping, keywords: ['Applications', 'Crew', 'Volunteer roster'],
+  { to: '/admin/volunteers', label: 'Volunteers', icon: HandHelping, keywords: ['Applications'],
     more: [
       { to: '/admin/interviews', label: 'Interviews', keywords: ['Interview slots', 'Bookings'] },
       { to: '/admin/duties', label: 'Duties', keywords: ['Duty schedule', 'duty', 'Duty slots'] },
     ] },
-  { to: '/admin/updates', label: 'Updates', icon: Megaphone, keywords: ['Announcements', 'Posts', 'Emails', 'Sent emails'] },
+  { to: '/admin/updates', label: 'Updates', icon: Megaphone, keywords: ['Announcements', 'Posts'] },
 ]
 const SETUP: Job = {
   to: '/admin/sessions', label: 'Setup', icon: Settings, home: 'Season', keywords: ['Sessions', 'Season', 'Weeks', 'Registration', 'Schedule'],
@@ -62,6 +62,9 @@ const HELP: Job = { to: '/admin/help', label: 'Help', icon: CircleQuestionMark, 
 const SEARCH_PAGES = [...JOBS, SETUP, HELP].flatMap(j => [
   { to: j.to, label: j.label, icon: j.icon, keywords: j.keywords },
   ...(j.more ?? []).map(p => ({ to: p.to, label: p.label, icon: j.icon, keywords: p.keywords })),
+  // Views inside a page (?tab=) that people search for by name.
+  ...(j.to === '/admin/updates' ? [{ to: '/admin/updates?tab=emails', label: 'Sent emails', icon: j.icon, keywords: ['Emails', 'Email log'] }] : []),
+  ...(j.to === '/admin/volunteers' ? [{ to: '/admin/volunteers?tab=crew', label: 'Crew', icon: j.icon, keywords: ['Volunteer roster', 'Fill open spots'] }] : []),
 ])
 
 const on = (pathname: string, to: string) => pathname === to || (to !== '/admin' && pathname.startsWith(`${to}/`))

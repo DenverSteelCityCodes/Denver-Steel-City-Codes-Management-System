@@ -78,18 +78,18 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'Ask them to make an account at [Create an account](/signup) with the email they\'ll use for camp work, and to click the confirmation link. Use an account that isn\'t their own family\'s parent account: an account has one role, and an admin no longer sees the parent pages.',
-                'Open [[admin-users]]. They\'re listed under **Parents**, with their email.',
-                'In their **Role** menu, choose **Admin**.',
+                'Open [[admin-users]] and tap **Parents**, or search their name or email.',
+                'Tap **Change role** on their line and choose **Admin**.',
                 'Read the confirmation under their name: they\'ll see every camper\'s details and can change anything, including other people\'s roles. Tap **Make admin**.',
                 'Tell them to reload the page or sign in again: the change applies the next time they load a page. They\'re sent straight to **Set up two-step sign-in** and need an authenticator app on their phone (see [Sign in and two-step sign-in](/admin/help#getting-started)).',
-                'Check [[admin-users]]: under **Admins**, their line says "Two-step sign-in: on" once they\'ve finished, and "not set up yet" until then.',
+                'Check [[admin-users]]: under **Admins**, their line says "two-step sign-in on" once they\'ve finished, and "two-step sign-in not set up" until then.',
               ],
             },
             {
               kind: 'system',
               items: [
                 'If they were a volunteer, the confirmation names the class crews they\'ll leave. Their crew spots and upcoming duty slots are cleared in the same step.',
-                'Nobody can change their own role, and the last admin can\'t be changed: their line says "Only admin". The database refuses it too.',
+                'Nobody can change their own role, and the last admin can\'t be changed: their line says "Only admin, so the role stays". The database refuses it too.',
               ],
             },
           ],
@@ -107,7 +107,7 @@ export const ADMIN_GUIDE: HelpGuide = {
                 '**Admin** is only ever given by another admin on [[admin-users]].',
               ],
             },
-            { kind: 'p', text: 'To change a role, pick it in the person\'s **Role** menu on [[admin-users]] and confirm. The confirmation says what changes for them before anything happens.' },
+            { kind: 'p', text: 'To change a role, tap **Change role** on the person\'s line on [[admin-users]], pick the new role and confirm. The confirmation says what changes for them before anything happens.' },
             { kind: 'p', text: 'Changing someone to **Volunteer** here doesn\'t make them crew. They get a class and duties only after you accept their application on [[admin-applications]].' },
           ],
         },
@@ -120,8 +120,8 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'steps',
               items: [
-                'On [[admin-sessions]], tap **New session** for each camp week. Give it a name (for example "Week 1"), a start date and an end date, leave **Show on sign-up forms** ticked, and tap **Create session**. Week 1 and Week 2 are that year\'s first and second sessions by start date.',
-                'Under each week, tap **Add a time block** for the daily schedule (drop-off, lunch, pickup). Families see it on Home. Once one week has a schedule, the other week offers **Copy from** that week.',
+                'On [[admin-sessions]], under **Weeks**, tap **Add a week** for each camp week. Give it a name (for example "Week 1"), a start and end date and the place, leave **Visible to families** ticked, and tap **Add week**. Week 1 and Week 2 are that year\'s first and second sessions by start date.',
+                'Under each week, open **Daily schedule** and tap **Add a time block** (drop-off, lunch, pickup). Families see it on Home. Once one week has a schedule, the other week offers **Copy from** that week.',
                 'On [[admin-classes]], tap **New class**, enter the course name and the description parents see, and tap **Create class**. Its first section form opens.',
                 'Fill in the section: a label, capacity, youngest and oldest age, **Week 1** or **Week 2**, days, room, times, and the lead and supports if you know them. Tap **Add section**. Add more with **Add section** in that class\'s week column.',
                 'On [[admin-forms]], rename questions, hide optional ones and choose what\'s required. Changes apply to the live forms at once.',
@@ -226,7 +226,7 @@ export const ADMIN_GUIDE: HelpGuide = {
         {
           id: 'volunteer-pipeline',
           title: 'Volunteer applications, interviews and crews',
-          keywords: 'applicant accept reject interview slot crew lead support auto-assign matcher duty',
+          keywords: 'applicant accept reject interview slot crew lead support auto-assign fill open spots matcher duty',
           body: [
             {
               kind: 'steps',
@@ -234,25 +234,25 @@ export const ADMIN_GUIDE: HelpGuide = {
               items: [
                 'On [[admin-applications]], tap **Open applications** to start taking them at /apply. **Close applications** stops them.',
                 'The list starts on **Pending**. Tap an applicant to read their application.',
-                'To accept, tap **Accept**, choose **Junior** or **Senior**, and tap **Confirm accept as junior** (or senior). Seniors can lead a class; juniors support. To turn them down, tap **Reject**, add a reason if you like, and tap **Confirm reject**.',
+                'To accept, choose **Junior** or **Senior** under **Accept as**, then tap the button that names them, for example **Accept Riley as junior**. Seniors can lead a class; juniors support. To turn them down, tap **Reject**, add a reason if you like, and tap **Reject Riley** to confirm.',
               ],
             },
             {
               kind: 'steps',
               heading: 'Interviews',
               items: [
-                'On [[admin-interviews]], add times under **Add interview slot** (date, Denver time, minutes) and tap **Add slot**.',
-                'Applicants book and move their own interview from their application page. You can also tap **Book** on an open slot and pick an applicant.',
-                'After the interview, use the notes button on the booking to write **Interview notes** and tap **Save notes**.',
+                'On [[admin-interviews]], add times under **Slots** (date, Denver time, minutes) and tap **Add slot**.',
+                'Applicants book and move their own interview from their application page. You can also book them yourself: under **Needs a time**, pick an open time next to their name and tap **Book**, or tap **Book** on an open slot and pick an applicant.',
+                'After the interview, tap **Notes** on the booking, write the **Interview notes** and tap **Save notes**.',
               ],
             },
             {
               kind: 'steps',
               heading: 'Crews',
               items: [
-                'To fill empty spots automatically, open [[admin-volunteers]], go to **Auto-assign volunteers**, pick the week and tap **Preview matches**. Check the table, then tap **Apply assignments**.',
+                'To fill empty spots automatically, open [[admin-crew]] and use **Fill open spots**: pick the week and tap **Preview matches**. Check the table, then tap **Apply assignments**.',
                 'To set a crew by hand, select the section on [[admin-classes]] (it sits in its week\'s column), open **Edit**, and choose the **Lead** and **Supports**. Each name says their level, whether they\'re free that week and what they already crew; free people are listed first. Tap **Save** (the button names the section).',
-                'Daily jobs live on [[admin-duties]]: add a duty type, then **Add duty slot** with a date and how many volunteers. Volunteers sign up themselves.',
+                'Daily jobs live on [[admin-duties]]: add a type under **Duty types**, then under **Add a duty slot** pick the duty, the date and how many volunteers, and tap **Add slot**. The grid shows each day\'s names, and "1 open" where a spot is free. Volunteers sign up themselves.',
               ],
             },
             {
@@ -260,8 +260,8 @@ export const ADMIN_GUIDE: HelpGuide = {
               items: [
                 'Accepting needs an account with the applicant\'s email; applying at /apply makes one. The app tells you if it\'s missing.',
                 'Accepting doesn\'t email the volunteer. Their page turns into the volunteer area the next time they open it; tell them yourself.',
-                'Auto-assign fills only empty spots: a senior as lead and a junior as support, from volunteers available that week who aren\'t on another crew that week. Existing crews are kept.',
-                'Editing a section by hand doesn\'t check whether the volunteer is already on another crew that week. The **Assigned to** column on the volunteer roster shows who is where.',
+                '**Fill open spots** fills only empty spots: a senior as lead and a junior as support, from volunteers available that week who aren\'t on another crew that week. Existing crews are kept.',
+                'Editing a section by hand doesn\'t check whether the volunteer is already on another crew that week. The **Week 1** and **Week 2** columns on [[admin-crew]] show who is where.',
               ],
             },
           ],
@@ -275,18 +275,18 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'steps',
               items: [
-                'Open [[admin-attendance]]. The top line counts campers today, present at the latest roll call, unaccounted, and sections with no roll call yet.',
-                'Each section shows its lead, room and each roll call taken ("Arrival 12/12 · 9:04 AM"), or "not taken".',
-                '"No roll call taken yet — call the lead" means the crew hasn\'t marked anyone today.',
-                'Unaccounted campers are listed under their section with any health note and buttons to **Call parent** and call the emergency contact. On a phone these dial straight away.',
-                'For paper backups, use the printer button on a section for its printable roster. At the end of the week, use **Download attendance CSV** at the bottom.',
+                'Open [[admin-attendance]]. The sign at the top counts what needs you: campers unaccounted (in red), or sections with no roll call yet. Its first line says how many campers were present at the latest roll call, out of everyone today.',
+                'Under **All sections**, problem sections come first. Each row shows the room, the lead and every roll call: "All 12 accounted for", "8/10 · 2 unaccounted", **No roll call yet** or "Later". Tap a section to see each camper\'s marks.',
+                'Sections with **No roll call yet** are also listed with their room and lead, so you know who to call.',
+                '**Unaccounted now** lists every missing camper across all sections, with their section, room, lead, any health note and a call link for each contact (for example **Call Linh Tran (parent)**). On a phone these dial straight away.',
+                'For paper backups, open a section and tap **Print roster**. At the end of the week, open **Week export** at the bottom and tap **Download attendance CSV**.',
               ],
             },
             {
               kind: 'system',
               items: [
                 'Unaccounted means not marked present at the latest roll call taken in that section: marked absent ("Missed") or not marked at all ("Not marked at").',
-                'The board refreshes every minute and when you come back to the tab; **Refresh** reloads it now.',
+                'The board refreshes every minute and when you come back to the tab; **Refresh now** reloads it at once.',
                 'On camp days, **To do** and the bell show how many campers are unaccounted, or how many sections have no roll call yet.',
                 'Admins can\'t mark roll call here. If a camper turns out to be in the room, the crew marks them on their Today page.',
               ],
@@ -323,9 +323,9 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'list',
               heading: 'Reading the email log',
               items: [
-                '**Emails the app sent** at the bottom of [[admin-updates]] lists the newest 50.',
-                '**queued** means not sent yet. Queued emails only go out once the camp\'s email provider is connected; if they stay queued, it isn\'t yet.',
-                '**sent** went out; **failed** is retried twice, then shows on **To do**; **skipped** had no address it could send to (demo addresses at example.com are skipped).',
+                '[[admin-emails]] lists the newest 50.',
+                '**Waiting** means not sent yet. Waiting emails only go out once the camp\'s email service is connected; if they stay waiting, it isn\'t yet.',
+                '**Sent** went out; **Failed** is retried twice, then shows on **To do**; **Skipped** had no address it could send to (demo addresses at example.com are skipped).',
               ],
             },
           ],
@@ -396,7 +396,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               items: [
                 '[[admin-today]] lists it under **To do** ("has no lead") while its week hasn\'t ended. Tap **Assign a lead**; [[admin-classes]] opens at that class, where the section says **No lead**.',
                 'Select the section: it opens on **Edit**. Choose a **Lead** and tap **Save**.',
-                'Or fill every empty spot at once: on [[admin-volunteers]], use **Auto-assign volunteers** for that week, **Preview matches**, then **Apply assignments**.',
+                'Or fill every empty spot at once: on [[admin-crew]], use **Fill open spots** for that week, **Preview matches**, then **Apply assignments**.',
               ],
             },
             {
@@ -454,7 +454,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               heading: 'They never got a spot confirmation',
               items: [
                 'Their spot doesn\'t depend on the email: they can see it on their Home page. You can check it on [[admin-students]].',
-                'Look for their email in **Emails the app sent** at the bottom of [[admin-updates]]: **queued** (not sent yet), **sent**, **failed**, or **skipped** (no usable address).',
+                'Look for their email on [[admin-emails]]: **Waiting** (not sent yet), **Sent**, **Failed** or **Skipped** (no usable address).',
                 'Camp emails go to the email in their **Family details**, or their sign-in email if that\'s empty. If it\'s wrong, they fix it under **Family details** in their menu.',
               ],
             },
@@ -609,10 +609,10 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'steps',
               items: [
-                'Open [[admin-attendance]]. The camper is listed under their section with "Missed" or "Not marked at" and the roll call.',
+                'Open [[admin-attendance]]. The camper is listed under **Unaccounted now** with "Missed" or "Not marked at" and the roll call.',
                 'Check with the section\'s lead first (the board shows their name). "Not marked" often means the crew hasn\'t tapped them yet.',
-                'If the camper isn\'t there, tap **Call parent**, or the emergency contact\'s button, right on the board.',
-                'If they turn up, ask the crew to mark them present. The board updates within a minute, or tap **Refresh**.',
+                'If the camper isn\'t there, tap a call link under their name (the emergency contact or the parent), right on the board.',
+                'If they turn up, ask the crew to mark them present. The board updates within a minute, or tap **Refresh now**.',
               ],
             },
             {
@@ -634,8 +634,8 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'Make sure it\'s really them asking, for example by phone.',
-                'Another admin opens [[admin-users]]. Under **Admins**, their line says "Two-step sign-in: on" with **Reset**.',
-                'Tap **Reset**, read the confirmation, and tap **Reset two-step**.',
+                'Another admin opens [[admin-users]]. Under **Admins**, their line says "two-step sign-in on" and has **Reset two-step**.',
+                'Tap **Reset two-step**, read the confirmation under their name, and tap **Reset two-step** in it.',
                 'Tell them to sign in again. They set up two-step sign-in from scratch with their new phone.',
               ],
             },
@@ -658,7 +658,7 @@ export const ADMIN_GUIDE: HelpGuide = {
               kind: 'steps',
               items: [
                 'Open [[admin-users]] and find them under **Admins**.',
-                'In their **Role** menu, choose **Parent** (or **Volunteer** if they\'ll crew), and confirm with **Make parent** (or **Make volunteer**).',
+                'Tap **Change role**, choose **Parent** (or **Volunteer** if they\'ll crew), and confirm with **Make parent** (or **Make volunteer**).',
                 'They lose the admin pages the next time they load a page.',
               ],
             },

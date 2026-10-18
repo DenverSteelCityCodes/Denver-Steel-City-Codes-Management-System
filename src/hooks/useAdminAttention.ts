@@ -165,7 +165,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       title: `${failedEmails} ${plural(failedEmails, "email couldn't", "emails couldn't")} be sent`,
       detail: 'Families may not know about a confirmation or change. Check the email log.',
       ctaLabel: 'Open email log',
-      to: '/admin/updates',
+      to: '/admin/updates?tab=emails',
     })
   }
 

@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase'
 import { useSessions } from '../hooks/useSessions'
 import { ROLL_CALLS, localDateISO, sessionDays } from '../lib/campDay'
 import { downloadCsv, toCsv } from '../lib/csv'
+import { ChevronDown, Download } from 'lucide-react'
+import Button from './Button'
+import { Select } from './Field'
 
 interface SecRow { id: string; label: string; classes: { name: string } | null }
 type Stud = { id: string; full_name: string }
@@ -114,36 +117,36 @@ export default function AttendanceExport() {
     }
   }
 
+  // A Friday job, not a 9 am one: folded at the bottom of the board, with a secondary button.
   return (
-    <div className="bg-surface border border-border rounded-xl p-4 sm:p-5">
-      <h3 className="text-sm font-bold text-ink">End-of-week export</h3>
-      <p className="text-sm text-ink-muted mt-0.5">One row per camper per camp day, with each roll call.</p>
+    <details className="group mt-10 pt-5 border-t-2 border-ink">
+      <summary className="flex items-center gap-2 min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <h2 className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">Week export</h2>
+        <ChevronDown size={20} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+      </summary>
+      <p className="mt-1 text-ink-muted text-pretty">One row per camper per camp day, with each roll call.</p>
 
-      <div className="mt-3 flex flex-col sm:flex-row sm:items-end gap-3">
-        <div className="flex flex-col gap-1 sm:min-w-64">
-          <label htmlFor="export-session" className="text-xs font-semibold text-ink-muted">Session</label>
-          <select
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <div className="flex-[0_1_20rem] min-w-0">
+          <label htmlFor="export-session" className="block font-bold mb-1.5">Week</label>
+          <Select
             id="export-session"
             value={sessionId}
             onChange={e => { setPicked(e.target.value); setDone(null); setError(null) }}
-            className="min-h-10 rounded-lg border border-border bg-surface px-3 text-sm text-ink"
           >
             {sorted.map(s => <option key={s.id} value={s.id}>{s.name} {s.year}</option>)}
-          </select>
+          </Select>
         </div>
-        <button
-          type="button"
-          onClick={run}
-          disabled={busy || !session}
-          className="inline-flex items-center justify-center gap-2 min-h-10 px-4 rounded-lg bg-brand text-brand-on text-sm font-semibold hover:bg-brand-hover disabled:opacity-60 cursor-pointer"
-        >
-          {busy && <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />}
+        <Button onClick={run} disabled={busy || !session} aria-busy={busy}>
+          {busy
+            ? <span aria-hidden="true" className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            : <Download size={18} aria-hidden="true" />}
           Download attendance CSV
-        </button>
+        </Button>
       </div>
 
-      {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
-      {done !== null && !error && <p className="mt-3 text-xs text-ink-muted">Exported {done} rows</p>}
-    </div>
+      {error && <p role="alert" className="mt-3 text-sm font-bold text-danger text-pretty">Couldn't export: {error}. Try again.</p>}
+      {done !== null && !error && <p role="status" className="mt-3 text-sm text-ink-muted">Downloaded {done} rows.</p>}
+    </details>
   )
 }
