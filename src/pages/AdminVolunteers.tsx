@@ -261,7 +261,7 @@ function ApplicationReview({
               className="mt-4 p-4 rounded border-2 border-danger max-w-[640px]">
               <p id={`reject-${app.id}-q`} className="font-bold text-pretty">Reject {name}'s application? It moves to the Rejected list.</p>
               <label htmlFor={`reject-${app.id}-notes`} className="block mt-3 mb-1.5 font-bold">
-                Reason or notes <span className="font-normal text-ink-muted">(optional, only admins see it)</span>
+                Reason or notes <span className="font-normal text-ink-muted">(optional)</span>
               </label>
               <Textarea id={`reject-${app.id}-notes`} rows={2} className="resize-y"
                 placeholder="For example, didn't come to the interview"
@@ -415,7 +415,7 @@ export default function AdminVolunteers() {
   }
 
   const th = 'px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap'
-  const td = 'px-3 py-2 align-middle max-md:block max-md:p-0 max-md:py-0.5'
+  const td = 'px-3 py-2 align-middle max-md:p-0 max-md:py-0.5'
   const mobileLabel = 'md:hidden text-sm font-bold text-ink-muted'
 
   return (
@@ -668,7 +668,7 @@ export default function AdminVolunteers() {
                     const open = notesOpen === v.id
                     return (
                       <Fragment key={v.id}>
-                        <tr className="border-t border-border first:border-t-0 hover:bg-ink/[0.03] max-md:block max-md:py-3">
+                        <tr className="border-t border-border first:border-t-0 hover:bg-ink/[0.03] max-md:grid max-md:grid-cols-2 max-md:gap-x-3 max-md:py-2">
                           <td className={td}>
                             {v.interview_notes ? (
                               <button type="button" onClick={() => setNotesOpen(open ? null : v.id)}
@@ -680,12 +680,12 @@ export default function AdminVolunteers() {
                               </button>
                             ) : <b className="font-bold">{v.profiles.display_name}</b>}
                           </td>
-                          <td className={td}><span className={mobileLabel}>Level </span>{cap(v.experience_level)}</td>
-                          <td className={td}><span className={mobileLabel}>Week 1 </span>{weekCell(v, 1)}</td>
-                          <td className={td}><span className={mobileLabel}>Week 2 </span>{weekCell(v, 2)}</td>
+                          <td className={`${td} max-md:self-center max-md:text-right`}><span className="sr-only md:hidden">Level </span>{cap(v.experience_level)}</td>
+                          <td className={td}><span className={`${mobileLabel} block`}>Week 1</span>{weekCell(v, 1)}</td>
+                          <td className={td}><span className={`${mobileLabel} block`}>Week 2</span>{weekCell(v, 2)}</td>
                         </tr>
                         {open && (
-                          <tr id={`notes-${v.id}`} className="max-md:block">
+                          <tr id={`notes-${v.id}`} className="max-md:block max-md:pb-2">
                             <td colSpan={4} className="px-3 pb-4 pt-1 max-md:block max-md:px-0">
                               <p className="text-sm font-bold text-ink-muted">Interview notes</p>
                               <p className="mt-1 max-w-[68ch] text-pretty whitespace-pre-line">{v.interview_notes}</p>

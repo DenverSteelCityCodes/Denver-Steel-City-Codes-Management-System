@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Lock, ExternalLink, ArrowRight } from 'lucide-react'
 import { useFormConfigs } from '../hooks/useFormConfigs'
@@ -30,6 +30,15 @@ function FieldRow({
 
   // Escape blurs the field too; this tells that blur to discard instead of save.
   const discard = useRef(false)
+
+  // The label field grows to fit its text (field-sizing does this where supported; this covers Safari).
+  const box = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = box.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [draft])
 
   // Save the label when the admin leaves the field (not on every keystroke).
   function commitLabel() {
@@ -65,18 +74,21 @@ function FieldRow({
 
       <td className={`${td} ${resolved.show ? '' : 'opacity-60'}`}>
         <label htmlFor={`label-${def.key}`} className="sr-only">Question: {def.label}</label>
-        <input
+        {/* A one-line textarea that grows with the label, so a long question wraps instead of being cut
+            off on a phone. Enter saves (no line breaks in a label). */}
+        <textarea
+          ref={box}
           id={`label-${def.key}`}
-          type="text"
+          rows={1}
           value={draft}
-          onChange={e => setDraft(e.target.value)}
+          onChange={e => setDraft(e.target.value.replace(/\n/g, ' '))}
           onBlur={commitLabel}
           onKeyDown={e => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-            if (e.key === 'Escape') { discard.current = true; (e.target as HTMLInputElement).blur() }
+            if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLTextAreaElement).blur() }
+            if (e.key === 'Escape') { discard.current = true; (e.target as HTMLTextAreaElement).blur() }
           }}
           disabled={!resolved.show}
-          className="block w-full min-h-11 -mx-2.5 px-2.5 py-2 rounded border-2 border-transparent bg-transparent text-base font-semibold text-ink hover:border-border hover:bg-surface focus-visible:border-focus focus-visible:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:hover:border-transparent disabled:hover:bg-transparent"
+          className="block w-full min-h-11 -mx-2.5 px-2.5 py-2 resize-none overflow-hidden [field-sizing:content] rounded border-2 border-transparent bg-transparent text-base font-semibold leading-snug text-ink hover:border-border hover:bg-surface focus-visible:border-focus focus-visible:bg-surface focus-visible:outline-none disabled:cursor-not-allowed disabled:hover:border-transparent disabled:hover:bg-transparent"
           style={{ width: 'calc(100% + 1.25rem)' }}
         />
         {resolved.label !== def.label && (
