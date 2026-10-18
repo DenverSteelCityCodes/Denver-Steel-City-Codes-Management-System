@@ -63,22 +63,7 @@ export function useSessions() {
   return { sessions, loading, error, createSession, updateSession, deleteSession, refetch: fetchSessions }
 }
 
-// The active camp year: the latest year with an active session (else this calendar year).
-export function activeCampYear(sessions: Session[]): number {
-  return sessions.filter(s => s.is_active).reduce((max, s) => Math.max(max, s.year), 0) ||
-    new Date().getFullYear()
-}
-
-// That year's sessions in date order. Session N maps to sections.week = N (1 or 2), so hidden
-// sessions keep their place: filtering them out here would renumber the weeks and offer Week 1's
-// sections under Week 2. Callers that list sessions for sign-up skip the ones with !is_active.
-export function campSessions(sessions: Session[]): Session[] {
-  const year = activeCampYear(sessions)
-  return sessions
-    .filter(s => s.year === year)
-    .sort((a, b) => a.start_date.localeCompare(b.start_date))
-    .slice(0, 2)
-}
+export { activeCampYear, campSessions } from '../lib/campYear'
 
 // "June 7 – June 11, 2027"
 export function formatSessionDates(session: Session, withYear = true): string {

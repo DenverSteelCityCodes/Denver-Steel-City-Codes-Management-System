@@ -1,5 +1,5 @@
 // Pure helpers behind the parent Home tab (issue #167). No data fetching here.
-import { campSessions } from '../hooks/useSessions'
+import { campSessions } from './campYear'
 import { sessionDays } from './campDay'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import type { Session, Student } from '../types/database'
