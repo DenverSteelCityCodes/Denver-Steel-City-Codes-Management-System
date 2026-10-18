@@ -9,6 +9,7 @@ import { useInterviews } from '../hooks/useInterviews'
 import { useSessions, campSessions, formatSessionDates } from '../hooks/useSessions'
 import { matchVolunteers, type AssignmentPair } from '../lib/volunteerMatcher'
 import { formatCampSlot } from '../lib/denverTime'
+import { shortRange } from '../lib/weekRange'
 import { telHref } from '../lib/campers'
 import Button from '../components/Button'
 import { Textarea, Select } from '../components/Field'
@@ -324,7 +325,7 @@ export default function AdminVolunteers() {
   const weekLabels: [string, string] = [0, 1].map(i =>
     weeks[i] ? `${weeks[i].name} (${formatSessionDates(weeks[i], false)})` : `Week ${i + 1}`,
   ) as [string, string]
-  const weekHeads = [0, 1].map(i => weeks[i] ? `${weeks[i].name} · ${formatSessionDates(weeks[i], false)}` : `Week ${i + 1}`)
+  const weekHeads = [0, 1].map(i => weeks[i] ? `${weeks[i].name} · ${shortRange(weeks[i].start_date, weeks[i].end_date)}` : `Week ${i + 1}`)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const applicationsOpen = settings['volunteer_applications_open'] === 'true'
@@ -414,7 +415,7 @@ export default function AdminVolunteers() {
   }
 
   const th = 'px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap'
-  const td = 'px-3 py-3 align-top max-md:block max-md:p-0 max-md:py-0.5'
+  const td = 'px-3 py-2 align-middle max-md:block max-md:p-0 max-md:py-0.5'
   const mobileLabel = 'md:hidden text-sm font-bold text-ink-muted'
 
   return (
@@ -605,7 +606,7 @@ export default function AdminVolunteers() {
                   {applying ? 'Applying…' : 'Apply assignments'}
                 </Button>
               </div>
-              <div className="overflow-x-auto">
+              <div className="relative overflow-x-auto">
                 <table className="w-full min-w-[560px] bg-surface border-y-2 border-ink">
                   <caption className="sr-only">Proposed crew for Week {week}</caption>
                   <thead>

@@ -1,7 +1,8 @@
 import { Fragment, useState } from 'react'
 import { ChevronDown, Plus, UserPlus } from 'lucide-react'
 import { useDutyTypes, useDutySlots, type DutySlot } from '../hooks/useDutyRoles'
-import { useSessions, campSessions, formatSessionDates } from '../hooks/useSessions'
+import { useSessions, campSessions } from '../hooks/useSessions'
+import { shortRange } from '../lib/weekRange'
 import { sessionDays, parseLocalDate } from '../lib/campDay'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
@@ -12,7 +13,7 @@ import { AdminPageHead, VolunteersTabs, pageClass, h2Class } from '../components
 type PendingDelete = { kind: 'slot'; id: string } | { kind: 'type'; id: string } | null
 
 const label = 'block font-bold mb-1.5'
-const dayHead = (iso: string) => parseLocalDate(iso).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })
+const dayHead = (iso: string) => { const d = parseLocalDate(iso); return `${d.toLocaleDateString('en-US', { weekday: 'short' })} ${d.getDate()}` }
 const dayLong = (iso: string) => parseLocalDate(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 const openOf = (s: DutySlot) => Math.max(s.capacity - s.assigned_count, 0)
 
@@ -141,7 +142,7 @@ export default function AdminDuties() {
             onChange={id => { setPickedWeek(id); setSlotNote(null); setPendingDelete(null) }}
             options={weeks.map(w => ({
               value: w.id,
-              label: <>{w.name}<span className="max-sm:hidden font-semibold"> · {formatSessionDates(w, false)}</span></>,
+              label: <>{w.name}<span className="max-sm:hidden font-semibold"> · {shortRange(w.start_date, w.end_date)}</span></>,
             }))}
           />
           {!loading && !slotsError && (
@@ -173,9 +174,9 @@ export default function AdminDuties() {
         </p>
       ) : (
         <div role="region" aria-label={`Duties, ${week.name}. Scrolls sideways on a small screen.`} tabIndex={0}
-          className="overflow-x-auto focus-visible:outline-offset-2">
+          className="relative overflow-x-auto focus-visible:outline-offset-2">
           <table className="w-full min-w-[760px] table-fixed bg-surface border-y-2 border-ink">
-            <caption className="sr-only">Duties, {week.name}, {formatSessionDates(week, false)}</caption>
+            <caption className="sr-only">Duties, {week.name}, {shortRange(week.start_date, week.end_date)}</caption>
             <colgroup><col className="w-[11rem]" />{days.map(d => <col key={d} />)}</colgroup>
             <thead>
               <tr>
@@ -200,7 +201,7 @@ export default function AdminDuties() {
                       {days.map(d => {
                         const list = cellSlots(t.id, d)
                         return (
-                          <td key={d} className="px-3 py-3 align-top">
+                          <td key={d} className="group/cell px-3 py-3 align-top">
                             {list.length === 0 ? (
                               <span className="text-ink-muted" aria-label="No slot">–</span>
                             ) : list.map(slot => {
@@ -219,7 +220,8 @@ export default function AdminDuties() {
                                     </p>
                                   )}
                                   <div>
-                                    <button type="button" className={`${linkBtn} text-ink-muted`}
+                                    {/* Quiet until the cell is hovered or the link is focused; always shown on touch screens. */}
+                                    <button type="button" className={`${linkBtn} text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100`}
                                       aria-expanded={pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id}
                                       onClick={() => setPendingDelete({ kind: 'slot', id: slot.id })}>
                                       Delete<span className="sr-only"> {t.name} on {dayLong(d)}</span>

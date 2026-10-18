@@ -8,6 +8,7 @@ import { Input, Select, Textarea } from '../components/Field'
 import { AdminPageHead, VolunteersTabs, pageClass, h2Class } from '../components/AdminTabs'
 import { supabase } from '../lib/supabase'
 import { campDateKey, campInputToISO, formatCampTime } from '../lib/denverTime'
+import { mondayOf, shortRange } from '../lib/weekRange'
 import type { VolunteerApplication } from '../types/database'
 
 interface Application {
@@ -280,6 +281,11 @@ export default function AdminInterviews() {
   const oneDuration = durations.size === 1 ? [...durations][0] : null
   const needsTime = applications.filter(a => a.status === 'pending' && !bookedAppIds.has(a.id))
   const pastCount = pastDays.reduce((n, d) => n + grouped[d].filter(s => s.booking).length, 0)
+  // Upcoming days by week: the nearest week stays open, later weeks fold to one line each.
+  const upcomingWeeks = Object.values(upcomingDays.reduce<Record<string, string[]>>((acc, d) => {
+    ;(acc[mondayOf(d)] ??= []).push(d)
+    return acc
+  }, {}))
 
   const th = 'px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap'
   const linkBtn = 'min-h-11 md:min-h-9 font-bold underline underline-offset-[3px] cursor-pointer'
@@ -488,9 +494,23 @@ export default function AdminInterviews() {
             </p>
           )) : (
             <>
-              {upcomingDays.length > 0
-                ? slotTable(upcomingDays, 'Upcoming interview slots')
+              {upcomingWeeks.length > 0
+                ? slotTable(upcomingWeeks[0], `Interview slots, ${shortRange(upcomingWeeks[0][0], upcomingWeeks[0][upcomingWeeks[0].length - 1])}`)
                 : <p className="py-4 border-y-2 border-ink font-bold">No upcoming slots. Add a time above.</p>}
+              {upcomingWeeks.slice(1).map(weekDays => {
+                const list = weekDays.flatMap(d => grouped[d])
+                const range = shortRange(weekDays[0], weekDays[weekDays.length - 1])
+                const nBooked = list.filter(s => s.booking).length
+                return (
+                  <details key={weekDays[0]} className="group mt-4">
+                    <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                      {range} · {list.length - nBooked} open{nBooked ? `, ${nBooked} booked` : ''}
+                      <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="mt-2">{slotTable(weekDays, `Interview slots, ${range}`)}</div>
+                  </details>
+                )
+              })}
               {pastDays.length > 0 && (
                 <details className="group mt-4">
                   <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">

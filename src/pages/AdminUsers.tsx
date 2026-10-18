@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase'
 import type { UserRole } from '../types/database'
 
 const ROLE_LABELS: Record<UserRole, string> = { admin: 'Admin', volunteer: 'Volunteer', parent: 'Parent' }
-const PAGE = 50
+const PAGE = 25
 
 // Section crew spots of a volunteer whose role is being changed (they're cleared on confirm).
 type CrewCheck =

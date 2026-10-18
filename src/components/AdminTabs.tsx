@@ -28,7 +28,7 @@ export interface AdminTab { to: string; label: string; count?: number | null; cu
 export default function AdminTabs({ label, tabs }: { label: string; tabs: AdminTab[] }) {
   return (
     <nav aria-label={label} className="mb-6 border-b border-border">
-      <ul className="flex gap-1 sm:gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="relative flex gap-1 sm:gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map(t => (
           <li key={t.to} className="shrink-0">
             <Link

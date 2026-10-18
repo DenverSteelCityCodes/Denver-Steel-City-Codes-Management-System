@@ -236,7 +236,8 @@ export default function AdminAttendance() {
               </thead>
               <tbody className="max-md:block">
                 {ordered.map(s => {
-                  const open = toggled[s.id] ?? s.unaccounted.length > 0
+                  // One line per section; the marks open on demand (unaccounted campers are already listed above).
+                  const open = toggled[s.id] ?? false
                   return (
                     <Fragment key={s.id}>
                       <tr className={`border-t first:border-t-0 max-md:block max-md:py-3 ${open ? 'border-ink' : 'border-border'}`}>
@@ -252,11 +253,15 @@ export default function AdminAttendance() {
                             {s.className}{s.room ? ` · ${s.room}` : ''} · {s.leadName ?? 'No lead'}
                           </span>
                         </td>
-                        {ROLL_CALLS.map((r, idx) => (
-                          <td key={r.key} className="px-3 py-3 align-top max-md:block max-md:p-0 max-md:pt-1">
-                            <span className={mobileLabel}>{r.label}: </span>{rollCell(s, r.key, idx)}
-                          </td>
-                        ))}
+                        {ROLL_CALLS.map((r, idx) => {
+                          // Roll calls still to come say "Later"; on a phone they're left out of the row.
+                          const later = !s.rollCalls[r.key].taken && idx > rcIndex(s.latest) && idx > dueIdx
+                          return (
+                            <td key={r.key} className={`px-3 py-3 align-top max-md:p-0 max-md:pt-1 ${later ? 'max-md:hidden' : 'max-md:block'}`}>
+                              <span className={mobileLabel}>{r.label}: </span>{rollCell(s, r.key, idx)}
+                            </td>
+                          )
+                        })}
                       </tr>
                       {open && (
                         <tr id={`marks-${s.id}`} className="max-md:block">

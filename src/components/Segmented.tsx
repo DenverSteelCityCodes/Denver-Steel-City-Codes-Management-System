@@ -20,7 +20,7 @@ export default function Segmented<T extends string>({
 }) {
   return (
     <div role="group" aria-label={label}
-      className={`inline-flex max-w-full overflow-x-auto rounded border-2 border-ink divide-x-2 divide-ink [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
+      className={`relative inline-flex max-w-full overflow-x-auto rounded border-2 border-ink divide-x-2 divide-ink [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
       {options.map(o => {
         const on = o.value === value
         return (
