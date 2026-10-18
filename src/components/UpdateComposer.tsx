@@ -36,8 +36,8 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
 
   const sectionLabel = mode.kind === 'lead' ? mode.section.label : mode.sections.find(s => s.id === sectionId)?.label
   const audienceCopy: Record<UpdateAudience, string> = {
-    everyone: 'Every parent and volunteer',
-    parents: 'All parents',
+    everyone: "This season's parents and every volunteer",
+    parents: "This season's parents",
     volunteers: 'All volunteers',
     section: sectionLabel ? `Families in ${sectionLabel}` : 'One section',
   }
@@ -92,8 +92,8 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
           <div>
             <label className={label} htmlFor="update-audience">Send to</label>
             <select id="update-audience" className={input} value={audience} onChange={e => setAudience(e.target.value as UpdateAudience)}>
-              <option value="everyone">Everyone (parents + volunteers)</option>
-              <option value="parents">All parents</option>
+              <option value="everyone">Everyone this season (parents + volunteers)</option>
+              <option value="parents">This season's parents</option>
               <option value="volunteers">All volunteers</option>
               <option value="section">One section's families</option>
             </select>
