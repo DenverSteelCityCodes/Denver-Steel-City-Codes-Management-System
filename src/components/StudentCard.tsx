@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, CircleAlert, CircleX, Clock, Hourglass } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { GRADES, gradeToAge, realNote } from '../lib/campers'
 import { formatTimeRange } from '../lib/campDay'
@@ -378,8 +379,8 @@ function Line({ line, student, needsReconfirm, offerInSign, changes }: {
   const pick = `/parent/classes?camper=${student.id}`
   if (!reg) {
     return (
-      <li className="grid grid-cols-[4.5rem_1fr] gap-x-3 py-1 border-t border-border items-center">
-        <span className="text-sm font-extrabold">{line.label}</span>
+      <li className="grid grid-cols-[5rem_1fr] gap-x-3 py-1 border-t border-border items-center">
+        <span className="text-sm font-extrabold whitespace-nowrap">{line.label}</span>
         <div className="flex flex-wrap items-center justify-between gap-x-4">
           <StatusWord tone="plain">Not registered</StatusWord>
           <Link to={pick} className={textActionStrong}>{needsReconfirm ? `Review ${name}'s details` : `Register ${name}`}</Link>
@@ -394,16 +395,22 @@ function Line({ line, student, needsReconfirm, offerInSign, changes }: {
     : holdsSeat(reg) ? <StatusWord tone="ok" icon={Check}>Confirmed</StatusWord>
     : reg.status === 'offered' ? <StatusWord tone="wait" icon={Clock}>Spot offered</StatusWord>
     : <StatusWord tone="wait" icon={Hourglass}>On the waitlist</StatusWord>
-  const time = sec?.start_time ? `${sec.days} ${formatTimeRange(sec.start_time, sec.end_time)}` : null
-  const parts = [sec?.classes?.name ?? 'Class', time, sec?.room].filter((p): p is string => !!p)
+  // The line wraps between pieces, never inside the time: "Web Development · Mon–Fri 9:00 AM – 3:00 PM
+  // · Room 202" stays readable on a 375px screen.
+  const range = sec?.start_time ? formatTimeRange(sec.start_time, sec.end_time) : ''
+  const parts: ReactNode[] = [
+    sec?.classes?.name ?? 'Class',
+    range ? <>{sec.days} <span className="whitespace-nowrap">{range}</span></> : null,
+    sec?.room ? <span className="whitespace-nowrap">{sec.room}</span> : null,
+  ].filter(Boolean)
   return (
-    <li className="grid grid-cols-[4.5rem_1fr] gap-x-3 pt-3 pb-1 border-t border-border">
-      <span className="text-sm font-extrabold pt-1.5">{line.label}</span>
+    <li className="grid grid-cols-[5rem_1fr] gap-x-3 pt-3 pb-1 border-t border-border">
+      <span className="text-sm font-extrabold whitespace-nowrap pt-1.5">{line.label}</span>
       <div className="min-w-0">
         {status}
         <p className="mt-1.5">
           {parts.map((p, i) => (
-            <span key={i} className="whitespace-nowrap">{p}{i < parts.length - 1 && <span className="text-ink-muted px-[0.35em]">·</span>}{i < parts.length - 1 ? ' ' : ''}</span>
+            <span key={i}>{p}{i < parts.length - 1 && <span className="text-ink-muted px-[0.35em]">·</span>}{i < parts.length - 1 ? ' ' : ''}</span>
           ))}
         </p>
         {camp ? (
@@ -448,7 +455,7 @@ export default function StudentCard({ student, lines, needsReconfirm = false, of
           </p>
         </div>
         {onSave && !editing && (
-          <button type="button" onClick={() => setEditing(true)} aria-expanded={editing} className={`${textAction} -mt-2.5`}>
+          <button type="button" onClick={() => setEditing(true)} aria-expanded={editing} className={`${textAction} -mt-2.5 min-w-11 justify-end`}>
             Edit<span className="sr-only"> {name}'s details</span>
           </button>
         )}

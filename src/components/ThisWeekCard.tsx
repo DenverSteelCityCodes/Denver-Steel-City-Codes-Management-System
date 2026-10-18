@@ -78,7 +78,7 @@ export default function ThisWeekCard({ students, registrations, sessions, weeks,
       </ul>
       <details className="group mt-2">
         <summary className="flex items-center gap-2 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-          {campDay >= 0 ? "Today's schedule" : 'Daily schedule'}{span && <span className="font-normal text-ink-muted"><span className="px-[0.35em]">·</span>{span}</span>}
+          <span>{campDay >= 0 ? "Today's schedule" : 'Daily schedule'}{span && <span className="font-normal text-ink-muted"><span className="px-[0.35em]">·</span>{span}</span>}</span>
           <ChevronDown size={20} strokeWidth={2.25} aria-hidden="true" className="ml-auto transition-transform group-open:rotate-180" />
         </summary>
         <div className="mt-1 mb-2">
