@@ -90,7 +90,7 @@ export default function VolunteerClasses() {
                   </p>
                 )}
                 {s.students.length === 0 ? (
-                  <p className="font-sans text-[15px] text-ink-muted">No campers enrolled in this section yet.</p>
+                  <p className="text-ink-muted">No campers enrolled in this section yet.</p>
                 ) : (
                   <ul className="border-y-2 border-ink">
                     {s.students.map(st => {

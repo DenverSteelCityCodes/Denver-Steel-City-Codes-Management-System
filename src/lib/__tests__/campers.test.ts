@@ -57,6 +57,10 @@ describe('roster helpers', () => {
     expect(callLines({ ...base, parent_phone: '303-555-0199' })).toEqual([{ who: 'Parent', number: '303-555-0199' }])
     expect(callLines(base)).toEqual([])
   })
+  it("doesn't repeat a relationship the name already says", () => {
+    expect(callLines({ ...base, emergency_contact_phone: '720-555-0130', emergency_contact_name: 'Aunt Novak', emergency_contact_relation: 'Aunt' }))
+      .toEqual([{ who: 'Aunt Novak (emergency)', number: '720-555-0130' }])
+  })
   it('lists a shared number once', () => {
     expect(callLines({ ...base, emergency_contact_phone: '(303) 555-0101', emergency_contact_name: 'Ana Ruiz', parent_name: 'Ana Ruiz', parent_phone: '303-555-0101' }))
       .toEqual([{ who: 'Ana Ruiz (emergency)', number: '(303) 555-0101' }])

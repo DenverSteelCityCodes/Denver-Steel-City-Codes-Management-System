@@ -55,9 +55,12 @@ export function callLines(s: ContactFields): CallLine[] {
   const ecPhone = s.emergency_contact_phone?.trim()
   if (ecPhone) {
     const name = s.emergency_contact_name?.trim()
-    const relation = s.emergency_contact_relation?.trim()
+    // "Aunt Novak" already says aunt; "Grandpa Tran" doesn't say grandparent.
+    const said = name?.toLowerCase().split(/\s+/) ?? []
+    const relation = s.emergency_contact_relation?.trim() || null
+    const named = relation && said.includes(relation.toLowerCase()) ? null : relation
     const who = name
-      ? `${name} (${relation ? `${lowerFirst(relation)}, ` : ''}emergency)`
+      ? `${name} (${named ? `${lowerFirst(named)}, ` : ''}emergency)`
       : `Emergency contact${relation ? ` (${lowerFirst(relation)})` : ''}`
     lines.push({ who, number: ecPhone })
   }

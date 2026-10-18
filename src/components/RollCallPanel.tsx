@@ -16,7 +16,9 @@ interface Props {
 // A section's roll calls for today: pick Arrival / After lunch / Dismissal, mark everyone present
 // in one tap, then tap whoever is missing. Under 30 seconds on a phone. Only the slim ink band
 // (roll calls and the count) sticks; on a phone the shell scrolls away so it stays in view
-// (VolunteerLayout). Each tap saves on its own, so the rest of the list stays live while it does.
+// (VolunteerLayout). The roll calls and count share one row only when the panel is wide enough for
+// both (a container query: in the desktop's left column they stack). Each tap saves on its own, so
+// the rest of the list stays live while it does.
 export default function RollCallPanel({ section, showClass = false }: Props) {
   const today = localDateISO()
   const { marks, loading, error: loadError, getMark, taken, setMark, markAllPresent, refetch } = useRollCalls(section.id, today)
@@ -95,9 +97,9 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
   const absentCount = markedCount - presentCount
 
   return (
-    <section aria-labelledby={headingId} className="-mx-4 sm:-mx-8 lg:mx-0">
+    <section aria-labelledby={headingId} className="@container -mx-4 sm:-mx-8 lg:mx-0">
       <div data-rollcall-band
-        className="sticky top-0 md:top-16 z-20 bg-shell text-on-shell px-4 sm:px-8 lg:px-4 py-3 lg:rounded grid grid-cols-1 min-[560px]:grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 dark:shadow-[inset_0_-1px_0_var(--border)] [&_:focus-visible]:outline-brand">
+        className="sticky top-0 md:top-16 z-20 bg-shell text-on-shell px-4 sm:px-8 lg:px-4 py-3 lg:rounded grid grid-cols-1 @min-[46rem]:grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 dark:shadow-[inset_0_-1px_0_var(--border)] [&_:focus-visible]:outline-brand">
         <h2 id={headingId} className={showClass ? 'col-span-full text-sm font-bold text-on-shell-muted' : 'sr-only'}>
           {label} roll call{showClass ? `, ${section.class_name} ${section.label}` : ''}
         </h2>
@@ -126,7 +128,7 @@ export default function RollCallPanel({ section, showClass = false }: Props) {
         </div>
 
         {!loading && total > 0 && (
-          <p className="min-[560px]:justify-self-end flex items-baseline gap-[0.15em] text-brand font-extrabold tabular-nums leading-[0.92] tracking-[-0.03em] text-[2.75rem] md:text-[4.5rem]">
+          <p className="@min-[46rem]:justify-self-end flex items-baseline gap-[0.15em] text-brand font-extrabold tabular-nums leading-[0.92] tracking-[-0.03em] text-[3.5rem]">
             {done && <Check strokeWidth={3} className="self-center size-[0.62em]" aria-hidden="true" />}
             <span aria-hidden="true">{presentCount}/{total}</span>
             <span aria-hidden="true" className="text-[0.42em] tracking-normal">present</span>
