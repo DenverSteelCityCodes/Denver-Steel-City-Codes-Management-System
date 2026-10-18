@@ -322,7 +322,7 @@ function SectionForm({
             <span id={id('week-label')} className={label}>Week</span>
             <Segmented mode="radio" labelledBy={id('week-label')} className="mt-1.5" value={form.week}
               onChange={w => set({ week: w })}
-              options={[{ value: '', label: 'Any' }, { value: '1', label: 'Week 1' }, { value: '2', label: 'Week 2' }]} />
+              options={[{ value: '', label: 'Both weeks' }, { value: '1', label: 'Week 1' }, { value: '2', label: 'Week 2' }]} />
           </div>
           <div className="mt-5">
             <label className={label} htmlFor={id('days')}>Days</label>
@@ -383,7 +383,8 @@ function SectionForm({
       <div className="mt-6 pt-4 border-t border-border flex flex-wrap items-center gap-x-4 gap-y-3">
         <SaveButton saving={saving}>{section ? `Save ${section.label}` : 'Add section'}</SaveButton>
         <Button onClick={onCancel}>{section ? 'Close' : 'Cancel'}</Button>
-        {saved && <p role="status" className="font-bold">Saved.</p>}
+        {/* Always in the page, so the change to "Saved." is announced. */}
+        <p aria-live="polite" className="font-bold empty:hidden">{saved ? 'Saved.' : ''}</p>
         {extra && <span className="flex flex-wrap gap-x-5 md:ml-auto">{extra}</span>}
       </div>
     </form>
@@ -668,8 +669,6 @@ export default function AdminClasses() {
       "and they go first on that week's waitlists."
   }
 
-  const tallyLoading = deleteTally?.state === 'loading'
-
   async function confirmDelete() {
     if (!pendingDelete) return
     const mode = removeMode(pendingDelete.id)
@@ -719,7 +718,7 @@ export default function AdminClasses() {
     const full = s.capacity > 0 && s.registered_count >= s.capacity
     const almost = !full && s.capacity > 0 && s.registered_count / s.capacity >= 0.9
     const supportsN = s.supports.length
-    const supportNames = s.supports.map(x => x.display_name).filter(Boolean).join(', ')
+    const supportNames = s.supports.map(x => x.display_name || 'Unnamed support').join(', ')
     return (
       <button key={s.id} type="button" id={`sec-${s.id}`} aria-expanded={expanded} aria-controls={`panel-${s.id}`}
         onClick={() => { if (expanded) closePanel(s.id); else { reveal.current = s.id; openSection(s.id) } }}
@@ -811,7 +810,7 @@ export default function AdminClasses() {
           message={removeMessage('class', cls.name, cls.id, cls.sections.length)}
           confirmLabel={removeMode(cls.id) === 'delete' ? 'Delete class' : 'Cancel class'}
           cancelLabel="Keep class"
-          busy={deleting || tallyLoading}
+          busy={deleting}
           onConfirm={confirmDelete}
           onCancel={() => { setPendingDelete(null); document.getElementById(`class-${cls.id}`)?.focus() }}
         />
@@ -891,7 +890,7 @@ export default function AdminClasses() {
                 message={removeMessage('section', `${s.label} ${weekName(s.week)}`, s.id)}
                 confirmLabel={removeMode(s.id) === 'delete' ? 'Delete section' : 'Cancel section'}
                 cancelLabel="Keep section"
-                busy={deleting || tallyLoading}
+                busy={deleting}
                 onConfirm={confirmDelete}
                 onCancel={() => { setPendingDelete(null); requestAnimationFrame(() => document.getElementById(`remove-${s.id}`)?.focus()) }}
               />

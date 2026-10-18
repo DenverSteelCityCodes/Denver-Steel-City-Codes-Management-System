@@ -36,7 +36,7 @@ export const TIPS = {
     role: 'admin',
     where: 'Classes › a section › Edit › Week',
     body: [
-      'Pick Week 1 or Week 2. A section on **Any** isn\'t tied to a camp week: its campers can\'t take another class in either week, it never shows on the attendance board, and its crew never get a roll call.',
+      'Pick Week 1 or Week 2. A section on **Both weeks** isn\'t tied to a camp week: its campers can\'t take another class in either week, it never shows on the attendance board, and its crew never get a roll call.',
     ],
     more: '/admin/help#season-setup',
   },

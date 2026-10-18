@@ -132,7 +132,7 @@ export const ADMIN_GUIDE: HelpGuide = {
             {
               kind: 'system',
               items: [
-                'A section left on **Any** week isn\'t tied to a camp week: it never appears on the attendance board and its crew never get a roll call. Pick Week 1 or Week 2.',
+                'A section left on **Both weeks** isn\'t tied to a camp week: it never appears on the attendance board and its crew never get a roll call. Pick Week 1 or Week 2.',
                 'Families only see classes whose age range fits their camper. Age comes from the grade they enter in the fall.',
               ],
             },

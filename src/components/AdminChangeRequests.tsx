@@ -72,15 +72,19 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
         Make the change in the camper's row below (or the section, for a volunteer), then mark the request done.
         The person who asked gets an email either way, with your reply.
       </p>
-      {error && (
+      {/* A failed reload blocks nothing (the list stays), so it's a neutral note; a failed save or
+          first load is an error. */}
+      {error && (error.what === 'load' && rows ? (
+        <p role="status" title={error.message} className="mt-3 font-bold text-pretty">
+          Couldn't reload the change requests, so this list may be out of date. Check your connection.
+        </p>
+      ) : (
         <p role="alert" title={error.message} className="mt-3 font-bold text-danger text-pretty">
           {error.what === 'save'
             ? "Couldn't save that. Check your connection, then try again."
-            : rows
-              ? "Couldn't reload the change requests, so this list may be out of date. Check your connection."
-              : "Couldn't load the change requests. Check your connection, then try again."}
+            : "Couldn't load the change requests. Check your connection, then try again."}
         </p>
-      )}
+      ))}
       {!rows ? (
         !error && <div aria-hidden="true" className="mt-3 h-28 rounded bg-surface-sunken animate-pulse" />
       ) : (

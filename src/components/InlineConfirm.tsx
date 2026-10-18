@@ -30,14 +30,15 @@ export default function InlineConfirm({
 }) {
   const id = useId()
   const danger = tone === 'danger'
-  const onKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onCancel() } }
+  // While the change is saving, Keep and Esc wait: cancelling then wouldn't stop the save.
+  const onKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); if (!busy) onCancel() } }
 
   return (
     <div role="group" aria-labelledby={id} onKeyDown={onKeyDown}
       className={`p-4 rounded border-2 bg-surface text-ink text-left ${danger ? 'border-danger' : 'border-ink'}`}>
       <p id={id} aria-live="polite" className="font-bold text-pretty max-w-[68ch]">{message}</p>
       <div className="flex flex-wrap gap-2 mt-3">
-        <Button autoFocus variant="secondary" onClick={onCancel}>{cancelLabel}</Button>
+        <Button autoFocus variant="secondary" onClick={() => { if (!busy) onCancel() }} aria-disabled={busy || undefined}>{cancelLabel}</Button>
         {/* aria-disabled while busy: a disabled button would drop keyboard focus to the page. */}
         <Button variant={danger ? 'danger' : 'ink'} onClick={() => { if (!busy) onConfirm() }}
           aria-disabled={busy || undefined} aria-busy={busy}>
