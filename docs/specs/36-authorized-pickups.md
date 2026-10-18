@@ -25,10 +25,11 @@
 - **Wizard:** a short step after emergency contacts, which can be skipped ("Only I will pick up").
 - **Volunteer roster:** `section_roster()` gains `pickup_adults jsonb` (name and relation, plus phone for the lead only) and `may_leave_alone_today bool`.
 - **Dismissal roll call:** `roll_call_marks.released_to text` and `released_mode text check in ('listed_adult','parent','alone','admin_ok')`.
+  - Built: `released_ok_by` names the admin who said OK. A recorded release stands until it is undone on purpose (no overwrite, no marking absent while collected), and release changes are audited.
   - Picking a listed adult is one tap.
   - "Someone else" asks for a name and shows "Check with an admin first".
 - **Admin:** today's dismissal board shows unreleased campers and any `admin_ok` releases. The CSV includes who collected each camper.
-- **Email:** when a parent adds a same-day pickup adult or consent during camp week, email the section lead (`pickup_changed`, outbox).
+- **Email:** when a parent adds a same-day pickup adult or consent during camp week, email the section lead (`pickup_changed`, outbox). Built: at most one per camper, section and 10 minutes, saying only that the list changed (the roll call shows the current list).
 
 ## Out of scope
 - ID scanning or QR codes.

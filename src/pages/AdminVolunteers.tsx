@@ -15,6 +15,7 @@ import Button from '../components/Button'
 import { Textarea, Select } from '../components/Field'
 import InlineConfirm from '../components/InlineConfirm'
 import Segmented from '../components/Segmented'
+import AdminOnboarding from '../components/AdminOnboarding'
 import StatusWord from '../components/StatusWord'
 import AdminPageHead, { pageClass } from '../components/AdminPageHead'
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
@@ -103,7 +104,7 @@ function exportApplicationsCSV(apps: VolunteerApplication[]) {
   URL.revokeObjectURL(url)
 }
 
-type Tab = 'applications' | 'crew'
+type Tab = 'applications' | 'crew' | 'onboarding'
 type AppFilter = 'all' | 'pending' | 'accepted' | 'rejected'
 
 const weeksText = (w1: boolean, w2: boolean) =>
@@ -259,9 +260,9 @@ function ApplicationReview({
           {rejecting && (
             <div role="group" aria-labelledby={`reject-${app.id}-q`} onKeyDown={e => { if (e.key === 'Escape') cancelReject() }}
               className="mt-4 p-4 rounded border-2 border-danger max-w-[640px]">
-              <p id={`reject-${app.id}-q`} className="font-bold text-pretty">Reject {name}'s application? It moves to the Rejected list.</p>
+              <p id={`reject-${app.id}-q`} className="font-bold text-pretty">Reject {name}'s application? It moves to the Rejected list, and {app.first_name} gets a short, kind email saying so.</p>
               <label htmlFor={`reject-${app.id}-notes`} className="block mt-3 mb-1.5 font-bold">
-                Reason or notes <span className="font-normal text-ink-muted">(optional)</span>
+                Reason or notes <span className="font-normal text-ink-muted">(optional, for admins only, not in the email)</span>
               </label>
               <Textarea id={`reject-${app.id}-notes`} rows={2} className="resize-y"
                 placeholder="For example, didn't come to the interview"
@@ -276,6 +277,7 @@ function ApplicationReview({
             </div>
           )}
 
+          {!rejecting && <p className="mt-2 text-sm text-ink-muted text-pretty">Accepting emails {app.first_name} a welcome with the onboarding checklist.</p>}
           {actionError && <p role="alert" className="mt-3 text-sm font-bold text-danger text-pretty">{actionError}</p>}
         </div>
       )}
@@ -293,7 +295,8 @@ export default function AdminVolunteers() {
   // The tab lives in the URL (?tab=applications | crew), so the sub-tab links, the top-bar search
   // and the To do links all land on the right one. ?tab=roster is the old name for Crew.
   const [params, setParams] = useSearchParams()
-  const tab: Tab = params.get('tab') === 'crew' || params.get('tab') === 'roster' ? 'crew' : 'applications'
+  const tab: Tab = params.get('tab') === 'crew' || params.get('tab') === 'roster' ? 'crew'
+    : params.get('tab') === 'onboarding' ? 'onboarding' : 'applications'
 
   const [week, setWeek] = useState<1 | 2>(1)
   const [preview, setPreview] = useState<AssignmentPair[] | null>(null)
@@ -423,7 +426,7 @@ export default function AdminVolunteers() {
       <AdminPageHead
         title="Volunteers"
         tabs
-        actions={tab === 'applications'
+        actions={tab === 'onboarding' ? undefined : tab === 'applications'
           ? <Button onClick={() => exportApplicationsCSV(applications)} disabled={appsLoading}>
               <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of applications</span>
             </Button>
@@ -443,8 +446,16 @@ export default function AdminVolunteers() {
         options={[
           { value: 'applications', label: 'Applications', count: appsLoading || counts.pending === 0 ? undefined : counts.pending, srLabel: appsLoading || counts.pending === 0 ? undefined : ' pending' },
           { value: 'crew', label: 'Crew' },
+          { value: 'onboarding', label: 'Onboarding' },
         ]}
       />
+
+      {/* ── Onboarding (spec 35): overdue checklist items, every volunteer's checklist, removal ── */}
+      {tab === 'onboarding' && (
+        <div role="tabpanel" id="vol-panel-onboarding" aria-labelledby="vol-tab-onboarding">
+          <AdminOnboarding />
+        </div>
+      )}
 
       {/* ── Applications ── */}
       {tab === 'applications' && (

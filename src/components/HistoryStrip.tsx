@@ -21,10 +21,11 @@ export interface HistoryEntry {
 
 const REVERTIBLE = new Set(['students', 'registrations', 'sections'])
 // Stamped by the database; never shown as a change.
-const HIDDEN = new Set(['updated_at', 'cancelled_at', 'cancelled_by', 'created_at', 'medical_info', 'full_name', 'displaced_from_section', 'session_id', 'cancel_reason', 'offered_at', 'offer_expires_at'])
+const HIDDEN = new Set(['updated_at', 'cancelled_at', 'cancelled_by', 'created_at', 'medical_info', 'full_name', 'displaced_from_section', 'session_id', 'cancel_reason', 'offered_at', 'offer_expires_at', 'removed_by'])
 const EXTRA_LABELS: Record<string, string> = {
   status: 'status', section_id: 'section', cancel_reason: 'reason', registration_year: 'confirmed for',
   waiver_signed_at: 'waiver signed', cancelled: 'cancelled',
+  removed_at: 'removed from the season', removed_reason: 'reason for removal', accepted_at: 'accepted',
 }
 const REASONS: Record<string, string> = {
   admin_removed: 'Removed by an admin', parent_cancel: 'Parent cancelled', section_cancelled: 'Class cancelled',
@@ -37,6 +38,8 @@ function show(v: unknown): string {
   if (typeof v === 'boolean') return v ? 'yes' : 'no'
   if (Array.isArray(v)) return v.join(', ') || 'blank'
   const s = String(v)
+  // A timestamp reads as a date and time, not ISO.
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) return when(s)
   return s.length > 60 ? `${s.slice(0, 60)}…` : s
 }
 

@@ -23,8 +23,20 @@ function Contact() {
 // An applicant's page. The one next decision is the interview, so its time is the gold sign; the
 // picker opens directly under it. Then where the application stands, as four numbered steps (a real
 // sequence). Same data as before: application status and the booking.
-export default function VolunteerApplicant({ status, appliedAt }: { status: string | null; appliedAt: string | null }) {
+export default function VolunteerApplicant({ status, appliedAt, removedReason }: { status: string | null; appliedAt: string | null; removedReason?: string | null }) {
   const { interview, loading, book } = useMyInterview()
+  // Spec 35: an admin took them off this season's crew (they were emailed the same note).
+  if (status === 'removed') {
+    return (
+      <div className="max-w-[640px]">
+        <PageHead title="You're not on this season's crew">
+          The camp took you off this season's volunteer crew, so your class and duty spots went to other volunteers.
+        </PageHead>
+        {removedReason && <p className="mt-4 max-w-[65ch] text-pretty"><b className="font-bold">The camp's note:</b> {removedReason}</p>}
+        <Contact />
+      </div>
+    )
+  }
   if (status === 'rejected') {
     return (
       <div className="max-w-[640px]">
@@ -117,12 +129,23 @@ function InterviewStep({ interview, book }: { interview: Interview; book: (slotI
       {interview ? (
         <SignBand id="interview" context="Step 2 of 4: your interview" figure={figure} unit={unit}
           message={longDay(interview.slot_datetime)}
-          sub={`${interview.duration_minutes} minutes, online. The time is Denver time.`}>
+          sub={interview.meeting_url
+            ? `${interview.duration_minutes} minutes, online. The time is Denver time. The link is just for you.`
+            : `${interview.duration_minutes} minutes, online. The time is Denver time. The meeting link shows up here before your interview.`}>
           {!choosing && (
-            <button type="button" onClick={() => { setMoved(null); setChoosing(true); requestAnimationFrame(() => document.getElementById('pick-h')?.focus()) }}
-              className="ui-btn ui-btn--secondary mt-3 border-brand-on text-brand-on hover:bg-brand-on/10">
-              Change time
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {/* Spec 35: the slot's private meeting link (only the booked applicant gets it). */}
+              {interview.meeting_url && (
+                <a href={interview.meeting_url} target="_blank" rel="noreferrer"
+                  className="ui-btn ui-btn--ink bg-brand-on text-brand focus-visible:outline-brand-on!">
+                  Join the interview<span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              )}
+              <button type="button" onClick={() => { setMoved(null); setChoosing(true); requestAnimationFrame(() => document.getElementById('pick-h')?.focus()) }}
+                className="ui-btn ui-btn--secondary border-brand-on text-brand-on hover:bg-brand-on/10">
+                Change time
+              </button>
+            </div>
           )}
         </SignBand>
       ) : (
@@ -141,7 +164,7 @@ function InterviewStep({ interview, book }: { interview: Interview; book: (slotI
           {others === 0 ? (
             // Nothing to pick: the only time listed would be the applicant's own.
             <p className="mt-2 text-ink text-pretty">
-              {interview ? 'No other times are open right now.' : 'No interview times are open right now.'} New times show up here, so check back soon.
+              {interview ? 'No other times are open right now.' : 'No interview times are open right now.'} We'll email you when new times are posted.
             </p>
           ) : (
             <div className="mt-2">

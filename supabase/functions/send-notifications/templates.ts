@@ -2,7 +2,9 @@
 // APIs, so national can edit the wording without touching the sender. Every email: short, says what
 // happened, which camper and class, what to do next, and how to reach the camp.
 
-export interface Rendered { subject: string; text: string; html: string }
+// `attachments` carry plain text (the sender base64-encodes them): the interview's .ics file.
+export interface Attachment { filename: string; content: string; contentType: string }
+export interface Rendered { subject: string; text: string; html: string; attachments?: Attachment[] }
 type Payload = Record<string, unknown>
 
 const CONTACT = 'denver@steelcitycodes.org'
@@ -61,6 +63,59 @@ function textVersion(title: string, paragraphs: string[], cta: { label: string; 
     ...(unsubscribe ? ['', `You asked to hear when camp registration opens. Unsubscribe: ${unsubscribe}`] : [])].join('\n')
 }
 
+// "Tuesday, October 20 at 4:00 PM", Denver time.
+function denverWhen(iso: unknown): string {
+  if (typeof iso !== 'string' || !iso) return 'soon'
+  const d = new Date(iso)
+  const day = d.toLocaleDateString('en-US', { timeZone: 'America/Denver', weekday: 'long', month: 'long', day: 'numeric' })
+  const at = d.toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit' })
+  return `${day} at ${at}`
+}
+
+// A meeting link is used only when it is https (the database refuses anything else; belt and braces).
+function meetingUrl(p: Payload): string | null {
+  return typeof p.meeting_url === 'string' && /^https:\/\/[^\s<>"]+$/.test(p.meeting_url) ? p.meeting_url : null
+}
+
+// iCalendar text: escape \ ; , and newlines, and fold lines at 75 octets (RFC 5545 §3.1, 3.3.11).
+function icsText(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+}
+function icsFold(line: string): string {
+  const out: string[] = []
+  let rest = line
+  while (new TextEncoder().encode(rest).length > 75) {
+    let cut = 75
+    while (new TextEncoder().encode(rest.slice(0, cut)).length > 75) cut--
+    out.push(rest.slice(0, cut))
+    rest = ' ' + rest.slice(cut)
+  }
+  out.push(rest)
+  return out.join('\r\n')
+}
+const icsTime = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+
+// The calendar file attached to interview_booked: one event, in UTC, with the link when there is one.
+export function interviewIcs(p: Payload, stamp: Date = new Date()): string | null {
+  if (typeof p.slot_datetime !== 'string') return null
+  const start = new Date(p.slot_datetime)
+  if (Number.isNaN(start.getTime())) return null
+  const end = new Date(start.getTime() + (Number(p.duration_minutes) || 15) * 60_000)
+  const url = meetingUrl(p)
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Steel City Codes Denver//Volunteer interviews//EN', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:interview-${String(p.application_id ?? 'x')}-${String(p.slot_id ?? icsTime(start))}@steelcitycodes.org`,
+    `DTSTAMP:${icsTime(stamp)}`, `DTSTART:${icsTime(start)}`, `DTEND:${icsTime(end)}`,
+    `SUMMARY:${icsText('Steel City Codes volunteer interview')}`,
+    `LOCATION:${icsText(url ?? 'Online')}`,
+    ...(url ? [`URL:${url}`] : []),
+    `DESCRIPTION:${icsText(url ? `Join here at the time: ${url}` : 'The meeting link will be on your application page before the interview.')}`,
+    'END:VEVENT', 'END:VCALENDAR',
+  ]
+  return lines.map(icsFold).join('\r\n') + '\r\n'
+}
+
 function build(subject: string, title: string, paragraphs: string[], cta: { label: string; url: string } | null, unsubscribe?: string): Rendered {
   return { subject, text: textVersion(title, paragraphs, cta, unsubscribe), html: layout(title, paragraphs, cta, unsubscribe) }
 }
@@ -71,6 +126,9 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
   const dashboard = { label: 'Open your dashboard', url: `${appUrl}/parent` }
   const pickAnother = { label: 'Pick another class', url: `${appUrl}/parent/classes${p.student_id ? `?camper=${encodeURIComponent(String(p.student_id))}` : ''}` }
   const line = esc(classLine(p))
+  // Volunteer emails (spec 35) greet by first name and link to the volunteer area.
+  const first = esc(p.first_name ?? 'there')
+  const volunteerPage = (label: string) => ({ label, url: `${appUrl}/volunteer` })
 
   switch (template) {
     case 'registration_confirmed':
@@ -272,6 +330,79 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
         `The pickup list for <strong>${esc(p.camper ?? 'a camper')}</strong> changed; the roll call shows the current list.`,
         `${esc(p.class ?? 'Your class')}${p.section ? ` · ${esc(p.section)}` : ''}${p.session ? `, ${esc(p.session)}` : ''}. Check it before dismissal.`,
       ], { label: 'Open roll call', url: `${appUrl}/volunteer` })
+
+    // ── Volunteer applicants and crew (spec 35). One person per email; links go to /volunteer. ──
+    case 'interview_booked': {
+      const when = denverWhen(p.slot_datetime)
+      const url = meetingUrl(p)
+      const ics = interviewIcs(p)
+      const email = build(p.moved ? `Your interview moved to ${when}` : `Your interview is booked: ${when}`,
+        p.moved ? 'Your interview time changed' : 'Your interview is booked', [
+          `Hi ${first}, your volunteer interview is <strong>${esc(when)} (Denver time)</strong>. It's ${esc(p.duration_minutes ?? 15)} minutes, online.`,
+          url
+            ? `Join here at that time: <a href="${esc(url)}" style="color:#4A4138">${esc(url)}</a>. The link is just for you, so please don't share it.`
+            : 'The meeting link will be on your application page before the interview, and in your reminder email.',
+          `${ics ? 'The calendar invite is attached. ' : ''}Need a different time? Change it on your application page.`,
+        ], volunteerPage('Open your application'))
+      return ics ? { ...email, attachments: [{ filename: 'interview.ics', content: ics, contentType: 'text/calendar' }] } : email
+    }
+
+    case 'interview_reminder': {
+      const when = denverWhen(p.slot_datetime)
+      const url = meetingUrl(p)
+      const soon = p.kind === '1h'
+      return build(soon ? 'Your interview starts in an hour' : `Reminder: your interview is ${when}`,
+        soon ? 'Your interview starts in an hour' : 'Your interview is coming up', [
+          `Hi ${first}, your volunteer interview is <strong>${esc(when)} (Denver time)</strong>.`,
+          url
+            ? `Join here: <a href="${esc(url)}" style="color:#4A4138">${esc(url)}</a>. The link is just for you.`
+            : 'The meeting link is on your application page.',
+          soon ? 'See you soon!' : 'Can\'t make it? Pick another time on your application page, so someone else can have this one.',
+        ], url ? { label: 'Join the interview', url } : volunteerPage('Open your application'))
+    }
+
+    case 'interview_times_posted':
+      return build('New volunteer interview times are open', 'New interview times are open', [
+        `Hi ${first}, the camp just posted new interview times${typeof p.first_slot === 'string' ? `, starting ${esc(denverWhen(p.first_slot))} (Denver time)` : ''}.`,
+        'Pick the one that works for you on your application page. Times go first come, first served.',
+      ], volunteerPage('Pick a time'))
+
+    case 'interview_nudge': {
+      const open = Number(p.open_times ?? 0)
+      return build('Pick a time for your volunteer interview', 'Your interview is the next step', [
+        `Hi ${first}, thanks for applying to volunteer! We'd love to meet you, but you haven't picked an interview time yet.`,
+        open > 0
+          ? `${open} ${open === 1 ? 'time is' : 'times are'} open right now. Pick one on your application page.`
+          : 'There are no open times this minute. We\'ll email you as soon as new ones are posted.',
+        'If none of the times work, reply to this email and we\'ll find one.',
+      ], volunteerPage('Pick a time'))
+    }
+
+    case 'application_accepted': {
+      const tasks = Array.isArray(p.tasks) ? (p.tasks as { label?: unknown; due_hours?: unknown }[]) : []
+      const hours = (h: unknown) => { const n = Number(h); return n % 24 === 0 ? `${n / 24} ${n === 24 ? 'day' : 'days'}` : `${n} hours` }
+      return build(`Welcome to the crew, ${p.first_name ?? 'volunteer'}!`, 'You\'re on the crew!', [
+        `Hi ${first}, you're accepted as a Steel City Codes Denver volunteer for this summer. Thank you!`,
+        ...(tasks.length > 0
+          ? ['Next, your onboarding checklist. Each item has a deadline counted from today:',
+             ...tasks.map(t => `• ${esc(t.label)} (within ${esc(hours(t.due_hours))})`)]
+          : []),
+        'Your checklist, with its links, is on your volunteer page, and that\'s where your class shows up once it\'s assigned. If you can\'t finish in time, reply to this email so we know.',
+      ], volunteerPage('Open your volunteer page'))
+    }
+
+    case 'application_declined':
+      return build('About your Steel City Codes volunteer application', 'About your application', [
+        `Hi ${first}, thank you for applying to volunteer with Steel City Codes Denver. We weren't able to offer you a spot this year.`,
+        'We\'d love for you to apply again next summer. If you have questions, reply to this email.',
+      ], null)
+
+    case 'volunteer_removed':
+      return build(`You're no longer on the ${p.year ?? 'camp'} volunteer crew`, 'You\'re no longer on the crew', [
+        `Hi ${first}, we've taken you off this season's volunteer crew, so your class and duty spots have gone to other volunteers.`,
+        ...(p.reason ? [`The camp's note: ${esc(p.reason)}`] : []),
+        'If you think this is a mistake, or you\'d like to talk about it, reply to this email.',
+      ], null)
 
     default:
       return null

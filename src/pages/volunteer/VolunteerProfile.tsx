@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useVolunteerHome } from '../../hooks/useVolunteerHome'
 import { AbsenceSection, PrefsSection, SwitchSection } from '../../components/VolunteerSelfService'
+import VolunteerProfileSection from '../../components/VolunteerProfileSection'
 import type { AssignedSection } from '../../hooks/useAssignedClass'
 
 // "PY-B for Weeks 1 and 2", or "PY-B for Week 1 and JV-A for Week 2".
@@ -37,6 +38,7 @@ export default function VolunteerProfile() {
 
       <div className="mt-8 lg:grid lg:grid-cols-2 lg:gap-10 lg:items-start space-y-10 lg:space-y-0">
         <div className="space-y-10">
+          <VolunteerProfileSection />
           <PrefsSection />
           <SwitchSection current={placement(assignedSections)} />
         </div>

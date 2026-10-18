@@ -20,6 +20,9 @@ const LABELS: Record<string, string> = {
   registration_confirmed: 'Spot confirmed', registration_waitlisted: 'Waitlisted', registration_moved: 'Class change',
   registration_cancelled: 'Cancelled',
   interest_confirm: 'Notify me: confirm', registration_opening_soon: 'Registration opening soon', registration_now_open: 'Registration open',
+  interview_booked: 'Interview booked', interview_reminder: 'Interview reminder', interview_times_posted: 'Interview times posted',
+  interview_nudge: 'Interview nudge', application_accepted: 'Volunteer accepted', application_declined: 'Application declined',
+  volunteer_removed: 'Removed from the season',
   urgent_notice: 'Urgent notice', incident_notice: 'Incident: family told',
 }
 
@@ -93,7 +96,7 @@ export default function EmailLog() {
           </thead>
           <tbody className="max-md:block">
             {rows.map(r => {
-              const camper = String(r.payload?.camper_full ?? r.payload?.camper ?? '')
+              const camper = String(r.payload?.camper_full ?? r.payload?.camper ?? r.payload?.first_name ?? '')
               const cls = String(r.payload?.class ?? '')
               return (
                 <tr key={r.id} className="border-t border-border first:border-t-0 max-md:block max-md:py-3">
