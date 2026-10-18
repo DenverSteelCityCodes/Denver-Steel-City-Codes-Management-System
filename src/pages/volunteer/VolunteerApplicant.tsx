@@ -25,7 +25,7 @@ export default function VolunteerApplicant({ status, appliedAt }: { status: stri
           {appliedAt ? new Date(appliedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : null}
         </Step>
         <Step n={2} state="current" title="Interview"><InterviewStep /></Step>
-        <Step n={3} state="todo" title="Decision">We email everyone after interviews wrap up.</Step>
+        <Step n={3} state="todo" title="Decision">Your decision shows up here after interviews wrap up.</Step>
         <Step n={4} state="todo" title="Your class" last>An admin will assign you to a section before camp starts.</Step>
       </ol>
     </div>

@@ -24,7 +24,7 @@ export default function InterviewSlotPicker({
     return (
       <p className="flex items-start gap-2 font-sans text-sm text-ink-muted bg-surface-sunken border border-border rounded-[10px] px-3 py-2.5">
         <CalendarClock size={16} className="shrink-0 mt-0.5" />
-        No interview times are open right now. You can still apply — we'll email you when times are posted, and you can book from your volunteer dashboard.
+        No interview times are open right now. You can still apply. New times show up on your volunteer page, so check back there to book one.
       </p>
     )
   }
