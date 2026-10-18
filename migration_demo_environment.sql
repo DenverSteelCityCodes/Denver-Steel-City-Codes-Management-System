@@ -120,6 +120,7 @@ BEGIN
   DELETE FROM interview_bookings; DELETE FROM interview_slots; DELETE FROM volunteer_applications;
   DELETE FROM section_supports; DELETE FROM sections; DELETE FROM classes;
   DELETE FROM volunteers; DELETE FROM parent_profiles; DELETE FROM sessions;
+  DELETE FROM interest_signups;   -- spec 30: visitors' "notify me" addresses don't outlive the day
   -- Every account except the demo logins and the kept owner logins (also removes visitor sign-ups).
   DELETE FROM auth.users
   WHERE id NOT IN (SELECT id FROM private.demo_keep_users)
@@ -135,8 +136,9 @@ BEGIN
   DELETE FROM auth.mfa_factors;
 
   -- ── 2. Camp weeks and courses ──
-  INSERT INTO sessions (name, year, start_date, end_date, is_active) VALUES ('Week 1', camp_year, w1_start, w1_end, true) RETURNING id INTO w1;
-  INSERT INTO sessions (name, year, start_date, end_date, is_active) VALUES ('Week 2', camp_year, w2_start, w2_end, true) RETURNING id INTO w2;
+  -- The place each week happens (spec 30): shown on /camp, the wizard and the volunteer apply page.
+  INSERT INTO sessions (name, year, start_date, end_date, is_active, location) VALUES ('Week 1', camp_year, w1_start, w1_end, true, 'Cherry Creek High School') RETURNING id INTO w1;
+  INSERT INTO sessions (name, year, start_date, end_date, is_active, location) VALUES ('Week 2', camp_year, w2_start, w2_end, true, 'Cherry Creek High School') RETURNING id INTO w2;
 
   -- The same daily schedule both weeks (parents and volunteers see it on their dashboards).
   INSERT INTO schedule_items (session_id, start_time, end_time, title, location)
