@@ -37,7 +37,6 @@ interface RawStudent {
     id: string
     status: RegistrationStatus
     section_id: string
-    place_with: string | null
     sections: { id: string; label: string; week: 1 | 2 | null; class_id: string; classes: { id: string; name: string } | null } | null
   }[] | null
 }
@@ -78,6 +77,8 @@ export function useAdminStudents() {
     // never overlap or skip.
     let data: unknown[] | null = null
     let error: { message: string } | null = null
+    // Placement requests aren't readable directly (spec 31); admins get them from admin_place_with().
+    const placedPromise = supabase.rpc('admin_place_with')
     try {
       data = await fetchAll(async (from, to) => supabase
         .from('students')
@@ -87,7 +88,7 @@ export function useAdminStudents() {
         emergency_contact_name, emergency_contact_phone, emergency_contact_relation, registration_year,
         profiles:parent_id ( display_name ),
         registrations (
-          id, status, section_id, place_with,
+          id, status, section_id,
           sections (
             id, label, week, class_id,
             classes ( id, name )
@@ -107,6 +108,8 @@ export function useAdminStudents() {
       return
     }
 
+    const placed = await placedPromise
+    const placeWith = new Map(((placed.data ?? []) as { registration_id: string; place_with: string }[]).map(p => [p.registration_id, p.place_with]))
     const shaped: AdminStudent[] = ((data ?? []) as unknown as RawStudent[]).map(s => ({
       id: s.id,
       full_name: s.full_name,
@@ -132,7 +135,7 @@ export function useAdminStudents() {
         section_week: r.sections?.week ?? null,
         class_name: r.sections?.classes?.name ?? '—',
         class_id: r.sections?.class_id ?? '',
-        place_with: r.place_with ?? null,
+        place_with: placeWith.get(r.id) ?? null,
       })),
     }))
 

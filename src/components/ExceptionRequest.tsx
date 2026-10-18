@@ -7,12 +7,14 @@ import { ErrorLine, hintCls, labelCls } from '../pages/parent/parts'
 // camper, the family can ask the camp instead. It opens in place under the class (no modal): one
 // question, then the request lands in the admins' change-request queue and the family hears back
 // by email. `sent` shows the request already waiting.
-export default function ExceptionRequest({ camper, className, sent, onSend, idPrefix }: {
+export default function ExceptionRequest({ camper, className, sent, onSend, idPrefix, extraHint }: {
   camper: string
   className: string
   sent: boolean
   onSend: (message: string) => Promise<void>
   idPrefix: string
+  // One more line under the question (e.g. "sign up for another class that week too").
+  extraHint?: string
 }) {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
@@ -55,7 +57,7 @@ export default function ExceptionRequest({ camper, className, sent, onSend, idPr
   return (
     <form onSubmit={e => { void send(e) }} className="mt-2 space-y-2">
       <label htmlFor={fieldId} className={labelCls}>Why is {camper} ready for {className}?</label>
-      <p id={`${fieldId}-hint`} className={hintCls}>For example, a class they took at school. The camp reads every request and emails you.</p>
+      <p id={`${fieldId}-hint`} className={hintCls}>For example, a class they took at school. The camp reads every request and emails you.{extraHint ? ` ${extraHint}` : ''}</p>
       <textarea id={fieldId} rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
         aria-describedby={`${fieldId}-hint`} className="ui-input" />
       <div className="flex flex-wrap gap-2">

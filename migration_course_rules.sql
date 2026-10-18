@@ -55,6 +55,24 @@ END $$;
 ALTER TABLE registrations
     ADD COLUMN IF NOT EXISTS place_with TEXT CONSTRAINT registrations_place_with_length CHECK (char_length(place_with) <= 100);
 
+-- Crews read their sections' registrations (volunteer_read_registrations), but a placement request
+-- is between the family and the admins. So clients may read every column of registrations except
+-- place_with; parents read their own through my_place_with() and admins through admin_place_with()
+-- (section 7). Parents can still write it when they sign up (INSERT is unchanged).
+-- A column added to registrations later needs its own GRANT SELECT (col) (or re-run this block).
+-- Deploy note: the app from before spec 31 reads registrations with select('*'), which this block
+-- refuses. On a database that serves that app, apply this block when the spec 31 app ships.
+DO $$
+DECLARE
+  cols TEXT;
+BEGIN
+  SELECT string_agg(quote_ident(column_name), ', ' ORDER BY ordinal_position) INTO cols
+    FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'registrations' AND column_name <> 'place_with';
+  REVOKE SELECT ON registrations FROM anon, authenticated;
+  EXECUTE format('GRANT SELECT (%s) ON registrations TO anon, authenticated', cols);
+END $$;
+
 -- ── 3. Exception requests ─────────────────────────────────────
 -- A family whose camper doesn't qualify asks the camp for an exception: a change request of kind
 -- 'exception' naming the section it is for. section_id is a plain column on purpose: a foreign key
@@ -77,16 +95,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS change_requests_open_exception_idx
 
 -- ── 4. The rule src/lib/courseConstraints.ts matched by name ──
 -- Microcontrollers is for rising 7th–9th graders and comes after Intermediate Python (when that
--- class exists); a camper repeating Intro to Python is pointed at Intermediate Python. Runs only
--- while no class has any rule yet, so re-running this file never undoes an admin's edits.
+-- class exists); a camper repeating Intro to Python is pointed at Intermediate Python. Runs once
+-- per database (app_settings 'course_rules_seeded'), so re-running this file never undoes an
+-- admin's edits, including an admin who cleared every rule on purpose.
 DO $$
 DECLARE
   ipy UUID;
 BEGIN
-  IF EXISTS (SELECT 1 FROM classes WHERE grades_allowed IS NOT NULL OR requires_class_id IS NOT NULL
-                                      OR requirement_note IS NOT NULL OR next_class_id IS NOT NULL) THEN
+  IF EXISTS (SELECT 1 FROM app_settings WHERE key = 'course_rules_seeded') THEN
     RETURN;
   END IF;
+  INSERT INTO app_settings (key, value, updated_at) VALUES ('course_rules_seeded', 'true', now());
   IF (SELECT count(*) FROM classes WHERE name ILIKE 'intermediate python%') = 1 THEN
     SELECT id INTO ipy FROM classes WHERE name ILIKE 'intermediate python%';
   END IF;
@@ -258,6 +277,31 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.set_place_with(UUID, TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.set_place_with(UUID, TEXT) TO authenticated;
+
+-- Reading it: a parent sees their own campers' requests; an admin sees every one (or one section's).
+CREATE OR REPLACE FUNCTION public.my_place_with()
+RETURNS TABLE (registration_id UUID, place_with TEXT)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT r.id, r.place_with FROM registrations r JOIN students st ON st.id = r.student_id
+   WHERE st.parent_id = auth.uid() AND r.place_with IS NOT NULL;
+$$;
+REVOKE ALL ON FUNCTION public.my_place_with() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.my_place_with() TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_place_with(p_section_id UUID DEFAULT NULL)
+RETURNS TABLE (registration_id UUID, place_with TEXT)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private AS $$
+BEGIN
+  IF private.auth_user_role() IS DISTINCT FROM 'admin' THEN
+    RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
+  END IF;
+  RETURN QUERY
+  SELECT r.id, r.place_with FROM registrations r
+   WHERE r.place_with IS NOT NULL AND (p_section_id IS NULL OR r.section_id = p_section_id);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.admin_place_with(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_place_with(UUID) TO authenticated;
 
 -- ── 8. "Prerequisite at risk" (admin attention item) ──────────
 -- This camp year's live registrations in a class with a prerequisite whose camper took it in an

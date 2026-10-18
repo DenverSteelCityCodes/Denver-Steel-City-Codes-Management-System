@@ -14,7 +14,7 @@ declare
   p1 uuid; p2 uuid; adm uuid;
   cb uuid; ca uuid; co uuid; past uuid;
   b1 uuid; b1b uuid; b1c uuid; b2 uuid; bp uuid; a1 uuid; a2 uuid; o1 uuid; o2 uuid;
-  s6 uuid; s7 uuid; s8 uuid; s9 uuid; snull uuid; spast uuid; spc uuid;
+  s6 uuid; s7 uuid; s8 uuid; s9 uuid; snull uuid; spast uuid; spc uuid; s6x uuid; a2b uuid; r_s6x uuid; crew uuid;
   r uuid; r_s6_o2 uuid; r_spc_o2 uuid; r_s9_b1b uuid; r_s9_o2 uuid; r_s8_b1b uuid; req uuid;
   res text := ''; st text; m text; h text; n int; j jsonb;
   claims_p1 text; claims_p2 text; claims_adm text;
@@ -38,6 +38,7 @@ begin
   insert into sections (class_id, label, week, session_id, age_min, age_max, capacity) values (cb, 'BP', 1, past, 5, 17, 10) returning id into bp;
   insert into sections (class_id, label, week, age_min, age_max, capacity) values (ca, 'A1', 1, 5, 17, 10) returning id into a1;
   insert into sections (class_id, label, week, age_min, age_max, capacity) values (ca, 'A2', 2, 5, 17, 10) returning id into a2;
+  insert into sections (class_id, label, week, age_min, age_max, capacity) values (ca, 'A2b', 2, 5, 17, 10) returning id into a2b;
   insert into sections (class_id, label, week, age_min, age_max, capacity) values (co, 'O1', 1, 5, 17, 10) returning id into o1;
   insert into sections (class_id, label, week, age_min, age_max, capacity) values (co, 'O2', 2, 5, 17, 10) returning id into o2;
 
@@ -48,6 +49,7 @@ begin
   insert into students (parent_id, full_name, first_name, age, grade) values (p1, 'Rules Blank', 'Blank', 12, null) returning id into snull;
   insert into students (parent_id, full_name, first_name, age, grade) values (p1, 'Rules Past', 'Past', 13, '8th') returning id into spast;
   insert into students (parent_id, full_name, first_name, age, grade) values (p1, 'Rules Cancelled', 'Cancelled', 13, '8th') returning id into spc;
+  insert into students (parent_id, full_name, first_name, age, grade) values (p1, 'Rules Excepted', 'Excepted', 11, '6th') returning id into s6x;
   -- Last summer: Past completed Rules Basics; Cancelled signed up and cancelled.
   insert into registrations (student_id, section_id, status) values (spast, bp, 'confirmed');
   insert into registrations (student_id, section_id, status) values (spc, bp, 'cancelled');
@@ -95,7 +97,8 @@ begin
   insert into registrations (student_id, section_id) values (s7, b1);
   begin
     insert into registrations (student_id, section_id, place_with) values (s7, a2, 'Same class as Nine') returning id into r;
-    select status::text || '/' || coalesce(place_with, '') into st from registrations where id = r;
+    select (select status::text from registrations where id = r) || '/'
+        || coalesce((select x.place_with from public.my_place_with() x where x.registration_id = r), '') into st;
     res := res || E'\nprerequisite met earlier this season (and place_with kept): ' || case when st = 'confirmed/Same class as Nine' then 'ok' else 'BAD (' || st || ')' end;
   exception when others then
     get stacked diagnostics m = message_text;
@@ -152,6 +155,8 @@ begin
   perform set_config('request.jwt.claims', claims_adm, true);
   begin
     insert into registrations (student_id, section_id) values (snull, a2);
+    -- An exception granted: a 6th grader placed in Rules Advanced by an admin.
+    insert into registrations (student_id, section_id) values (s6x, a2) returning id into r_s6x;
     res := res || E'\nadmin places past the rules: ok';
   exception when others then
     get stacked diagnostics m = message_text;
@@ -173,7 +178,7 @@ begin
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', claims_p1, true);
   perform public.set_place_with(r_s6_o2, '  Same room as Seven  ');
-  select place_with into st from registrations where id = r_s6_o2;
+  select x.place_with into st from public.my_place_with() x where x.registration_id = r_s6_o2;
   res := res || E'\nplace_with set, trimmed: ' || case when st = 'Same room as Seven' then 'ok' else 'BAD (' || coalesce(st, 'null') || ')' end;
   begin
     perform public.set_place_with(r_s6_o2, repeat('x', 101));
@@ -191,8 +196,32 @@ begin
     res := res || E'\nanother parent sets place_with: ALLOWED (BAD)';
   exception when others then res := res || E'\nanother parent sets place_with: refused ok'; end;
   perform set_config('request.jwt.claims', claims_p1, true);
+  -- Only admins and the family read it: not a direct read, not another parent, not the crew.
+  begin
+    perform r2.place_with from registrations r2 where r2.id = r_s6_o2;
+    res := res || E'\na parent reads place_with directly: ALLOWED (BAD)';
+  exception when insufficient_privilege then res := res || E'\na parent reads place_with directly: refused ok'; end;
+  perform set_config('request.jwt.claims', claims_p2, true);
+  select count(*) into n from public.my_place_with() x where x.registration_id = r_s6_o2;
+  res := res || E'\nanother parent doesn''t get it from my_place_with: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  begin
+    perform 1 from public.admin_place_with();
+    res := res || E'\na parent calls admin_place_with: ALLOWED (BAD)';
+  exception when others then res := res || E'\na parent calls admin_place_with: refused ok'; end;
+  execute 'reset role';
+  select s.lead_id into crew from sections s where s.lead_id is not null order by s.id limit 1;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', crew, 'role', 'authenticated')::text, true);
+  begin
+    perform r2.place_with from registrations r2 limit 1;
+    res := res || E'\na crew member reads place_with: ALLOWED (BAD)';
+  exception when insufficient_privilege then res := res || E'\na crew member reads place_with: refused ok'; end;
+  perform set_config('request.jwt.claims', claims_adm, true);
+  select x.place_with into st from public.admin_place_with(o2) x where x.registration_id = r_s6_o2;
+  res := res || E'\nadmins read it with admin_place_with: ' || case when st = 'Same room as Seven' then 'ok' else 'BAD (' || coalesce(st, 'null') || ')' end;
+  perform set_config('request.jwt.claims', claims_p1, true);
   perform public.set_place_with(r_s6_o2, '   ');
-  select place_with into st from registrations where id = r_s6_o2;
+  select x.place_with into st from public.my_place_with() x where x.registration_id = r_s6_o2;
   res := res || E'\nplace_with cleared with a blank: ' || case when st is null then 'ok' else 'BAD (' || st || ')' end;
 
   -- ── Swaps (deadline now 0 days) ──
@@ -218,6 +247,17 @@ begin
     get stacked diagnostics m = message_text;
     res := res || E'\nswap when the prerequisite is met: refused (BAD: ' || m || ')';
   end;
+  -- A camper in a class by an admin's exception can still move to another section of it.
+  begin
+    perform public.swap_my_registration(r_s6x, a2b);
+    select (section_id = a2b)::text into st from registrations where id = r_s6x;
+    res := res || E'\nan excepted camper switches to another section of the same class: ' || case when st = 'true' then 'ok' else 'BAD' end;
+  exception when others then
+    get stacked diagnostics m = message_text;
+    res := res || E'\nan excepted camper switches to another section of the same class: refused (BAD: ' || m || ')';
+  end;
+  select count(*) into n from public.my_swap_choices(r_s6x) c where c.section_id = a2 and c.blocked_reason is null and not c.rule_blocked;
+  res := res || E'\n...and the list offers the other section: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
   -- Nine now needs Rules Basics in Week 1 for Rules Advanced in Week 2.
   begin
     perform public.swap_my_registration(r_s9_b1b, o1);

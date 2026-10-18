@@ -75,13 +75,17 @@ RETURNS TEXT LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, 
 DECLARE
   reg registrations%ROWTYPE;
   tgt sections%ROWTYPE;
+  src_class UUID;
   age SMALLINT;
   why TEXT;
 BEGIN
   SELECT * INTO reg FROM registrations WHERE id = p_registration_id;
   SELECT * INTO tgt FROM sections WHERE id = p_target;
   IF NOT FOUND THEN RETURN 'That class no longer exists'; END IF;
-  IF to_regprocedure('private.course_rule_block(uuid,uuid)') IS NOT NULL THEN
+  SELECT class_id INTO src_class FROM sections WHERE id = reg.section_id;
+  -- Another section of the class the camper already has needs no new check of its rules (they may
+  -- be in it by an admin's exception).
+  IF tgt.class_id IS DISTINCT FROM src_class AND to_regprocedure('private.course_rule_block(uuid,uuid)') IS NOT NULL THEN
     why := private.course_rule_block(reg.student_id, p_target);
     IF why IS NOT NULL THEN RETURN why; END IF;
   END IF;
@@ -150,7 +154,7 @@ BEGIN
     rule_blocked := false;
     next_class_name := NULL;
     IF rules THEN
-      rule_blocked := private.course_rule_block(reg.student_id, o.id) IS NOT NULL;
+      rule_blocked := o.class_id IS DISTINCT FROM src.class_id AND private.course_rule_block(reg.student_id, o.id) IS NOT NULL;
       SELECT nc.name INTO next_class_name
         FROM classes nc JOIN sections ns ON ns.class_id = nc.id
        WHERE nc.id = o.next_id AND ns.cancelled_at IS NULL

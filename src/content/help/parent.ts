@@ -75,8 +75,8 @@ export const PARENT_GUIDE: HelpGuide = {
               heading: 'Think your camper is ready anyway?',
               items: [
                 'Under the locked class, tap **Request an exception**.',
-                'Tell the camp why (for example, a class they took at school), then tap **Send to the camp**. In the registration form it goes with your registration when you submit.',
-                'The camp reads every request and emails you. If they agree, they sign your camper up.',
+                'Tell the camp why (for example, a class they took at school), then tap **Send to the camp**. In the registration form, also pick a class for that week: the request goes with your registration when you submit.',
+                'The camp reads every request and emails you. If they agree, they move your camper from their class that week into the one you asked for.',
               ],
             },
             {

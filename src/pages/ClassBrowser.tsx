@@ -287,6 +287,7 @@ export default function ClassBrowser() {
                 {ruleBlocked && student && (
                   <ExceptionRequest camper={first} className={cls.name} idPrefix={`exc-${sec.id}`}
                     sent={exceptions.has(exceptionKey(student.id, sec.id))}
+                    extraHint={held ? undefined : `Sign ${first} up for another class this week too: if the camp agrees, they'll move ${first} into ${cls.name}.`}
                     onSend={m => requestException(student.id, sec.id, m)} />
                 )}
               </li>

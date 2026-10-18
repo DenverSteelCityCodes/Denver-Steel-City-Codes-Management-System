@@ -565,7 +565,8 @@ export const ADMIN_GUIDE: HelpGuide = {
               heading: 'An exception request',
               items: [
                 'It shows under **Change requests** on [[admin-students]], with the class, its rules and the camper\'s grade.',
-                'To agree, open the camper below and use **Move to** to put them in that class (admin moves skip the rules), then **Mark done**. To say no, **Decline**. Either way the family gets an email with your reply.',
+                'To agree, open the camper below and use **Move to** to move their class that week into the one they asked for (admin moves skip the rules), then **Mark done**. To say no, **Decline**. Either way the family gets an email with your reply.',
+                'A camper with no class that week has nothing to move yet: reply and ask the family to sign up for another class that week first.',
               ],
             },
             {

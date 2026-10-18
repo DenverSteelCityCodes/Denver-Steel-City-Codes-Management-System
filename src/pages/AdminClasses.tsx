@@ -536,23 +536,27 @@ function SectionRoster({ sectionId }: { sectionId: string }) {
 
   useEffect(() => {
     let cancelled = false
+    // Placement requests aren't readable directly (spec 31): admin_place_with() for this section.
+    const placedPromise = supabase.rpc('admin_place_with', { p_section_id: sectionId })
     supabase
       .from('registrations')
       .select(`
-        status, place_with,
+        id, status,
         students (
           full_name, age, allergies, medical_conditions, medical_info,
           profiles:parent_id ( display_name )
         )
       `)
       .eq('section_id', sectionId)
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
+        const placed = await placedPromise
         if (cancelled) return
+        const placeWith = new Map(((placed.data ?? []) as { registration_id: string; place_with: string }[]).map(p => [p.registration_id, p.place_with]))
         setLoadError(error?.message ?? null)
         setRoster(
           ((data ?? []) as unknown as {
+            id: string
             status: RegistrationStatus
-            place_with: string | null
             students: {
               full_name: string; age: number
               allergies: string | null; medical_conditions: string | null; medical_info: string | null
@@ -567,7 +571,7 @@ function SectionRoster({ sectionId }: { sectionId: string }) {
             medical_info: r.students?.medical_info ?? null,
             parentName: r.students?.profiles?.display_name ?? 'Unknown',
             status: r.status,
-            placeWith: r.place_with ?? null,
+            placeWith: placeWith.get(r.id) ?? null,
           })).sort((a, b) => ROSTER_ORDER[a.status] - ROSTER_ORDER[b.status] || a.studentName.localeCompare(b.studentName))
         )
         setLoading(false)

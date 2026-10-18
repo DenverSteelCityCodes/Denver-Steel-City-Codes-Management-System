@@ -272,7 +272,6 @@ export default function ParentRegistrationPage() {
   function classOptions(week: 1 | 2): ClassOption[] {
     const camperAge = gradeToAge(form.grade)
     const taken = takenBefore(week)
-    const target = { year: campYear, week }
     const offered = new Set(classes.filter(c => c.sections.some(s => s.week === week || s.week === null)).map(c => c.id))
     return classes.flatMap((c): ClassOption[] => {
       const weekSections = c.sections.filter(s => s.week === week || s.week === null)
@@ -280,6 +279,9 @@ export default function ParentRegistrationPage() {
       const fits = weekSections.filter(s => camperAge !== null && camperAge >= s.age_min && camperAge <= s.age_max)
       // Prefer the emptiest fitting section so siblings/friends spread before anyone is waitlisted.
       const best = [...fits].sort((a, b) => a.registered_count / a.capacity - b.registered_count / b.capacity)[0]
+      // Judged on the section the camper would join, as the database does: a both-weeks section
+      // (week null) isn't "after" Week 1, so only a past summer meets its prerequisite.
+      const target = { year: campYear, week: (best ?? weekSections[0]).week }
       const rule = courseRuleReason(c, classes, form.grade, taken, target)
       if (rule) {
         return [{ classId: c.id, name: c.name, section: null, full: false, reason: rule, ruleBlocked: true,
@@ -462,14 +464,10 @@ export default function ParentRegistrationPage() {
       if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet. No camp sessions are scheduled."
       if (!registrationIsOpen(season)) return `Registration opens ${formatCampDateTime(season!.registration_opens_at!)} (Denver time). Your answers are saved on this device, so you can pick the class here once it opens.`
       if (!form.session1 && !form.session2) return 'Please select at least one session'
-      // A week needs a class, or a request for an exception to one (spec 31) with its reason.
-      for (const week of [1, 2] as const) {
-        if (!(week === 1 ? form.session1 : form.session2)) continue
-        const ex = exceptionFor(week)
-        if (isSelectable(week, week === 1 ? form.class_week1 : form.class_week2)) continue
-        if (ex && !ex.message.trim()) return fail(`exception${week}`, `Tell the camp why ${studentFirst} is ready for ${ex.name}, or pick another class.`)
-        if (!ex) return `Please select a class for ${campSessions[week - 1]?.name ?? `Session ${week}`}`
-      }
+      // Every chosen week needs a class booked. An exception request goes alongside it (spec 31): if
+      // the camp agrees, an admin moves that class into the one asked for.
+      if (form.session1 && !isSelectable(1, form.class_week1)) return `Please select a class for ${campSessions[0]?.name ?? 'Session 1'}`
+      if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
       if (q('place_with').required && !form.place_with.trim()) return fail('place_with', `${q('place_with').label} is required`)
       // A class whose section runs both weeks fills both weeks: it can't be paired with another.
       if (form.session1 && form.session2 && form.class_week1 !== form.class_week2) {
@@ -696,10 +694,10 @@ export default function ParentRegistrationPage() {
       <div className="max-w-[640px] mx-auto">
           <h1 className={`${pageTitle} flex items-center gap-2`}>
             <CheckCircle2 size={28} strokeWidth={2.25} aria-hidden="true" className="text-success shrink-0" />
-            {registeredCount === 0 ? 'Request sent' : waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}
+            {registeredCount === 0 && exceptionsSent.length > 0 ? 'Request sent' : waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}
           </h1>
           <p className="mt-2 text-pretty">
-            {registeredCount === 0 ? (
+            {registeredCount === 0 && exceptionsSent.length > 0 ? (
               <><strong className="font-bold">{studentFullName}</strong>'s details are saved.</>
             ) : waitlistedCount === 0 ? (
               <><strong className="font-bold">{studentFullName}</strong>'s spot is confirmed. You'll find the class, time and room on Home.</>
@@ -1048,7 +1046,7 @@ export default function ParentRegistrationPage() {
                                     <div className="mt-3 mb-2 space-y-2">
                                       <label htmlFor={exId} className={labelCls}>Why is {studentFirst} ready for {o.name}?</label>
                                       <p id={`${exId}-hint`} className={hintCls}>
-                                        For example, a class they took at school. It goes to the camp with this registration, and they'll email you. You can pick another class for this week too.
+                                        For example, a class they took at school. It goes to the camp with this registration, and they'll email you. Pick a class for this week too: if the camp agrees, they'll move {studentFirst} into {o.name}.
                                       </p>
                                       <textarea id={exId} rows={3} maxLength={1000} className={textareaCls}
                                         aria-invalid={error && errorField === exId ? true : undefined}
