@@ -165,7 +165,7 @@ export default function AdminAttendance() {
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-sans font-bold text-2xl text-ink">Attendance</h1>
+          <h1 className="font-display font-bold text-2xl text-ink">Attendance</h1>
           <p className="font-sans text-sm text-ink-muted">
             {formatDayLong(today)}
             {lastUpdated && ` · Updated ${formatTime(`${lastUpdated.getHours()}:${lastUpdated.getMinutes()}`)}`}

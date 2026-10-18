@@ -122,7 +122,7 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
         ) : (
           <div className="mt-2 flex gap-2">
             <button type="button" disabled={busy} onClick={() => { void run(() => changes.acceptOffer(reg.id), () => setMode('idle')) }}
-              className="h-10 px-4 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">
+              className="ui-btn ui-btn--primary">
               {busy ? 'Claiming…' : 'Claim the spot'}
             </button>
             <button type="button" disabled={busy} onClick={() => setMode('confirm')}
@@ -189,10 +189,10 @@ function RegistrationActions({ reg, camper, changes }: { reg: RegistrationWithSe
         >
           <label htmlFor={`req-${reg.id}`} className="block text-xs font-sans font-semibold text-ink-muted">What would you like to change about {where}?</label>
           <textarea id={`req-${reg.id}`} rows={2} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
-            className="w-full px-3 py-2 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
+            className="ui-input" />
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setMode('idle')} className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Cancel</button>
-            <button type="submit" disabled={busy || !message.trim()} className="h-9 px-3 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">{busy ? 'Sending…' : 'Send to the camp'}</button>
+            <button type="submit" disabled={busy || !message.trim()} className="ui-btn ui-btn--primary">{busy ? 'Sending…' : 'Send to the camp'}</button>
           </div>
         </form>
       )}
@@ -339,7 +339,7 @@ function CamperEditor({ student, onSave, onDone }: { student: Student; onSave: P
     }
   }
 
-  const input = 'w-full h-10 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand'
+  const input = 'ui-input'
   const label = 'block font-sans text-xs font-semibold text-ink-muted mb-1'
   const id = (k: string) => `camper-${student.id}-${k}`
 
@@ -368,7 +368,7 @@ function CamperEditor({ student, onSave, onDone }: { student: Student; onSave: P
       {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
       <div className="flex justify-end gap-2">
         <button type="button" onClick={onDone} className="h-10 px-4 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition">Cancel</button>
-        <button type="submit" disabled={saving} className="h-10 px-4 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm flex items-center gap-1.5 transition disabled:opacity-50">
+        <button type="submit" disabled={saving} className="ui-btn ui-btn--primary">
           <Check size={15} /> {saving ? 'Saving…' : 'Save changes'}
         </button>
       </div>

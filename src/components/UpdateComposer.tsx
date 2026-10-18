@@ -82,7 +82,7 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
     setBusy(false)
   }
 
-  const input = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
+  const input = 'ui-input'
   const label = 'block font-sans font-semibold text-sm text-ink mb-1.5'
 
   return (
@@ -121,7 +121,7 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
           value={body}
           onChange={e => setBody(e.target.value)}
           placeholder={mode.kind === 'lead' ? 'What we did today, what to bring tomorrow…' : 'Pickup reminders, schedule changes, thank-yous…'}
-          className="w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand transition resize-y"
+          className="ui-input resize-y"
         />
         <p className="mt-1 text-right font-sans text-xs text-ink-faint tabular-nums">{body.length}/{MAX}</p>
       </div>
@@ -137,7 +137,7 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
               Cancel
             </button>
           )}
-          <button type="submit" disabled={busy || !body.trim()} className="h-10 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm flex items-center gap-2 shadow-sm transition disabled:opacity-50">
+          <button type="submit" disabled={busy || !body.trim()} className="ui-btn ui-btn--primary">
             {busy ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Send size={15} />}
             {busy ? 'Posting…' : 'Post update'}
           </button>
@@ -152,7 +152,7 @@ export default function UpdateComposer({ mode, onPost, onCancel, autoFocus = tru
           rows={3}
           value={manualEmails.join(', ')}
           onFocus={e => e.currentTarget.select()}
-          className="w-full px-3.5 py-2.5 rounded-[10px] bg-surface-sunken border border-border-strong text-ink font-sans text-xs resize-y"
+          className="ui-input bg-surface-sunken resize-y"
         />
       )}
     </form>

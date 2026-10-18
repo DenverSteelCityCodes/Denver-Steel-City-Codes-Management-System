@@ -65,7 +65,7 @@ export default function AdminDashboard() {
     <div className="max-w-[1200px] mx-auto px-6 py-10 space-y-10">
       {/* Greeting */}
       <div>
-        <h1 className="font-sans font-bold text-[40px] leading-[46px] tracking-[-0.01em] text-ink mb-1">
+        <h1 className="font-display font-bold text-[40px] leading-[46px] tracking-[-0.01em] text-ink mb-1">
           {greeting(new Date().getHours())}, {firstName}
         </h1>
         <p className="font-slab text-ink-muted text-lg">Manage classes, volunteers, and registrations.</p>

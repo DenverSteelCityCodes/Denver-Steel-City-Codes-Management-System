@@ -108,7 +108,7 @@ export default function AdminUsers() {
   return (
     <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-8 space-y-8">
       <div>
-        <h1 className="font-sans font-bold text-2xl text-ink mb-1">Users &amp; roles</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-1">Users &amp; roles</h1>
         <p className="font-sans text-sm text-ink-muted">Every account and what it can access. Role changes take effect the next time the person loads a page.</p>
       </div>
 
@@ -203,7 +203,7 @@ export default function AdminUsers() {
                                   value={isPending ? pending!.newRole : user.role}
                                   disabled={busy && isPending}
                                   onChange={e => requestRoleChange(user, e.target.value as UserRole)}
-                                  className="h-9 pl-2.5 pr-7 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition cursor-pointer"
+                                  className="ui-input w-auto min-h-11 py-1.5 pl-2.5 pr-7 cursor-pointer"
                                 >
                                   {(['admin', 'volunteer', 'parent'] as UserRole[]).map(r => (
                                     <option key={r} value={r}>{ROLE_LABELS[r].label}</option>

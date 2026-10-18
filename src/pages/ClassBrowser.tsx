@@ -101,7 +101,7 @@ function SectionCard({ section, studentName, studentAge, registrationStatus, onR
         <button
           onClick={onRegister}
           disabled={registering || disabled}
-          className="w-full h-10 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="ui-btn ui-btn--primary w-full"
         >
           {registering
             ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
@@ -232,7 +232,7 @@ export default function ClassBrowser() {
             id="browse-camper"
             value={selectedStudentId}
             onChange={e => setSelectedStudentId(e.target.value)}
-            className="h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition sm:w-64"
+            className="ui-input sm:w-64"
           >
             <option value="">Select a camper to enroll…</option>
             {students.map(s => (
@@ -249,7 +249,7 @@ export default function ClassBrowser() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search courses…"
-              className="w-full h-11 pl-9 pr-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition"
+              className="ui-input pl-9 pr-3.5"
             />
           </div>
         </div>

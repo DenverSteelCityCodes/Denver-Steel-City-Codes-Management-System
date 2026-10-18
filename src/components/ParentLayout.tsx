@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Home, GraduationCap, Sun, Moon, Heart, LogOut, ChevronDown } from 'lucide-react'
 import ParentBell from './ParentBell'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../hooks/useTheme'
 import wordmark from '../../assets/sccdenver.png'
 
 // Parent shell (handoff §5): reuse the admin shell *pattern* — real wordmark on the ink bar,
@@ -13,24 +14,8 @@ export default function ParentLayout() {
   const { profile, signOut } = useAuth()
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [dark, setDark] = useState(() => {
-    if (typeof document === 'undefined') return false
-    const stored = localStorage.getItem('scc-theme')
-    if (stored) return stored === 'dark'
-    return document.documentElement.classList.contains('dark')
-  })
+  const { dark, toggle: toggleTheme } = useTheme()
   const menuRef = useRef<HTMLDivElement>(null)
-
-  // ── Theme: sync the DOM class from state (effects are for external systems) ──
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
-  }, [dark])
-
-  function toggleTheme() {
-    const next = !dark
-    localStorage.setItem('scc-theme', next ? 'dark' : 'light')
-    setDark(next)
-  }
 
   // ── Avatar menu: close on outside click ────────────────────
   useEffect(() => {
@@ -74,7 +59,7 @@ export default function ParentLayout() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="text-white/70 hover:text-white p-2 rounded-[10px] hover:bg-white/10 transition"
+            className="ui-iconbtn text-on-shell-muted hover:text-on-shell"
           >
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -85,10 +70,10 @@ export default function ParentLayout() {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(o => !o)}
-              className="flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-full hover:bg-white/10 transition"
+              className="flex items-center gap-2 min-h-11 pl-1.5 pr-2 rounded-full hover:bg-white/10 transition"
               aria-label="Account menu"
             >
-              <span className="w-8 h-8 rounded-full bg-role-parent-soft text-role-parent ring-2 ring-brand flex items-center justify-center font-sans font-bold text-xs">
+              <span className="w-8 h-8 rounded-full bg-role-parent-soft text-role-parent ring-2 ring-on-shell-muted flex items-center justify-center font-sans font-bold text-xs">
                 {initials}
               </span>
               <ChevronDown size={14} className="text-white/60 hidden sm:block" />

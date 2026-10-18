@@ -226,7 +226,7 @@ function StudentDetail({
                   <label htmlFor={`move-${reg.id}`} className="text-xs text-ink-muted shrink-0">Move to section:</label>
                   <select
                     id={`move-${reg.id}`}
-                    className="flex-1 h-9 px-2 rounded-[8px] bg-surface border border-border-strong text-ink text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="ui-input flex-1 min-h-11 py-1.5"
                     value=""
                     disabled={!!busy}
                     onChange={e => {
@@ -398,7 +398,7 @@ export default function AdminStudents() {
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 space-y-5">
         <AdminChangeRequests onResolved={() => { void refetchStudents() }} />
         <div className="flex items-center justify-between gap-3">
-          <h1 className="font-sans font-bold text-2xl text-ink">Students</h1>
+          <h1 className="font-display font-bold text-2xl text-ink">Students</h1>
           <button
             onClick={() => exportStudentCSV(filtered)}
             className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
@@ -414,7 +414,7 @@ export default function AdminStudents() {
               placeholder="Search by student or parent name…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full h-11 pl-9 pr-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition"
+              className="ui-input pl-9 pr-3.5"
             />
           </div>
         </div>

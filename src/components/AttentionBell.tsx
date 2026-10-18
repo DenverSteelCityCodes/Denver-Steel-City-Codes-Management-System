@@ -35,10 +35,10 @@ export default function AttentionBell() {
         onClick={() => setOpen(o => !o)}
         aria-label={count > 0 ? `Needs attention: ${count} item${count === 1 ? '' : 's'}` : 'Notifications'}
         aria-expanded={open}
-        className="relative text-white/70 hover:text-white p-2 rounded-[10px] hover:bg-white/10 transition"
+        className="ui-iconbtn text-on-shell-muted hover:text-on-shell"
       >
         <Bell size={18} />
-        {count > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand ring-2 ring-ink-950" />}
+        {count > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-shell ring-2 ring-shell" />}
       </button>
 
       {open && (

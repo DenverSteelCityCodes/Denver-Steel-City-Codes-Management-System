@@ -135,7 +135,7 @@ export default function AdminFormEditor() {
   return (
     <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div>
-        <h1 className="font-sans font-bold text-2xl text-ink mb-1">Form editor</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-1">Form editor</h1>
         <p className="font-sans text-sm text-ink-muted">Rename questions, hide optional ones, and choose what's required. Changes apply to the live forms immediately.</p>
       </div>
 

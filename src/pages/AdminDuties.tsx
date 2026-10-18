@@ -88,13 +88,13 @@ export default function AdminDuties() {
     return acc
   }, {})
 
-  const input = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition'
+  const input = 'ui-input'
   const label = 'block font-sans text-xs text-ink-muted mb-1'
 
   return (
     <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div>
-        <h1 className="font-sans font-bold text-2xl text-ink mb-1">Duty schedule</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-1">Duty schedule</h1>
         <p className="font-sans text-sm text-ink-muted">Daily jobs like check-in and lunch. Open slots here; accepted volunteers sign up from their dashboard.</p>
       </div>
 
@@ -141,7 +141,7 @@ export default function AdminDuties() {
             <input
               id="new-duty-type" type="text" placeholder="New duty type…" value={newTypeName}
               onChange={e => setNewTypeName(e.target.value)}
-              className="flex-1 min-w-0 h-10 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              className="ui-input flex-1 min-w-0"
             />
             <button type="submit" disabled={addingType} aria-label="Add duty type"
               className="h-10 w-10 bg-brand text-brand-on rounded-[8px] flex items-center justify-center shrink-0 disabled:opacity-50">
@@ -160,7 +160,7 @@ export default function AdminDuties() {
               id="duty-session-filter"
               value={selectedSession}
               onChange={e => { setSelectedSession(e.target.value); setSlotNote(null) }}
-              className="h-9 pl-2.5 pr-7 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              className="ui-input w-auto min-h-11 py-1.5 pl-2.5 pr-7"
             >
               <option value="">All sessions</option>
               {sessions.map(s => <option key={s.id} value={s.id}>{s.name} {s.year}</option>)}
@@ -189,7 +189,7 @@ export default function AdminDuties() {
                   onChange={e => setSlotForm(f => ({ ...f, capacity: e.target.value }))} className={input} />
               </div>
               <button type="submit" disabled={addingSlot}
-                className="h-11 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center justify-center gap-2 shrink-0 disabled:opacity-50">
+                className="ui-btn ui-btn--primary shrink-0">
                 {addingSlot ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Check size={16} />}
                 Add
               </button>

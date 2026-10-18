@@ -72,12 +72,12 @@ export default function AdminChangeRequests({ onResolved }: { onResolved?: () =>
                   <label htmlFor={`note-${r.id}`} className="sr-only">Reply (optional)</label>
                   <input id={`note-${r.id}`} placeholder="Reply (optional)" value={notes[r.id] ?? ''}
                     onChange={e => setNotes(n => ({ ...n, [r.id]: e.target.value }))}
-                    className="flex-1 h-9 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
+                    className="ui-input flex-1 min-h-11 py-1.5" />
                   <div className="flex gap-2">
                     <button type="button" disabled={busy === r.id} onClick={() => { void resolve(r.id, 'declined') }}
                       className="h-9 px-3 rounded-[8px] border border-border-strong bg-surface font-sans font-semibold text-sm text-ink hover:bg-surface-sunken transition disabled:opacity-50">Decline</button>
                     <button type="button" disabled={busy === r.id} onClick={() => { void resolve(r.id, 'done') }}
-                      className="h-9 px-3 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm transition disabled:opacity-50">Mark done</button>
+                      className="ui-btn ui-btn--primary">Mark done</button>
                   </div>
                 </div>
               </li>

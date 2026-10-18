@@ -12,17 +12,17 @@ import type { AssignedSection } from '../../hooks/useAssignedClass'
 
 export const listCls = 'bg-surface border border-border rounded-[14px] overflow-hidden'
 export const btnCls = 'h-11 px-4 rounded-[10px] border border-border-strong bg-surface text-ink font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 hover:bg-surface-sunken transition disabled:opacity-50'
-export const primaryCls = 'h-11 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 transition disabled:opacity-50'
+export const primaryCls = 'ui-btn ui-btn--primary'
 export const linkCls = 'min-h-11 inline-flex items-center font-sans font-semibold text-[15px] text-ink underline decoration-brand-hover decoration-2 underline-offset-4'
 // 16px so iOS Safari doesn't zoom the page when the field is focused.
-export const inputCls = 'w-full h-11 px-3 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand'
+export const inputCls = 'ui-input'
 export const labelCls = 'block font-sans text-sm font-semibold text-ink-muted mb-1'
 
 export function PageHead({ dateline, title, children }: { dateline?: string; title: string; children?: ReactNode }) {
   return (
     <div>
       {dateline && <p className="font-sans text-sm font-semibold text-ink-muted">{dateline}</p>}
-      <h1 className="font-sans font-bold text-[28px] sm:text-[34px] leading-[1.15] tracking-[-0.01em] text-ink">{title}</h1>
+      <h1 className="font-display font-bold text-[28px] sm:text-[34px] leading-[1.15] tracking-[-0.01em] text-ink">{title}</h1>
       {children && <p className="font-sans text-[16.5px] leading-normal text-ink mt-2 max-w-[34em]">{children}</p>}
     </div>
   )

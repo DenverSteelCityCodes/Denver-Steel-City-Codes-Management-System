@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Sun, Moon, LogOut, ChevronDown, UserRound, CalendarCheck, GraduationCap, ClipboardList, Megaphone } from 'lucide-react'
 import wordmark from '../../assets/sccdenver.png'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../hooks/useTheme'
 import { useAssignedClass } from '../hooks/useAssignedClass'
 import { useSessions } from '../hooks/useSessions'
 import type { VolunteerHome } from '../hooks/useVolunteerHome'
@@ -27,23 +28,8 @@ export default function VolunteerLayout() {
   const crew = assigned.isAccepted
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [dark, setDark] = useState(() => {
-    if (typeof document === 'undefined') return false
-    const stored = localStorage.getItem('scc-theme')
-    if (stored) return stored === 'dark'
-    return document.documentElement.classList.contains('dark')
-  })
+  const { dark, toggle: toggleTheme } = useTheme()
   const menuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
-  }, [dark])
-
-  function toggleTheme() {
-    const next = !dark
-    localStorage.setItem('scc-theme', next ? 'dark' : 'light')
-    setDark(next)
-  }
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -88,7 +74,7 @@ export default function VolunteerLayout() {
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenuOpen(o => !o)} aria-label="Account menu" aria-haspopup="menu" aria-expanded={menuOpen}
               className="h-11 flex items-center gap-1.5 px-1.5 rounded-full hover:bg-white/10 transition">
-              <span className="w-8 h-8 rounded-full bg-role-volunteer-soft text-role-volunteer ring-2 ring-brand flex items-center justify-center font-sans font-bold text-xs">
+              <span className="w-8 h-8 rounded-full bg-role-volunteer-soft text-role-volunteer ring-2 ring-on-shell-muted flex items-center justify-center font-sans font-bold text-xs">
                 {initials}
               </span>
               <ChevronDown size={14} className="text-white/60 hidden sm:block" />
@@ -137,10 +123,10 @@ export default function VolunteerLayout() {
           </div>
         ) : assigned.error ? (
           <div role="alert" className="py-10">
-            <h1 className="font-sans font-bold text-2xl text-ink mb-2">Couldn't load your classes</h1>
+            <h1 className="font-display font-bold text-2xl text-ink mb-2">Couldn't load your classes</h1>
             <p className="font-sans text-ink-muted mb-6">{assigned.error}</p>
             <button onClick={() => { void assigned.refetch() }}
-              className="h-11 px-5 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold transition">
+              className="ui-btn ui-btn--primary">
               Try again
             </button>
           </div>

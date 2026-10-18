@@ -84,7 +84,7 @@ export default function ParentDashboard() {
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-10">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-sans text-[32px] leading-[38px] sm:text-[40px] sm:leading-[46px] font-bold tracking-[-0.01em] text-ink mb-1">
+            <h1 className="font-display text-[32px] leading-[38px] sm:text-[40px] sm:leading-[46px] font-bold tracking-[-0.01em] text-ink mb-1">
               Welcome, {profile?.display_name?.split(' ')[0]}
             </h1>
             <p className="font-slab text-ink-muted text-lg">{subhead}</p>
@@ -103,7 +103,7 @@ export default function ParentDashboard() {
             {/* New campers go through the full registration (waiver + emergency contact), not a quick add. */}
             <Link
               to="/parent/register"
-              className="h-11 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 transition shadow-sm"
+              className="ui-btn ui-btn--primary"
             >
               <Plus size={16} />
               Add camper
@@ -129,7 +129,7 @@ export default function ParentDashboard() {
               </button>
               <Link
                 to={`/parent/register?${studentId ? `studentId=${studentId}&` : ''}step=${draft.step}`}
-                className="h-10 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center transition shadow-sm"
+                className="ui-btn ui-btn--primary"
               >
                 Continue
               </Link>
@@ -165,7 +165,7 @@ export default function ParentDashboard() {
             <p className="font-slab text-ink-muted mb-6">Add your first camper to get started.</p>
             <Link
               to="/parent/register"
-              className="h-11 px-5 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] inline-flex items-center gap-2 transition shadow-sm"
+              className="ui-btn ui-btn--primary"
             >
               <Plus size={16} /> Register a camper
             </Link>

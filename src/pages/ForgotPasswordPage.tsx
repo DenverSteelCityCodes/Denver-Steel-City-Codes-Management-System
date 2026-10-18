@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
               <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
                 <Mail size={20} className="text-success" />
               </div>
-              <h1 ref={focusOnMount} tabIndex={-1} className="font-sans font-bold text-xl text-ink mb-2 focus:outline-none">Check your email</h1>
+              <h1 ref={focusOnMount} tabIndex={-1} className="font-display font-bold text-xl text-ink mb-2 focus:outline-none">Check your email</h1>
               <p role="status" className="font-sans text-ink-muted text-sm">
                 If <strong className="text-ink">{email.trim()}</strong> has an account, we've sent a link to choose a new password. It works for one hour.
               </p>
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h1 className="font-sans font-bold text-2xl text-ink mb-1">Forgot your password?</h1>
+              <h1 className="font-display font-bold text-2xl text-ink mb-1">Forgot your password?</h1>
               <p className="font-sans text-ink-muted text-sm mb-6">Enter your email and we'll send you a link to choose a new one.</p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition"
+                    className="ui-input"
                   />
                 </div>
 
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] shadow-sm flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ui-btn ui-btn--primary w-full"
                 >
                   {loading
                     ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
