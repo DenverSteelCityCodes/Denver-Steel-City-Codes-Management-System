@@ -47,7 +47,8 @@ export function useAdminClasses() {
 
   useEffect(() => { fetchClasses() }, [])
 
-  async function fetchClasses() {
+  // Resolves false when the classes couldn't be read (the last good list stays in `classes`).
+  async function fetchClasses(): Promise<boolean> {
     setLoading(true)
     const fillPromise = fetchSectionFill().then(
       fill => { setFillError(null); return fill },
@@ -68,7 +69,7 @@ export function useAdminClasses() {
       `)
       .order('name', { ascending: true })
 
-    if (error) { setError(error.message); setLoading(false); return }
+    if (error) { setError(error.message); setLoading(false); return false }
     setError(null)
     const fill = await fillPromise
 
@@ -94,6 +95,7 @@ export function useAdminClasses() {
 
     setClasses(shaped)
     setLoading(false)
+    return fill !== null
   }
 
   async function createClass(payload: Pick<Class, 'name'> & { description?: string }) {

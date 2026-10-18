@@ -29,18 +29,21 @@ export function useSeasonSettings(year: number | null) {
     let alive = true
     void load(year).then(({ data, error }) => {
       if (!alive) return
-      if (error) setError(error)
-      else setSettings(data)
+      // A failed read keeps the last good settings; a later good read clears the error.
+      setError(error)
+      if (!error) setSettings(data)
       setLoading(false)
     })
     return () => { alive = false }
   }, [year, load])
 
-  async function fetchSettings() {
-    if (!year) return
+  // Resolves false when the read failed.
+  async function fetchSettings(): Promise<boolean> {
+    if (!year) return true
     const { data, error } = await load(year)
-    if (error) setError(error)
-    else setSettings(data)
+    setError(error)
+    if (!error) setSettings(data)
+    return !error
   }
 
   // Admin only (RLS). Upserts the year's row; updated_at is stamped by the database.
