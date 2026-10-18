@@ -101,7 +101,6 @@ function FieldRow({
           <span className="text-ink-muted">{def.required ? 'Always required' : 'As needed'}</span>
         ) : (
           <Segmented
-            compact
             label={`Answer for “${resolved.label}”`}
             value={resolved.required ? 'required' : 'optional'}
             disabled={!resolved.show || saving}
