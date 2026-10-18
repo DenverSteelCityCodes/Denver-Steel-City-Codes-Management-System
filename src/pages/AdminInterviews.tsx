@@ -4,6 +4,7 @@ import { useInterviews } from '../hooks/useInterviews'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
 import { supabase } from '../lib/supabase'
+import { campDateKey, campInputToISO, formatCampTime } from '../lib/denverTime'
 
 interface Application {
   id: string
@@ -18,12 +19,6 @@ const inputCls = 'ui-input'
 const textareaCls = 'ui-input resize-none'
 const cancelCls = 'h-9 px-4 font-sans text-sm font-semibold text-ink bg-surface border border-border-strong rounded-[8px] hover:bg-surface-sunken transition'
 const saveCls = 'h-9 px-4 font-sans text-sm font-semibold bg-brand text-brand-on rounded-[8px] hover:bg-brand-hover transition disabled:opacity-50 flex items-center gap-1.5'
-
-// Local calendar date (YYYY-MM-DD) of a timestamp — slots are grouped by the admin's day, not UTC's.
-function localDateKey(iso: string) {
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 // Inline panel under a free slot: pick an applicant and book.
 function BookPanel({
@@ -184,8 +179,8 @@ export default function AdminInterviews() {
     setErr(null)
     try {
       await createSlot({
-        // Interpret the picked date/time in the admin's timezone, then store it as an instant.
-        slot_datetime: new Date(`${slotForm.date}T${slotForm.time}`).toISOString(),
+        // The picked date and time are Denver time, whatever zone the admin's device is in (#147).
+        slot_datetime: campInputToISO(`${slotForm.date}T${slotForm.time}`)!,
         duration_minutes: Number(slotForm.duration) || 15,
       })
       setSlotForm(f => ({ ...f, time: '' }))
@@ -210,7 +205,7 @@ export default function AdminInterviews() {
   }
 
   const grouped = slots.reduce<Record<string, typeof slots>>((acc, s) => {
-    const date = localDateKey(s.slot_datetime)
+    const date = campDateKey(s.slot_datetime)
     acc[date] = acc[date] ?? []
     acc[date].push(s)
     return acc
@@ -251,7 +246,7 @@ export default function AdminInterviews() {
             <input id="slot-date" type="date" value={slotForm.date} onChange={e => setSlotForm(f => ({ ...f, date: e.target.value }))} className={`${inputCls} w-auto`} />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="slot-time" className="font-sans text-xs text-ink-muted">Time</label>
+            <label htmlFor="slot-time" className="font-sans text-xs text-ink-muted">Time (Denver)</label>
             <input id="slot-time" type="time" value={slotForm.time} onChange={e => setSlotForm(f => ({ ...f, time: e.target.value }))} className={`${inputCls} w-auto`} />
           </div>
           <div className="flex flex-col gap-1">
@@ -295,7 +290,7 @@ export default function AdminInterviews() {
                 </h2>
                 <div className="bg-surface border border-border rounded-[14px] overflow-hidden divide-y divide-border">
                   {daySlots.map(slot => {
-                    const time = new Date(slot.slot_datetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                    const time = formatCampTime(slot.slot_datetime)
                     const applicantName = slot.booking?.application
                       ? `${slot.booking.application.first_name} ${slot.booking.application.last_name}`
                       : null

@@ -47,6 +47,23 @@ export function formatCampDateTime(iso: string): string {
   return `${date} at ${time}`
 }
 
+// "2027-04-24": the Denver calendar date of an instant (for grouping by day).
+export function campDateKey(iso: string): string {
+  const p = zonedParts(new Date(iso))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}`
+}
+
+// "9:00 AM", Denver time.
+export function formatCampTime(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
+}
+
+// "Sat, Apr 24, 9:00 AM", Denver time.
+export function formatCampSlot(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
+}
+
 // "3 days, 4 hours" · "2 hours, 5 minutes" · "45 seconds"
 export function timeUntil(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000))

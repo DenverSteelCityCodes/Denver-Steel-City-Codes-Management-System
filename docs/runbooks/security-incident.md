@@ -64,7 +64,7 @@ Write the answers in the incident log.
 
 Write down the **determination time**: when we concluded that a breach of covered personal information happened. The notice clock starts there.
 
-## 4. Decide on notice (Colorado, for the Denver chapter)
+## 4. Decide on notice (Colorado, for the Denver region)
 
 🔎 From [Mintz's Colorado summary](https://www.mintz.com/mintz-matrix/colorado), loaded October 2026; SCC's legal contacts confirm before anything is sent:
 
