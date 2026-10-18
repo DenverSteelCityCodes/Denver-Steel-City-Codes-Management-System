@@ -1,8 +1,11 @@
 -- Migration: public camp page and "notify me" list (spec 30, #150)
 -- Apply in Supabase Dashboard > SQL Editor (or via MCP / the Management API). Safe to re-run.
--- Order: after migration_notifications.sql (the outbox and pg_cron), migration_season_settings.sql
--- and migration_audit_log.sql. Then re-apply migration_demo_environment.sql on the demo project
--- (its reset seeds sessions.location and clears the notify list).
+-- Order: deploy the send-notifications Edge Function BEFORE applying this migration (it must know
+-- the three new templates, or their emails fail; the redeployed sender also leaves any unknown
+-- template queued instead of failing it). Then apply after migration_notifications.sql (the outbox
+-- and pg_cron), migration_season_settings.sql and migration_audit_log.sql. Then re-apply
+-- migration_demo_environment.sql on the demo project (its reset seeds sessions.location and
+-- clears the notify list).
 --
 -- Decided 2026-10-17: one always-current public page per season, so emails link to it instead of
 -- repeating details; a "notify me" signup needs a confirmation click (double opt-in) before we
@@ -13,10 +16,12 @@
 --   * interest_signups and join_interest_list() / confirm_interest() / leave_interest_list(): the
 --     notify list. Confirm and unsubscribe links carry an HMAC-signed token; the key is a Vault
 --     secret made here, and it never leaves the database.
---   * my_interest() / set_my_interest(): the signed-in parent's checkbox. Their login email is
---     confirmed already, so there's no second opt-in.
---   * private.send_interest_notices(), every minute: one 'registration_opening_soon' email per
---     signup per announced opening time, and one 'registration_now_open' when registration opens.
+--   * my_interest() / set_my_interest(): the signed-in parent's checkbox. It needs a confirmed
+--     login email, so there's no second opt-in.
+--   * private.send_interest_notices(), every minute, for the public camp year only: one
+--     'registration_opening_soon' email per announced opening time (a change sends exactly one
+--     correction), and one 'registration_now_open' once the opening time has passed. Signups
+--     still waiting when the public year rolls over move to the new year.
 -- Season settings stay readable by signed-in users only; anon loses its unused table grant.
 
 -- ── 1. Where each week happens ───────────────────────────────
@@ -223,33 +228,76 @@ REVOKE ALL ON FUNCTION private.queue_interest_email(TEXT, TEXT, JSONB, TEXT) FRO
 
 -- ── 6. Join, confirm, leave (signed out) ─────────────────────
 
--- "Notify me" on /camp. Adds the address for the camp year and sends one confirmation email.
--- Caps: one confirmation per address per Denver day, and 20 a minute from the form in total.
--- The answer is the same whether or not the address was already on the list, so the form can't
--- be used to find out who is.
+-- The inbox an address really reaches: lower-cased, without a +tag, and for Gmail without dots
+-- (a.b+x@gmail.com and ab@googlemail.com are one mailbox). Caps count mailboxes, not spellings.
+CREATE OR REPLACE FUNCTION private.mailbox(p_email TEXT)
+RETURNS TEXT LANGUAGE sql IMMUTABLE SET search_path = public AS $$
+  WITH a AS (SELECT split_part(split_part(lower(btrim(p_email)), '@', 1), '+', 1) AS l,
+                    split_part(lower(btrim(p_email)), '@', 2) AS d)
+  SELECT CASE WHEN d IN ('gmail.com', 'googlemail.com') THEN replace(l, '.', '') || '@gmail.com' ELSE l || '@' || d END
+  FROM a;
+$$;
+REVOKE ALL ON FUNCTION private.mailbox(TEXT) FROM PUBLIC, anon, authenticated;
+
+-- Every accepted "Notify me" press, for the caps below: hashes of the caller's IP and of the
+-- mailbox, never the address itself. Rows older than two days are pruned on each press.
+CREATE TABLE IF NOT EXISTS private.interest_join_log (
+    id       BIGSERIAL PRIMARY KEY,
+    at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ip_hash  TEXT,
+    mailbox_hash TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS interest_join_log_at_idx ON private.interest_join_log (at);
+REVOKE ALL ON private.interest_join_log FROM PUBLIC, anon, authenticated;
+
+-- "Notify me" on /camp. Adds the address for the public camp year and sends one confirmation.
+-- Caps, all counted on presses (never on who is on the list), all answered with the same
+-- "try again later", so a refusal can't tell anyone whether an address is already confirmed:
+--   per IP (Cloudflare's cf-connecting-ip, else the first x-forwarded-for; skipped with neither):
+--     5 an hour, 20 a day;
+--   per mailbox (see private.mailbox()): 3 a day, and one confirmation email a Denver day;
+--   for the whole form: 20 a minute, 300 a day.
+-- An advisory lock makes count-then-insert one step, so simultaneous presses can't overshoot.
 CREATE OR REPLACE FUNCTION public.join_interest_list(p_email TEXT)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
-  addr TEXT := lower(btrim(coalesce(p_email, '')));
-  yr   INT  := private.public_camp_year();
-  su   interest_signups;
+  addr    TEXT := lower(btrim(coalesce(p_email, '')));
+  yr      INT  := private.public_camp_year();
+  headers JSON := nullif(current_setting('request.headers', true), '')::json;
+  ip      TEXT;
+  ip_h    TEXT;
+  box_h   TEXT;
+  su      interest_signups;
 BEGIN
-  IF char_length(addr) > 254 OR addr !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' THEN
+  IF char_length(addr) > 254 OR addr ~ '[<>,;"()[:space:]]'
+     OR addr !~ '^[^@]+@[^@]+\.[^@]+$' THEN
     RAISE EXCEPTION 'Enter an email address like name@example.com.' USING ERRCODE = '22023';
   END IF;
-  IF (SELECT count(*) FROM notifications
-       WHERE template = 'interest_confirm' AND created_at > now() - interval '1 minute') >= 20 THEN
-    RAISE EXCEPTION 'A lot of people are signing up right now. Please try again in a minute.' USING ERRCODE = 'P0001';
+
+  ip := nullif(btrim(coalesce(headers->>'cf-connecting-ip', split_part(headers->>'x-forwarded-for', ',', 1))), '');
+  ip_h := CASE WHEN ip IS NOT NULL THEN md5('ip:' || ip) END;
+  box_h := md5('mailbox:' || private.mailbox(addr));
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('join_interest_list', 0));
+  DELETE FROM private.interest_join_log WHERE at < now() - interval '2 days';
+  IF (ip_h IS NOT NULL AND (
+        (SELECT count(*) FROM private.interest_join_log WHERE ip_hash = ip_h AND at > now() - interval '1 hour') >= 5
+     OR (SELECT count(*) FROM private.interest_join_log WHERE ip_hash = ip_h AND at > now() - interval '1 day') >= 20))
+     OR (SELECT count(*) FROM private.interest_join_log WHERE mailbox_hash = box_h AND at > now() - interval '1 day') >= 3
+     OR (SELECT count(*) FROM private.interest_join_log WHERE at > now() - interval '1 minute') >= 20
+     OR (SELECT count(*) FROM private.interest_join_log WHERE at > now() - interval '1 day') >= 300 THEN
+    RAISE EXCEPTION 'We couldn''t add this address right now. Please try again later.' USING ERRCODE = 'P0001';
   END IF;
+  INSERT INTO private.interest_join_log (ip_hash, mailbox_hash) VALUES (ip_h, box_h);
 
   INSERT INTO interest_signups (email, year) VALUES (addr, yr) ON CONFLICT (email, year) DO NOTHING;
   SELECT * INTO su FROM interest_signups WHERE email = addr AND year = yr;
   IF su.confirmed_at IS NOT NULL AND su.unsubscribed_at IS NULL THEN
-    RETURN;   -- already on the list: nothing to confirm
+    RETURN;   -- already on the list: nothing to confirm (and the same answer as everyone else)
   END IF;
   PERFORM private.queue_interest_email(addr, 'interest_confirm',
     jsonb_build_object('year', yr, 'token', private.interest_token(su.id, 'confirm')),
-    'interest_confirm:' || su.id || ':' || (now() AT TIME ZONE 'America/Denver')::date);
+    'interest_confirm:' || box_h || ':' || (now() AT TIME ZONE 'America/Denver')::date);
 END;
 $$;
 REVOKE ALL ON FUNCTION public.join_interest_list(TEXT) FROM PUBLIC, anon, authenticated;
@@ -297,7 +345,7 @@ REVOKE ALL ON FUNCTION public.leave_interest_list(TEXT) FROM PUBLIC, anon, authe
 GRANT EXECUTE ON FUNCTION public.leave_interest_list(TEXT) TO anon, authenticated;
 
 -- ── 7. The signed-in parent's checkbox ───────────────────────
--- Uses the login email, which sign-up already confirmed.
+-- Uses the login email, and only once sign-up has confirmed it.
 
 CREATE OR REPLACE FUNCTION public.my_interest()
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private, auth AS $$
@@ -312,11 +360,11 @@ GRANT EXECUTE ON FUNCTION public.my_interest() TO authenticated;
 CREATE OR REPLACE FUNCTION public.set_my_interest(p_on BOOLEAN)
 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private, auth AS $$
 DECLARE
-  addr TEXT := (SELECT lower(btrim(email)) FROM auth.users WHERE id = auth.uid());
+  addr TEXT := (SELECT lower(btrim(email)) FROM auth.users WHERE id = auth.uid() AND email_confirmed_at IS NOT NULL);
   yr   INT  := private.public_camp_year();
 BEGIN
   IF addr IS NULL OR addr = '' THEN
-    RAISE EXCEPTION 'Sign in to change this' USING ERRCODE = '42501';
+    RAISE EXCEPTION 'Confirm your account email first, then try again' USING ERRCODE = '42501';
   END IF;
   IF p_on THEN
     INSERT INTO interest_signups (email, year, confirmed_at) VALUES (addr, yr, now())
@@ -333,50 +381,68 @@ REVOKE ALL ON FUNCTION public.set_my_interest(BOOLEAN) FROM PUBLIC, anon, authen
 GRANT EXECUTE ON FUNCTION public.set_my_interest(BOOLEAN) TO authenticated;
 
 -- ── 8. Notices (pg_cron, every minute) ───────────────────────
--- Confirmed, subscribed addresses only.
---   * 'registration_opening_soon' once per opening time: when an admin sets the time, and once more
---     if they change it. A new time waits until the settings have been still for 10 minutes, so
---     fixing a typo doesn't send two emails.
---   * 'registration_now_open' once, the minute registration opens (status open or waitlist_only).
--- Each carries its own unsubscribe link. Returns how many emails it queued.
+-- Only for the public camp year (private.public_camp_year()), confirmed and subscribed addresses.
+--   0. A queued "opening soon" whose opening time has passed says nothing true: it's cancelled.
+--   1. When the public year rolls over, signups still waiting for "now open" move to the new year
+--      (unless the address already has a row there). Nothing is ever sent for an earlier year.
+--   2. With a future opening time, settled for 10 minutes (so fixing a typo doesn't send two):
+--      a "now open" sent for an earlier opening is cleared, since registration is shut again until
+--      the new time; then one 'registration_opening_soon' per signup whose last notice announced a
+--      different time. The dedupe key holds the time and the previous notice's stamp, so A → B → A
+--      sends exactly one correction each time.
+--   3. Once the opening time has passed (and only then: no opening time, no "now open", even with
+--      classes set up) and registration is open or waitlist-only: one 'registration_now_open'.
+-- Each email carries its own unsubscribe link. Returns how many emails it queued.
 CREATE OR REPLACE FUNCTION private.send_interest_notices()
 RETURNS INT LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, private AS $$
 DECLARE
-  su RECORD;
-  yr INT;
-  n  INT := 0;
+  yr      INT := private.public_camp_year();
+  ss      season_settings := private.season_settings_for(yr);
+  opens   TIMESTAMPTZ := ss.registration_opens_at;
+  su      RECORD;
+  n       INT := 0;
 BEGIN
-  FOR su IN
-    SELECT i.id, i.email, i.year, ss.registration_opens_at AS opens
-    FROM interest_signups i JOIN season_settings ss ON ss.year = i.year
-    WHERE i.confirmed_at IS NOT NULL AND i.unsubscribed_at IS NULL
-      AND ss.registration_opens_at > now()
-      AND ss.updated_at <= now() - interval '10 minutes'
-      AND i.notified_opens_at IS DISTINCT FROM ss.registration_opens_at
-  LOOP
-    PERFORM private.queue_interest_email(su.email, 'registration_opening_soon',
-      jsonb_build_object('year', su.year, 'opens_at', su.opens, 'token', private.interest_token(su.id, 'unsubscribe')),
-      'interest_opening_soon:' || su.id || ':' || extract(epoch FROM su.opens)::bigint);
-    UPDATE interest_signups SET notified_opening_at = now(), notified_opens_at = su.opens WHERE id = su.id;
-    n := n + 1;
-  END LOOP;
+  UPDATE notifications SET status = 'cancelled', last_error = 'The opening time passed before it was sent'
+   WHERE template = 'registration_opening_soon' AND status IN ('queued', 'failed')
+     AND (payload->>'opens_at')::timestamptz <= now();
 
-  FOR yr IN
-    SELECT DISTINCT year FROM interest_signups
-     WHERE confirmed_at IS NOT NULL AND unsubscribed_at IS NULL AND notified_open_at IS NULL
-  LOOP
-    CONTINUE WHEN private.camp_status(yr) NOT IN ('open', 'waitlist_only');
+  UPDATE interest_signups i SET year = yr, notified_opening_at = NULL, notified_opens_at = NULL
+   WHERE i.year < yr AND i.confirmed_at IS NOT NULL AND i.unsubscribed_at IS NULL AND i.notified_open_at IS NULL
+     AND NOT EXISTS (SELECT 1 FROM interest_signups j WHERE j.email = i.email AND j.year = yr)
+     AND i.year = (SELECT max(j.year) FROM interest_signups j      -- one row per address moves
+                    WHERE j.email = i.email AND j.year < yr AND j.confirmed_at IS NOT NULL
+                      AND j.unsubscribed_at IS NULL AND j.notified_open_at IS NULL);
+
+  IF opens IS NULL THEN
+    RETURN n;
+  ELSIF opens > now() THEN
+    IF ss.updated_at > now() - interval '10 minutes' THEN RETURN n; END IF;
+    UPDATE interest_signups SET notified_open_at = NULL WHERE year = yr AND notified_open_at IS NOT NULL;
     FOR su IN
-      SELECT i.id, i.email, i.year FROM interest_signups i
-       WHERE i.year = yr AND i.confirmed_at IS NOT NULL AND i.unsubscribed_at IS NULL AND i.notified_open_at IS NULL
+      SELECT id, email, notified_opening_at FROM interest_signups
+       WHERE year = yr AND confirmed_at IS NOT NULL AND unsubscribed_at IS NULL AND notified_open_at IS NULL
+         AND notified_opens_at IS DISTINCT FROM opens
+    LOOP
+      PERFORM private.queue_interest_email(su.email, 'registration_opening_soon',
+        jsonb_build_object('year', yr, 'opens_at', opens, 'token', private.interest_token(su.id, 'unsubscribe')),
+        'interest_opening_soon:' || su.id || ':' || extract(epoch FROM opens)::bigint
+          || ':' || coalesce(floor(extract(epoch FROM su.notified_opening_at) * 1000)::bigint, 0));
+      UPDATE interest_signups SET notified_opening_at = clock_timestamp(), notified_opens_at = opens WHERE id = su.id;
+      n := n + 1;
+    END LOOP;
+  ELSIF private.camp_status(yr) IN ('open', 'waitlist_only') THEN
+    FOR su IN
+      SELECT id, email, notified_opening_at FROM interest_signups
+       WHERE year = yr AND confirmed_at IS NOT NULL AND unsubscribed_at IS NULL AND notified_open_at IS NULL
     LOOP
       PERFORM private.queue_interest_email(su.email, 'registration_now_open',
-        jsonb_build_object('year', su.year, 'token', private.interest_token(su.id, 'unsubscribe')),
-        'interest_now_open:' || su.id);
+        jsonb_build_object('year', yr, 'token', private.interest_token(su.id, 'unsubscribe')),
+        'interest_now_open:' || su.id || ':' || extract(epoch FROM opens)::bigint
+          || ':' || coalesce(floor(extract(epoch FROM su.notified_opening_at) * 1000)::bigint, 0));
       UPDATE interest_signups SET notified_open_at = now() WHERE id = su.id;
       n := n + 1;
     END LOOP;
-  END LOOP;
+  END IF;
   RETURN n;
 END;
 $$;

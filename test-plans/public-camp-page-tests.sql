@@ -106,26 +106,77 @@ begin
   yr := private.public_camp_year();
   res := res || E'\n...and about the active year while it lasts: ' || case when yr = 2099 then 'ok' else 'BAD (' || yr || ')' end;
 
-  -- ── 4. Joining the list (signed out) ──
+  -- ── 4. Joining the list (signed out), and its caps ──
   execute 'set local role anon';
   perform public.join_interest_list('  Fam.One@SCC-Demo.TEST ');
   perform public.join_interest_list(addr);   -- again the same day
-  begin perform public.join_interest_list('not-an-email'); res := res || E'\nbad address: ACCEPTED (BAD)';
-  exception when invalid_parameter_value then res := res || E'\nbad address: refused ok (' || sqlerrm || ')'; end;
+  n := 0;
+  foreach st in array array['not-an-email', 'a<b>@scc-demo.test', 'a b@scc-demo.test', 'x@scc-demo.test,y@scc-demo.test', 'x@scc-demo.test;y@scc-demo.test', '"x"@scc-demo.test', 'x(y)@scc-demo.test'] loop
+    begin perform public.join_interest_list(st); n := n + 1; res := res || E'\nmalformed address ' || st || ': ACCEPTED (BAD)';
+    exception when invalid_parameter_value then null; end;
+  end loop;
   execute 'reset role';
+  res := res || E'\nmalformed addresses (<>,;"() and spaces) refused: ' || case when n = 0 then 'ok' else 'BAD (' || n || ' accepted)' end;
   select * into su from interest_signups where email = addr;
   res := res || E'\nsignup stored lower-cased for this camp year, unconfirmed: ' || case when su.year = 2099 and su.confirmed_at is null then 'ok' else 'BAD' end;
   select count(*) into n from notifications where template = 'interest_confirm' and recipient_email = addr and status = 'queued';
   res := res || E'\none confirmation email per address per day: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
   select payload->>'token' into tok from notifications where template = 'interest_confirm' and recipient_email = addr;
   res := res || E'\nconfirmation carries a confirm token: ' || case when private.interest_token_id(tok, 'confirm') = su.id then 'ok' else 'BAD' end;
+  res := res || E'\nthe join takes an advisory lock around count-then-insert: ' || case when position('pg_advisory_xact_lock' in pg_get_functiondef('public.join_interest_list(text)'::regprocedure)) > 0 then 'ok' else 'BAD' end;
 
-  insert into notifications (recipient_email, template, status) select 'cap@scc-demo.test', 'interest_confirm', 'cancelled' from generate_series(1, 20);
+  res := res || E'\nmailboxes normalise (+tag, Gmail dots, googlemail): ' || case when private.mailbox('A.B+news@GoogleMail.com') = 'ab@gmail.com' and private.mailbox('a.b+x@scc-demo.test') = 'a.b@scc-demo.test' then 'ok' else 'BAD (' || private.mailbox('A.B+news@GoogleMail.com') || ')' end;
+  delete from private.interest_join_log;
+  execute 'set local role anon';
+  perform public.join_interest_list('ja.ne@gmail.com');
+  perform public.join_interest_list('jane+camp@gmail.com');
+  perform public.join_interest_list('JANE@googlemail.com');
+  begin perform public.join_interest_list('j.a.n.e@gmail.com'); res := res || E'\n4th press for one mailbox: ACCEPTED (BAD)';
+  exception when raise_exception then res := res || E'\n4th press for one mailbox in a day: refused ok (' || sqlerrm || ')'; end;
+  execute 'reset role';
+  select count(*) into n from notifications where template = 'interest_confirm' and recipient_email in ('ja.ne@gmail.com', 'jane+camp@gmail.com', 'jane@googlemail.com', 'j.a.n.e@gmail.com');
+  res := res || E'\none confirmation per mailbox per day, however it is spelled: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+
+  -- A refusal can't tell a confirmed address from a new one: same presses, same answers.
+  delete from private.interest_join_log;
+  insert into interest_signups (email, year, confirmed_at) values ('conf@scc-demo.test', 2099, now());
+  execute 'set local role anon';
+  perform public.join_interest_list('conf@scc-demo.test'); perform public.join_interest_list('conf@scc-demo.test'); perform public.join_interest_list('conf@scc-demo.test');
+  perform public.join_interest_list('unconf@scc-demo.test'); perform public.join_interest_list('unconf@scc-demo.test'); perform public.join_interest_list('unconf@scc-demo.test');
+  begin perform public.join_interest_list('conf@scc-demo.test'); st := 'accepted'; exception when raise_exception then st := sqlerrm; end;
+  begin perform public.join_interest_list('unconf@scc-demo.test'); tok := 'accepted'; exception when raise_exception then tok := sqlerrm; end;
+  execute 'reset role';
+  res := res || E'\nconfirmed and new addresses get the same answers: ' || case when st = tok and st <> 'accepted' then 'ok' else 'BAD (' || st || ' / ' || tok || ')' end;
+  select payload->>'token' into tok from notifications where template = 'interest_confirm' and recipient_email = addr;
+
+  delete from private.interest_join_log;
+  perform set_config('request.headers', '{"cf-connecting-ip":"203.0.113.9","x-forwarded-for":"198.51.100.1"}', true);
+  execute 'set local role anon';
+  for n in 1..5 loop perform public.join_interest_list('ip' || n || '@scc-demo.test'); end loop;
+  begin perform public.join_interest_list('ip6@scc-demo.test'); res := res || E'\nper-IP cap (cf-connecting-ip): NOT ENFORCED (BAD)';
+  exception when raise_exception then res := res || E'\nper-IP cap, 5 an hour (cf-connecting-ip): refused ok'; end;
+  execute 'reset role';
+  perform set_config('request.headers', '{"x-forwarded-for":"198.51.100.7, 10.0.0.1"}', true);
+  execute 'set local role anon';
+  for n in 1..5 loop perform public.join_interest_list('xff' || n || '@scc-demo.test'); end loop;
+  begin perform public.join_interest_list('xff6@scc-demo.test'); res := res || E'\nper-IP cap (x-forwarded-for): NOT ENFORCED (BAD)';
+  exception when raise_exception then res := res || E'\nper-IP cap falls back to the first x-forwarded-for: refused ok'; end;
+  execute 'reset role';
+  perform set_config('request.headers', '', true);
+
+  delete from private.interest_join_log;
+  insert into private.interest_join_log (mailbox_hash) select md5('fill' || g) from generate_series(1, 20) g;
   execute 'set local role anon';
   begin perform public.join_interest_list('fam.two@scc-demo.test'); res := res || E'\nform-wide cap (20 a minute): NOT ENFORCED (BAD)';
   exception when raise_exception then res := res || E'\nform-wide cap (20 a minute): refused ok'; end;
   execute 'reset role';
-  delete from notifications where recipient_email = 'cap@scc-demo.test';
+  delete from private.interest_join_log;
+  insert into private.interest_join_log (at, mailbox_hash) select now() - interval '2 hours', md5('fill' || g) from generate_series(1, 300) g;
+  execute 'set local role anon';
+  begin perform public.join_interest_list('fam.two@scc-demo.test'); res := res || E'\ndaily ceiling (300 a day): NOT ENFORCED (BAD)';
+  exception when raise_exception then res := res || E'\ndaily ceiling (300 a day): refused ok'; end;
+  execute 'reset role';
+  delete from private.interest_join_log;
 
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template <> 'interest_confirm';
@@ -137,6 +188,7 @@ begin
     res := res || E'\ntampered confirm link: ACCEPTED (BAD)';
   exception when raise_exception then res := res || E'\ntampered confirm link: refused ok'; end;
   execute 'reset role';
+  select * into su from interest_signups where email = addr;
   utok := private.interest_token(su.id, 'unsubscribe');
   execute 'set local role anon';
   begin perform public.confirm_interest(utok); res := res || E'\nunsubscribe link used to confirm: ACCEPTED (BAD)';
@@ -146,8 +198,9 @@ begin
   execute 'reset role';
   select * into su from interest_signups where email = addr;
   res := res || E'\nconfirm link confirms: ' || case when yr = 2099 and su.confirmed_at is not null then 'ok' else 'BAD' end;
+  delete from interest_signups where email in ('conf@scc-demo.test');   -- keep the counts below about one family
 
-  -- ── 6. "Opening soon": once per announced time ──
+  -- ── 6. "Opening soon": once per announced time; A → B → A sends a correction ──
   perform private.send_interest_notices();
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
@@ -164,21 +217,61 @@ begin
   perform private.send_interest_notices();
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
-  res := res || E'\na changed time sends one more: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
-
-  -- ── 7. "Now open": once, when registration opens ──
-  insert into interest_signups (email, year, confirmed_at) values ('next.year@scc-demo.test', 2100, now());
+  res := res || E'\na changed time (A → B) sends one more: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
   delete from season_settings where year = 2099;
+  insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() + interval '7 days', now() - interval '11 minutes');
+  perform private.send_interest_notices();
+  perform private.send_interest_notices();
+  select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
+  res := res || E'\nchanging it back (B → A) sends one correction: ' || case when n = 3 then 'ok' else 'BAD (' || n || ')' end;
+  insert into notifications (recipient_email, template, payload, status)
+    values ('stale@scc-demo.test', 'registration_opening_soon', jsonb_build_object('opens_at', now() - interval '1 hour'), 'queued');
+  perform private.send_interest_notices();
+  select status into st from notifications where recipient_email = 'stale@scc-demo.test';
+  res := res || E'\na queued "opening soon" for a time that has passed is cancelled: ' || case when st = 'cancelled' then 'ok' else 'BAD (' || st || ')' end;
+
+  -- ── 7. "Now open": only after the opening time has passed ──
+  delete from season_settings where year = 2099;   -- classes set up, no opening time: open by the rules, but no email
+  perform private.send_interest_notices();
+  select count(*) into n from notifications where recipient_email = addr and template = 'registration_now_open';
+  res := res || E'\nclasses set up before any opening time: no "now open": ' || case when private.camp_status(2099) = 'open' and n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  insert into interest_signups (email, year, confirmed_at) values ('next.year@scc-demo.test', 2100, now());
+  insert into interest_signups (email, year, confirmed_at) values ('old.year@scc-demo.test', 2098, now());
+  insert into interest_signups (email, year, confirmed_at, notified_open_at) values ('done.year@scc-demo.test', 2098, now(), now());
   insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() - interval '1 minute', now() - interval '1 hour');
+  insert into season_settings (year, registration_opens_at, updated_at) values (2098, now() - interval '1 minute', now() - interval '1 hour');
   perform private.send_interest_notices();
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_now_open';
-  res := res || E'\nexactly one "now open": ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
+  res := res || E'\nexactly one "now open" once the time passed: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
-  res := res || E'\nno "opening soon" once it''s open: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
+  res := res || E'\nno "opening soon" once it''s open: ' || case when n = 3 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from notifications where recipient_email = 'next.year@scc-demo.test';
-  res := res || E'\na year that hasn''t opened gets nothing: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  res := res || E'\na later year gets nothing: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
+  select year into yr from interest_signups where email = 'old.year@scc-demo.test';
+  select count(*) into n from notifications where recipient_email = 'old.year@scc-demo.test' and template = 'registration_now_open' and payload->>'year' = '2099';
+  res := res || E'\na waiting signup from an earlier year moves to this year: ' || case when yr = 2099 and n = 1 then 'ok' else 'BAD (' || yr || ', ' || n || ')' end;
+  select count(*) into n from notifications where recipient_email = 'done.year@scc-demo.test';
+  res := res || E'\nnothing is ever sent for an earlier year: ' || case when n = 0 and (select year from interest_signups where email = 'done.year@scc-demo.test') = 2098 then 'ok' else 'BAD (' || n || ')' end;
   select payload->>'token' into utok from notifications where recipient_email = addr and template = 'registration_now_open';
+
+  -- A new future time after opening shuts registration again: clear "now open", announce, reopen.
+  delete from season_settings where year = 2099;
+  insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() + interval '3 days', now());
+  perform private.send_interest_notices();
+  select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
+  res := res || E'\nafter "now open", an unsettled new time sends nothing: ' || case when n = 3 and (select notified_open_at from interest_signups where email = addr) is not null then 'ok' else 'BAD (' || n || ')' end;
+  delete from season_settings where year = 2099;
+  insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() + interval '3 days', now() - interval '11 minutes');
+  perform private.send_interest_notices();
+  perform private.send_interest_notices();
+  select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
+  res := res || E'\n...settled, it clears "now open" and announces the new time once: ' || case when n = 4 and (select notified_open_at from interest_signups where email = addr) is null then 'ok' else 'BAD (' || n || ')' end;
+  delete from season_settings where year = 2099;
+  insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() - interval '1 minute', now() - interval '1 hour');
+  perform private.send_interest_notices();
+  select count(*) into n from notifications where recipient_email = addr and template = 'registration_now_open';
+  res := res || E'\n...and says "now open" again when it reopens: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
 
   -- ── 8. Unsubscribing ──
   execute 'set local role anon';
@@ -192,7 +285,7 @@ begin
   insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() + interval '9 days', now() - interval '1 hour');
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
-  res := res || E'\nnothing more after unsubscribing: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
+  res := res || E'\nnothing more after unsubscribing: ' || case when n = 4 then 'ok' else 'BAD (' || n || ')' end;
   execute 'set local role anon';
   perform public.join_interest_list(addr);
   execute 'reset role';
@@ -216,10 +309,19 @@ begin
   res := res || E'\n...using the confirmed login email, no second opt-in: ' || case when n = 1 and not exists (
       select 1 from notifications x join auth.users u on lower(u.email) = x.recipient_email where u.id = kid.parent_id and x.template = 'interest_confirm')
     then 'ok' else 'BAD' end;
+  update auth.users set email_confirmed_at = null where id = kid.parent_id;
+  execute 'set local role authenticated';
+  begin perform public.set_my_interest(true); res := res || E'\nunconfirmed login email ticks "notify me": ALLOWED (BAD)';
+  exception when insufficient_privilege then res := res || E'\nunconfirmed login email can''t tick "notify me": refused ok'; end;
+  execute 'reset role';
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
   select count(*) into n from interest_signups;
   res := res || E'\nadmin reads the list: ' || case when n >= 3 then 'ok (' || n || ' rows)' else 'BAD (' || n || ')' end;
+  execute 'reset role';
+  execute 'set local role anon';
+  begin perform 1 from private.interest_join_log limit 1; res := res || E'\nanon reads the press log: ALLOWED (BAD)';
+  exception when insufficient_privilege then res := res || E'\nanon reads the press log: refused ok'; end;
   execute 'reset role';
 
   -- ── 10. The job is scheduled ──
