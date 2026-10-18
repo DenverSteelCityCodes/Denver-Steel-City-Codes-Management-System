@@ -13,9 +13,9 @@ const panel = 'bg-surface border border-border rounded-[14px] p-4'
 const h2 = 'font-sans font-bold text-lg text-ink'
 const hint = 'font-sans text-[15px] text-ink-muted'
 // 16px so iOS Safari doesn't zoom the page when the field is focused.
-const input = 'w-full h-11 px-3 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand'
+const input = 'ui-input'
 const label = 'block font-sans text-sm font-semibold text-ink-muted mb-1'
-const primary = 'h-11 px-4 rounded-[10px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 transition disabled:opacity-50'
+const primary = 'ui-btn ui-btn--primary'
 const secondary = 'h-11 px-4 rounded-[10px] border border-border-strong bg-surface text-ink font-sans font-semibold text-[15px] inline-flex items-center justify-center gap-1.5 hover:bg-surface-sunken transition'
 
 function fmt(d: string) {
@@ -237,7 +237,7 @@ export function SwitchSection({ current }: { current: string | null }) {
           <div>
             <label htmlFor="switch-msg" className={label}>Which class would you like, and why?</label>
             <textarea id="switch-msg" rows={3} maxLength={1000} value={message} onChange={e => setMessage(e.target.value)} autoFocus
-              className="w-full px-3 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink font-sans text-base focus:outline-none focus:ring-2 focus:ring-brand" />
+              className="ui-input" />
           </div>
           {err && <p role="alert" className="font-sans text-sm text-danger">{err}</p>}
           <div className="flex gap-2 justify-end">

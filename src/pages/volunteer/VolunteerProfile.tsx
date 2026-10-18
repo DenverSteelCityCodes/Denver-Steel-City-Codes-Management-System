@@ -34,7 +34,7 @@ export default function VolunteerProfile() {
           {initials}
         </span>
         <div className="min-w-0">
-          <h1 className="font-sans font-bold text-2xl text-ink leading-tight">{name}</h1>
+          <h1 className="font-display font-bold text-2xl text-ink leading-tight">{name}</h1>
           <p className="font-sans text-[15px] text-ink-muted truncate">{user?.email}</p>
         </div>
       </div>

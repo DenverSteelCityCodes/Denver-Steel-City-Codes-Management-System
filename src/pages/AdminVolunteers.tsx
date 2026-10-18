@@ -334,7 +334,7 @@ function ApplicationReview({
                 <div>
                   <label className="block font-sans font-semibold text-sm text-ink mb-1.5">Reason / notes <span className="font-normal text-ink-muted">(optional)</span></label>
                   <textarea
-                    className="w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand transition resize-none"
+                    className="ui-input resize-none"
                     rows={2} placeholder="e.g. Didn't attend interview…"
                     value={rejectNotes} onChange={e => setRejectNotes(e.target.value)}
                   />
@@ -498,7 +498,7 @@ export default function AdminVolunteers() {
           <div className="space-y-10">
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <h1 className="font-sans font-bold text-2xl text-ink">Volunteer roster</h1>
+                <h1 className="font-display font-bold text-2xl text-ink">Volunteer roster</h1>
                 <button
                   onClick={() => exportVolunteerCSV(volunteers, classes)}
                   className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
@@ -565,7 +565,7 @@ export default function AdminVolunteers() {
                     <button
                       onClick={applyAssignments}
                       disabled={applying || !preview.some(p => p.lead || p.support)}
-                      className="h-9 px-4 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50"
+                      className="ui-btn ui-btn--primary"
                     >
                       {applying
                         ? <span className="w-3.5 h-3.5 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />
@@ -618,7 +618,7 @@ export default function AdminVolunteers() {
         {tab === 'applications' && (
           <div className="space-y-5">
             <div className="flex items-center justify-between gap-3">
-              <h1 className="font-sans font-bold text-2xl text-ink">Volunteer applications</h1>
+              <h1 className="font-display font-bold text-2xl text-ink">Volunteer applications</h1>
 
               <div className="flex items-center gap-2">
                 <button

@@ -113,10 +113,10 @@ export default function ParentBell() {
         onClick={toggle}
         aria-expanded={open}
         aria-label={actionCount > 0 ? `Updates: ${actionCount}${unreadMore ? '+' : ''} new` : 'Updates'}
-        className="relative text-white/70 hover:text-white p-2 rounded-[10px] hover:bg-white/10 transition"
+        className="ui-iconbtn text-on-shell-muted hover:text-on-shell"
       >
         <Bell size={18} />
-        {actionCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand ring-2 ring-ink-950" />}
+        {actionCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-on-shell ring-2 ring-shell" />}
       </button>
       {open && (
         <div className="fixed left-4 right-4 top-[4.25rem] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[22rem] bg-surface-raised border border-border rounded-[12px] shadow-lg z-50 overflow-hidden">

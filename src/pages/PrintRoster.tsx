@@ -116,7 +116,7 @@ export default function PrintRoster() {
                 <p className="text-sm font-bold tracking-wide">Steel City Codes // Denver</p>
                 <p className="text-sm">Date: ______________</p>
               </div>
-              <h1 className="text-xl font-bold mt-1">
+              <h1 className="font-display text-xl font-bold mt-1">
                 {section.class_name} · {section.label}{section.week ? ` · Week ${section.week}` : ''}
               </h1>
               {schedule && <p className="text-sm text-ink-muted">{schedule}</p>}

@@ -42,7 +42,7 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
     }
   }
 
-  const input = 'w-full h-10 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand'
+  const input = 'ui-input'
   const label = 'block font-sans text-xs font-semibold text-ink-muted mb-1'
   const set = (k: 'opens' | 'deadline' | 'offer' | 'final', v: string) => { setSaved(false); setForm({ ...(current ?? { opens: '', deadline: '14', offer: '48', final: '12' }), [k]: v }) }
 
@@ -84,7 +84,7 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
           <div className="flex items-center justify-end gap-3">
             {saved && <span role="status" className="font-sans text-sm text-success">Saved</span>}
             <button type="submit" disabled={saving || form === null}
-              className="h-10 px-4 rounded-[8px] bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm flex items-center gap-1.5 transition disabled:opacity-50">
+              className="ui-btn ui-btn--primary">
               <Check size={15} /> {saving ? 'Saving…' : 'Save settings'}
             </button>
           </div>

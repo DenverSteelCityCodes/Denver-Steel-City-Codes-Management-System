@@ -340,7 +340,7 @@ export default function VolunteerApplyPage() {
         <div className="w-14 h-14 rounded-full bg-brand-soft flex items-center justify-center mb-4 mx-auto">
           <ClipboardList size={24} className="text-brand" />
         </div>
-        <h1 className="font-sans font-bold text-2xl text-ink mb-2">Applications are closed</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-2">Applications are closed</h1>
         <p className="font-sans text-ink-muted text-sm max-w-xs">
           Volunteer applications for Denver Steel City Codes are not currently open. Check back later or email{' '}
           <a href="mailto:denver@steelcitycodes.org" className="text-ink font-semibold hover:underline">
@@ -362,7 +362,7 @@ export default function VolunteerApplyPage() {
           <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={28} className="text-success" />
           </div>
-          <h1 className="font-sans font-bold text-2xl text-ink mb-2">Application submitted!</h1>
+          <h1 className="font-display font-bold text-2xl text-ink mb-2">Application submitted!</h1>
           <p className="font-sans text-ink-muted text-sm mb-2">
             Thank you, <strong className="text-ink">{form.firstName}</strong>. We've received your application.
           </p>
@@ -390,9 +390,9 @@ export default function VolunteerApplyPage() {
     )
   }
 
-  const inputCls = 'w-full h-11 px-3.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition'
+  const inputCls = 'ui-input'
   const labelCls = 'block font-sans font-semibold text-sm text-ink mb-1.5'
-  const textareaCls = 'w-full px-3.5 py-2.5 rounded-[10px] bg-surface border border-border-strong text-ink placeholder:text-ink-faint font-sans text-sm focus:outline-none focus:border-transparent focus:ring-2 focus:ring-brand transition resize-none'
+  const textareaCls = 'ui-input resize-none'
 
   // Question label from the Form editor, with the required marker / optional hint.
   const labelText = (key: string, hint?: string) => (
@@ -409,7 +409,7 @@ export default function VolunteerApplyPage() {
 
       <main className="max-w-lg mx-auto px-4 pt-10">
         <div className="text-center mb-8">
-          <h1 className="font-sans font-bold text-2xl text-ink mb-1">{campYear} Volunteer Application</h1>
+          <h1 className="font-display font-bold text-2xl text-ink mb-1">{campYear} Volunteer Application</h1>
           <p className="font-sans text-ink-muted text-sm">
             Denver Summer Camp{weeks.some(w => w.is_active) && <> · {weeks.filter(w => w.is_active).map(w => formatSessionDates(w, false)).join(' & ')}</>}
           </p>
@@ -710,13 +710,13 @@ export default function VolunteerApplyPage() {
               // Distinct keys: without them React reuses the Next <button> as Submit and the click
               // that lands on the last step can fire a submit.
               <button key="next" type="button" onClick={handleNext}
-                className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition"
+                className="ui-btn ui-btn--primary"
               >
                 Next <ChevronRight size={16} />
               </button>
             ) : (
               <button key="submit" type="submit" disabled={submitting}
-                className="h-11 px-6 bg-brand hover:bg-brand-hover text-brand-on font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="ui-btn ui-btn--primary"
               >
                 {submitting
                   ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" />

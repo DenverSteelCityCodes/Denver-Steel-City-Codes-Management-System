@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../hooks/useTheme'
 import { supabase } from '../lib/supabase'
 import AttentionBell from './AttentionBell'
 import AdminSearch from './AdminSearch'
@@ -31,9 +32,7 @@ export default function AdminLayout() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [dark, setDark] = useState(() => {
-    try { return localStorage.getItem('scc-theme') === 'dark' } catch { return false }
-  })
+  const { dark, toggle: toggleTheme } = useTheme()
   const menuRef = useRef<HTMLDivElement>(null)
 
   // ── Live badge counts ──────────────────────────────────────
@@ -61,17 +60,6 @@ export default function AdminLayout() {
   if (drawerPath !== pathname) {
     setDrawerPath(pathname)
     setDrawerOpen(false)
-  }
-
-  // ── Theme toggle ───────────────────────────────────────────
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
-  }, [dark])
-
-  function toggleTheme() {
-    const next = !dark
-    try { localStorage.setItem('scc-theme', next ? 'dark' : 'light') } catch { /* private mode */ }
-    setDark(next)
   }
 
   // ── Avatar menu: close on outside click ────────────────────
@@ -144,7 +132,7 @@ export default function AdminLayout() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="text-white/70 hover:text-white p-2 rounded-[10px] hover:bg-white/10 transition"
+            className="ui-iconbtn text-on-shell-muted hover:text-on-shell"
           >
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -155,10 +143,10 @@ export default function AdminLayout() {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(o => !o)}
-              className="flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-full hover:bg-white/10 transition"
+              className="flex items-center gap-2 min-h-11 pl-1.5 pr-2 rounded-full hover:bg-white/10 transition"
               aria-label="Account menu"
             >
-              <span className="w-8 h-8 rounded-full bg-role-admin-soft text-role-admin ring-2 ring-brand flex items-center justify-center font-sans font-bold text-xs">
+              <span className="w-8 h-8 rounded-full bg-role-admin-soft text-role-admin ring-2 ring-on-shell-muted flex items-center justify-center font-sans font-bold text-xs">
                 {initials}
               </span>
               <ChevronDown size={14} className="text-white/60 hidden sm:block" />
@@ -275,7 +263,7 @@ function SidebarBody({ groups, name, initials, signOut, onNavigate }: SidebarBod
       {/* Footer */}
       <div className="border-t border-border p-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-role-admin-soft text-role-admin ring-2 ring-brand flex items-center justify-center font-sans font-bold text-sm shrink-0">
+          <div className="w-9 h-9 rounded-full bg-role-admin-soft text-role-admin ring-2 ring-on-shell-muted flex items-center justify-center font-sans font-bold text-sm shrink-0">
             {initials}
           </div>
           <div className="min-w-0 flex-1">

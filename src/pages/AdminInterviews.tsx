@@ -14,8 +14,8 @@ interface Application {
   interview_confirmed: boolean
 }
 
-const inputCls = 'w-full h-10 px-3 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand'
-const textareaCls = 'w-full px-3 py-2 rounded-[8px] bg-surface border border-border-strong text-ink font-sans text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none'
+const inputCls = 'ui-input'
+const textareaCls = 'ui-input resize-none'
 const cancelCls = 'h-9 px-4 font-sans text-sm font-semibold text-ink bg-surface border border-border-strong rounded-[8px] hover:bg-surface-sunken transition'
 const saveCls = 'h-9 px-4 font-sans text-sm font-semibold bg-brand text-brand-on rounded-[8px] hover:bg-brand-hover transition disabled:opacity-50 flex items-center gap-1.5'
 
@@ -224,7 +224,7 @@ export default function AdminInterviews() {
   return (
     <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div>
-        <h1 className="font-sans font-bold text-2xl text-ink mb-1">Interviews</h1>
+        <h1 className="font-display font-bold text-2xl text-ink mb-1">Interviews</h1>
         <p className="font-sans text-sm text-ink-muted">Open interview slots, book applicants into them, and keep notes.</p>
       </div>
 

@@ -1,72 +1,89 @@
 @import "tailwindcss";
 
-/* dark: utilities follow the app's theme toggle (.dark on <html>), not the OS setting. */
+/* dark: utilities follow the app's theme toggle (.dark on <html>), not the OS setting.
+   index.html applies the saved theme (or the OS setting) before first paint. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Design system CSS variables ─────────────────────────── */
+/* ── Design tokens: Terminal Yellow (DESIGN.md) ───────────────
+   Semantic names are kept so every page picks up the system without class renames.
+   Gold is wayfinding: the sign band, the active tab marker and one primary action per view.
+   Red is safety, destruction and blocking errors; green is done. One ply: no shadows on cards.
+   Every text pair below is AA (measured 2026-10-17); field stroke and focus ring are ≥3:1. */
 :root {
-  /* surfaces */
-  --bg: #FAF6EF;
+  color-scheme: light;
+  /* surfaces: a neutral concourse floor (not cream); white only for fields, menus and tables */
+  --bg: #F4F4F1;
   --surface: #FFFFFF;
-  --surface-sunken: #F2ECE2;
+  --surface-sunken: #EBEAE5;
   --surface-raised: #FFFFFF;
   /* text */
-  --ink: #262019;
-  --ink-muted: #665A4C;   /* AA on every light surface (L6a, 2026-10-17; was #7A6E60) */
-  --ink-faint: #766959;   /* AA on every light surface (was #9C8F7E) */
-  --border: #E6DFD3;
-  --border-strong: #CFC6B8;
-  /* brand */
+  --ink: #1A1613;         /* 16.3:1 on floor */
+  --ink-muted: #57524A;   /* 7.0:1 on floor, 6.4:1 on sunken */
+  --ink-faint: #615B52;   /* 6.1:1 on floor, 5.6:1 on sunken */
+  /* lines: hairline divides rows; strong is a real boundary (fields, secondary buttons) */
+  --border: #CFCBC3;
+  --border-strong: #7A756C;   /* 4.6:1 on white: a field edge you can see */
+  /* wayfinding gold, with ink on it */
   --brand: #F1C446;
-  --brand-hover: #E7B62C;
+  --brand-hover: #E2B12C;
   --brand-soft: #FCEFC4;
   --on-brand: #1A1613;
-  --ring: #E7B62C;
+  /* keyboard focus: ink on light (18:1), gold on dark */
+  --ring: #1A1613;
+  /* shell (ink bar, tabs, rail) */
+  --shell: #1A1613;
+  --shell-raised: #2B2620;
+  --on-shell: #FFFFFF;
+  --on-shell-muted: #CFC9BF;
   /* status */
-  --success-soft: #C2E6C9; --success: #17652F;   /* AA on success-soft (was #1E7A3E) */
-  --warning-soft: #FAE1A1; --warning: #715709;   /* AA on warning-soft (was #8A6D12) */
-  --danger-soft:  #F6D5D2; --danger:  #B42318;
-  --info-soft:    #CEDDE8; --info:    #2D5E83;
+  --success-soft: #E3F1E8; --success: #1E6B3A;   /* 5.6:1 */
+  --warning-soft: #FAE1A1; --warning: #715709;   /* 5.3:1 */
+  --danger-soft:  #FBE8E6; --danger:  #B3261E;   /* 5.5:1 */
+  --info-soft:    #CEDDE8; --info:    #2D5E83;   /* 5.0:1 */
   /* roles */
   --role-admin-soft: #FCEFC4;     --role-admin: #715709;
   --role-volunteer-soft: #CEDDE8; --role-volunteer: #2D5E83;
-  --role-parent-soft: #DBBFDD;    --role-parent: #5F4266;   /* AA on parent-soft (was #6B4B72) */
+  --role-parent-soft: #DBBFDD;    --role-parent: #5F4266;
   /* ink ramp */
   --ink-950: #1A1613; --ink-900: #262019; --ink-700: #4A4138; --ink-500: #7A6E60;
-  --ink-400: #9C8F7E; --ink-300: #CFC6B8; --ink-200: #E6DFD3; --ink-100: #F2ECE2; --ink-50: #FAF6EF;
-  /* shape / shadow / motion */
-  --radius: 0.625rem;
-  --shadow-sm: 0 1px 2px rgba(38,32,25,.06), 0 1px 3px rgba(38,32,25,.05);
-  --shadow-md: 0 2px 6px rgba(38,32,25,.07), 0 6px 16px rgba(38,32,25,.06);
-  --shadow-lg: 0 8px 28px rgba(38,32,25,.12);
-  --ease: cubic-bezier(.2,.7,.3,1);
+  --ink-400: #9C8F7E; --ink-300: #CFC6B8; --ink-200: #E6DFD3; --ink-100: #EBEAE5; --ink-50: #F4F4F1;
+  /* shape / motion. Shadows stay only for things that genuinely float (menus, popovers). */
+  --radius: 4px;
+  --shadow-md: 0 2px 6px rgba(26,22,19,.08), 0 6px 16px rgba(26,22,19,.08);
+  --shadow-lg: 0 8px 28px rgba(26,22,19,.14);
+  --ease: cubic-bezier(.16,1,.3,1);
 }
 
+/* The terminal at night: the floor goes dark, the signs stay lit. */
 :root.dark, [data-theme="dark"] {
-  --bg: #171310;
-  --surface: #221C16;
-  --surface-sunken: #100D0A;
-  --surface-raised: #2C251D;
-  --ink: #F5EFE4;
-  --ink-muted: #B9AD9C;
-  --ink-faint: #9C907F;   /* AA on surface and raised (was #8A7E6E) */
-  --border: rgba(57,48,38,.6);
-  --border-strong: #4A3F33;
+  color-scheme: dark;
+  --bg: #141210;
+  --surface: #1D1A17;
+  --surface-sunken: #0E0C0B;
+  --surface-raised: #27231E;
+  --ink: #F2EFE9;
+  --ink-muted: #B3ACA1;
+  --ink-faint: #A39C91;
+  --border: #3A3530;
+  --border-strong: #8E887E;   /* 4.9:1 on surface */
   --brand: #F1C446;
   --brand-hover: #F6CF5E;
   --brand-soft: #3A2F12;
   --on-brand: #1A1613;
-  --ring: #F1C446;
-  --success-soft: #16341F; --success: #86E0A0;
+  --ring: #F1C446;            /* 10.5:1 on surface */
+  --shell: #0B0A09;
+  --shell-raised: #24201B;
+  --on-shell: #FFFFFF;
+  --on-shell-muted: #BDB6AB;
+  --success-soft: #13301F; --success: #7FD39E;
   --warning-soft: #3A2F12; --warning: #F1C446;
-  --danger-soft:  #3A1A1A; --danger:  #F0A19C;
+  --danger-soft:  #3A1714; --danger:  #FF8F86;
   --info-soft:    #16293A; --info:    #9CCBEC;
   --role-admin-soft: #3A2F12;     --role-admin: #F1C446;
   --role-volunteer-soft: #16293A; --role-volunteer: #9CCBEC;
   --role-parent-soft: #2E2233;    --role-parent: #D6B6DC;
   --ink-950: #1A1613; --ink-900: #1E1A16; --ink-700: #3D3529; --ink-500: #6B6055;
   --ink-400: #8A7E6E; --ink-300: #B9AD9C; --ink-200: #CFC6B8; --ink-100: #E6DFD3; --ink-50: #F2ECE2;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
   --shadow-md: 0 4px 12px rgba(0,0,0,.45);
   --shadow-lg: 0 12px 32px rgba(0,0,0,.55);
 }
@@ -98,6 +115,12 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
   --color-brand-on: var(--on-brand);
+  --color-focus: var(--ring);
+
+  --color-shell: var(--shell);
+  --color-shell-raised: var(--shell-raised);
+  --color-on-shell: var(--on-shell);
+  --color-on-shell-muted: var(--on-shell-muted);
 
   --color-success: var(--success);        --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);        --color-warning-soft: var(--warning-soft);
@@ -108,9 +131,15 @@
   --color-role-volunteer:      var(--role-volunteer);      --color-role-volunteer-soft: var(--role-volunteer-soft);
   --color-role-parent:         var(--role-parent);         --color-role-parent-soft:    var(--role-parent-soft);
 
-  --radius: 0.625rem;
-  --font-sans: "Josefin Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-slab: "Josefin Slab", Georgia, serif;
+  --radius: 4px;
+  /* One typeface does the work; Josefin Sans is the brand voice for page titles only.
+     `font-slab` is kept as an alias so older classes fall back to the UI face. */
+  --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Josefin Sans", "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-slab: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+
+  /* One ply: cards don't float. `shadow-sm` was a border-plus-shadow "ghost card" everywhere. */
+  --shadow-sm: 0 0 #0000;
 
   --ease-brand: var(--ease);
 }
@@ -122,10 +151,11 @@ body {
   margin: 0;
   background-color: var(--bg);
   color: var(--ink);
-  font-family: "Josefin Sans", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 500;
+  font-family: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
   font-size: 16px;
-  line-height: 1.5625;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -134,12 +164,98 @@ body {
   min-height: 100svh;
 }
 
-/* Respect "reduce motion" (L6a): no pulsing skeletons, spinners or smooth scrolling. */
+::selection { background: var(--brand); color: var(--on-brand); }
+
+/* Keyboard focus is always visible: ink on light, gold on dark (≥3:1 everywhere). */
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+@layer base {
+  input, select, textarea { caret-color: var(--ink); accent-color: var(--ink); }
+  .dark input, .dark select, .dark textarea { accent-color: var(--brand); }
+}
+
+/* iOS Safari zooms the page when a focused field is under 16px. Phones always get 16px fields,
+   whatever a page's own classes say (desktop density can stay as designed). */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Shared recipes (DESIGN.md › Components). Use these, or the components that wrap them:
+   src/components/Field.tsx, Button.tsx, IconButton.tsx. Layout utilities still apply on top. ── */
+@layer components {
+  .ui-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 2px solid var(--border-strong);
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+  .ui-input::placeholder { color: var(--ink-faint); }
+  .ui-input:focus { outline: none; }
+  .ui-input:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 0; }
+  .ui-input[aria-invalid="true"] { border-color: var(--danger); }
+  .ui-input:disabled { opacity: .55; cursor: not-allowed; }
+  textarea.ui-input { min-height: 112px; resize: vertical; }
+
+  .ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
+  }
+  .ui-btn:disabled, .ui-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+  /* the one primary action on a view */
+  .ui-btn--primary { background: var(--brand); color: var(--on-brand); }
+  .ui-btn--primary:not(:disabled):hover { background: var(--brand-hover); }
+  /* strong secondary: ink with gold text (bone with dark text at night) */
+  .ui-btn--ink { background: var(--shell); color: var(--brand); }
+  .dark .ui-btn--ink { background: var(--ink); color: var(--bg); }
+  .ui-btn--secondary { background: transparent; color: var(--ink); border-color: var(--ink); }
+  .ui-btn--secondary:not(:disabled):hover { background: color-mix(in oklab, var(--ink) 6%, transparent); }
+  .ui-btn--danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+  .ui-btn--danger:not(:disabled):hover { background: var(--danger-soft); }
+  /* text action that still has a 44px target */
+  .ui-btn--text {
+    min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink);
+    font-weight: 700; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .ui-btn--block { width: 100%; }
+
+  /* 44px icon button for the ink bars (bell, theme, menu) */
+  .ui-iconbtn {
+    width: 44px; height: 44px; display: inline-grid; place-items: center; flex: none;
+    border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer;
+    position: relative;
+  }
+  .ui-iconbtn:hover { background: var(--shell-raised); }
+}
+
+/* Reduce motion (L6a): no smooth scrolling, no pulses, instant transitions. Spinners keep a calm
+   opacity fade instead of freezing into a broken ring, so "busy" is still visible. */
+@keyframes ui-fade { from { opacity: 1; } to { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .animate-pulse { animation: none !important; }
+  .animate-spin { animation: ui-fade 1.2s ease-in-out infinite alternate !important; }
 }
