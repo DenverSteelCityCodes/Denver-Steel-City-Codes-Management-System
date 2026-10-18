@@ -87,7 +87,7 @@ export default function AdminAttendance() {
   const campers = sections.reduce((n, s) => n + s.roster.length, 0)
   // Present at each section's latest roll call (0 for a section with none yet), as the old stat card counted.
   const present = sections.reduce((n, s) => n + (s.latest ? s.rollCalls[s.latest].present : 0), 0)
-  const presentLine = `${present} of ${plural(campers, 'camper')} present at the latest roll call`
+  const presentLine = `${present} of ${plural(campers, 'camper')} present`
   const unaccounted = sections.flatMap(s => s.unaccounted.map(student => ({ student, section: s })))
   const noRollCall = sections.filter(s => s.latest === null)
   const latestIdx = Math.max(-1, ...sections.map(s => rcIndex(s.latest)))
