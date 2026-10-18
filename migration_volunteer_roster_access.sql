@@ -4,6 +4,8 @@
 -- Order: after migration_security_hardening.sql (moves the RLS helpers into `private`) and
 -- migration_camp_week_ops.sql. Needs private.auth_user_role() and
 -- private.auth_volunteer_has_section(uuid).
+-- migration_laptop_loans.sql (spec 29) redefines section_roster() with a laptop_loan column:
+-- re-apply it after this file.
 --
 -- Crew used to read camper rows straight from `students`. Now they read their section's roster
 -- through section_roster(), which returns only the fields camp week needs, and only for campers

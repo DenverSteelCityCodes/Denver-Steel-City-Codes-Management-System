@@ -43,6 +43,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 31 | `migration_admin_mfa.sql` | Admins must pass a TOTP step |
 | 32 | `migration_audit_log.sql` **again** | Attaches the audit trigger to tables created after step 19 |
 | 33 | `migration_public_camp_page.sql` | Each week's place (`sessions.location`), the public camp page's data, the "notify me" list and its every-minute job (spec 30). Deploy `send-notifications` first |
+| 34 | `migration_laptop_loans.sql` | Loaner laptops per camper-week: a cap per week, a first-come queue, emails, and a laptop column on the crew's roster (spec 29). Deploy `send-notifications` first |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 
@@ -62,7 +63,7 @@ Some headers say "then RE-APPLY X". That is for upgrading a database that alread
    supabase functions deploy send-notifications
    supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="Your Chapter <no-reply@your-domain>" APP_URL=https://your-site
    ```
-   `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three).
+   `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three, spec 29 four).
 5. **Notify-me links:** `migration_public_camp_page.sql` creates the Vault secret `interest_link_key` that signs confirm and unsubscribe links. Never copy it between projects; a new key only breaks links already sent.
 
 ## Demo environment
