@@ -5,7 +5,7 @@ import InlineConfirm from '../components/InlineConfirm'
 import HistoryStrip from '../components/HistoryStrip'
 import AdminChangeRequests from '../components/AdminChangeRequests'
 import { supabase } from '../lib/supabase'
-import { realNote } from '../lib/campers'
+import { healthLines, realNote } from '../lib/campers'
 import { toCsv, downloadCsv } from '../lib/csv'
 import { useAdminStudents, type AdminStudent, type StudentRegistration } from '../hooks/useAdminStudents'
 import { useAdminClasses } from '../hooks/useAdminClasses'
@@ -451,14 +451,14 @@ export default function AdminStudents() {
           <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-sm">
             {/* Column headings (desktop) */}
             <div className="hidden md:grid grid-cols-[minmax(0,1.4fr)_60px_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)_24px] gap-4 px-5 py-3 border-b border-border bg-surface-sunken/40">
-              {['Student', 'Age', 'Parent', 'Registrations', 'Medical', ''].map(h => (
+              {['Student', 'Age', 'Parent', 'Registrations', 'Health', ''].map(h => (
                 <span key={h} className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">{h}</span>
               ))}
             </div>
             <ul className="divide-y divide-border">
               {filtered.slice(0, shown).map(s => {
                 const open = expandedId === s.id
-                const flag = realNote(s.allergies) ?? realNote(s.medical_conditions) ?? realNote(s.medical_info)
+                const health = healthLines(s)
                 return (
                   <li key={s.id}>
                     <button
@@ -485,9 +485,14 @@ export default function AdminStudents() {
                           </span>
                         ))}
                       </span>
-                      <span className="hidden md:block min-w-0">
-                        {flag
-                          ? <span className="block text-xs font-semibold text-danger truncate" title={flag}>{flag}</span>
+                      {/* Safety text wraps and is never truncated; on a phone it is the row's third line. */}
+                      <span className={`${health.length ? 'block' : 'hidden md:block'} row-start-3 md:row-start-auto min-w-0 break-words`}>
+                        {health.length
+                          ? health.map(h => (
+                            <span key={h.label} className="block font-sans text-sm font-semibold leading-snug text-danger">
+                              <b className="font-extrabold">{h.label}:</b> {h.text}
+                            </span>
+                          ))
                           : <span className="text-xs text-ink-faint">—</span>}
                       </span>
                       <ChevronDown size={16} className={`row-start-1 col-start-2 md:row-start-auto md:col-start-auto text-ink-muted justify-self-end transition-transform ${open ? 'rotate-180' : ''}`} />
