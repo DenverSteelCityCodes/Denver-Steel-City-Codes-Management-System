@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { campInputToISO, formatCampDateTime, isoToCampInput, timeUntil } from '../denverTime'
+import { campDateKey, campInputToISO, formatCampDateTime, formatCampSlot, formatCampTime, isoToCampInput, timeUntil } from '../denverTime'
 
 describe('Denver time', () => {
   it('reads a typed time as Denver time in winter (UTC−7) and summer (UTC−6)', () => {
@@ -31,5 +31,14 @@ describe('Denver time', () => {
     expect(timeUntil(2 * hour + min)).toBe('2 hours, 1 minute')
     expect(timeUntil(45_000)).toBe('45 seconds')
     expect(timeUntil(-5)).toBe('0 seconds')
+  })
+
+  // Interview slots (#147). CI runs with TZ=Asia/Tokyo, where these instants fall on the next day.
+  it('groups and labels interview slots by Denver date and time', () => {
+    const lateEvening = '2027-04-25T03:30:00.000Z'   // Sat Apr 24, 9:30 PM in Denver (MDT)
+    expect(campDateKey(lateEvening)).toBe('2027-04-24')
+    expect(formatCampTime(lateEvening)).toBe('9:30 PM')
+    expect(formatCampSlot(lateEvening)).toBe('Sat, Apr 24, 9:30 PM')
+    expect(campDateKey('2027-01-10T06:59:00.000Z')).toBe('2027-01-09')   // 11:59 PM MST the night before
   })
 })

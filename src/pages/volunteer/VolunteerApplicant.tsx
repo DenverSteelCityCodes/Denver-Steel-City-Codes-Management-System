@@ -77,7 +77,7 @@ function InterviewStep() {
       {interview ? (
         <>
           <p className="font-sans font-bold text-2xl text-ink leading-tight mt-1.5" id="interview-time">{formatSlot(interview.slot_datetime)}</p>
-          <p>{interview.duration_minutes} minutes, online.</p>
+          <p>{interview.duration_minutes} minutes, online. The time is Denver time.</p>
         </>
       ) : (
         <p id="interview-time">Pick a time for your short online interview.</p>
