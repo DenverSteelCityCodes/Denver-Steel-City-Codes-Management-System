@@ -446,6 +446,14 @@ BEGIN
      AND r.status = 'confirmed' AND abs(hashtext(r.id::text)) % 4 = 0;
   UPDATE registrations r SET place_with = 'Same room as her friend Ava Nguyen, please'
     FROM students st2 WHERE st2.id = r.student_id AND st2.parent_id = demo_parent AND st2.first_name = 'Maya';
+  -- An exception request waiting in the admins' queue: a 6th grader asking for Microcontrollers.
+  INSERT INTO change_requests (student_id, section_id, requested_by, kind, message, created_at)
+  SELECT st2.id, s.id, st2.parent_id, 'exception',
+         'They finished the Python unit at school this spring and build with a Raspberry Pi at home.', now() - interval '2 days'
+    FROM students st2, sections s
+   WHERE s.class_id = c_micro AND s.week = 2 AND st2.grade = '6th' AND st2.registration_year = camp_year
+     AND st2.parent_id IS DISTINCT FROM demo_parent
+   ORDER BY st2.full_name LIMIT 1;
 
   -- ── 7. Duty schedule: four duties each camp day; volunteers have claimed most spots ──
   FOR d IN SELECT gs::date FROM generate_series(w1_start, w2_end, interval '1 day') gs LOOP
