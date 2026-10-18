@@ -13,7 +13,8 @@ const hint = 'mt-1.5 text-sm text-ink-muted text-pretty'
 // Admin: the one place registration opens and closes (spec 13, issue #171). The on/off switch is
 // the camper registration form's `enabled` flag; the opening time is this year's season settings.
 // Parents can register only while the switch is on and the opening time (if any) has passed.
-export default function SeasonSettingsCard({ year }: { year: number }) {
+// `ruled` draws the 2px ink rule above the block; off when it's the first block under the sub-tabs.
+export default function SeasonSettingsCard({ year, ruled = true }: { year: number; ruled?: boolean }) {
   const { settings, loading, error, save, refetch: refetchSettings } = useSeasonSettings(year)
   const { configs, loading: formsLoading, error: formsError, setFormEnabled, refetch: refetchForms } = useFormConfigs()
   const [form, setForm] = useState<{ opens: string; deadline: string; offer: string; final: string } | null>(null)
@@ -103,7 +104,7 @@ export default function SeasonSettingsCard({ year }: { year: number }) {
   const set = (k: 'opens' | 'deadline' | 'offer' | 'final', v: string) => { setSaved(false); setForm({ ...(current ?? { opens: '', deadline: '14', offer: '48', final: '12' }), [k]: v }) }
 
   return (
-    <section aria-labelledby="registration-heading" className="pt-5 border-t-2 border-ink">
+    <section aria-labelledby="registration-heading" className={ruled ? 'pt-5 border-t-2 border-ink' : undefined}>
       <h2 id="registration-heading" className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">Registration</h2>
 
       {formsLoading ? (

@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Check, Calendar, Copy, ArrowRight } from 'lucide-react'
+import { Plus, Copy, ArrowRight, ChevronDown, EyeOff } from 'lucide-react'
 import { useSessions, formatSessionDates, activeCampYear, type Session } from '../hooks/useSessions'
 import SeasonSettingsCard from '../components/SeasonSettingsCard'
 import { useScheduleItems } from '../hooks/useScheduleItems'
-import { formatTimeRange } from '../lib/campDay'
+import { formatTime, formatTimeRange } from '../lib/campDay'
 import type { ScheduleItem } from '../types/database'
-import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
+import { Input } from '../components/Field'
+import { AdminPageHead, SetupTabs, pageClass, h2Class } from '../components/AdminTabs'
 import { useAppSettings } from '../hooks/useAppSettings'
 import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
 
@@ -20,7 +21,13 @@ interface SessionFormState {
   is_active: boolean
 }
 
-// Inline create/edit form — renders in place of the row (or at the top for a new session).
+const label = 'block font-bold mb-1.5'
+const optional = <span className="font-normal text-ink-muted">(optional)</span>
+// An inline editor sits where the row was, framed by a 2px ink rule (no card, no modal).
+const editFrame = 'p-4 rounded border-2 border-ink space-y-4'
+const linkBtn = 'min-h-11 font-bold text-ink-muted underline underline-offset-[3px] cursor-pointer hover:text-ink'
+
+// Inline create/edit form — renders in place of the row (or at the top for a new week).
 function SessionForm({
   initial,
   submitLabel,
@@ -38,7 +45,7 @@ function SessionForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name.trim()) { setErr('Session name is required'); return }
+    if (!form.name.trim()) { setErr('Give the week a name'); return }
     if (!form.start_date || !form.end_date) { setErr('Start and end dates are required'); return }
     if (form.end_date < form.start_date) { setErr('End date must be on or after the start date'); return }
     setSaving(true)
@@ -58,53 +65,38 @@ function SessionForm({
     }
   }
 
-  const input = 'ui-input'
-  const label = 'block font-sans font-semibold text-sm text-ink mb-1.5'
-
   return (
-    <form
-      noValidate
-      onSubmit={handleSubmit}
-      onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
-      className="bg-surface border border-brand rounded-[14px] shadow-sm p-4 sm:p-5 space-y-4"
-    >
+    <form noValidate onSubmit={handleSubmit} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} className={editFrame}>
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <label className={label} htmlFor="session-name">Session name <span className="text-danger">*</span></label>
-          <input id="session-name" autoFocus value={form.name}
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="e.g. Week 1" className={input} />
+          <label className={label} htmlFor="session-name">Name</label>
+          <Input id="session-name" autoFocus value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="For example, Week 1" />
         </div>
         <div>
-          <label className={label} htmlFor="session-start">Start date <span className="text-danger">*</span></label>
-          <input id="session-start" type="date" value={form.start_date}
-            onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} className={input} />
+          <label className={label} htmlFor="session-start">Starts</label>
+          <Input id="session-start" type="date" value={form.start_date}
+            onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} />
         </div>
         <div>
-          <label className={label} htmlFor="session-end">End date <span className="text-danger">*</span></label>
-          <input id="session-end" type="date" value={form.end_date} min={form.start_date || undefined}
-            onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className={input} />
+          <label className={label} htmlFor="session-end">Ends</label>
+          <Input id="session-end" type="date" value={form.end_date} min={form.start_date || undefined}
+            onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
         </div>
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" className="w-4 h-4 accent-brand"
-            checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
-          <span className="font-sans text-sm text-ink">Show on sign-up forms <span className="text-ink-muted">(to pause sign-ups mid-season, close the form under Forms instead)</span></span>
-        </label>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onCancel}
-            className="h-10 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition">
-            Cancel
-          </button>
-          <button type="submit" disabled={saving}
-            className="ui-btn ui-btn--primary">
-            {saving ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Check size={16} />}
-            {saving ? 'Saving…' : submitLabel}
-          </button>
-        </div>
+      <label className="flex items-start gap-3 min-h-11 py-2 cursor-pointer">
+        <input type="checkbox" className="w-5 h-5 mt-0.5 shrink-0"
+          checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
+        <span className="text-pretty">
+          <b className="font-bold">Visible to families</b>
+          <span className="block text-sm text-ink-muted">Shows this week on the sign-up forms. To pause sign-ups for everyone, turn registration off above instead.</span>
+        </span>
+      </label>
+      {err && <p role="alert" className="text-sm font-bold text-danger">{err}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button type="submit" variant="ink" disabled={saving}>{saving ? 'Saving…' : submitLabel}</Button>
       </div>
-      {err && <p role="alert" className="text-danger text-sm font-sans">{err}</p>}
     </form>
   )
 }
@@ -156,54 +148,37 @@ function ScheduleItemForm({
     }
   }
 
-  const input = 'ui-input'
-  const label = 'block font-sans font-semibold text-sm text-ink mb-1.5'
-
   return (
-    <form
-      noValidate
-      onSubmit={handleSubmit}
-      onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
-      className="bg-surface border border-brand rounded-[12px] p-3 sm:p-4 space-y-3"
-    >
+    <form noValidate onSubmit={handleSubmit} onKeyDown={e => { if (e.key === 'Escape') onCancel() }} className={`${editFrame} my-2`}>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={label} htmlFor={`${idPrefix}-start`}>Starts <span className="text-danger">*</span></label>
-          <input id={`${idPrefix}-start`} type="time" autoFocus value={form.start_time}
-            onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} className={input} />
+          <label className={label} htmlFor={`${idPrefix}-start`}>Starts</label>
+          <Input id={`${idPrefix}-start`} type="time" autoFocus value={form.start_time}
+            onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} />
         </div>
         <div>
-          <label className={label} htmlFor={`${idPrefix}-end`}>Ends <span className="font-normal text-ink-muted">(optional)</span></label>
-          <input id={`${idPrefix}-end`} type="time" value={form.end_time}
-            onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} className={input} />
+          <label className={label} htmlFor={`${idPrefix}-end`}>Ends {optional}</label>
+          <Input id={`${idPrefix}-end`} type="time" value={form.end_time}
+            onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} />
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={label} htmlFor={`${idPrefix}-title`}>What <span className="text-danger">*</span></label>
-          <input id={`${idPrefix}-title`} maxLength={120} value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="e.g. Drop-off" className={input} />
+          <label className={label} htmlFor={`${idPrefix}-title`}>What</label>
+          <Input id={`${idPrefix}-title`} maxLength={120} value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="For example, Drop-off" />
         </div>
         <div>
-          <label className={label} htmlFor={`${idPrefix}-where`}>Where <span className="font-normal text-ink-muted">(optional)</span></label>
-          <input id={`${idPrefix}-where`} value={form.location}
-            onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-            placeholder="e.g. Front lobby" className={input} />
+          <label className={label} htmlFor={`${idPrefix}-where`}>Where {optional}</label>
+          <Input id={`${idPrefix}-where`} value={form.location}
+            onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="For example, Front lobby" />
         </div>
       </div>
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel}
-          className="h-10 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition">
-          Cancel
-        </button>
-        <button type="submit" disabled={saving}
-          className="ui-btn ui-btn--primary">
-          {saving ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Check size={16} />}
-          {saving ? 'Saving…' : submitLabel}
-        </button>
+      {err && <p role="alert" className="text-sm font-bold text-danger">{err}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button type="submit" variant="ink" disabled={saving}>{saving ? 'Saving…' : submitLabel}</Button>
       </div>
-      {err && <p role="alert" className="text-danger text-sm font-sans">{err}</p>}
     </form>
   )
 }
@@ -215,8 +190,8 @@ function ApplicationsStatus() {
   const open = settings['volunteer_applications_open'] === 'true'
   const pending = applications.filter(a => a.status === 'pending').length
   return (
-    <section aria-labelledby="applications-heading" className="pt-5 border-t-2 border-ink">
-      <h2 id="applications-heading" className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">Volunteer applications</h2>
+    <section aria-labelledby="applications-heading" className="mt-10 pt-5 border-t-2 border-ink">
+      <h2 id="applications-heading" className={h2Class}>Volunteer applications</h2>
       {loading ? (
         <div aria-hidden="true" className="mt-3 h-11 rounded bg-surface-sunken animate-pulse" />
       ) : (
@@ -290,218 +265,196 @@ export default function AdminSessions() {
     }
   }
 
+  // "8 blocks · 8:30 AM – 3:30 PM": the folded schedule's summary line.
+  function scheduleSummary(list: ScheduleItem[]) {
+    if (list.length === 0) return 'not set yet'
+    const last = list.reduce((max, i) => ((i.end_time ?? i.start_time) > max ? (i.end_time ?? i.start_time) : max), list[0].start_time)
+    return `${list.length} block${list.length === 1 ? '' : 's'} · ${formatTime(list[0].start_time)} – ${formatTime(last)}`
+  }
+
   return (
-    <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div>
-        <h1 className="font-display font-bold text-[1.75rem] leading-[1.15] tracking-[-0.01em] text-ink">Sessions</h1>
-        <p className="mt-2 text-ink-muted text-pretty">
-          {!loading && `Season ${activeCampYear(sessions)}. `}Registration opens and closes here, and only here.
-        </p>
-      </div>
+    <div className={pageClass}>
+      <AdminPageHead title="Setup" lede={<>{!loading && `Season ${activeCampYear(sessions)}. `}Registration opens and closes here, and only here.</>} />
+      <SetupTabs current="season" />
 
-      <ActionError message={actionError} onDismiss={() => setActionError(null)} />
-      {/* Always here once loaded, even before any session exists: this holds the only registration
-          switch. With no sessions, the season is this calendar year (activeCampYear). */}
-      {!loading && <SeasonSettingsCard year={activeCampYear(sessions)} />}
-      {!loading && <ApplicationsStatus />}
-      {error && <div className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">⚠ {error}</div>}
+      <div className="max-w-[840px]">
+        {actionError && <p role="alert" className="mb-4 text-sm font-bold text-danger text-pretty">{actionError}</p>}
+        {/* Always here once loaded, even before any session exists: this holds the only registration
+            switch. With no sessions, the season is this calendar year (activeCampYear). */}
+        {!loading && <SeasonSettingsCard year={activeCampYear(sessions)} ruled={false} />}
+        {!loading && <ApplicationsStatus />}
 
-      <div className="pt-5 border-t-2 border-ink flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">Weeks</h2>
-          <p className="mt-1 text-sm text-ink-muted">Each session is one camp week.</p>
-        </div>
-        {editing !== 'new' && (
-          <Button onClick={() => { setPendingDelete(null); setEditing('new') }}>
-            <Plus size={16} aria-hidden="true" /> New session
-          </Button>
-        )}
-      </div>
+        <section aria-labelledby="weeks-heading" className="mt-10 pt-5 border-t-2 border-ink">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="weeks-heading" className={h2Class}>Weeks</h2>
+              <p className="mt-1 text-sm text-ink-muted">Each week is one camp session.</p>
+            </div>
+            {editing !== 'new' && (
+              <Button onClick={() => { setPendingDelete(null); setEditing('new') }}>
+                <Plus size={18} strokeWidth={2.5} aria-hidden="true" /> Add a week
+              </Button>
+            )}
+          </div>
+          {error && <p role="alert" title={error} className="mt-3 font-bold text-danger">Couldn't load the weeks. Reload the page to try again.</p>}
 
-      {editing === 'new' && (
-        <SessionForm
-          initial={BLANK}
-          submitLabel="Create session"
-          onCancel={() => setEditing(null)}
-          onSave={async payload => { await createSession(payload); setEditing(null) }}
-        />
-      )}
+          {editing === 'new' && (
+            <div className="mt-4">
+              <SessionForm
+                initial={BLANK}
+                submitLabel="Add week"
+                onCancel={() => setEditing(null)}
+                onSave={async payload => { await createSession(payload); setEditing(null) }}
+              />
+            </div>
+          )}
 
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2].map(i => <div key={i} className="h-20 bg-surface border border-border rounded-[14px] animate-pulse" />)}
-        </div>
-      ) : sessions.length === 0 && editing !== 'new' ? (
-        <div className="bg-surface border border-border rounded-[14px] p-12 text-center">
-          <Calendar size={28} className="text-ink-muted mx-auto mb-3" />
-          <p className="font-sans font-semibold text-ink mb-1">No sessions yet</p>
-          <p className="font-sans text-sm text-ink-muted">Add the camp weeks with “New session”.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sessions.map(s => {
-            const sessionItems = sortItems(items.filter(i => i.session_id === s.id))
-            const copySource = sessions.find(o => o.id !== s.id && items.some(i => i.session_id === o.id))
-            return editing === s.id ? (
-            <SessionForm
-              key={s.id}
-              initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, is_active: s.is_active }}
-              submitLabel="Save"
-              onCancel={() => setEditing(null)}
-              onSave={async payload => { await updateSession(s.id, payload); setEditing(null) }}
-            />
+          {loading ? (
+            <div aria-busy="true" aria-label="Loading weeks" className="mt-3">
+              {[1, 2].map(i => <div key={i} className="h-16 my-2 rounded bg-surface-sunken animate-pulse" />)}
+            </div>
+          ) : sessions.length === 0 && editing !== 'new' ? (
+            <p className="mt-3 py-4 border-y border-border">
+              <b className="font-bold">No weeks yet.</b> <span className="text-ink-muted">Add the camp weeks with “Add a week”.</span>
+            </p>
           ) : (
-            <div key={s.id} className="bg-surface border border-border rounded-[14px] overflow-hidden">
-              <div className="px-4 sm:px-5 py-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
-                    <Calendar size={18} className="text-warning" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <p className="font-sans font-semibold text-base text-ink">{s.name}</p>
-                      <span className="text-xs font-semibold text-ink-muted">{s.year}</span>
-                      {s.is_active ? (
-                        <span className="px-2 py-0.5 rounded-full bg-success-soft text-success text-xs font-semibold">Shown</span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-surface-sunken text-ink-muted text-xs font-semibold border border-border">Hidden</span>
-                      )}
-                    </div>
-                    <p className="font-sans text-sm text-ink-muted">{formatSessionDates(s)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => { setPendingDelete(null); setEditing(s.id) }}
-                    aria-label={`Edit ${s.name}`}
-                    title="Edit session"
-                    className="p-2 text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-[8px] transition"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    onClick={() => { setEditing(null); setPendingDelete(s.id) }}
-                    aria-label={`Delete ${s.name}`}
-                    title="Delete session"
-                    className="p-2 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[8px] transition"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-              <div className="px-4 sm:px-5 pb-4 pt-3 border-t border-border space-y-2">
-                <p className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted">Daily schedule</p>
-                {itemsLoading ? (
-                  <div className="h-10 bg-surface-sunken rounded-[10px] animate-pulse" />
-                ) : (
-                  <>
-                    {sessionItems.length === 0 && editingItem?.sessionId !== s.id && (
-                      copySource ? (
-                        <div className="flex flex-wrap items-center gap-3">
-                          <p className="font-sans text-sm text-ink-muted">No daily schedule yet.</p>
-                          <button
-                            type="button"
-                            disabled={itemBusy}
-                            onClick={() => handleCopy(copySource.id, s.id)}
-                            className="h-10 px-3.5 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] hover:bg-surface-sunken transition flex items-center gap-2 disabled:opacity-50"
-                          >
-                            <Copy size={14} /> Copy from {copySource.name}
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="font-sans text-sm text-ink-muted">No daily schedule yet — add drop-off, sessions, lunch and pickup so families know the plan.</p>
-                      )
-                    )}
-                    {sessionItems.length > 0 && (
-                      <ul className="divide-y divide-border">
-                        {sessionItems.map(item => editingItem?.sessionId === s.id && editingItem.itemId === item.id ? (
-                          <li key={item.id} className="py-2">
-                            <ScheduleItemForm
-                              idPrefix={`item-${item.id}`}
-                              initial={{ start_time: item.start_time.slice(0, 5), end_time: item.end_time?.slice(0, 5) ?? '', title: item.title, location: item.location ?? '' }}
-                              submitLabel="Save"
-                              onCancel={() => setEditingItem(null)}
-                              onSave={async payload => { await updateItem(item.id, payload); setEditingItem(null) }}
-                            />
-                          </li>
-                        ) : (
-                          <li key={item.id}>
-                            <div className="flex items-center justify-between gap-2 py-1.5">
-                              <p className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-sans text-sm">
-                                <span className="tabular-nums text-ink-muted">{formatTimeRange(item.start_time, item.end_time)}</span>
-                                <span className="font-semibold text-ink">{item.title}</span>
-                                {item.location && <span className="text-ink-muted">· {item.location}</span>}
-                              </p>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: item.id }) }}
-                                  aria-label={`Edit ${item.title}`}
-                                  title="Edit time block"
-                                  className="p-2 text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-[8px] transition"
-                                >
-                                  <Pencil size={15} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setEditingItem(null); setPendingItemDelete(item.id) }}
-                                  aria-label={`Remove ${item.title}`}
-                                  title="Remove time block"
-                                  className="p-2 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[8px] transition"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </div>
-                            </div>
-                            {pendingItemDelete === item.id && (
-                              <div className="mb-2 rounded-[10px] overflow-hidden border border-danger/30">
-                                <InlineConfirm
-                                  message={`Remove ${item.title} from ${s.name}'s schedule?`}
-                                  confirmLabel="Remove"
-                                  tone="danger"
-                                  busy={itemBusy}
-                                  onConfirm={() => confirmItemDelete(item)}
-                                  onCancel={() => setPendingItemDelete(null)}
-                                />
-                              </div>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {editingItem?.sessionId === s.id && editingItem.itemId === 'new' ? (
-                      <ScheduleItemForm
-                        idPrefix={`item-new-${s.id}`}
-                        initial={{ start_time: '', end_time: '', title: '', location: '' }}
-                        submitLabel="Add block"
-                        onCancel={() => setEditingItem(null)}
-                        onSave={async payload => { await createItem({ session_id: s.id, ...payload }); setEditingItem(null) }}
+            <ul className="mt-3">
+              {sessions.map(s => {
+                const sessionItems = sortItems(items.filter(i => i.session_id === s.id))
+                const copySource = sessions.find(o => o.id !== s.id && items.some(i => i.session_id === o.id))
+                const editingHere = editingItem?.sessionId === s.id
+                return (
+                  <li key={s.id} className="py-4 border-t border-border first:border-t-0">
+                    {editing === s.id ? (
+                      <SessionForm
+                        initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, is_active: s.is_active }}
+                        submitLabel="Save"
+                        onCancel={() => setEditing(null)}
+                        onSave={async payload => { await updateSession(s.id, payload); setEditing(null) }}
                       />
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: 'new' }) }}
-                        className="w-full h-10 border-2 border-dashed border-border-strong text-ink-muted hover:border-brand hover:text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center justify-center gap-2 transition"
-                      >
-                        <Plus size={15} /> Add a time block
-                      </button>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <div className="flex-1 min-w-[min(100%,14rem)]">
+                          <h3 className="text-lg font-bold leading-[1.3]">{s.name}</h3>
+                          <p className="text-sm text-ink-muted">
+                            {formatSessionDates(s)} · {s.is_active
+                              ? 'visible to families'
+                              : <b className="inline-flex items-center gap-1 font-extrabold text-ink"><EyeOff size={16} strokeWidth={2.5} aria-hidden="true" /> Hidden from families</b>}
+                          </p>
+                        </div>
+                        <button type="button" className={linkBtn} onClick={() => { setPendingDelete(null); setEditing(s.id) }}>
+                          Edit<span className="sr-only"> {s.name}</span>
+                        </button>
+                        <button type="button" className={linkBtn} aria-expanded={pendingDelete === s.id}
+                          onClick={() => { setEditing(null); setPendingDelete(s.id) }}>
+                          Remove<span className="sr-only"> {s.name}</span>
+                        </button>
+                      </div>
                     )}
-                  </>
-                )}
-              </div>
-              {pendingDelete === s.id && (
-                <InlineConfirm
-                  message={`Delete ${s.name} (${s.year})? Its duty slots and sign-ups are deleted too, and sections linked to it become unscheduled. This can't be undone.`}
-                  confirmLabel="Delete session"
-                  busy={deleting}
-                  onConfirm={() => confirmDelete(s)}
-                  onCancel={() => setPendingDelete(null)}
-                />
-              )}
-            </div>
-          )})}
-        </div>
-      )}
+
+                    {pendingDelete === s.id && (
+                      <div className="mt-3">
+                        <InlineConfirm
+                          frame
+                          message={`Delete ${s.name} (${s.year})? Its duty slots and sign-ups are deleted too, and sections linked to it become unscheduled. This can't be undone.`}
+                          confirmLabel="Delete week"
+                          cancelLabel="Keep it"
+                          busy={deleting}
+                          onConfirm={() => confirmDelete(s)}
+                          onCancel={() => setPendingDelete(null)}
+                        />
+                      </div>
+                    )}
+
+                    <details className="group mt-1">
+                      <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        Daily schedule · {itemsLoading ? 'loading…' : scheduleSummary(sessionItems)}
+                        <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="pb-2">
+                        {sessionItems.length === 0 && !editingHere && !itemsLoading && (
+                          copySource ? (
+                            <div className="flex flex-wrap items-center gap-3 py-2">
+                              <p className="text-ink-muted">No daily schedule yet.</p>
+                              <Button disabled={itemBusy} onClick={() => handleCopy(copySource.id, s.id)}>
+                                <Copy size={16} aria-hidden="true" /> Copy from {copySource.name}
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="py-2 text-ink-muted text-pretty">No daily schedule yet. Add drop-off, sessions, lunch and pickup so families know the plan.</p>
+                          )
+                        )}
+                        {sessionItems.length > 0 && (
+                          <ul className="border-y border-ink">
+                            {sessionItems.map(item => editingItem?.sessionId === s.id && editingItem.itemId === item.id ? (
+                              <li key={item.id} className="border-t border-border first:border-t-0">
+                                <ScheduleItemForm
+                                  idPrefix={`item-${item.id}`}
+                                  initial={{ start_time: item.start_time.slice(0, 5), end_time: item.end_time?.slice(0, 5) ?? '', title: item.title, location: item.location ?? '' }}
+                                  submitLabel="Save"
+                                  onCancel={() => setEditingItem(null)}
+                                  onSave={async payload => { await updateItem(item.id, payload); setEditingItem(null) }}
+                                />
+                              </li>
+                            ) : (
+                              <li key={item.id} className="border-t border-border first:border-t-0">
+                                <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[11rem_minmax(0,1fr)_auto] items-center gap-x-4 py-1">
+                                  <span className="tabular-nums text-ink-muted max-sm:col-span-2 max-sm:pt-1">{formatTimeRange(item.start_time, item.end_time)}</span>
+                                  <span className="min-w-0 text-pretty">
+                                    <b className="font-bold">{item.title}</b>{item.location && <span className="text-ink-muted"> · {item.location}</span>}
+                                  </span>
+                                  <span className="inline-flex gap-x-4">
+                                    <button type="button" className={linkBtn}
+                                      onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: item.id }) }}>
+                                      Edit<span className="sr-only"> {item.title}</span>
+                                    </button>
+                                    <button type="button" className={linkBtn} aria-expanded={pendingItemDelete === item.id}
+                                      onClick={() => { setEditingItem(null); setPendingItemDelete(item.id) }}>
+                                      Remove<span className="sr-only"> {item.title}</span>
+                                    </button>
+                                  </span>
+                                </div>
+                                {pendingItemDelete === item.id && (
+                                  <div className="pb-3">
+                                    <InlineConfirm
+                                      frame
+                                      message={`Remove ${item.title} from ${s.name}'s schedule?`}
+                                      confirmLabel="Remove block"
+                                      cancelLabel="Keep it"
+                                      busy={itemBusy}
+                                      onConfirm={() => confirmItemDelete(item)}
+                                      onCancel={() => setPendingItemDelete(null)}
+                                    />
+                                  </div>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {editingHere && editingItem.itemId === 'new' ? (
+                          <ScheduleItemForm
+                            idPrefix={`item-new-${s.id}`}
+                            initial={{ start_time: '', end_time: '', title: '', location: '' }}
+                            submitLabel="Add block"
+                            onCancel={() => setEditingItem(null)}
+                            onSave={async payload => { await createItem({ session_id: s.id, ...payload }); setEditingItem(null) }}
+                          />
+                        ) : !itemsLoading && (
+                          <button type="button"
+                            onClick={() => { setPendingItemDelete(null); setEditingItem({ sessionId: s.id, itemId: 'new' }) }}
+                            className="mt-1 inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px] cursor-pointer">
+                            <Plus size={16} strokeWidth={2.5} aria-hidden="true" /> Add a time block<span className="sr-only"> to {s.name}</span>
+                          </button>
+                        )}
+                      </div>
+                    </details>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
     </div>
   )
 }
