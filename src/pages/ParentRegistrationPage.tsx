@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, ChevronRight, ChevronLeft, CheckCircle2, CircleAlert, FilePenLine, Lock } from 'lucide-react'
+import { Check, ChevronRight, ChevronLeft, CheckCircle2, CircleAlert, FilePenLine, Lock, Repeat } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
+import { useRegistrations } from '../hooks/useRegistrations'
 import { useSessions, activeCampYear, campSessions as activeSessions, formatSessionDates } from '../hooks/useSessions'
 import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSettings'
 import RegistrationCountdown from '../components/RegistrationCountdown'
@@ -11,14 +12,14 @@ import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import { formatCampDateTime } from '../lib/denverTime'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useFormConfig } from '../hooks/useFormConfig'
-import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
+import { courseRuleReason, repeatWarning, takenClasses, type TakenClass } from '../lib/courseRules'
 import { GRADES, gradeToAge } from '../lib/campers'
 import { draftKey, readDraft, writeDraft, clearDraft } from '../lib/registrationDraft'
 import { fetchSectionFill } from '../lib/sectionFill'
 import { placeSentence } from '../lib/campSite'
 import { formatTimeRange } from '../lib/campDay'
 import { buttonClass } from '../lib/ui'
-import { Segmented, hintCls, labelCls } from './parent/parts'
+import { ErrorLine, Segmented, hintCls, labelCls } from './parent/parts'
 
 const SCHOOL_DISTRICTS = [
   'Cherry Creek School District',
@@ -81,20 +82,39 @@ interface FormData {
   session2: boolean
   class_week1: string
   class_week2: string
+  // "Place with" a friend or sibling (spec 31), saved on each registration.
+  place_with: string
+  // A request for an exception to a class's rules, per week (spec 31), sent with the registration.
+  exception1: ExceptionDraft | null
+  exception2: ExceptionDraft | null
   // Waiver
   waiver_signature: string
   guardian_signature: string
 }
 
+// The class a family asks to be let into although its grade or prerequisite rules them out, the
+// section the request is about, and why (spec 31). Sent once the camper is saved.
+interface ExceptionDraft {
+  classId: string
+  sectionId: string
+  name: string
+  message: string
+}
+
 const PREVIOUS_PROGRAMS = ['Intro to Python', 'Intermediate Python', 'Intro to Java', 'Intermediate Java']
 
 // One selectable class for a given week: the section the camper would join, or why they can't.
+// ruleBlocked: the class's own rules refuse the camper, so the family may request an exception
+// about `exceptionSection` instead. repeat: the same course in the other week (a warning).
 interface ClassOption {
   classId: string
   name: string
   section: SectionWithCount | null
   reason: string | null
   full: boolean
+  ruleBlocked: boolean
+  exceptionSection: SectionWithCount | null
+  repeat: string | null
 }
 
 const INITIAL: FormData = {
@@ -107,6 +127,7 @@ const INITIAL: FormData = {
   other_info: '',
   how_heard: '', previous_program: null, program_last_year: '', candy_consent: false,
   session1: false, session2: false, class_week1: '', class_week2: '',
+  place_with: '', exception1: null, exception2: null,
   waiver_signature: '', guardian_signature: '',
 }
 
@@ -122,6 +143,7 @@ const FIELD_IDS: Record<string, string> = {
   allergies: 'reg-allergies', medical_conditions: 'reg-medical', other_info: 'reg-other',
   free_reduced_lunch: 'reg-lunch', how_heard: 'reg-how-heard', previous_program: 'reg-previous',
   candy_consent: 'reg-candy', waiver_signature: 'reg-waiver-sig', guardian_signature: 'reg-guardian-sig',
+  place_with: 'reg-place-with', exception1: 'reg-exception-1', exception2: 'reg-exception-2',
 }
 
 // Yes / No as a segmented control: the selected answer fills ink, never gold.
@@ -149,6 +171,8 @@ export default function ParentRegistrationPage() {
   const studentId = searchParams.get('studentId')
   const { profile, user } = useAuth()
   const { classes, loading: classesLoading, refetch: refetchClasses } = useClasses()
+  // A returning camper's classes, this year and past ones, for prerequisites and repeats (spec 31).
+  const { registrations } = useRegistrations()
   const { sessions, loading: sessionsLoading } = useSessions()
   const { profile: parentProfile, saveProfile } = useParentProfile()
   // Labels / visibility / required-ness come from the admin Form editor; `enabled` opens/closes it.
@@ -199,6 +223,9 @@ export default function ParentRegistrationPage() {
   const [submitted, setSubmitted] = useState(false)
   const [waitlistedCount, setWaitlistedCount] = useState(0)
   const [registeredCount, setRegisteredCount] = useState(0)
+  // Exception requests sent with the registration, and any that couldn't be sent (spec 31).
+  const [exceptionsSent, setExceptionsSent] = useState<string[]>([])
+  const [exceptionErrors, setExceptionErrors] = useState<string[]>([])
   // Re-registration prefill status, keyed by studentId + attempt so Retry refetches. Until it has
   // loaded, the form isn't shown — submitting a blank form would insert a duplicate camper.
   const [prefillAttempt, setPrefillAttempt] = useState(0)
@@ -209,6 +236,7 @@ export default function ParentRegistrationPage() {
 
   // Display name derived from the split first/last fields (full_name is composed on submit).
   const studentFullName = `${form.first_name} ${form.last_name}`.trim()
+  const studentFirst = form.first_name.trim() || 'your camper'
 
   // Prefill parent details once they load (#54) — adjusted during render rather than in an
   // effect. Only empty fields are filled, so nothing the parent typed is overwritten.
@@ -227,23 +255,50 @@ export default function ParentRegistrationPage() {
     }))
   }
 
+  // What the camper has taken, for course rules (spec 31): a returning camper's registrations, and
+  // for Week 2 the Week 1 class picked here (it counts as taken when it has a free seat, the same
+  // as the database, which sees Week 1 first in the same request).
+  const takenBefore = (week: 1 | 2): TakenClass[] => {
+    const mine = studentId ? takenClasses(registrations, studentId) : []
+    if (week !== 2 || !form.session1 || !form.class_week1) return mine
+    const pick = classOptions(1).find(o => o.section?.id === form.class_week1)
+    return pick?.section ? [...mine, { classId: pick.classId, year: campYear, week: pick.section.week, seat: !pick.full }] : mine
+  }
+
   // Classes the camper can pick for a week. A class with no section that week isn't offered at
-  // all; one whose sections don't fit the camper's age (or the course grade rule) is shown locked.
+  // all; one whose rules (grades this fall, a class to take first) or age bands don't fit the
+  // camper is shown locked with the reason. The rules come from the class (spec 31), and the
+  // database refuses the same ones.
   function classOptions(week: 1 | 2): ClassOption[] {
     const camperAge = gradeToAge(form.grade)
+    const taken = takenBefore(week)
+    const target = { year: campYear, week }
+    const offered = new Set(classes.filter(c => c.sections.some(s => s.week === week || s.week === null)).map(c => c.id))
     return classes.flatMap((c): ClassOption[] => {
       const weekSections = c.sections.filter(s => s.week === week || s.week === null)
       if (weekSections.length === 0) return []
-      const gradeReason = gradeBlockReason(courseConstraint(c.name), form.grade)
       const fits = weekSections.filter(s => camperAge !== null && camperAge >= s.age_min && camperAge <= s.age_max)
-      if (gradeReason || fits.length === 0) {
-        const ages = [...new Set(weekSections.map(s => `${s.age_min}–${s.age_max}`))].join(', ')
-        return [{ classId: c.id, name: c.name, section: null, full: false, reason: gradeReason ?? `Ages ${ages}` }]
-      }
       // Prefer the emptiest fitting section so siblings/friends spread before anyone is waitlisted.
       const best = [...fits].sort((a, b) => a.registered_count / a.capacity - b.registered_count / b.capacity)[0]
-      return [{ classId: c.id, name: c.name, section: best, reason: null, full: best.registered_count >= best.capacity }]
+      const rule = courseRuleReason(c, classes, form.grade, taken, target)
+      if (rule) {
+        return [{ classId: c.id, name: c.name, section: null, full: false, reason: rule, ruleBlocked: true,
+          exceptionSection: best ?? weekSections[0], repeat: null }]
+      }
+      if (!best) {
+        const ages = [...new Set(weekSections.map(s => `${s.age_min}–${s.age_max}`))].join(', ')
+        return [{ classId: c.id, name: c.name, section: null, full: false, reason: `Ages ${ages}`, ruleBlocked: false, exceptionSection: null, repeat: null }]
+      }
+      return [{ classId: c.id, name: c.name, section: best, reason: null, full: best.registered_count >= best.capacity,
+        ruleBlocked: false, exceptionSection: null, repeat: repeatWarning(c, classes, form.grade, taken, target, offered) }]
     })
+  }
+
+  // The week's exception request, while its class still rules the camper out.
+  function exceptionFor(week: 1 | 2): ExceptionDraft | null {
+    const ex = week === 1 ? form.exception1 : form.exception2
+    if (!ex) return null
+    return classOptions(week).some(o => o.ruleBlocked && o.classId === ex.classId) ? ex : null
   }
 
   function isSelectable(week: 1 | 2, sectionId: string) {
@@ -407,8 +462,14 @@ export default function ParentRegistrationPage() {
       if (!campSessions.some(s => s.is_active)) return "Registration isn't open yet. No camp sessions are scheduled."
       if (!registrationIsOpen(season)) return `Registration opens ${formatCampDateTime(season!.registration_opens_at!)} (Denver time). Your answers are saved on this device, so you can pick the class here once it opens.`
       if (!form.session1 && !form.session2) return 'Please select at least one session'
-      if (form.session1 && !isSelectable(1, form.class_week1)) return `Please select a class for ${campSessions[0]?.name ?? 'Session 1'}`
-      if (form.session2 && !isSelectable(2, form.class_week2)) return `Please select a class for ${campSessions[1]?.name ?? 'Session 2'}`
+      // A week needs a class, or a request for an exception to one (spec 31) with its reason.
+      for (const week of [1, 2] as const) {
+        if (!(week === 1 ? form.session1 : form.session2)) continue
+        const ex = exceptionFor(week)
+        if (ex && !ex.message.trim()) return fail(`exception${week}`, `Tell the camp why ${studentFirst} is ready for ${ex.name}, or pick another class.`)
+        if (!isSelectable(week, week === 1 ? form.class_week1 : form.class_week2) && !ex) return `Please select a class for ${campSessions[week - 1]?.name ?? `Session ${week}`}`
+      }
+      if (q('place_with').required && !form.place_with.trim()) return fail('place_with', `${q('place_with').label} is required`)
       // A class whose section runs both weeks fills both weeks: it can't be paired with another.
       if (form.session1 && form.session2 && form.class_week1 !== form.class_week2) {
         const both = classes.find(c => c.sections.some(s =>
@@ -548,7 +609,10 @@ export default function ParentRegistrationPage() {
     const sectionIds = new Set<string>()
     if (form.session1 && form.class_week1) sectionIds.add(form.class_week1)
     if (form.session2 && form.class_week2) sectionIds.add(form.class_week2)
-    const regsToCreate = [...sectionIds].map(section_id => ({ student_id: student.id, section_id }))
+    // Week 1 goes first: a Week 1 class can be the prerequisite of the Week 2 one (spec 31).
+    const placeWith = form.place_with.trim() || null
+    const regsToCreate = [...sectionIds].map(section_id => ({ student_id: student.id, section_id, place_with: placeWith }))
+    const exceptionsToSend = ([1, 2] as const).map(exceptionFor).filter((x): x is ExceptionDraft => !!x && !!x.message.trim())
 
     if (regsToCreate.length > 0) {
       const { data: regs, error: regErr } = await supabase
@@ -558,7 +622,9 @@ export default function ParentRegistrationPage() {
         // going Back to change the class) updates this camper rather than inserting another.
         setError(regErr.code === '23505'
           ? `${studentFullName} is already registered for that class.`
-          : `Your camper's details are saved, but the class couldn't be booked: ${regErr.message}. Go back to change the class, then submit again.`)
+          : regErr.hint === 'course_rule'
+            ? `Your camper's details are saved, but the class couldn't be booked: ${regErr.message.replace(/\s*Request an exception\?$/, '')} Go back to step 4 to pick another class or request an exception.`
+            : `Your camper's details are saved, but the class couldn't be booked: ${regErr.message}. Go back to change the class, then submit again.`)
         setSubmitting(false)
         return
       }
@@ -571,6 +637,20 @@ export default function ParentRegistrationPage() {
         .update({ registration_year: campYear, waiver_signed_at: new Date().toISOString() })
         .eq('id', student.id)
     }
+
+    // Exception requests go once the camper (and any Week 1 class) is saved, so the database
+    // judges them on the same facts. One failing doesn't undo the registration.
+    const sent: string[] = []
+    const failed: string[] = []
+    for (const ex of exceptionsToSend) {
+      const { error: exErr } = await supabase.rpc('request_exception', {
+        p_student_id: student.id, p_section_id: ex.sectionId, p_message: ex.message.trim(),
+      })
+      if (exErr) failed.push(`We couldn't send your request about ${ex.name}: ${exErr.message} You can ask again from Classes.`)
+      else sent.push(ex.name)
+    }
+    setExceptionsSent(sent)
+    setExceptionErrors(failed)
 
     // Done: the draft (under the new camper's key or the original one) is no longer needed.
     if (user) { clearDraft(draftKey(user.id, null)); clearDraft(draftKey(user.id, student.id)) }
@@ -609,21 +689,27 @@ export default function ParentRegistrationPage() {
   const pageTitle = 'font-display font-bold text-[1.75rem] leading-[1.15] tracking-[-0.01em] text-balance'
 
   if (submitted) {
+    const asked = exceptionsSent.length > 0
+      ? `We sent your request about ${exceptionsSent.join(' and ')} to the camp. They'll email you.` : null
     return (
       <div className="max-w-[640px] mx-auto">
           <h1 className={`${pageTitle} flex items-center gap-2`}>
             <CheckCircle2 size={28} strokeWidth={2.25} aria-hidden="true" className="text-success shrink-0" />
-            {waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}
+            {registeredCount === 0 ? 'Request sent' : waitlistedCount > 0 && waitlistedCount === registeredCount ? "You're on the waitlist" : "You're in!"}
           </h1>
           <p className="mt-2 text-pretty">
-            {waitlistedCount === 0 ? (
+            {registeredCount === 0 ? (
+              <><strong className="font-bold">{studentFullName}</strong>'s details are saved.</>
+            ) : waitlistedCount === 0 ? (
               <><strong className="font-bold">{studentFullName}</strong>'s spot is confirmed. You'll find the class, time and room on Home.</>
             ) : waitlistedCount === registeredCount ? (
               <>That class is full, so <strong className="font-bold">{studentFullName}</strong> is on the waitlist. We'll reach out if a spot opens.</>
             ) : (
               <><strong className="font-bold">{studentFullName}</strong>'s spot is confirmed in one class. The other was full, so they're on its waitlist. We'll reach out if a spot opens.</>
             )}
+            {asked && <> {asked}</>}
           </p>
+          {exceptionErrors.map(e => <ErrorLine key={e} className="mt-2">{e}</ErrorLine>)}
           <button type="button" onClick={() => navigate('/parent')} className={buttonClass('primary', 'mt-5')}>
             Back to Home
           </button>
@@ -908,12 +994,15 @@ export default function ParentRegistrationPage() {
                 const week = (i + 1) as 1 | 2
                 const key = week === 1 ? 'session1' as const : 'session2' as const
                 const classKey = week === 1 ? 'class_week1' as const : 'class_week2' as const
+                const exKey = week === 1 ? 'exception1' as const : 'exception2' as const
                 const options = classOptions(week)
+                const ex = exceptionFor(week)
+                const exId = `reg-exception-${week}`
                 return (
                   <div key={session.id}>
                     <label className={choiceCls}>
                       <input type="checkbox" className="w-[22px] h-[22px] shrink-0" checked={form[key]}
-                        onChange={e => { set(key, e.target.checked); if (!e.target.checked) set(classKey, '') }} />
+                        onChange={e => { set(key, e.target.checked); if (!e.target.checked) { set(classKey, ''); set(exKey, null) } }} />
                       <span className="font-bold">{session.name}: {formatSessionDates(session)}</span>
                     </label>
                     {form[key] && (
@@ -928,22 +1017,57 @@ export default function ParentRegistrationPage() {
                               const selected = !!sec && form[classKey] === sec.id
                               const spotsLeft = sec ? sec.capacity - sec.registered_count : 0
                               const when = sec ? [sec.days, sec.start_time && formatTimeRange(sec.start_time, sec.end_time), sec.room].filter(Boolean).join(', ') : ''
+                              const exSection = o.exceptionSection
                               return (
-                                <label key={o.classId} className={choiceCls}>
-                                  <input type="radio" name={classKey} className="w-[22px] h-[22px] shrink-0" disabled={!sec}
-                                    checked={selected} onChange={() => sec && set(classKey, sec.id)} />
-                                  <span className="flex-1 min-w-0">
-                                    <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-                                      <span className="font-bold">{o.name}</span>
-                                      {sec && <span className="text-sm font-bold">{o.full ? 'Full, joins the waitlist' : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}</span>}
+                                <div key={o.classId}>
+                                  <label className={choiceCls}>
+                                    <input type="radio" name={classKey} className="w-[22px] h-[22px] shrink-0" disabled={!sec}
+                                      checked={selected} onChange={() => sec && set(classKey, sec.id)} />
+                                    <span className="flex-1 min-w-0">
+                                      <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                        <span className="font-bold">{o.name}</span>
+                                        {sec && <span className="text-sm font-bold">{o.full ? 'Full, joins the waitlist' : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left`}</span>}
+                                      </span>
+                                      <span className="block text-sm text-ink-muted">
+                                        {o.reason
+                                          ? <span className="inline-flex items-start gap-1"><Lock size={14} strokeWidth={2.5} aria-hidden="true" className="shrink-0 mt-[3px]" /> {o.reason}</span>
+                                          : [`Ages ${sec!.age_min}–${sec!.age_max}`, when].filter(Boolean).join(' · ')}
+                                      </span>
+                                      {/* Same course both weeks: a warning in ink with a drawn icon, never a block (spec 31). */}
+                                      {o.repeat && (
+                                        <span className="mt-1 flex items-start gap-1.5 text-sm font-bold text-ink text-pretty">
+                                          <Repeat size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0 mt-px" />{o.repeat}
+                                        </span>
+                                      )}
                                     </span>
-                                    <span className="block text-sm text-ink-muted">
-                                      {o.reason
-                                        ? <span className="inline-flex items-center gap-1"><Lock size={14} strokeWidth={2.5} aria-hidden="true" /> {o.reason}</span>
-                                        : [`Ages ${sec!.age_min}–${sec!.age_max}`, when].filter(Boolean).join(' · ')}
-                                    </span>
-                                  </span>
-                                </label>
+                                  </label>
+                                  {/* The class's own rules rule the camper out: the family can ask the camp for an
+                                      exception, sent with this registration (spec 31). */}
+                                  {o.ruleBlocked && exSection && (ex?.classId === o.classId ? (
+                                    <div className="mt-3 mb-2 space-y-2">
+                                      <label htmlFor={exId} className={labelCls}>Why is {studentFirst} ready for {o.name}?</label>
+                                      <p id={`${exId}-hint`} className={hintCls}>
+                                        For example, a class they took at school. It goes to the camp with this registration, and they'll email you. You can pick another class for this week too.
+                                      </p>
+                                      <textarea id={exId} rows={3} maxLength={1000} className={textareaCls}
+                                        aria-invalid={error && errorField === exId ? true : undefined}
+                                        aria-describedby={[`${exId}-hint`, error && errorField === exId ? 'reg-error' : ''].filter(Boolean).join(' ')}
+                                        value={ex.message} onChange={e => set(exKey, { ...ex, message: e.target.value })} />
+                                      {fieldError(exId)}
+                                      <button type="button" onClick={() => set(exKey, null)} className={buttonClass('text', 'text-ink-muted font-semibold')}>
+                                        Don't ask<span className="sr-only"> about {o.name}</span>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button type="button" className={buttonClass('text', 'px-1')}
+                                      onClick={() => {
+                                        set(exKey, { classId: o.classId, sectionId: exSection.id, name: o.name, message: '' })
+                                        requestAnimationFrame(() => document.getElementById(exId)?.focus())
+                                      }}>
+                                      Request an exception<span className="sr-only"> for {o.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
                               )
                             })}
                           </div>
@@ -953,6 +1077,18 @@ export default function ParentRegistrationPage() {
                   </div>
                 )
               })}
+              {/* "Place with" (spec 31): one request, saved on each class booked here. */}
+              {(form.session1 || form.session2) && q('place_with').show && (
+                <div>
+                  <label htmlFor="reg-place-with" className={labelCls}>{labelText('place_with')}</label>
+                  <p id="reg-place-with-hint" className={`${hintCls} mb-2`}>Their name. The camp reads every request but can't promise a placement.</p>
+                  <input id="reg-place-with" type="text" maxLength={100} autoComplete="off" className={inputCls}
+                    aria-invalid={error && errorField === 'reg-place-with' ? true : undefined}
+                    aria-describedby={['reg-place-with-hint', error && errorField === 'reg-place-with' ? 'reg-error' : ''].filter(Boolean).join(' ')}
+                    value={form.place_with} onChange={e => set('place_with', e.target.value)} />
+                  {fieldError('reg-place-with')}
+                </div>
+              )}
             </div>
           )}
 

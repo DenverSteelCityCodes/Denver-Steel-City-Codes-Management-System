@@ -69,6 +69,7 @@ export const FORM_DEFINITIONS: Record<FormKey, { label: string; description: str
       { key: 'how_heard', label: 'How did you hear about Steel City Codes?', required: true },
       { key: 'previous_program', label: 'Did your student participate in Steel City Codes last year?', required: true },
       { key: 'candy_consent', label: 'I consent to my student receiving small candy treats during camp activities.' },
+      { key: 'place_with', label: 'A friend or sibling to be placed with' },
       { key: 'waiver_signature', label: 'Student / registrant signature', required: true, locked: true },
       { key: 'guardian_signature', label: 'Parent / guardian signature', required: true, locked: true },
     ],

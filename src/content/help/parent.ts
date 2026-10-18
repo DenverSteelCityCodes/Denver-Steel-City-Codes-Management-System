@@ -25,7 +25,7 @@ export const PARENT_GUIDE: HelpGuide = {
               items: [
                 'On [[parent-home]], tap **Start registering**. For another child later, open the menu under your initials and tap [[parent-register]].',
                 'Fill in the five steps: the camper, you and an emergency contact, health and details, the week and class, and the waiver.',
-                'On the week and class step, pick a week, then one class. Classes that don\'t fit your camper\'s grade are shown but locked.',
+                'On the week and class step, pick a week, then one class. Classes that don\'t fit your camper\'s age or grade, or that need another class first, are shown but locked with the reason.',
                 'Tap **Submit registration**.',
               ],
             },
@@ -62,6 +62,30 @@ export const PARENT_GUIDE: HelpGuide = {
               ],
             },
             { kind: 'p', text: 'Campers take one class a week. If your camper already has a class that week, switch it from Home instead.' },
+          ],
+        },
+        {
+          id: 'class-locked',
+          title: 'A class is locked for your camper',
+          keywords: 'grade prerequisite exception locked microcontrollers intermediate python repeat friend sibling place with',
+          body: [
+            { kind: 'p', text: 'Some classes are for certain grades (the grade your camper enters this fall), and some need another class first, earlier in the summer or in a past summer. A locked class says which.' },
+            {
+              kind: 'steps',
+              heading: 'Think your camper is ready anyway?',
+              items: [
+                'Under the locked class, tap **Request an exception**.',
+                'Tell the camp why (for example, a class they took at school), then tap **Send to the camp**. In the registration form it goes with your registration when you submit.',
+                'The camp reads every request and emails you. If they agree, they sign your camper up.',
+              ],
+            },
+            {
+              kind: 'list',
+              items: [
+                'Picking the same class for both weeks is allowed. You\'ll see a note suggesting the next class to try.',
+                'To ask for your camper to be placed with a friend or sibling, fill in the last question on the week and class step. Until online changes close, change it from your camper on [[parent-home]].',
+              ],
+            },
           ],
         },
         {

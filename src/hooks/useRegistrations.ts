@@ -5,6 +5,7 @@ import type { Registration, RegistrationStatus } from '../types/database'
 
 export interface RegistrationWithSection extends Registration {
   sections: {
+    class_id: string
     label: string
     age_min: number
     age_max: number
@@ -19,7 +20,7 @@ export interface RegistrationWithSection extends Registration {
   }
 }
 
-const SECTION_SELECT = 'sections ( label, age_min, age_max, capacity, week, session_id, days, start_time, end_time, room, classes ( name ) )'
+const SECTION_SELECT = 'sections ( class_id, label, age_min, age_max, capacity, week, session_id, days, start_time, end_time, room, classes ( name ) )'
 
 export function useRegistrations() {
   const { user } = useAuth()
@@ -55,7 +56,8 @@ export function useRegistrations() {
       .select(`*, ${SECTION_SELECT}`)
       .single()
 
-    if (error) throw new Error(error.message)
+    // Keep the database's hint: 'course_rule' means the family may ask for an exception (spec 31).
+    if (error) throw Object.assign(new Error(error.message), { hint: error.hint })
     setRegistrations(prev => [data as RegistrationWithSection, ...prev])
     return data as RegistrationWithSection
   }

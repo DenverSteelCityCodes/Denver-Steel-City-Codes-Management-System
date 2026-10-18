@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronDown, CircleCheck, Hourglass, Lock, Plus } from 'lucide-react'
+import { ChevronDown, CircleCheck, Hourglass, Lock, Plus, Repeat } from 'lucide-react'
 import { useClasses, type SectionWithCount } from '../hooks/useClasses'
 import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import { useStudents } from '../hooks/useStudents'
@@ -10,10 +10,12 @@ import { useSeasonSettings, registrationIsOpen } from '../hooks/useSeasonSetting
 import RegistrationCountdown from '../components/RegistrationCountdown'
 import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import ConfirmOnboardingPanel from '../components/ConfirmOnboardingPanel'
+import ExceptionRequest from '../components/ExceptionRequest'
+import { useMyChanges, exceptionKey } from '../hooks/useMyChanges'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useAuth } from '../context/AuthContext'
 import { useFormConfig } from '../hooks/useFormConfig'
-import { courseConstraint, gradeBlockReason } from '../lib/courseConstraints'
+import { classRuleLine, courseRuleReason, isCourseRuleError, repeatWarning, takenClasses } from '../lib/courseRules'
 import { formatTimeRange } from '../lib/campDay'
 import { camperFirstName, holdsSeat } from '../lib/parentHome'
 import { buttonClass } from '../lib/ui'
@@ -39,6 +41,8 @@ export default function ClassBrowser() {
   const { profile: parentProfile } = useParentProfile()
   // "Close form" in the admin form editor closes registration here too (the database enforces it).
   const { enabled: registrationOpen } = useFormConfig('student_registration')
+  // Exception requests for classes a camper's grade or prerequisite rules out (spec 31).
+  const { exceptions, requestException } = useMyChanges(students.length > 0)
 
   // Active camp year: the year of the open session(s). Campers re-confirm their details every
   // summer before they can register (#42). Register stays disabled until sessions load, so a quick
@@ -60,6 +64,8 @@ export default function ClassBrowser() {
   const [pending, setPending] = useState<string | null>(null)        // section awaiting the yearly check
   const [busy, setBusy] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  // Sections whose sign-up the database refused under the class's own rules (spec 31).
+  const [ruleErrors, setRuleErrors] = useState<Set<string>>(new Set())
 
   function pick(params: { camper?: string; week?: number }) {
     const next = new URLSearchParams(searchParams)
@@ -68,6 +74,7 @@ export default function ClassBrowser() {
     setSearchParams(next, { replace: true })
     setPending(null)
     setErrors({})
+    setRuleErrors(new Set())
   }
 
   const needsConfirmation = !!student && student.registration_year !== campYear
@@ -85,6 +92,7 @@ export default function ClassBrowser() {
       setErrors(e => ({ ...e, [section.id]: reason.includes('duplicate key')
         ? `${camperFirstName(student)} is already registered for that class.`
         : reason || 'Something went wrong. Please try again.' }))
+      if (isCourseRuleError(err)) setRuleErrors(r => new Set(r).add(section.id))
     } finally {
       setBusy(null)
     }
@@ -123,17 +131,22 @@ export default function ClassBrowser() {
 
   const first = student ? camperFirstName(student) : 'your camper'
   const held = seatIn(student, week)
-  const rows = classes.flatMap(cls => {
-    const constraint = courseConstraint(cls.name)
-    return cls.sections
-      .filter(sec => sec.week === week || sec.week == null)
-      .map(sec => {
-        const reason = !student ? null
-          : student.age < sec.age_min || student.age > sec.age_max ? `For ages ${sec.age_min} to ${sec.age_max}`
-          : gradeBlockReason(constraint, student.grade)
-        return { cls, sec, constraint, reason }
-      })
-  })
+  // Course rules come from the class (spec 31): its grades this fall and the class to take first,
+  // checked against everything the camper has taken. The database refuses the same classes.
+  const taken = student ? takenClasses(registrations, student.id) : []
+  const offeredIds = new Set(classes.filter(c => c.sections.some(s => s.week === week || s.week == null)).map(c => c.id))
+  const rows = classes.flatMap(cls => cls.sections
+    .filter(sec => sec.week === week || sec.week == null)
+    .map(sec => {
+      const target = { year: campYear, week: sec.week ?? null }
+      const rule = student ? courseRuleReason(cls, classes, student.grade, taken, target) : null
+      const live = student ? getRegistration(student.id, sec.id) : null
+      // A class the camper is already in stays in the list, whoever placed them there.
+      const reason = !student || (live && live.status !== 'cancelled') ? null
+        : rule ?? (student.age < sec.age_min || student.age > sec.age_max ? `For ages ${sec.age_min} to ${sec.age_max}` : null)
+      const repeat = student && !reason ? repeatWarning(cls, classes, student.grade, taken, target, offeredIds) : null
+      return { cls, sec, reason, ruleBlocked: !!reason && reason === rule, repeat, ruleLine: classRuleLine(cls, classes) }
+    }))
   const fits = rows.filter(r => !r.reason)
   const notFit = rows.filter(r => r.reason)
 
@@ -180,7 +193,7 @@ export default function ClassBrowser() {
           <p className="text-ink-muted">No class this week fits {first}'s age and grade.</p>
         ) : (
           <ul className={framedCls}>
-            {fits.map(({ cls, sec, constraint }) => {
+            {fits.map(({ cls, sec, repeat, ruleLine }) => {
               const reg = student ? getRegistration(student.id, sec.id) : null
               const left = sec.capacity - sec.registered_count
               const full = left <= 0
@@ -192,9 +205,15 @@ export default function ClassBrowser() {
                   <h3 id={`sec-${sec.id}`} className="text-lg font-bold leading-snug">{cls.name}, {sec.label}</h3>
                   {cls.description && <p className="mt-1 text-ink-muted text-pretty">{cls.description}</p>}
                   <p className="mt-2 leading-normal">
-                    Ages {sec.age_min} to {sec.age_max}{constraint?.requirementNote ? `. ${constraint.requirementNote}` : ''}
+                    Ages {sec.age_min} to {sec.age_max}{ruleLine ? `. ${ruleLine}` : ''}
                     <br />{[time, sec.room].filter(Boolean).join(', ')}
                   </p>
+                  {/* Same course both weeks: a warning in ink with a drawn icon, never a block (spec 31). */}
+                  {repeat && !reg && (
+                    <p className="mt-2 flex items-start gap-2 font-bold text-pretty">
+                      <Repeat size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 mt-0.5" />{repeat}
+                    </p>
+                  )}
                   {/* Seats as an ink meter: full is ink, never red (DESIGN.md › Colors). */}
                   <div className="mt-3 h-1 rounded-[2px] bg-border overflow-hidden" aria-hidden="true">
                     <div className={`h-full ${full ? 'bg-ink' : 'bg-ink-muted'}`} style={{ width: `${pct}%` }} />
@@ -235,6 +254,11 @@ export default function ClassBrowser() {
                     </button>
                   )}
                   {errors[sec.id] && <ErrorLine className="mt-2">{errors[sec.id]}</ErrorLine>}
+                  {ruleErrors.has(sec.id) && student && (
+                    <ExceptionRequest camper={first} className={cls.name} idPrefix={`exc-${sec.id}`}
+                      sent={exceptions.has(exceptionKey(student.id, sec.id))}
+                      onSend={m => requestException(student.id, sec.id, m)} />
+                  )}
                   </article>
                 </li>
               )
@@ -250,13 +274,21 @@ export default function ClassBrowser() {
             <ChevronDown size={20} strokeWidth={2.25} aria-hidden="true" className="text-ink-muted transition-transform group-open:rotate-180" />
           </summary>
           <ul className={`mt-2 ${framedCls}`}>
-            {notFit.map(({ cls, sec, reason }) => (
-              <li key={sec.id} className={`flex items-center gap-3 py-3 ${rowCls}`}>
-                <span className="flex-1 min-w-0">
-                  <span className="block font-bold">{cls.name}, {sec.label}</span>
-                  <span className="block text-sm text-ink-muted">{reason}</span>
-                </span>
-                <Lock size={16} strokeWidth={2.5} aria-hidden="true" className="text-ink-muted shrink-0" />
+            {notFit.map(({ cls, sec, reason, ruleBlocked }) => (
+              <li key={sec.id} className={`py-3 ${rowCls}`}>
+                <div className="flex items-center gap-3">
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-bold text-ink-muted">{cls.name}, {sec.label}</span>
+                    <span className="block text-sm text-ink-muted">{reason}</span>
+                  </span>
+                  <Lock size={16} strokeWidth={2.5} aria-hidden="true" className="text-ink-muted shrink-0" />
+                </div>
+                {/* The class's own rules refuse this camper: the family can ask the camp instead. */}
+                {ruleBlocked && student && (
+                  <ExceptionRequest camper={first} className={cls.name} idPrefix={`exc-${sec.id}`}
+                    sent={exceptions.has(exceptionKey(student.id, sec.id))}
+                    onSend={m => requestException(student.id, sec.id, m)} />
+                )}
               </li>
             ))}
           </ul>

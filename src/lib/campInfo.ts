@@ -27,6 +27,10 @@ export interface CampCourse {
   age_min: number
   age_max: number
   weeks: { week: string; full: boolean }[]
+  // Course rules (spec 31): grades this fall, the class to take first, a note for families.
+  grades_allowed?: string[] | null
+  requires?: string | null
+  requirement_note?: string | null
 }
 
 export interface CampInfo {
