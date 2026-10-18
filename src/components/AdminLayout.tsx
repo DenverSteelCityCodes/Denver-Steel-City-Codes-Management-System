@@ -54,7 +54,7 @@ function currentOf(item: NavItem, pathname: string): 'page' | 'true' | undefined
 
 export default function AdminLayout() {
   const { profile, user, signOut } = useAuth()
-  const { pathname } = useLocation()
+  const { pathname, key: locationKey } = useLocation()
   const { dark, toggle: toggleTheme } = useTheme()
 
   const [menuOpen, setMenuOpen] = useState(false)
@@ -79,10 +79,10 @@ export default function AdminLayout() {
     return () => { alive = false }
   }, [pathname])
 
-  // Navigating closes the menu and the phone search.
-  const [shownPath, setShownPath] = useState(pathname)
-  if (shownPath !== pathname) {
-    setShownPath(pathname)
+  // Navigating (a search result can stay on the same page) closes the menu and the phone search.
+  const [shownKey, setShownKey] = useState(locationKey)
+  if (shownKey !== locationKey) {
+    setShownKey(locationKey)
     setMenuOpen(false)
     setSearchOpen(false)
   }

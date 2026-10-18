@@ -37,7 +37,7 @@ export default function StatCard({ label, value, icon: Icon, iconColor, delta }:
         <Icon size={16} strokeWidth={2.5} aria-hidden="true" className="mt-0.5 shrink-0" />
         <span>{label}</span>
       </p>
-      <p className={`mt-1 text-[2rem] font-extrabold leading-none tabular-nums ${danger ? 'text-danger' : 'text-ink'}`}>{value}</p>
+      <p className={`mt-1 text-[1.375rem] font-extrabold leading-[1.15] tabular-nums ${danger ? 'text-danger' : 'text-ink'}`}>{value}</p>
       {delta && (
         <p className={`mt-1.5 flex items-center gap-1.5 text-sm ${TONE[delta.tone ?? 'muted']}`}>
           {DeltaIcon && <DeltaIcon size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" />}
