@@ -156,11 +156,35 @@ begin
   begin perform public.join_interest_list('ip6@scc-demo.test'); res := res || E'\nper-IP cap (cf-connecting-ip): NOT ENFORCED (BAD)';
   exception when raise_exception then res := res || E'\nper-IP cap, 5 an hour (cf-connecting-ip): refused ok'; end;
   execute 'reset role';
+  select count(*) into n from private.interest_join_log
+   where length(ip_hash) = 64 and length(mailbox_hash) = 64
+     and ip_hash <> md5('ip:203.0.113.9') and mailbox_hash <> md5('mailbox:ip1@scc-demo.test');
+  res := res || E'\nthe press log holds keyed (HMAC) hashes, not plain md5: ' || case when n = 5 then 'ok' else 'BAD (' || n || ' of 5)' end;
+
+  delete from private.interest_join_log;
   perform set_config('request.headers', '{"x-forwarded-for":"198.51.100.7, 10.0.0.1"}', true);
   execute 'set local role anon';
-  for n in 1..5 loop perform public.join_interest_list('xff' || n || '@scc-demo.test'); end loop;
-  begin perform public.join_interest_list('xff6@scc-demo.test'); res := res || E'\nper-IP cap (x-forwarded-for): NOT ENFORCED (BAD)';
-  exception when raise_exception then res := res || E'\nper-IP cap falls back to the first x-forwarded-for: refused ok'; end;
+  begin
+    for n in 1..6 loop perform public.join_interest_list('xff' || n || '@scc-demo.test'); end loop;
+    res := res || E'\nx-forwarded-for alone (spoofable) sets no IP cap: ok';
+  exception when raise_exception then res := res || E'\nx-forwarded-for alone sets an IP cap: (BAD)'; end;
+  execute 'reset role';
+
+  delete from private.interest_join_log;
+  execute 'set local role anon';
+  perform set_config('request.headers', '{"cf-connecting-ip":"2001:db8:1:2::1"}', true);
+  for n in 1..3 loop perform public.join_interest_list('v6a' || n || '@scc-demo.test'); end loop;
+  perform set_config('request.headers', '{"cf-connecting-ip":"2001:db8:1:2:ffff::2"}', true);
+  for n in 1..2 loop perform public.join_interest_list('v6b' || n || '@scc-demo.test'); end loop;
+  perform set_config('request.headers', '{"cf-connecting-ip":"2001:db8:1:2:abcd::9"}', true);
+  begin perform public.join_interest_list('v6c@scc-demo.test'); res := res || E'\nIPv6 grouped by /64: NOT GROUPED (BAD)';
+  exception when raise_exception then res := res || E'\nIPv6 addresses in one /64 share the cap: refused ok'; end;
+  perform set_config('request.headers', '{"cf-connecting-ip":"2001:db8:1:3::1"}', true);
+  begin perform public.join_interest_list('v6d@scc-demo.test'); res := res || E'\n...another /64 has its own: ok';
+  exception when raise_exception then res := res || E'\n...another /64 has its own: REFUSED (BAD)'; end;
+  perform set_config('request.headers', '{"cf-connecting-ip":"not-an-ip"}', true);
+  begin perform public.join_interest_list('garbled.ip@scc-demo.test'); res := res || E'\na garbled cf-connecting-ip is ignored, not an error: ok';
+  exception when others then res := res || E'\na garbled cf-connecting-ip: ERROR (BAD) ' || sqlerrm; end;
   execute 'reset role';
   perform set_config('request.headers', '', true);
 
@@ -178,7 +202,10 @@ begin
   execute 'reset role';
   delete from private.interest_join_log;
 
+  insert into private.interest_join_log (at, mailbox_hash) values (now() - interval '3 days', 'old');
   perform private.send_interest_notices();
+  select count(*) into n from private.interest_join_log where mailbox_hash = 'old';
+  res := res || E'\nthe every-minute job prunes presses older than two days: ' || case when n = 0 then 'ok' else 'BAD' end;
   select count(*) into n from notifications where recipient_email = addr and template <> 'interest_confirm';
   res := res || E'\nunconfirmed signups get nothing else: ' || case when n = 0 then 'ok' else 'BAD (' || n || ')' end;
 
@@ -218,17 +245,25 @@ begin
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
   res := res || E'\na changed time (A → B) sends one more: ' || case when n = 2 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon' and status = 'queued';
+  res := res || E'\n...and cancels the unsent one for A: ' || case when n = 1 and exists (select 1 from notifications where recipient_email = addr and template = 'registration_opening_soon' and status = 'cancelled' and last_error like 'A newer opening time%') then 'ok' else 'BAD (' || n || ' queued)' end;
   delete from season_settings where year = 2099;
   insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() + interval '7 days', now() - interval '11 minutes');
   perform private.send_interest_notices();
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
   res := res || E'\nchanging it back (B → A) sends one correction: ' || case when n = 3 then 'ok' else 'BAD (' || n || ')' end;
+  select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon' and status = 'queued';
+  res := res || E'\n...leaving only the newest one waiting to send: ' || case when n = 1 then 'ok' else 'BAD (' || n || ' queued)' end;
   insert into notifications (recipient_email, template, payload, status)
     values ('stale@scc-demo.test', 'registration_opening_soon', jsonb_build_object('opens_at', now() - interval '1 hour'), 'queued');
+  insert into notifications (recipient_email, template, payload, status, attempts, last_error)
+    values ('gaveup@scc-demo.test', 'registration_opening_soon', jsonb_build_object('opens_at', now() - interval '1 hour'), 'failed', 3, 'Provider said 500');
   perform private.send_interest_notices();
   select status into st from notifications where recipient_email = 'stale@scc-demo.test';
   res := res || E'\na queued "opening soon" for a time that has passed is cancelled: ' || case when st = 'cancelled' then 'ok' else 'BAD (' || st || ')' end;
+  select status || ' / ' || last_error into st from notifications where recipient_email = 'gaveup@scc-demo.test';
+  res := res || E'\n...but a row that failed for good keeps its provider error: ' || case when st = 'failed / Provider said 500' then 'ok' else 'BAD (' || st || ')' end;
 
   -- ── 7. "Now open": only after the opening time has passed ──
   delete from season_settings where year = 2099;   -- classes set up, no opening time: open by the rules, but no email
@@ -267,6 +302,8 @@ begin
   perform private.send_interest_notices();
   select count(*) into n from notifications where recipient_email = addr and template = 'registration_opening_soon';
   res := res || E'\n...settled, it clears "now open" and announces the new time once: ' || case when n = 4 and (select notified_open_at from interest_signups where email = addr) is null then 'ok' else 'BAD (' || n || ')' end;
+  select status into st from notifications where recipient_email = addr and template = 'registration_now_open';
+  res := res || E'\n...and cancels the "now open" that hadn''t gone out: ' || case when st = 'cancelled' then 'ok' else 'BAD (' || st || ')' end;
   delete from season_settings where year = 2099;
   insert into season_settings (year, registration_opens_at, updated_at) values (2099, now() - interval '1 minute', now() - interval '1 hour');
   perform private.send_interest_notices();

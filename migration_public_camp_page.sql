@@ -239,8 +239,24 @@ RETURNS TEXT LANGUAGE sql IMMUTABLE SET search_path = public AS $$
 $$;
 REVOKE ALL ON FUNCTION private.mailbox(TEXT) FROM PUBLIC, anon, authenticated;
 
--- Every accepted "Notify me" press, for the caps below: hashes of the caller's IP and of the
--- mailbox, never the address itself. Rows older than two days are pruned on each press.
+-- A keyed hash for the press log: HMAC-SHA256 under the same Vault key as the links, so a copy of
+-- the log can't be reversed by hashing every likely IP or address.
+CREATE OR REPLACE FUNCTION private.interest_hash(p_value TEXT)
+RETURNS TEXT LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  k TEXT := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'interest_link_key');
+BEGIN
+  IF k IS NULL THEN
+    RAISE EXCEPTION 'interest_link_key is missing from Vault: re-run migration_public_camp_page.sql';
+  END IF;
+  RETURN encode(extensions.hmac('log:' || p_value, k, 'sha256'), 'hex');
+END;
+$$;
+REVOKE ALL ON FUNCTION private.interest_hash(TEXT) FROM PUBLIC, anon, authenticated;
+
+-- Every accepted "Notify me" press, for the caps below: keyed hashes of the caller's network and
+-- of the mailbox, never the address itself. Rows older than two days are pruned on each press
+-- and by the every-minute job.
 CREATE TABLE IF NOT EXISTS private.interest_join_log (
     id       BIGSERIAL PRIMARY KEY,
     at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -253,8 +269,9 @@ REVOKE ALL ON private.interest_join_log FROM PUBLIC, anon, authenticated;
 -- "Notify me" on /camp. Adds the address for the public camp year and sends one confirmation.
 -- Caps, all counted on presses (never on who is on the list), all answered with the same
 -- "try again later", so a refusal can't tell anyone whether an address is already confirmed:
---   per IP (Cloudflare's cf-connecting-ip, else the first x-forwarded-for; skipped with neither):
---     5 an hour, 20 a day;
+--   per IP (Cloudflare's cf-connecting-ip only: x-forwarded-for's first entry is whatever the
+--     client sends; skipped without it; IPv6 grouped by /64, since one household holds the whole
+--     /64): 5 an hour, 20 a day;
 --   per mailbox (see private.mailbox()): 3 a day, and one confirmation email a Denver day;
 --   for the whole form: 20 a minute, 300 a day.
 -- An advisory lock makes count-then-insert one step, so simultaneous presses can't overshoot.
@@ -264,7 +281,7 @@ DECLARE
   addr    TEXT := lower(btrim(coalesce(p_email, '')));
   yr      INT  := private.public_camp_year();
   headers JSON := nullif(current_setting('request.headers', true), '')::json;
-  ip      TEXT;
+  ip      INET;
   ip_h    TEXT;
   box_h   TEXT;
   su      interest_signups;
@@ -274,9 +291,15 @@ BEGIN
     RAISE EXCEPTION 'Enter an email address like name@example.com.' USING ERRCODE = '22023';
   END IF;
 
-  ip := nullif(btrim(coalesce(headers->>'cf-connecting-ip', split_part(headers->>'x-forwarded-for', ',', 1))), '');
-  ip_h := CASE WHEN ip IS NOT NULL THEN md5('ip:' || ip) END;
-  box_h := md5('mailbox:' || private.mailbox(addr));
+  BEGIN
+    ip := nullif(btrim(headers->>'cf-connecting-ip'), '')::inet;
+  EXCEPTION WHEN invalid_text_representation THEN
+    ip := NULL;   -- not an address: no IP cap, like no header
+  END;
+  IF ip IS NOT NULL THEN
+    ip_h := private.interest_hash('ip:' || network(set_masklen(ip, CASE WHEN family(ip) = 6 THEN 64 ELSE 32 END))::text);
+  END IF;
+  box_h := private.interest_hash('mailbox:' || private.mailbox(addr));
 
   PERFORM pg_advisory_xact_lock(hashtextextended('join_interest_list', 0));
   DELETE FROM private.interest_join_log WHERE at < now() - interval '2 days';
@@ -382,14 +405,16 @@ GRANT EXECUTE ON FUNCTION public.set_my_interest(BOOLEAN) TO authenticated;
 
 -- ── 8. Notices (pg_cron, every minute) ───────────────────────
 -- Only for the public camp year (private.public_camp_year()), confirmed and subscribed addresses.
---   0. A queued "opening soon" whose opening time has passed says nothing true: it's cancelled.
+--   0. The press log loses rows older than two days. A queued "opening soon" whose opening time
+--      has passed says nothing true: it's cancelled (never a row that has failed for good).
 --   1. When the public year rolls over, signups still waiting for "now open" move to the new year
 --      (unless the address already has a row there). Nothing is ever sent for an earlier year.
 --   2. With a future opening time, settled for 10 minutes (so fixing a typo doesn't send two):
---      a "now open" sent for an earlier opening is cleared, since registration is shut again until
---      the new time; then one 'registration_opening_soon' per signup whose last notice announced a
---      different time. The dedupe key holds the time and the previous notice's stamp, so A → B → A
---      sends exactly one correction each time.
+--      a "now open" sent for an earlier opening is cleared (and a copy still waiting to send is
+--      cancelled), since registration is shut again until the new time; then one
+--      'registration_opening_soon' per signup whose last notice announced a different time, which
+--      cancels that signup's older one if it hasn't gone out yet. The dedupe key holds the time and
+--      the previous notice's stamp, so A → B → A sends exactly one correction each time.
 --   3. Once the opening time has passed (and only then: no opening time, no "now open", even with
 --      classes set up) and registration is open or waitlist-only: one 'registration_now_open'.
 -- Each email carries its own unsubscribe link. Returns how many emails it queued.
@@ -400,10 +425,12 @@ DECLARE
   ss      season_settings := private.season_settings_for(yr);
   opens   TIMESTAMPTZ := ss.registration_opens_at;
   su      RECORD;
+  dk      TEXT;
   n       INT := 0;
 BEGIN
+  DELETE FROM private.interest_join_log WHERE at < now() - interval '2 days';
   UPDATE notifications SET status = 'cancelled', last_error = 'The opening time passed before it was sent'
-   WHERE template = 'registration_opening_soon' AND status IN ('queued', 'failed')
+   WHERE template = 'registration_opening_soon' AND status IN ('queued', 'failed') AND attempts < 3
      AND (payload->>'opens_at')::timestamptz <= now();
 
   UPDATE interest_signups i SET year = yr, notified_opening_at = NULL, notified_opens_at = NULL
@@ -417,16 +444,22 @@ BEGIN
     RETURN n;
   ELSIF opens > now() THEN
     IF ss.updated_at > now() - interval '10 minutes' THEN RETURN n; END IF;
+    UPDATE notifications SET status = 'cancelled', last_error = 'Registration was rescheduled before it was sent'
+     WHERE template = 'registration_now_open' AND status IN ('queued', 'failed') AND attempts < 3
+       AND payload->>'year' = yr::text;
     UPDATE interest_signups SET notified_open_at = NULL WHERE year = yr AND notified_open_at IS NOT NULL;
     FOR su IN
       SELECT id, email, notified_opening_at FROM interest_signups
        WHERE year = yr AND confirmed_at IS NOT NULL AND unsubscribed_at IS NULL AND notified_open_at IS NULL
          AND notified_opens_at IS DISTINCT FROM opens
     LOOP
+      dk := 'interest_opening_soon:' || su.id || ':' || extract(epoch FROM opens)::bigint
+              || ':' || coalesce(floor(extract(epoch FROM su.notified_opening_at) * 1000)::bigint, 0);
+      UPDATE notifications SET status = 'cancelled', last_error = 'A newer opening time replaced it before it was sent'
+       WHERE dedupe_key LIKE 'interest_opening_soon:' || su.id || ':%' AND dedupe_key <> dk
+         AND status IN ('queued', 'failed') AND attempts < 3;
       PERFORM private.queue_interest_email(su.email, 'registration_opening_soon',
-        jsonb_build_object('year', yr, 'opens_at', opens, 'token', private.interest_token(su.id, 'unsubscribe')),
-        'interest_opening_soon:' || su.id || ':' || extract(epoch FROM opens)::bigint
-          || ':' || coalesce(floor(extract(epoch FROM su.notified_opening_at) * 1000)::bigint, 0));
+        jsonb_build_object('year', yr, 'opens_at', opens, 'token', private.interest_token(su.id, 'unsubscribe')), dk);
       UPDATE interest_signups SET notified_opening_at = clock_timestamp(), notified_opens_at = opens WHERE id = su.id;
       n := n + 1;
     END LOOP;
