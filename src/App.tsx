@@ -32,9 +32,12 @@ import ParentUpdates from './pages/parent/ParentUpdates'
 import ParentFamily from './pages/parent/ParentFamily'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import VolunteerApplyPage from './pages/VolunteerApplyPage'
+import CampPage from './pages/CampPage'
+import CampListLinkPage from './pages/CampListLinkPage'
 import MfaGate from './components/MfaGate'
 import MfaPage from './pages/MfaPage'
 import AdminHelp from './pages/help/AdminHelp'
+import { DEMO_ACCOUNTS } from './lib/demo'
 import ParentHelp from './pages/help/ParentHelp'
 import VolunteerHelp from './pages/help/VolunteerHelp'
 
@@ -49,6 +52,14 @@ function RoleRedirect() {
   return <Navigate to="/login" replace />
 }
 
+// Signed-out visitors at / see the public camp page (spec 30); signed-in users go to their area.
+// The demo keeps its one-click seats on /login as the landing page (/camp is a link away).
+function Root() {
+  const { session, loading } = useAuth()
+  if (!loading && !session) return <Navigate to={DEMO_ACCOUNTS.length > 0 ? '/login' : '/camp'} replace />
+  return <ProtectedRoute />
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -60,6 +71,9 @@ function App() {
           <Route path="/forgot" element={<ForgotPasswordPage />} />
           <Route path="/reset" element={<ResetPasswordPage />} />
           <Route path="/apply" element={<VolunteerApplyPage />} />
+          <Route path="/camp" element={<CampPage />} />
+          <Route path="/camp/confirm" element={<CampListLinkPage kind="confirm" />} />
+          <Route path="/camp/unsubscribe" element={<CampListLinkPage kind="unsubscribe" />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           {/* Role-gated */}
@@ -116,8 +130,8 @@ function App() {
             </Route>
           </Route>
 
-          {/* Root → redirect based on role */}
-          <Route path="/" element={<ProtectedRoute />}>
+          {/* Root → the camp page when signed out, else redirect based on role */}
+          <Route path="/" element={<Root />}>
             <Route index element={<RoleRedirect />} />
           </Route>
 

@@ -17,6 +17,7 @@ interface SessionFormState {
   year: string
   start_date: string
   end_date: string
+  location: string
   is_active: boolean
 }
 
@@ -50,6 +51,7 @@ function SessionForm({
         year: Number(form.start_date.slice(0, 4)),
         start_date: form.start_date,
         end_date: form.end_date,
+        location: form.location.trim() || null,
         is_active: form.is_active,
       })
     } catch (e) {
@@ -85,6 +87,13 @@ function SessionForm({
           <input id="session-end" type="date" value={form.end_date} min={form.start_date || undefined}
             onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} className={input} />
         </div>
+      </div>
+      <div>
+        <label className={label} htmlFor="session-location">Place</label>
+        <p id="session-location-hint" className="font-sans text-sm text-ink-muted mb-1.5">Building and address. Families see it on the public camp page, when they register and before camp.</p>
+        <input id="session-location" value={form.location} maxLength={200} aria-describedby="session-location-hint"
+          onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+          placeholder="Building name, street address" className={input} />
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <label className="flex items-center gap-3 cursor-pointer">
@@ -275,7 +284,9 @@ export default function AdminSessions() {
     }
   }
 
-  const BLANK: SessionFormState = { name: '', year: '', start_date: '', end_date: '', is_active: true }
+  // A new week starts at the place of the latest one, since weeks usually share a building.
+  const lastPlace = [...sessions].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]?.location ?? ''
+  const BLANK: SessionFormState = { name: '', year: '', start_date: '', end_date: '', location: lastPlace, is_active: true }
 
   async function confirmDelete(s: Session) {
     setDeleting(true)
@@ -345,7 +356,7 @@ export default function AdminSessions() {
             return editing === s.id ? (
             <SessionForm
               key={s.id}
-              initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, is_active: s.is_active }}
+              initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, location: s.location ?? '', is_active: s.is_active }}
               submitLabel="Save"
               onCancel={() => setEditing(null)}
               onSave={async payload => { await updateSession(s.id, payload); setEditing(null) }}
@@ -368,6 +379,7 @@ export default function AdminSessions() {
                       )}
                     </div>
                     <p className="font-sans text-sm text-ink-muted">{formatSessionDates(s)}</p>
+                    <p className="font-sans text-sm text-ink-muted">{s.location || 'No place set: families see "Place to be announced"'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">

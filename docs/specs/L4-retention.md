@@ -32,3 +32,4 @@ Nothing is ever deleted. 🔎 Colorado requires a written disposal policy for pe
 
 ## Notes for the builder
 - Anonymize means overwrite PII columns (names → "Former camper", contacts → null), not delete rows that reports depend on.
+- Spec 30's notify list: delete `interest_signups` rows 60 days after that year's `season_settings.registration_opens_at` (and their `audit.log` rows, which copy the address).

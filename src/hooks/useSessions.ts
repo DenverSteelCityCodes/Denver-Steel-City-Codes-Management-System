@@ -9,6 +9,8 @@ export interface Session {
   start_date: string
   end_date: string
   is_active: boolean
+  // Building and address (migration_public_camp_page.sql, spec 30). Null until an admin sets it.
+  location?: string | null
   updated_at?: string
   created_at: string
 }

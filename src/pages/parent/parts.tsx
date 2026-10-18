@@ -102,7 +102,7 @@ export function ErrorLine({ id, children, className = '' }: { id?: string; child
 // The day at camp as a timetable: a fixed column with each block's start and end (pickup is a
 // window, not a moment), and each block as tall as it is long. It
 // folds to drop-off and pickup; on a camp day it folds to what's on right now (open on wide screens).
-export function Schedule({ items, live }: { items: ScheduleItem[]; live: boolean }) {
+export function Schedule({ items, live, title = 'A day at camp' }: { items: ScheduleItem[]; live: boolean; title?: string }) {
   const titleId = useId()
   if (items.length === 0) return null
   const sorted = [...items].sort((a, b) => a.start_time.localeCompare(b.start_time))
@@ -121,7 +121,7 @@ export function Schedule({ items, live }: { items: ScheduleItem[]; live: boolean
       <details className="group" open={live && typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches}>
         <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer min-h-11 flex items-center justify-between gap-3">
           <span className="min-w-0">
-            <span id={titleId} className={`block ${h2Cls}`}>{live ? "Today's schedule" : 'A day at camp'}</span>
+            <span id={titleId} className={`block ${h2Cls}`}>{live ? "Today's schedule" : title}</span>
             <span className="block text-ink-muted">
               {cur
                 ? <>Now: <b className="font-bold text-ink">{cur.title}</b>{cur.end_time ? `, until ${formatTime(cur.end_time)}` : ''}</>

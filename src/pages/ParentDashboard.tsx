@@ -12,13 +12,13 @@ import { useScheduleItems } from '../hooks/useScheduleItems'
 import { useSectionLeadNames } from '../hooks/useSectionLeadNames'
 import { useMyChanges } from '../hooks/useMyChanges'
 import RegistrationCountdown from '../components/RegistrationCountdown'
+import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import SignBand from '../components/SignBand'
 import CamperRow from '../components/CamperRow'
 import { listDrafts, clearDraft } from '../lib/registrationDraft'
 import { formatDayLong, formatTime, formatTimeRange, localDateISO, ROLL_CALLS } from '../lib/campDay'
 import { buildSubhead, camperFirstName, homeBand, rowRegistrations, type HomeBand } from '../lib/parentHome'
 import { daysBetween } from '../lib/volunteerHome'
-import { CAMP_SITE } from '../lib/campSite'
 import { buttonClass } from '../lib/ui'
 import type { RollCallMark, ScheduleItem, Student } from '../types/database'
 import type { Session } from '../hooks/useSessions'
@@ -57,7 +57,7 @@ export default function ParentDashboard() {
 
   return (
     <>
-      <RegistrationCountdown opensAt={season?.registration_opens_at} />
+      <RegistrationCountdown opensAt={season?.registration_opens_at}><NotifyMeSwitch /></RegistrationCountdown>
       <PageHead title={first ? `Hi, ${first}` : 'Hi'}>
         {!loading && (students.length ? buildSubhead(students, registrations) : null)}
       </PageHead>
@@ -206,7 +206,7 @@ function UpcomingBand({ session, today, dropOff, pickup, where }: { session: Ses
   const days = daysBetween(today, session.start_date)
   const b = 'font-bold text-brand-on'
   return (
-    <SignBand id="band" context={`At ${CAMP_SITE}`} figure={days} unit={days === 1 ? 'day' : 'days'}
+    <SignBand id="band" context={session.location ? `At ${session.location}` : 'Before camp'} figure={days} unit={days === 1 ? 'day' : 'days'}
       message={`${session.name} starts ${formatDayLong(session.start_date)}`}
       sub={dropOff
         ? <>{dropOff.title} is <b className={b}>{formatTimeRange(dropOff.start_time, dropOff.end_time)}</b>{where(dropOff)}{pickup ? <>, and {pickup.title.toLowerCase()} starts at <b className={b}>{formatTime(pickup.start_time)}</b></> : null}.</>
