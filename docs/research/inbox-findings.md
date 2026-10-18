@@ -111,13 +111,13 @@ Of the 437 threads, 276 are about summer camp, 69 about the school-year clubs, 5
 - **No IDs:** campers were matched across weeks by name. Booklet print counts were hand-entered and didn't add up.
 - **The old mail-merge script** used New York time. The app uses America/Denver.
 
-## 6. Bugs found in `main` while checking (filed Oct 17, 2026)
-- [#143](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/143) Demoted volunteers keep volunteer access (P0)
-- [#144](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/144) Interview slots and their notes are readable by every signed-in user
-- [#145](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/145) "Parents" and "everyone" audiences include families from past seasons (P0)
-- [#146](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/146) Change-request emails send volunteers to the parent dashboard
-- [#147](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/147) Interview times show in the viewer's time zone
-- [#148](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/148) The interview picker promises an email that is never sent
+## 6. Bugs found in `main` while checking (all fixed Oct 17, 2026)
+- [#143](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/143) Demoted volunteers kept volunteer access (P0). Fixed in [PR #159](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/159).
+- [#144](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/144) Interview slots and their notes were readable by every signed-in user. Fixed in [PR #163](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/163).
+- [#145](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/145) "Parents" and "everyone" audiences included families from past seasons (P0). Fixed in [PR #161](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/161).
+- [#146](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/146) Change-request emails sent volunteers to the parent dashboard. Fixed in [PR #164](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/164).
+- [#147](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/147) Interview times showed in the viewer's time zone. Fixed in [PR #165](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/165).
+- [#148](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/148) The interview picker (and the redesigned applicant page) promised emails that were never sent. Fixed in [PR #166](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/166).
 
 Smaller gaps folded into specs:
 - The Microcontrollers rule is not enforced on insert (31).
