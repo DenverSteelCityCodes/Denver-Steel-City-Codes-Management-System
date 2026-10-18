@@ -147,6 +147,13 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
 
     case 'change_request_resolved': {
       const done = p.status === 'done'
+      // A volunteer's crew switch request (spec 25): volunteer wording and the volunteer area.
+      if (p.kind === 'crew_switch') {
+        return build(done ? 'Your crew switch is done' : 'About your crew switch request', done ? 'Your crew switch is done' : 'About your crew switch request', [
+          `You asked: "${esc(p.message)}"`,
+          p.note ? `The camp's reply: ${esc(p.note)}` : (done ? 'The camp has updated your crew. Check your section on your volunteer page.' : 'The camp couldn\'t make this switch. Reply to this email if you\'d like to talk it through.'),
+        ], { label: 'Open your volunteer page', url: `${appUrl}/volunteer` })
+      }
       return build(done ? 'Your change request is done' : 'About your change request', done ? 'Your change request is done' : 'About your change request', [
         `You asked: "${esc(p.message)}"`,
         p.note ? `The camp's reply: ${esc(p.note)}` : (done ? 'The camp has made the change.' : 'The camp couldn\'t make this change. Reply to this email if you\'d like to talk it through.'),

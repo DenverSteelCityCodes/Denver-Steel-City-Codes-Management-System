@@ -8,7 +8,7 @@
 New accounts must confirm by email, and Supabase's built-in sender is capped at 2 emails/hour and only delivers to organization members ([docs](https://supabase.com/docs/guides/auth/auth-smtp)). On opening night almost no parent would get their confirmation link.
 
 ## Decided rules
-- Official chapter address: `denver@steelcitycodes.org` is the **reply-to**.
+- Official region address: `denver@steelcitycodes.org` is the **reply-to**.
 - Sender: a `steelcitycodes.org` address, e.g. `Steel City Codes Denver <no-reply@steelcitycodes.org>` (needs DNS records, Q-H5).
 
 ## Scope: what to build
