@@ -89,6 +89,10 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'That section no longer exists' USING ERRCODE = 'P0001';
   END IF;
+  -- Every registration up front, in id order, before any trigger takes a week's lock (laptop
+  -- loans, spec 29): a parent's request holds its registration and then waits for the week, so
+  -- locking rows one by one mid-update could deadlock with it.
+  PERFORM 1 FROM registrations WHERE section_id = p_section_id AND status <> 'cancelled' ORDER BY id FOR UPDATE;
   PERFORM private.set_reason('section_cancelled');
   UPDATE registrations
      SET status = 'cancelled', cancel_reason = 'section_cancelled', displaced_from_section = p_section_id
@@ -115,6 +119,11 @@ BEGIN
   IF private.auth_user_role() IS DISTINCT FROM 'admin' THEN
     RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501';
   END IF;
+  -- All the class's registrations up front, in id order, before cancelling any section (see
+  -- cancel_section: the week locks taken by the laptop-loan trigger mustn't come first).
+  PERFORM 1 FROM registrations r JOIN sections s ON s.id = r.section_id
+   WHERE s.class_id = p_class_id AND s.cancelled_at IS NULL AND r.status <> 'cancelled'
+   ORDER BY r.id FOR UPDATE OF r;
   FOR sid IN SELECT id FROM sections WHERE class_id = p_class_id AND cancelled_at IS NULL ORDER BY id LOOP
     total := total + public.cancel_section(sid, p_reason);
   END LOOP;

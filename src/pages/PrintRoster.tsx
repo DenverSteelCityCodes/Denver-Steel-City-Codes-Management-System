@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CircleAlert, Copy, Mail, Printer } from 'lucide-react'
+import { ArrowLeft, CircleAlert, Copy, Laptop, Mail, Printer } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { buildMailto, copyText } from '../lib/mailto'
@@ -150,7 +150,7 @@ export default function PrintRoster() {
 
             <div tabIndex={0} role="region" aria-label="Roster table, scrolls sideways on small screens"
               className="print-wrap overflow-x-auto border-y-2 border-ink">
-              <table className="print-table w-full min-w-[940px] border-collapse">
+              <table className="print-table w-full min-w-[1020px] border-collapse">
                 <thead>
                   <tr>
                     <th scope="col" className={`${th} text-right!`}>#</th>
@@ -158,6 +158,10 @@ export default function PrintRoster() {
                     <th scope="col" className={`${th} w-[24%]`}>Allergies / medical</th>
                     <th scope="col" className={th}>Emergency contact</th>
                     <th scope="col" className={th}>Parent</th>
+                    {/* Spec 29: who borrows one of the camp's loaner laptops this week. */}
+                    <th scope="col" className={th}>
+                      <span className="inline-flex items-center gap-1.5"><Laptop size={16} strokeWidth={2.5} aria-hidden="true" />Loaner</span>
+                    </th>
                     <th scope="col" className={th}>Arrival</th>
                     <th scope="col" className={th}>After lunch</th>
                     <th scope="col" className={th}>Dismissal</th>
@@ -166,7 +170,7 @@ export default function PrintRoster() {
                 </thead>
                 <tbody>
                   {students.length === 0 && (
-                    <tr><td colSpan={9} className={`${td} text-center text-ink-muted`}>No campers registered.</td></tr>
+                    <tr><td colSpan={10} className={`${td} text-center text-ink-muted`}>No campers registered.</td></tr>
                   )}
                   {students.map((s, i) => {
                     const relation = s.emergency_contact_relation?.trim()
@@ -187,6 +191,9 @@ export default function PrintRoster() {
                         <td className={td}>
                           {s.parent_name}
                           {s.parent_phone && <span className="block whitespace-nowrap">{s.parent_phone}</span>}
+                        </td>
+                        <td className={`${td} whitespace-nowrap`}>
+                          {s.laptop_loan === 'reserved' ? 'To hand out' : s.laptop_loan === 'handed_out' ? 'Handed out' : ''}
                         </td>
                         <td className={td}><Box /></td>
                         <td className={td}><Box /></td>

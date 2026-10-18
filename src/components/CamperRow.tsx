@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, ChevronDown, ChevronRight, GraduationCap, Lock, Repeat } from 'lucide-react'
 import InlineConfirm from './InlineConfirm'
 import ExceptionRequest from './ExceptionRequest'
+import LaptopLoanLine from './LaptopLoanLine'
 import { focusOnMount } from '../lib/focus'
 import { formatTimeRange } from '../lib/campDay'
 import { buttonClass } from '../lib/ui'
@@ -11,6 +12,7 @@ import { isCourseRuleError, repeatNote } from '../lib/courseRules'
 import { ErrorLine, StatusWord, hintCls, labelCls, rowCls, type StatusTone } from '../pages/parent/parts'
 import type { RegistrationWithSection } from '../hooks/useRegistrations'
 import { exceptionKey, type SwapOption } from '../hooks/useMyChanges'
+import type { Laptops } from '../hooks/useMyLaptops'
 import type { Session, Student } from '../types/database'
 
 // Parent self-service changes (spec 11, 12, 10, 31). Each call refetches the registrations after.
@@ -36,12 +38,14 @@ const btnCls = buttonClass('secondary')
 
 // One row per camper on Home: name, one status, and each week's class. Tapping it opens the class
 // details and the change actions in place (no modal), with the same inline confirmations as before.
-export default function CamperRow({ student, regs, sessions, leadNames, changes, open, onToggle }: {
+export default function CamperRow({ student, regs, sessions, leadNames, changes, laptops, open, onToggle }: {
   student: Student
   regs: RegistrationWithSection[]
   sessions: Session[]
   leadNames: Map<string, string>
   changes: Changes
+  // Each week's loaner laptop (spec 29); left out, the laptop lines aren't shown.
+  laptops?: Laptops
   open: boolean
   onToggle: () => void
 }) {
@@ -76,7 +80,7 @@ export default function CamperRow({ student, regs, sessions, leadNames, changes,
         <div id={panelId} className="pb-4">
           {regs.map(r => (
             <RegistrationBlock key={r.id} reg={r} others={regs.filter(o => o.id !== r.id)} camper={first} studentId={student.id}
-              sessions={sessions} changes={changes} showName={regs.length > 1} />
+              sessions={sessions} changes={changes} laptops={laptops} showName={regs.length > 1} />
           ))}
           <Link to={`/parent/classes?camper=${student.id}`} className={`${btnCls} mt-3`}>
             <GraduationCap size={20} strokeWidth={2.25} aria-hidden="true" /> {regs.length ? 'Add another week' : `Find a class for ${first}`}
@@ -87,8 +91,8 @@ export default function CamperRow({ student, regs, sessions, leadNames, changes,
   )
 }
 
-function RegistrationBlock({ reg, others, camper, studentId, sessions, changes, showName }: {
-  reg: RegistrationWithSection; others: RegistrationWithSection[]; camper: string; studentId: string; sessions: Session[]; changes: Changes; showName: boolean
+function RegistrationBlock({ reg, others, camper, studentId, sessions, changes, laptops, showName }: {
+  reg: RegistrationWithSection; others: RegistrationWithSection[]; camper: string; studentId: string; sessions: Session[]; changes: Changes; laptops?: Laptops; showName: boolean
 }) {
   const sec = reg.sections
   const where = `${sec?.classes?.name ?? 'this class'}, ${weekName(reg, sessions)}`
@@ -112,6 +116,7 @@ function RegistrationBlock({ reg, others, camper, studentId, sessions, changes, 
             <p className="text-ink-muted mt-0.5 text-pretty">Placement request: <span className="font-bold text-ink">{reg.place_with}</span></p>
           )}
           <RegistrationActions reg={reg} others={others} camper={camper} where={where} changes={changes} />
+          {holdsSeat(reg) && laptops && <LaptopLoanLine registrationId={reg.id} camper={camper} where={where} laptops={laptops} />}
         </>
       )}
     </div>

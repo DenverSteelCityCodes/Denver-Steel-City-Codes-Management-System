@@ -19,6 +19,7 @@ import { fetchSectionFill } from '../lib/sectionFill'
 import { placeSentence } from '../lib/campSite'
 import { formatTimeRange } from '../lib/campDay'
 import { buttonClass } from '../lib/ui'
+import { LAPTOP_DEVICES, LAPTOP_ON_SITE, wizardLaptopLines, type WizardLaptopResult } from '../lib/laptopLoans'
 import { ErrorLine, Segmented, hintCls, labelCls } from './parent/parts'
 
 const SCHOOL_DISTRICTS = [
@@ -55,7 +56,8 @@ interface FormData {
   school_name: string
   grade: string
   shirt_size: string
-  laptop_available: boolean | null
+  // Spec 29: a yes asks for a loaner laptop for each week the camper gets a spot in.
+  borrow_laptop: boolean | null
   // Demographics
   ethnic_background: string[]
   gender: string
@@ -119,7 +121,7 @@ interface ClassOption {
 
 const INITIAL: FormData = {
   first_name: '', last_name: '', full_name: '', email: '', school_district: '', school_name: '', grade: '',
-  shirt_size: '', laptop_available: null,
+  shirt_size: '', borrow_laptop: null,
   ethnic_background: [], gender: '',
   parent_name: '', parent_email: '', parent_phone: '',
   emergency_name: '', emergency_phone: '', emergency_relation: '',
@@ -136,7 +138,7 @@ const STEP_NAMES = ['Camper', 'Parent and emergency contact', 'Health and detail
 // Form key → the control (or button group label) a validation error points at.
 const FIELD_IDS: Record<string, string> = {
   first_name: 'reg-first', last_name: 'reg-last', email: 'reg-email', school_district: 'reg-district',
-  school_name: 'reg-school', grade: 'reg-grade', shirt_size: 'reg-shirt', laptop_available: 'reg-laptop',
+  school_name: 'reg-school', grade: 'reg-grade', shirt_size: 'reg-shirt', borrow_laptop: 'reg-laptop',
   ethnic_background: 'reg-ethnic', gender: 'reg-gender', parent_name: 'reg-parent-name',
   parent_email: 'reg-parent-email', parent_phone: 'reg-parent-phone', emergency_name: 'reg-emergency-name',
   emergency_phone: 'reg-emergency-phone', emergency_relation: 'reg-emergency-relation',
@@ -223,6 +225,7 @@ export default function ParentRegistrationPage() {
   const [submitted, setSubmitted] = useState(false)
   const [waitlistedCount, setWaitlistedCount] = useState(0)
   const [registeredCount, setRegisteredCount] = useState(0)
+  const [laptopResults, setLaptopResults] = useState<WizardLaptopResult[]>([])
   // Exception requests sent with the registration, and any that couldn't be sent (spec 31).
   const [exceptionsSent, setExceptionsSent] = useState<string[]>([])
   const [exceptionErrors, setExceptionErrors] = useState<string[]>([])
@@ -338,7 +341,6 @@ export default function ParentRegistrationPage() {
         school_name: data.school_name ?? '',
         grade: data.grade ?? '',
         shirt_size: data.shirt_size ?? '',
-        laptop_available: data.laptop_available ?? null,
         ethnic_background: data.ethnic_background ?? [],
         gender: data.gender ?? '',
         parent_name: data.parent_name ?? f.parent_name,
@@ -439,7 +441,7 @@ export default function ParentRegistrationPage() {
       if (q('school_name').required && !form.school_name.trim()) return fail('school_name', `${q('school_name').label} is required`)
       if (!form.grade) return fail('grade', `${q('grade').label} is required`)
       if (q('shirt_size').required && !form.shirt_size) return fail('shirt_size', `${q('shirt_size').label} is required`)
-      if (q('laptop_available').required && form.laptop_available === null) return fail('laptop_available', `Please answer: ${q('laptop_available').label}`)
+      if (q('borrow_laptop').required && form.borrow_laptop === null) return fail('borrow_laptop', `Please answer: ${q('borrow_laptop').label}`)
       if (q('ethnic_background').required && form.ethnic_background.length === 0) return fail('ethnic_background', `Please answer: ${q('ethnic_background').label}`)
       if (q('gender').required && !form.gender.trim()) return fail('gender', `${q('gender').label} is required`)
     }
@@ -544,7 +546,6 @@ export default function ParentRegistrationPage() {
       school_name: form.school_name.trim() || null,
       grade: form.grade,
       shirt_size: form.shirt_size || null,
-      laptop_available: form.laptop_available,
       ethnic_background: form.ethnic_background.length > 0 ? form.ethnic_background : null,
       gender: form.gender || null,
       parent_name: form.parent_name.trim(),
@@ -615,7 +616,7 @@ export default function ParentRegistrationPage() {
 
     if (regsToCreate.length > 0) {
       const { data: regs, error: regErr } = await supabase
-        .from('registrations').insert(regsToCreate).select('status')
+        .from('registrations').insert(regsToCreate).select('id, status, section_id')
       if (regErr) {
         // Stay on this step with the server's reason; editingId is set, so resubmitting (after
         // going Back to change the class) updates this camper rather than inserting another.
@@ -629,6 +630,26 @@ export default function ParentRegistrationPage() {
       }
       setWaitlistedCount((regs ?? []).filter(r => r.status === 'waitlisted').length)
       setRegisteredCount((regs ?? []).length)
+
+      // "Will your camper need to borrow a laptop?" Yes: ask for one in each week with a spot. The
+      // database reserves it or queues it (first come first served); a waitlisted week waits for
+      // its spot. A failed request doesn't undo the registration: the reason shows on the last screen.
+      if (form.borrow_laptop) {
+        const weekOf = (sectionId: string) => [
+          form.session1 && form.class_week1 === sectionId && (campSessions[0]?.name ?? 'Week 1'),
+          form.session2 && form.class_week2 === sectionId && (campSessions[1]?.name ?? 'Week 2'),
+        ].filter(Boolean).join(' and ')
+        const results: WizardLaptopResult[] = []
+        for (const r of regs ?? []) {
+          const week = weekOf(r.section_id)
+          if (r.status !== 'confirmed' && r.status !== 'pending') { results.push({ week, outcome: 'waitlisted' }); continue }
+          const { data: got, error: laptopErr } = await supabase.rpc('request_laptop', { p_registration_id: r.id })
+          results.push(laptopErr
+            ? { week, outcome: 'failed', message: laptopErr.code === 'P0001' ? laptopErr.message : undefined }
+            : { week, outcome: got === 'queued' ? 'queued' : 'reserved' })
+        }
+        setLaptopResults(results)
+      }
 
       // A class is booked: now mark the camper confirmed for this summer. Not fatal if it fails —
       // the booking stands, and the worst case is a re-confirmation prompt later.
@@ -708,6 +729,9 @@ export default function ParentRegistrationPage() {
             )}
             {asked && <> {asked}</>}
           </p>
+          {wizardLaptopLines(form.first_name.trim() || 'your camper', laptopResults).map(line => (
+            <p key={line} className="mt-2 text-pretty">{line}</p>
+          ))}
           {exceptionErrors.map(e => <ErrorLine key={e} className="mt-2">{e}</ErrorLine>)}
           <button type="button" onClick={() => navigate('/parent')} className={buttonClass('primary', 'mt-5')}>
             Back to Home
@@ -839,9 +863,12 @@ export default function ParentRegistrationPage() {
                   {fieldError('reg-shirt')}
                 </div>}
               </div>
-              {q('laptop_available').show && <div>
-                <p id="reg-laptop" className={labelCls}>{labelText('laptop_available')}</p>
-                <YesNo id="reg-laptop" value={form.laptop_available} invalid={!!error && errorField === 'reg-laptop'} onChange={v => set('laptop_available', v)} />
+              {q('borrow_laptop').show && <div>
+                <p id="reg-laptop" className={labelCls}>{labelText('borrow_laptop')}</p>
+                <p className={`${hintCls} -mt-0.5 mb-2 text-pretty`}>
+                  {LAPTOP_DEVICES} If yours doesn't have one, the camp lends a few, first come first served. {LAPTOP_ON_SITE}
+                </p>
+                <YesNo id="reg-laptop" value={form.borrow_laptop} invalid={!!error && errorField === 'reg-laptop'} onChange={v => set('borrow_laptop', v)} />
                 {fieldError('reg-laptop')}
               </div>}
               {q('ethnic_background').show && <div>

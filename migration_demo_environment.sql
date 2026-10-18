@@ -115,6 +115,8 @@ BEGIN
   -- ── 1. Wipe camp data (keeps duty types, demo accounts and owner logins) ──
   DELETE FROM roll_call_marks; DELETE FROM updates; DELETE FROM schedule_items;
   DELETE FROM change_requests;   -- specs 11 and 25 (crew_absences go with volunteers)
+  -- Spec 29: laptop loans first (they hold registrations by a RESTRICT key).
+  IF to_regclass('public.laptop_loans') IS NOT NULL THEN DELETE FROM laptop_loans; END IF;
   DELETE FROM attendance_logs; DELETE FROM registrations; DELETE FROM students;
   DELETE FROM duty_assignments; DELETE FROM duty_slots;
   DELETE FROM interview_bookings; DELETE FROM interview_slots; DELETE FROM volunteer_applications;
@@ -569,6 +571,39 @@ BEGIN
   WHERE c.name = 'Web Development' AND s.week = 1 AND s.lead_id IS NOT NULL;
   -- The insert trigger stamps author_name from profiles; this re-stamp keeps the seed explicit.
   UPDATE updates u SET author_name = p.display_name FROM profiles p WHERE p.id = u.author_id;
+
+  -- ── 10. Laptop loans (spec 29) ──
+  -- Campers without a laptop of their own borrowed one, in registration order, and so did two in
+  -- Python B, the demo volunteer's room. Week 1 lends 6, so it has a short queue; on a camp day
+  -- the loaners are handed out, except in Python B, whose crew hands them out live. Week 2 has a loaner free, and the demo parent's Maya
+  -- holds a Week 2 spot with no laptop yet, so a visitor can request one and release it.
+  IF to_regclass('public.laptop_loans') IS NOT NULL THEN
+    IF demo_parent IS NOT NULL THEN
+      INSERT INTO registrations (student_id, section_id, status)
+      SELECT st2.id, s.id, 'confirmed' FROM students st2, sections s JOIN classes c ON c.id = s.class_id
+      WHERE st2.parent_id = demo_parent AND st2.first_name = 'Maya' AND c.name = 'Intro to Java' AND s.week = 2;
+    END IF;
+    INSERT INTO laptop_loans (registration_id, status, requested_at, handed_out_at)
+    SELECT x.id,
+           CASE WHEN x.n > CASE WHEN x.week = 1 THEN 6 ELSE 99 END THEN 'queued'
+                WHEN x.week = 1 AND w1_start <= today AND x.label <> 'PY-B' THEN 'handed_out'
+                ELSE 'reserved' END,
+           x.created_at + interval '1 day',
+           CASE WHEN x.n <= 6 AND x.week = 1 AND w1_start <= today AND x.label <> 'PY-B'
+                THEN (today + time '08:45') AT TIME ZONE 'America/Denver' END
+    FROM (SELECT r.id, r.created_at, s.week, s.label,
+                 row_number() OVER (PARTITION BY s.week ORDER BY s.label = 'PY-B' DESC, r.created_at, r.id) AS n
+            FROM registrations r JOIN sections s ON s.id = r.section_id JOIN students st2 ON st2.id = r.student_id
+           WHERE r.status IN ('confirmed', 'pending') AND st2.parent_id IS DISTINCT FROM demo_parent
+             AND (st2.laptop_available IS FALSE
+                  OR r.id IN (SELECT r2.id FROM registrations r2 JOIN sections s2 ON s2.id = r2.section_id
+                               WHERE s2.label = 'PY-B' AND s2.week = 1 AND r2.status = 'confirmed'
+                               ORDER BY r2.created_at, r2.id LIMIT 2))) x;
+    UPDATE sessions SET laptop_loaners = 6 WHERE id = w1;
+    UPDATE sessions SET laptop_loaners = 1 + (SELECT count(*) FROM laptop_loans l JOIN registrations r ON r.id = l.registration_id
+                                              JOIN sections s ON s.id = r.section_id WHERE s.session_id = w2)
+     WHERE id = w2;
+  END IF;
 
   RETURN format('demo reset: %s families, %s campers, %s registrations, %s volunteers, %s applications',
     (SELECT count(*) FROM parent_profiles), (SELECT count(*) FROM students), (SELECT count(*) FROM registrations),

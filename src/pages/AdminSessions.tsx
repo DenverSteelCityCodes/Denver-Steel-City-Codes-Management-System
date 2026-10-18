@@ -12,6 +12,8 @@ import { Input } from '../components/Field'
 import AdminPageHead, { pageClass, h2Class } from '../components/AdminPageHead'
 import { useAppSettings } from '../hooks/useAppSettings'
 import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
+import { useLaptopCounts } from '../hooks/useAdminLaptops'
+import { loanerSummary } from '../lib/laptopLoans'
 
 interface SessionFormState {
   name: string
@@ -19,6 +21,8 @@ interface SessionFormState {
   start_date: string
   end_date: string
   location: string
+  // Loaner laptops the camp can lend that week (spec 29), as typed.
+  laptop_loaners: string
   is_active: boolean
 }
 
@@ -49,6 +53,8 @@ function SessionForm({
     if (!form.name.trim()) { setErr('Give the week a name'); return }
     if (!form.start_date || !form.end_date) { setErr('Start and end dates are required'); return }
     if (form.end_date < form.start_date) { setErr('End date must be on or after the start date'); return }
+    const loaners = Number(form.laptop_loaners.trim() || '0')
+    if (!Number.isInteger(loaners) || loaners < 0 || loaners > 500) { setErr('Loaner laptops must be a whole number from 0 to 500'); return }
     setSaving(true)
     setErr(null)
     try {
@@ -59,6 +65,7 @@ function SessionForm({
         start_date: form.start_date,
         end_date: form.end_date,
         location: form.location.trim() || null,
+        laptop_loaners: loaners,
         is_active: form.is_active,
       })
     } catch (e) {
@@ -92,6 +99,12 @@ function SessionForm({
         <Input id="session-location" value={form.location} maxLength={200} aria-describedby="session-location-hint"
           onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
           placeholder="Building name, street address" />
+      </div>
+      <div className="max-w-[20rem]">
+        <label className={label} htmlFor="session-loaners">Loaner laptops</label>
+        <p id="session-loaners-hint" className="-mt-0.5 mb-1.5 text-sm text-ink-muted text-pretty">How many the camp can lend this week. Requests past it wait in a first-come queue, and raising it gives loaners to the queue right away.</p>
+        <Input id="session-loaners" type="number" inputMode="numeric" min={0} max={500} step={1} value={form.laptop_loaners}
+          aria-describedby="session-loaners-hint" onChange={e => setForm(f => ({ ...f, laptop_loaners: e.target.value }))} />
       </div>
       <label className="flex items-start gap-3 min-h-11 py-2 cursor-pointer">
         <input type="checkbox" className="w-5 h-5 mt-0.5 shrink-0"
@@ -223,6 +236,8 @@ function ApplicationsStatus() {
 
 export default function AdminSessions() {
   const { sessions, loading, error, createSession, updateSession, deleteSession } = useSessions()
+  // Loaners in use and queued per week (spec 29); reloads after a save (a cap raise promotes).
+  const laptopCounts = useLaptopCounts(sessions)
   const [editing, setEditing] = useState<'new' | string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -261,7 +276,7 @@ export default function AdminSessions() {
 
   // A new week starts at the place of the latest one, since weeks usually share a building.
   const lastPlace = [...sessions].sort((a, b) => b.start_date.localeCompare(a.start_date))[0]?.location ?? ''
-  const BLANK: SessionFormState = { name: '', year: '', start_date: '', end_date: '', location: lastPlace, is_active: true }
+  const BLANK: SessionFormState = { name: '', year: '', start_date: '', end_date: '', location: lastPlace, laptop_loaners: '0', is_active: true }
 
   async function confirmDelete(s: Session) {
     setDeleting(true)
@@ -337,7 +352,7 @@ export default function AdminSessions() {
                   <li key={s.id} className="py-4 border-t border-border first:border-t-0">
                     {editing === s.id ? (
                       <SessionForm
-                        initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, location: s.location ?? '', is_active: s.is_active }}
+                        initial={{ name: s.name, year: String(s.year), start_date: s.start_date, end_date: s.end_date, location: s.location ?? '', laptop_loaners: String(s.laptop_loaners ?? 0), is_active: s.is_active }}
                         submitLabel="Save"
                         onCancel={() => setEditing(null)}
                         onSave={async payload => { await updateSession(s.id, payload); setEditing(null) }}
@@ -352,6 +367,9 @@ export default function AdminSessions() {
                               : <b className="inline-flex items-center gap-1 font-extrabold text-ink"><EyeOff size={16} strokeWidth={2.5} aria-hidden="true" /> Hidden from families</b>}
                           </p>
                           <p className="text-sm text-ink-muted text-pretty">{s.location || 'No place set: families see "Place to be announced"'}</p>
+                          <p className="text-sm text-ink-muted">
+                            {laptopCounts ? loanerSummary(s.laptop_loaners ?? 0, laptopCounts.get(s.id)) : `Loaner laptops: ${s.laptop_loaners ?? 0}`}
+                          </p>
                         </div>
                         <button type="button" className={linkBtn} onClick={() => { setPendingDelete(null); setEditing(s.id) }}>
                           Edit<span className="sr-only"> {s.name}</span>

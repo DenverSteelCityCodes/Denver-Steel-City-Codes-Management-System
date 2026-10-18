@@ -1,6 +1,6 @@
 # 29: Laptop loans
 
-**Status:** ⬜ not started · **Issue:** #149 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in review ([PR #195](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/195)) · **Issue:** #149 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 09 (templates; sending waits on 02) · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1
 
@@ -62,6 +62,18 @@ What exists today is `students.laptop_available` (`migration_student_registratio
 ## Open questions
 - How many loaners in 2027, and will the host school lend them again? ❓ (non-code task).
 - Is FIFO the right order, or should free/reduced-lunch families go first? Default: FIFO.
+
+## As built
+- FIFO by request time, the spec's default. **In use** = reserved + handed out; released and returned don't count.
+- A handed-out laptop is never released automatically (a cancelled spot keeps it `handed_out` until an admin marks it returned), so the camp doesn't lose track of a machine.
+- `admin_set_laptop_status` also takes `reserved`, only to undo a hand-out ticked by mistake.
+- Moving a camper to another week takes the request along, keeping its request time.
+- A section with no week (runs both weeks) can't take a loan: the request explains and gives the camp's email.
+- The yearly re-confirm (class browser) stops asking `laptop_available` and points to Home; a returning camper borrows from the camper card.
+- `my_laptop_loans()` gives the parent each week's status, place in the queue, and whether it can still change.
+- Admin: the week's **Edit** form on Setup has **Loaner laptops** (the cap) and each week's line reads "Loaners: 18 / 25 reserved (6 handed out), 4 queued". Campers has a **Laptop** column and the CSV a Laptop column (per registration). The Attendance board lists **Loaner laptops** per section with a handed-out tick (untick undoes, only while the camper holds the spot), a **Returned** action (asked first: it can email the next family in the queue), and queued campers, who can be ticked when there's a spare. A cancelled camper's handed-out laptop can only be marked returned.
+- `cancel_section()` and `cancel_class()` (migration_soft_cancel.sql) lock their registrations up front, in id order, so the week lock the laptop trigger takes can't deadlock with a parent's request. Other paths still lock a registration before its section (a parent's cancel) while sign-ups lock the section first; that ordering predates this spec.
+- **Known gap:** a wizard "Yes" for a week that's waitlisted isn't remembered. The last screen tells the family to ask on Home once the camper gets a spot; nothing requests it automatically when an offer is claimed.
 
 ## Notes for the builder
 - Add to the registration-day runbook (19): test the coding platform on a district student account two weeks before camp.

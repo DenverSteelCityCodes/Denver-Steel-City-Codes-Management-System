@@ -31,6 +31,7 @@ npm run build
   DATABASE_URL=postgres://… test-plans/seat-race.sh
   ```
   `RUN_SQL` can point at any command that runs a `.sql` file. It needs 20 parent accounts and cleans up after itself. **Never run it on production.**
+- **Last loaner laptop (spec 29):** the same script with `RACE=laptops` (the default `RACE=all` runs both). Families whose campers hold seats ask for a loaner at the same moment with `LOANERS` left (default 2 families, 1 loaner); it passes only with exactly `LOANERS` reserved and the rest queued. Last run 2026-10-18 on the demo through the Management API: 10/10 with 2 families and 1 loaner, 5/5 with 8 families and 3 loaners.
 - **Parent swap races:** `test-plans/parent-swap-concurrency.md` covers two parents racing for one seat, and A→B with B→A at once.
 
 ## 4. In the browser

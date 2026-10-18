@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, ChevronDown, CircleAlert, CircleCheck, ClockAlert, HeartPulse, Minus, Printer, RefreshCw, X } from 'lucide-react'
 import AttendanceExport from '../components/AttendanceExport'
+import LaptopHandout from '../components/LaptopHandout'
 import SignBand from '../components/SignBand'
 import CallLink from '../components/CallLink'
 import StatusWord from '../components/StatusWord'
@@ -311,6 +312,8 @@ export default function AdminAttendance() {
               </tbody>
             </table>
           </section>
+
+          <LaptopHandout sessionId={session.id} sections={[...sections].sort((a, b) => a.label.localeCompare(b.label)).map(s => ({ id: s.id, label: s.label, className: s.className }))} />
         </>
       )}
 
