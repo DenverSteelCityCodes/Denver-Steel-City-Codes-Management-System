@@ -1,17 +1,33 @@
-import { useState } from 'react'
-import { Plus, Trash2, Check, CalendarDays } from 'lucide-react'
-import { useDutyTypes, useDutySlots } from '../hooks/useDutyRoles'
-import { useSessions } from '../hooks/useSessions'
-import { ActionError } from '../components/ActionError'
+import { Fragment, useState } from 'react'
+import { ChevronDown, Plus, UserPlus } from 'lucide-react'
+import { useDutyTypes, useDutySlots, type DutySlot } from '../hooks/useDutyRoles'
+import { useSessions, campSessions, formatSessionDates } from '../hooks/useSessions'
+import { sessionDays, parseLocalDate } from '../lib/campDay'
 import InlineConfirm from '../components/InlineConfirm'
+import Button from '../components/Button'
+import { Input, Select } from '../components/Field'
+import Segmented from '../components/Segmented'
+import { AdminPageHead, VolunteersTabs, pageClass, h2Class } from '../components/AdminTabs'
 
 type PendingDelete = { kind: 'slot'; id: string } | { kind: 'type'; id: string } | null
 
+const label = 'block font-bold mb-1.5'
+const dayHead = (iso: string) => parseLocalDate(iso).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })
+const dayLong = (iso: string) => parseLocalDate(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+const openOf = (s: DutySlot) => Math.max(s.capacity - s.assigned_count, 0)
+
 export default function AdminDuties() {
   const { sessions } = useSessions()
+  const weeks = campSessions(sessions)
   const { types, error: typesError, createType, deleteType, refetch: refetchTypes } = useDutyTypes()
-  const [selectedSession, setSelectedSession] = useState<string>('')
-  const { slots, loading, error: slotsError, createSlot, deleteSlot, refetch } = useDutySlots(selectedSession || undefined)
+  const [pickedWeek, setPickedWeek] = useState<string>('')
+  // Every slot loads once and is placed by its date, so a slot whose session link is missing (or
+  // points at another week) still shows under the week it falls in.
+  const { slots, loading, error: slotsError, createSlot, deleteSlot, refetch } = useDutySlots(undefined)
+
+  const selectedSession = weeks.some(w => w.id === pickedWeek) ? pickedWeek : (weeks[0]?.id ?? '')
+  const week = weeks.find(w => w.id === selectedSession) ?? null
+  const days = week ? sessionDays(week) : []
 
   const [newTypeName, setNewTypeName] = useState('')
   const [addingType, setAddingType] = useState(false)
@@ -40,7 +56,7 @@ export default function AdminDuties() {
     e.preventDefault()
     if (!slotForm.duty_type_id || !slotForm.slot_date) { setSlotErr('Pick a duty and a date'); return }
     // Link the slot to the camp week its date falls in, so it follows that session (and is
-    // cleaned up with it) regardless of which filter is showing.
+    // cleaned up with it) regardless of which week is showing.
     const session = sessions.find(s => slotForm.slot_date >= s.start_date && slotForm.slot_date <= s.end_date)
     const sessionId = session?.id ?? (selectedSession || null)
     setAddingSlot(true)
@@ -54,11 +70,13 @@ export default function AdminDuties() {
         capacity: Number(slotForm.capacity) || 2,
       })
       setSlotForm(f => ({ ...f, slot_date: '' }))
-      // A slot in another week than the filter shows would save but vanish from the list, inviting
-      // a duplicate — switch the filter to where it landed and say so.
-      if (selectedSession && sessionId !== selectedSession) {
-        setSelectedSession(sessionId ?? '')
-        setSlotNote(`Added to ${session ? `${session.name} ${session.year}` : 'another week'} — now showing it.`)
+      // A slot in another week than the one showing would save out of sight, inviting a
+      // duplicate: switch to the week it landed in and say so.
+      if (session && weeks.some(w => w.id === session.id) && session.id !== selectedSession) {
+        setPickedWeek(session.id)
+        setSlotNote(`Added to ${session.name}. Now showing it.`)
+      } else if (!session || !weeks.some(w => w.id === session.id)) {
+        setSlotNote('Added. That date is outside the camp weeks, so it is listed under Other dates.')
       }
     } catch (e) {
       setSlotErr(e instanceof Error ? e.message : 'Something went wrong')
@@ -82,196 +100,261 @@ export default function AdminDuties() {
     }
   }
 
-  const grouped = slots.reduce<Record<string, typeof slots>>((acc, s) => {
-    acc[s.slot_date] = acc[s.slot_date] ?? []
-    acc[s.slot_date].push(s)
-    return acc
-  }, {})
+  const inWeek = (w: { start_date: string; end_date: string }) =>
+    slots.filter(s => s.slot_date >= w.start_date && s.slot_date <= w.end_date)
+  const weekSlots = week ? inWeek(week) : []
+  const openIn = (list: DutySlot[]) => list.reduce((n, s) => n + openOf(s), 0)
+  const otherSlots = slots.filter(s => !weeks.some(w => s.slot_date >= w.start_date && s.slot_date <= w.end_date))
+  const cellSlots = (typeId: string, day: string) => weekSlots.filter(s => s.duty_type_id === typeId && s.slot_date === day)
+  // Duties with slots this week but no type row any more (shouldn't happen; deleting a type
+  // deletes its slots) would vanish from the grid, so list them too.
+  const rowTypes = [...types, ...[...new Set(weekSlots.map(s => s.duty_type_id))]
+    .filter(id => !types.some(t => t.id === id))
+    .map(id => ({ id, name: weekSlots.find(s => s.duty_type_id === id)?.duty_type?.name ?? 'Duty', description: null as string | null }))]
+  const pendingSlot = pendingDelete?.kind === 'slot' ? slots.find(s => s.id === pendingDelete.id) ?? null : null
 
-  const input = 'ui-input'
-  const label = 'block font-sans text-xs text-ink-muted mb-1'
+  const slotConfirm = (slot: DutySlot) => (
+    <InlineConfirm
+      frame
+      message={`Delete ${slot.duty_type?.name ?? 'this duty'} on ${dayLong(slot.slot_date)}?${slot.assigned_count > 0
+        ? ` ${slot.assigned_count} volunteer sign-up${slot.assigned_count === 1 ? '' : 's'} will be removed.` : ''}`}
+      confirmLabel="Delete slot"
+      cancelLabel="Keep it"
+      busy={deleting}
+      onConfirm={confirmDelete}
+      onCancel={() => setPendingDelete(null)}
+    />
+  )
+
+  const linkBtn = 'min-h-11 md:min-h-9 text-sm font-bold underline underline-offset-[3px] cursor-pointer'
 
   return (
-    <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div>
-        <h1 className="font-display font-bold text-2xl text-ink mb-1">Duty schedule</h1>
-        <p className="font-sans text-sm text-ink-muted">Daily jobs like check-in and lunch. Open slots here; accepted volunteers sign up from their dashboard.</p>
-      </div>
+    <div className={pageClass}>
+      <AdminPageHead title="Volunteers" />
+      <VolunteersTabs current="duties" />
 
-      <ActionError message={actionError} onDismiss={() => setActionError(null)} />
+      {weeks.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Segmented
+            label="Week"
+            value={selectedSession}
+            onChange={id => { setPickedWeek(id); setSlotNote(null); setPendingDelete(null) }}
+            options={weeks.map(w => ({
+              value: w.id,
+              label: <>{w.name}<span className="max-sm:hidden font-semibold"> · {formatSessionDates(w, false)}</span></>,
+            }))}
+          />
+          {!loading && !slotsError && (
+            <span className="text-sm text-ink-muted">
+              {weeks.map(w => { const n = openIn(inWeek(w)); return `${n === 0 ? 'No' : n} open spot${n === 1 ? '' : 's'} in ${w.name}` }).join(' · ')}
+            </span>
+          )}
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Duty types */}
-        <section className="lg:col-span-1 space-y-3" aria-labelledby="duty-types-heading">
-          <h2 id="duty-types-heading" className="font-sans font-bold text-lg text-ink">Duty types</h2>
-          <ul className="bg-surface border border-border rounded-[14px] overflow-hidden divide-y divide-border">
+      {actionError && <p role="alert" className="mb-4 text-sm font-bold text-danger text-pretty">{actionError}</p>}
+
+      {slotsError ? (
+        <div role="alert" className="py-4 border-y-2 border-ink flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p title={slotsError} className="flex-1 min-w-[min(100%,16rem)] font-bold text-danger">Couldn't load the duty slots. Check your connection, then try again.</p>
+          <Button onClick={() => void refetch()}>Try again</Button>
+        </div>
+      ) : loading ? (
+        <div aria-busy="true" aria-label="Loading duties" className="border-y-2 border-ink">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-16 my-1 rounded bg-surface-sunken animate-pulse" />)}
+        </div>
+      ) : !week ? (
+        <p className="py-4 border-y-2 border-ink">
+          <b className="font-bold">No camp weeks yet.</b> <span className="text-ink-muted">Add the weeks in Setup › Season, then their duties here.</span>
+        </p>
+      ) : rowTypes.length === 0 ? (
+        <p className="py-4 border-y-2 border-ink">
+          <b className="font-bold">No duties yet.</b> <span className="text-ink-muted">Add a duty type below, then its slots.</span>
+        </p>
+      ) : (
+        <div role="region" aria-label={`Duties, ${week.name}. Scrolls sideways on a small screen.`} tabIndex={0}
+          className="overflow-x-auto focus-visible:outline-offset-2">
+          <table className="w-full min-w-[760px] table-fixed bg-surface border-y-2 border-ink">
+            <caption className="sr-only">Duties, {week.name}, {formatSessionDates(week, false)}</caption>
+            <colgroup><col className="w-[11rem]" />{days.map(d => <col key={d} />)}</colgroup>
+            <thead>
+              <tr>
+                <th scope="col" className="sticky left-0 z-[1] bg-surface px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink">Duty</th>
+                {days.map(d => (
+                  <th key={d} scope="col" className="px-3 py-2.5 text-left text-sm font-bold text-ink-muted border-b border-ink whitespace-nowrap">
+                    <span aria-hidden="true">{dayHead(d)}</span><span className="sr-only">{dayLong(d)}</span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rowTypes.map(t => {
+                const rowPending = pendingSlot && pendingSlot.duty_type_id === t.id && days.includes(pendingSlot.slot_date) ? pendingSlot : null
+                return (
+                  <Fragment key={t.id}>
+                    <tr className="border-t border-border first:border-t-0">
+                      <th scope="row" className="sticky left-0 z-[1] bg-surface px-3 py-3 text-left align-top font-bold">
+                        {t.name}
+                        {t.description && <span className="block text-sm font-normal text-ink-muted text-pretty">{t.description}</span>}
+                      </th>
+                      {days.map(d => {
+                        const list = cellSlots(t.id, d)
+                        return (
+                          <td key={d} className="px-3 py-3 align-top">
+                            {list.length === 0 ? (
+                              <span className="text-ink-muted" aria-label="No slot">–</span>
+                            ) : list.map(slot => {
+                              const names = (slot.assignments ?? []).map(a => a.volunteer?.profiles?.display_name ?? 'A volunteer')
+                              const gap = openOf(slot)
+                              return (
+                                <div key={slot.id} className="[&+&]:mt-3 [&+&]:pt-3 [&+&]:border-t [&+&]:border-border">
+                                  {names.length > 0 && (
+                                    <ul className="leading-[1.4]">
+                                      {names.map((n, i) => <li key={i} className="[overflow-wrap:anywhere]">{n}</li>)}
+                                    </ul>
+                                  )}
+                                  {gap > 0 && (
+                                    <p className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-extrabold">
+                                      <UserPlus size={16} strokeWidth={2.5} aria-hidden="true" /> {gap} open
+                                    </p>
+                                  )}
+                                  <div>
+                                    <button type="button" className={`${linkBtn} text-ink-muted`}
+                                      aria-expanded={pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id}
+                                      onClick={() => setPendingDelete({ kind: 'slot', id: slot.id })}>
+                                      Delete<span className="sr-only"> {t.name} on {dayLong(d)}</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                    {rowPending && (
+                      <tr>
+                        <td colSpan={days.length + 1} className="px-3 pb-4">
+                          <div className="sticky left-3 max-w-[min(640px,calc(100vw-4rem))]">{slotConfirm(rowPending)}</div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="mt-3 text-sm text-ink-muted">Accepted volunteers sign up for these from their Duties tab.</p>
+
+      {otherSlots.length > 0 && (
+        <details className="group mt-6">
+          <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            Other dates ({otherSlots.length})
+            <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+          </summary>
+          <ul className="mt-2 border-y-2 border-ink">
+            {otherSlots.map(slot => (
+              <li key={slot.id} className="py-3 border-t border-border first:border-t-0">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <p className="flex-1 min-w-[min(100%,16rem)]">
+                    <b className="font-bold">{slot.duty_type?.name ?? 'Duty'}</b> · {dayLong(slot.slot_date)} {parseLocalDate(slot.slot_date).getFullYear()}
+                    <span className="block text-sm text-ink-muted">{slot.assigned_count} of {slot.capacity} signed up</span>
+                  </p>
+                  <button type="button" className={`${linkBtn} text-ink-muted`}
+                    aria-expanded={pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id}
+                    onClick={() => setPendingDelete({ kind: 'slot', id: slot.id })}>
+                    Delete<span className="sr-only"> {slot.duty_type?.name} on {dayLong(slot.slot_date)}</span>
+                  </button>
+                </div>
+                {pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id && <div className="mt-2">{slotConfirm(slot)}</div>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      <section aria-labelledby="add-slot-heading" className="mt-10">
+        <h2 id="add-slot-heading" className={h2Class}>Add a duty slot</h2>
+        <form onSubmit={handleAddSlot} className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="flex-[1_1_14rem] min-w-0 max-w-[20rem]">
+            <label htmlFor="slot-duty" className={label}>Duty</label>
+            <Select id="slot-duty" value={slotForm.duty_type_id}
+              onChange={e => setSlotForm(f => ({ ...f, duty_type_id: e.target.value }))}>
+              <option value="">Choose…</option>
+              {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="slot-day" className={label}>Date</label>
+            <Input id="slot-day" type="date" value={slotForm.slot_date} className="w-auto"
+              onChange={e => setSlotForm(f => ({ ...f, slot_date: e.target.value }))} />
+          </div>
+          <div>
+            <label htmlFor="slot-capacity" className={label}>Volunteers</label>
+            <Input id="slot-capacity" type="number" inputMode="numeric" min={1} max={10} value={slotForm.capacity} className="w-[6.5rem]"
+              onChange={e => setSlotForm(f => ({ ...f, capacity: e.target.value }))} />
+          </div>
+          <Button type="submit" variant="primary" disabled={addingSlot}>
+            {addingSlot
+              ? <span aria-hidden="true" className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              : <Plus size={18} strokeWidth={2.5} aria-hidden="true" />}
+            Add slot
+          </Button>
+        </form>
+        {slotErr && <p role="alert" className="mt-2 text-sm font-bold text-danger">{slotErr}</p>}
+        {slotNote && <p role="status" className="mt-2 text-sm text-ink-muted">{slotNote}</p>}
+
+        <details className="group mt-6">
+          <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            Duty types ({types.length})
+            <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+          </summary>
+          <ul className="mt-2 border-y-2 border-ink max-w-[640px]">
             {types.map(t => (
-              <li key={t.id}>
-                <div className="flex items-center justify-between px-4 py-3">
-                  <span className="font-sans text-sm text-ink">{t.name}</span>
-                  <button
-                    onClick={() => setPendingDelete({ kind: 'type', id: t.id })}
-                    aria-label={`Delete ${t.name}`}
-                    title="Delete duty type"
-                    className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition"
-                  >
-                    <Trash2 size={13} />
+              <li key={t.id} className="border-t border-border first:border-t-0">
+                <div className="flex items-center gap-4 min-h-12 py-1">
+                  <span className="flex-1 min-w-0">{t.name}</span>
+                  <button type="button" className={`${linkBtn} text-ink-muted`}
+                    aria-expanded={pendingDelete?.kind === 'type' && pendingDelete.id === t.id}
+                    onClick={() => setPendingDelete({ kind: 'type', id: t.id })}>
+                    Remove<span className="sr-only"> {t.name}</span>
                   </button>
                 </div>
                 {pendingDelete?.kind === 'type' && pendingDelete.id === t.id && (
-                  <InlineConfirm
-                    message={`Delete "${t.name}"? Every slot of this duty and its sign-ups go too.`}
-                    confirmLabel="Delete"
-                    busy={deleting}
-                    onConfirm={confirmDelete}
-                    onCancel={() => setPendingDelete(null)}
-                  />
+                  <div className="pb-3">
+                    <InlineConfirm
+                      frame
+                      message={`Delete "${t.name}"? Every slot of this duty and its sign-ups go too.`}
+                      confirmLabel="Delete duty"
+                      cancelLabel="Keep it"
+                      busy={deleting}
+                      onConfirm={confirmDelete}
+                      onCancel={() => setPendingDelete(null)}
+                    />
+                  </div>
                 )}
               </li>
             ))}
             {typesError ? (
-              <li role="alert" className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-danger font-sans">
-                <span>Couldn't load duty types: {typesError}</span>
-                <button type="button" onClick={() => void refetchTypes()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
+              <li role="alert" className="py-3 border-t border-border first:border-t-0 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span title={typesError} className="flex-1 font-bold text-danger">Couldn't load the duty types.</span>
+                <Button onClick={() => void refetchTypes()}>Try again</Button>
               </li>
-            ) : types.length === 0 && <li className="px-4 py-3 text-sm text-ink-muted font-sans">No duty types yet.</li>}
+            ) : types.length === 0 && <li className="py-3 text-ink-muted">No duty types yet.</li>}
           </ul>
-          <form onSubmit={handleAddType} className="flex gap-2">
-            <label htmlFor="new-duty-type" className="sr-only">New duty type</label>
-            <input
-              id="new-duty-type" type="text" placeholder="New duty type…" value={newTypeName}
-              onChange={e => setNewTypeName(e.target.value)}
-              className="ui-input flex-1 min-w-0"
-            />
-            <button type="submit" disabled={addingType} aria-label="Add duty type"
-              className="h-10 w-10 bg-brand text-brand-on rounded-[8px] flex items-center justify-center shrink-0 disabled:opacity-50">
-              {addingType ? <span className="w-3.5 h-3.5 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Plus size={15} />}
-            </button>
+          <form onSubmit={handleAddType} className="mt-3 flex flex-wrap items-end gap-3 max-w-[640px]">
+            <div className="flex-1 min-w-[min(100%,14rem)]">
+              <label htmlFor="new-duty-type" className={label}>New duty type</label>
+              <Input id="new-duty-type" type="text" placeholder="For example, Water refill" value={newTypeName}
+                onChange={e => setNewTypeName(e.target.value)} />
+            </div>
+            <Button type="submit" disabled={addingType}>{addingType ? 'Adding…' : 'Add duty type'}</Button>
           </form>
-          {typeErr && <p role="alert" className="text-danger text-sm font-sans">{typeErr}</p>}
-        </section>
-
-        {/* Slots */}
-        <section className="lg:col-span-2 space-y-4" aria-labelledby="duty-slots-heading">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="duty-slots-heading" className="font-sans font-bold text-lg text-ink">Duty slots</h2>
-            <label htmlFor="duty-session-filter" className="sr-only">Show session</label>
-            <select
-              id="duty-session-filter"
-              value={selectedSession}
-              onChange={e => { setSelectedSession(e.target.value); setSlotNote(null) }}
-              className="ui-input w-auto min-h-11 py-1.5 pl-2.5 pr-7"
-            >
-              <option value="">All sessions</option>
-              {sessions.map(s => <option key={s.id} value={s.id}>{s.name} {s.year}</option>)}
-            </select>
-          </div>
-
-          <form onSubmit={handleAddSlot} className="bg-surface border border-border rounded-[14px] p-4 space-y-3">
-            <p className="font-sans font-semibold text-sm text-ink">Add duty slot</p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_110px_auto] items-end">
-              <div>
-                <label htmlFor="slot-duty" className={label}>Duty</label>
-                <select id="slot-duty" value={slotForm.duty_type_id}
-                  onChange={e => setSlotForm(f => ({ ...f, duty_type_id: e.target.value }))} className={input}>
-                  <option value="">Choose…</option>
-                  {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="slot-day" className={label}>Date</label>
-                <input id="slot-day" type="date" value={slotForm.slot_date}
-                  onChange={e => setSlotForm(f => ({ ...f, slot_date: e.target.value }))} className={input} />
-              </div>
-              <div>
-                <label htmlFor="slot-capacity" className={label}>Volunteers</label>
-                <input id="slot-capacity" type="number" min={1} max={10} value={slotForm.capacity}
-                  onChange={e => setSlotForm(f => ({ ...f, capacity: e.target.value }))} className={input} />
-              </div>
-              <button type="submit" disabled={addingSlot}
-                className="ui-btn ui-btn--primary shrink-0">
-                {addingSlot ? <span className="w-4 h-4 rounded-full border-2 border-brand-on border-t-transparent animate-spin" /> : <Check size={16} />}
-                Add
-              </button>
-            </div>
-            {slotErr && <p role="alert" className="text-danger text-sm font-sans">{slotErr}</p>}
-            {slotNote && <p role="status" className="text-ink-muted text-sm font-sans">{slotNote}</p>}
-          </form>
-
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map(i => <div key={i} className="h-14 bg-surface border border-border rounded-[14px] animate-pulse" />)}
-            </div>
-          ) : slotsError ? (
-            <div role="alert" className="flex items-center justify-between gap-3 px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">
-              <span>Couldn't load duty slots: {slotsError}</span>
-              <button type="button" onClick={() => void refetch()} className="font-semibold text-xs hover:underline shrink-0">Retry</button>
-            </div>
-          ) : Object.keys(grouped).length === 0 ? (
-            <div className="bg-surface border border-border rounded-[14px] p-10 text-center">
-              <CalendarDays size={24} className="text-ink-muted mx-auto mb-2" />
-              <p className="font-sans font-semibold text-ink mb-1">No duty slots yet</p>
-              <p className="font-sans text-sm text-ink-muted">Add a duty and a date above.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {Object.entries(grouped)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([date, daySlots]) => (
-                  <div key={date}>
-                    <h3 className="font-sans font-semibold text-sm text-ink-muted mb-1.5">
-                      {new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                    </h3>
-                    <ul className="bg-surface border border-border rounded-[14px] overflow-hidden divide-y divide-border">
-                      {daySlots.map(slot => {
-                        const full = slot.assigned_count >= slot.capacity
-                        return (
-                          <li key={slot.id}>
-                            <div className="flex items-center justify-between gap-3 px-4 py-3">
-                              <div className="min-w-0">
-                                <p className="font-sans font-semibold text-sm text-ink">{slot.duty_type?.name ?? '—'}</p>
-                                <p className="font-sans text-xs text-ink-muted truncate">
-                                  {slot.assigned_count}/{slot.capacity} filled
-                                  {slot.assignments && slot.assignments.length > 0 && (
-                                    <> · {slot.assignments.map(a => a.volunteer?.profiles?.display_name ?? '—').join(', ')}</>
-                                  )}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${full ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}>
-                                  {full ? 'Full' : 'Open'}
-                                </span>
-                                <button
-                                  onClick={() => setPendingDelete({ kind: 'slot', id: slot.id })}
-                                  aria-label={`Delete ${slot.duty_type?.name ?? 'duty'} slot`}
-                                  title="Delete slot"
-                                  className="p-1.5 text-ink-muted hover:text-danger hover:bg-danger-soft rounded-[6px] transition"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-                            {pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id && (
-                              <InlineConfirm
-                                message={slot.assigned_count > 0
-                                  ? `Delete this slot? ${slot.assigned_count} volunteer sign-up${slot.assigned_count === 1 ? '' : 's'} will be removed.`
-                                  : 'Delete this slot?'}
-                                confirmLabel="Delete slot"
-                                busy={deleting}
-                                onConfirm={confirmDelete}
-                                onCancel={() => setPendingDelete(null)}
-                              />
-                            )}
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </div>
-                ))}
-            </div>
-          )}
-        </section>
-      </div>
+          {typeErr && <p role="alert" className="mt-2 text-sm font-bold text-danger">{typeErr}</p>}
+        </details>
+      </section>
     </div>
   )
 }

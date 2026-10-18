@@ -1,13 +1,17 @@
-import { Megaphone } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { useUpdates } from '../hooks/useUpdates'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import UpdateComposer from '../components/UpdateComposer'
 import UpdatesFeed from '../components/UpdatesFeed'
 import EmailLog from '../components/EmailLog'
+import AdminTabs, { AdminPageHead, pageClass, h2Class } from '../components/AdminTabs'
 
 // Admin: post to everyone, all parents, all volunteers, or one section's families, with
 // "Also email" to open the mail client with the audience in BCC. Everything posted is listed.
+// Sent emails (the app's own notices to families) is the second tab, ?tab=emails.
 export default function AdminUpdates() {
+  const [params] = useSearchParams()
+  const tab = params.get('tab') === 'emails' ? 'emails' : 'post'
   const { updates, loading, error, postUpdate, deleteUpdate } = useUpdates(200)
   const { classes } = useAdminClasses()
   const sections = classes.flatMap(c => c.sections.map(s => ({
@@ -15,36 +19,40 @@ export default function AdminUpdates() {
   })))
 
   return (
-    <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div>
-        <h1 className="font-display font-bold text-2xl text-ink mb-1">Updates</h1>
-        <p className="font-sans text-sm text-ink-muted">
-          Posts show on parent and volunteer dashboards and in their bells. Tick "Also email" to open your mail app with the right addresses in BCC.
-        </p>
+    <div className={pageClass}>
+      <AdminPageHead title="Updates" lede="Posts appear on parent and volunteer dashboards and in their bells." />
+      <AdminTabs label="Updates" tabs={[
+        { to: '/admin/updates', label: 'Post', current: tab === 'post' },
+        { to: '/admin/updates?tab=emails', label: 'Sent emails', current: tab === 'emails' },
+      ]} />
+
+      <div className="max-w-[720px]">
+        {tab === 'post' ? (
+          <>
+            <section aria-labelledby="compose-heading">
+              <h2 id="compose-heading" className="sr-only">New update</h2>
+              <UpdateComposer mode={{ kind: 'admin', sections }} onPost={async input => { await postUpdate(input) }} autoFocus={false} />
+            </section>
+
+            <section aria-labelledby="feed-heading" className="mt-10">
+              <h2 id="feed-heading" className={h2Class}>Posted</h2>
+              {error && <p role="alert" title={error} className="mt-3 font-bold text-danger">Couldn't load the posted updates. Reload the page to try again.</p>}
+              <div className="mt-3 py-1 border-y-2 border-ink">
+                <UpdatesFeed
+                  updates={updates}
+                  loading={loading}
+                  canDelete={() => true}
+                  onDelete={deleteUpdate}
+                  canCopyEmails={() => true}
+                  emptyText="Nothing posted yet. Your first update could be a welcome note with drop-off and pickup times."
+                />
+              </div>
+            </section>
+          </>
+        ) : (
+          <EmailLog />
+        )}
       </div>
-
-      <section aria-labelledby="compose-heading" className="bg-surface border border-brand rounded-[14px] shadow-sm p-4 sm:p-5">
-        <h2 id="compose-heading" className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted mb-3 flex items-center gap-1.5">
-          <Megaphone size={13} /> New update
-        </h2>
-        <UpdateComposer mode={{ kind: 'admin', sections }} onPost={async input => { await postUpdate(input) }} autoFocus={false} />
-      </section>
-
-      {error && <div className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">⚠ {error}</div>}
-
-      <section aria-labelledby="feed-heading" className="bg-surface border border-border rounded-[14px] shadow-sm px-4 sm:px-5 py-2">
-        <h2 id="feed-heading" className="sr-only">Posted updates</h2>
-        <UpdatesFeed
-          updates={updates}
-          loading={loading}
-          canDelete={() => true}
-          onDelete={deleteUpdate}
-          canCopyEmails={() => true}
-          emptyText="Nothing posted yet. Your first update could be a welcome note with drop-off and pickup times."
-        />
-      </section>
-
-      <EmailLog />
     </div>
   )
 }
