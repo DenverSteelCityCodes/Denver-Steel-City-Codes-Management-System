@@ -11,6 +11,8 @@ export interface StudentRegistration {
   section_week: 1 | 2 | null
   class_name: string
   class_id: string
+  // The family's "place with a friend or sibling" request (spec 31).
+  place_with: string | null
 }
 
 // Row shape of the students → parent profile / registrations → section → class select.
@@ -35,6 +37,7 @@ interface RawStudent {
     id: string
     status: RegistrationStatus
     section_id: string
+    place_with: string | null
     sections: { id: string; label: string; week: 1 | 2 | null; class_id: string; classes: { id: string; name: string } | null } | null
   }[] | null
 }
@@ -84,7 +87,7 @@ export function useAdminStudents() {
         emergency_contact_name, emergency_contact_phone, emergency_contact_relation, registration_year,
         profiles:parent_id ( display_name ),
         registrations (
-          id, status, section_id,
+          id, status, section_id, place_with,
           sections (
             id, label, week, class_id,
             classes ( id, name )
@@ -129,6 +132,7 @@ export function useAdminStudents() {
         section_week: r.sections?.week ?? null,
         class_name: r.sections?.classes?.name ?? '—',
         class_id: r.sections?.class_id ?? '',
+        place_with: r.place_with ?? null,
       })),
     }))
 
