@@ -85,6 +85,9 @@ export default function AdminAttendance() {
   // The roll call due by now, read from the time of the last refresh (it refreshes every minute).
   const dueIdx = lastUpdated ? rcIndex(rollCallForTime(lastUpdated)) : 0
   const campers = sections.reduce((n, s) => n + s.roster.length, 0)
+  // Present at each section's latest roll call (0 for a section with none yet), as the old stat card counted.
+  const present = sections.reduce((n, s) => n + (s.latest ? s.rollCalls[s.latest].present : 0), 0)
+  const presentLine = `${present} of ${plural(campers, 'camper')} present at the latest roll call`
   const unaccounted = sections.flatMap(s => s.unaccounted.map(student => ({ student, section: s })))
   const noRollCall = sections.filter(s => s.latest === null)
   const latestIdx = Math.max(-1, ...sections.map(s => rcIndex(s.latest)))
@@ -172,14 +175,14 @@ export default function AdminAttendance() {
             {unaccounted.length > 0 ? (
               <BoardSign
                 tone="alarm"
-                context={`${latestLabel ?? 'Latest'} roll call`}
+                context={`${latestLabel ?? 'Latest'} roll call · ${presentLine}`}
                 figure={unaccounted.length}
                 message={unaccounted.length === 1 ? 'camper unaccounted' : 'campers unaccounted'}
                 sub={`Marked absent or not marked in ${troubled.join(', ')}. Who to call is below.`}
               />
             ) : noRollCall.length > 0 ? (
               <SignBand
-                context="Roll call"
+                context={`Roll call · ${presentLine}`}
                 figure={noRollCall.length}
                 message={noRollCall.length === 1 ? 'section has no roll call yet' : 'sections have no roll call yet'}
                 sub="Their leads and rooms are listed below."
@@ -187,7 +190,7 @@ export default function AdminAttendance() {
             ) : (
               <BoardSign
                 tone="quiet"
-                context={`${latestLabel} roll call`}
+                context={`${latestLabel} roll call · ${presentLine}`}
                 figure={campers}
                 message={campers === 1 ? 'camper accounted for' : 'campers accounted for'}
               />

@@ -1,7 +1,8 @@
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useCallback, useState, useEffect } from 'react'
 import { ChevronDown, Plus } from 'lucide-react'
 import { useInterviews, type InterviewSlot } from '../hooks/useInterviews'
 import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
+import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
 import { Input, Select, Textarea } from '../components/Field'
@@ -229,7 +230,11 @@ export default function AdminInterviews() {
   const [panel, setPanel] = useState<Panel>(null)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
-  const [now] = useState(() => Date.now())
+  // The clock that decides which slots are still ahead (bookable) and which days are past. It ticks
+  // every minute and when the tab comes back, so a slot that starts while the page is open drops out.
+  const [now, setNow] = useState(() => Date.now())
+  const tick = useCallback(() => setNow(Date.now()), [])
+  useRefetchOnFocus(tick, 60_000)
 
   async function handleAddSlot(e: React.FormEvent) {
     e.preventDefault()
