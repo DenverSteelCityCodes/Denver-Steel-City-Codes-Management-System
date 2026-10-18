@@ -12,7 +12,7 @@ Registration opens when an admin flips a switch (`form_configs.student_registrat
 - Change deadline: 14 days before the session starts. Offers: 48 h, or 12 h inside 7 days.
 
 ## Scope: what to build
-- Table `season_settings(year smallint pk, registration_opens_at timestamptz, change_deadline_days int default 14, offer_hours int default 48, offer_hours_final_week int default 12, updated_at)`; `chapter_id` added in spec 20. Admin write; everyone signed in reads.
+- Table `season_settings(year smallint pk, registration_opens_at timestamptz, change_deadline_days int default 14, offer_hours int default 48, offer_hours_final_week int default 12, updated_at)`; `region_id` added in spec 20. Admin write; everyone signed in reads.
 - `registrations_before_insert()`: non-admin inserts before `registration_opens_at` → P0001 "Registration opens <date> at <time> (Denver time)". The existing form switch stays as an emergency close.
 - Parent dashboard, class browser and wizard step 4: countdown card "Registration opens Sat, Feb 6 at 9:00 am" (formatted in America/Denver), switching live to open at the moment (client timer + server check).
 - Admin: inline settings on the Sessions page.
@@ -36,4 +36,4 @@ Registration opens when an admin flips a switch (`form_configs.student_registrat
 
 ## Notes for the builder
 - Built 2026-10-17. Times are entered and shown in Denver time whatever the viewer's device clock (`src/lib/denverTime.ts`). The class browser disables Register until opening, the wizard refuses step 4, and the countdown flips to open without a reload. The demo has no settings row (registration open). `private.season_settings_for(year)` gives later RPCs the settings with defaults.
-- Store `timestamptz`; display in the chapter's time zone (America/Denver until spec 20).
+- Store `timestamptz`; display in the region's time zone (America/Denver until spec 20).

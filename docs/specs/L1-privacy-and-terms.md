@@ -8,7 +8,7 @@
 We hold data on 9–14-year-old campers and accounts for 14–17-year-old volunteers, with no privacy notice or terms on the site. Colorado's 2025 minors' amendment has no size threshold 🔎. The site needs its own privacy policy and terms, describing exactly what the site collects and does. Claude drafts them; SCC reviews them so they're consistent with any SCC-wide policy.
 
 ## Decided rules
-- Denver is a chapter; **national is the controller** (Q-L1). National's legal name goes on both documents.
+- Denver is a region; **national is the controller** (Q-L1). National's legal name goes on both documents.
 - Contact for privacy questions and requests: `denver@steelcitycodes.org`.
 
 ## Scope: what to build
