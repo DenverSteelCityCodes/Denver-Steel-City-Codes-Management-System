@@ -28,6 +28,9 @@
   --brand-hover: #E2B12C;
   --brand-soft: #FCEFC4;
   --on-brand: #1A1613;
+  --on-brand-muted: #4A3D10;  /* secondary text on gold, 6.6:1 */
+  /* the alarm sign and danger pictograms: white on red (6.6:1 at night) */
+  --alarm: #B3261E;
   /* keyboard focus: ink on light (18:1), gold on dark */
   --ring: #1A1613;
   /* shell (ink bar, tabs, rail) */
@@ -70,6 +73,8 @@
   --brand-hover: #F6CF5E;
   --brand-soft: #3A2F12;
   --on-brand: #1A1613;
+  --on-brand-muted: #4A3D10;
+  --alarm: #A8221B;
   --ring: #F1C446;            /* 10.5:1 on surface */
   --shell: #0B0A09;
   --shell-raised: #24201B;
@@ -115,6 +120,8 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
   --color-brand-on: var(--on-brand);
+  --color-brand-on-muted: var(--on-brand-muted);
+  --color-alarm: var(--alarm);
   --color-focus: var(--ring);
 
   --color-shell: var(--shell);
@@ -246,7 +253,25 @@ body {
     position: relative;
   }
   .ui-iconbtn:hover { background: var(--shell-raised); }
+
+  /* A real checkbox with role="switch". On is ink (bone at night), never gold. Put it in a 44px+ label. */
+  .ui-switch {
+    -webkit-appearance: none; appearance: none; flex: none; position: relative; cursor: pointer;
+    width: 52px; height: 32px; margin: 0; border-radius: 999px;
+    border: 2px solid var(--border-strong); background: var(--surface);
+  }
+  .ui-switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--border-strong); transition: transform 150ms var(--ease);
+  }
+  .ui-switch:checked { background: var(--ink); border-color: var(--ink); }
+  .ui-switch:checked::after { transform: translateX(20px); background: var(--bg); }
+  .ui-switch:disabled { opacity: .5; cursor: not-allowed; }
 }
+
+/* Split-flap swap: a sign's figure flips in two steps when its value changes (DESIGN.md › Sign Band). */
+@keyframes ui-flap { 0% { transform: scaleY(1); } 50% { transform: scaleY(.08); } 100% { transform: scaleY(1); } }
+.ui-flap { display: inline-block; animation: ui-flap 160ms steps(2, end); }
 
 /* Reduce motion (L6a): no smooth scrolling, no pulses, instant transitions. Spinners keep a calm
    opacity fade instead of freezing into a broken ring, so "busy" is still visible. */
@@ -258,4 +283,5 @@ body {
   }
   .animate-pulse { animation: none !important; }
   .animate-spin { animation: ui-fade 1.2s ease-in-out infinite alternate !important; }
+  .ui-flap { animation: none !important; }
 }

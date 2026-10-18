@@ -1,75 +1,51 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Sparkles } from 'lucide-react'
-import { useAdminAttention } from '../hooks/useAdminAttention'
+import { ArrowRight } from 'lucide-react'
+import type { AttentionItem } from '../hooks/useAdminAttention'
 
-// §2 — the "Needs attention" work queue. Renders only items with a real count > 0; a clean
-// board shows the friendly all-caught-up empty state. Loading shows skeleton rows, not a spinner.
-export default function AdminNeedsAttention() {
-  const { items, loading } = useAdminAttention()
+// The To do list (DESIGN.md › Decision List): one decision per row between 2px ink rules, a
+// white-on-ink pictogram (red only for safety and failures), the decision, why, and one text action.
+// Items come from useAdminAttention, already most serious first; the page owns the hook so it can
+// refresh the list along with the rest of Today.
+export default function AdminNeedsAttention({ items, loading }: { items: AttentionItem[]; loading: boolean }) {
+
+  if (loading) {
+    return (
+      <ul aria-busy="true" aria-label="Loading to do">
+        {[0, 1, 2].map(i => (
+          <li key={i} className="grid grid-cols-[40px_1fr] gap-x-4 py-4 border-t-2 border-ink last:border-b-2">
+            <span className="w-10 h-10 rounded bg-surface-sunken animate-pulse" />
+            <span className="h-10 rounded bg-surface-sunken animate-pulse" />
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  if (items.length === 0) {
+    return <p className="py-4 border-y-2 border-ink text-lg font-bold">Nothing needs you right now.</p>
+  }
 
   return (
-    <section>
-      <h2 className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted mb-3">
-        Needs attention
-      </h2>
-
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[0, 1, 2].map(i => (
-            <div
-              key={i}
-              className="bg-surface border border-border rounded-xl shadow-sm p-5 h-[104px] animate-pulse"
-            />
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl shadow-sm p-6 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
-            <Sparkles size={20} className="text-warning" />
-          </div>
-          <div>
-            <p className="font-sans font-semibold text-sm text-ink">You're all caught up ✨</p>
-            <p className="font-sans text-xs text-ink-muted">No classes, applications, or interviews need action right now.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {items.map(item => {
-            const Icon = item.icon
-            return (
-              <div
-                key={item.key}
-                className={`bg-surface border border-border rounded-xl shadow-sm p-5 flex items-start gap-4 ${item.cardCls} ${
-                  item.wide ? 'sm:col-span-2' : ''
-                }`}
-              >
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${item.iconWrap}`}>
-                  <Icon size={20} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <h3 className="font-sans font-semibold text-sm text-ink">{item.title}</h3>
-                    {item.badge && (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${item.badgeCls}`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                  <p className="font-sans text-xs text-ink-muted">{item.detail}</p>
-                </div>
-                <Link
-                  to={item.to}
-                  className="shrink-0 self-center inline-flex items-center gap-1.5 h-9 px-3 bg-surface border border-border-strong text-ink font-sans font-semibold text-xs rounded-[8px] hover:bg-surface-sunken transition shadow-sm"
-                >
-                  {item.ctaLabel} <ArrowRight size={13} />
-                </Link>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </section>
+    <ul>
+      {items.map(item => {
+        const Icon = item.icon
+        return (
+          <li key={item.key} className="grid grid-cols-[40px_1fr] gap-x-4 gap-y-1 py-4 border-t-2 border-ink last:border-b-2">
+            <span aria-hidden="true" className={`w-10 h-10 grid place-items-center rounded text-white ${item.tone === 'danger' ? 'bg-alarm' : 'bg-shell dark:bg-shell-raised'}`}>
+              <Icon size={22} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-lg font-bold leading-[1.3] text-pretty">{item.title}</p>
+              <p className="mt-1 text-ink-muted text-pretty">{item.detail}</p>
+            </div>
+            <div className="col-start-2">
+              <Link to={item.to} className="inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px]">
+                {item.ctaLabel} <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" />
+              </Link>
+            </div>
+          </li>
+        )
+      })}
+    </ul>
   )
 }

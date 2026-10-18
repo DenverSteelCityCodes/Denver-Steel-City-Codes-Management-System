@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
-import { TriangleAlert, Gauge, Users, Mic, List, ClipboardCheck, UserX, Copy, MailWarning, MessageSquare, CalendarX } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  TriangleAlert, Armchair, Inbox, CalendarClock, ListChecks, ClipboardList, UserRoundX, Copy, MailWarning,
+  MessageSquareText, CalendarX,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAdminClasses } from './useAdminClasses'
-import { useAdminStudents } from './useAdminStudents'
 import { useVolunteerApplications } from './useVolunteerApplications'
 import { useInterviews } from './useInterviews'
 import { useAttendanceBoard } from './useAttendanceBoard'
@@ -16,20 +18,24 @@ interface DuplicatePair { a_id: string; a_name: string; a_parent: string | null;
 // A crew member's upcoming absence and a section it leaves short (spec 25).
 interface CrewAbsence { absence_id: string; volunteer_name: string; from_date: string; to_date: string; class_name: string; section_label: string; week: number | null; is_lead: boolean; suggestions: string[] }
 
-// A single row in the "Needs attention" work queue. The hook hands the component fully-resolved
-// presentation data (classes + copy + CTA) so AdminDashboard stays a declarative renderer (§2).
+// How much an item matters (DESIGN.md › The Meaningful Red Rule):
+//  danger    — safety or a failure: campers unaccounted for, emails that never went out. Red.
+//  attention — needs a person soon: no lead, no roll call, people waiting on a reply. Ink.
+//  info      — worth knowing, nothing broken: sections filling up. Ink, listed last.
+export type AttentionTone = 'danger' | 'attention' | 'info'
+
+const TONE_ORDER: Record<AttentionTone, number> = { danger: 0, attention: 1, info: 2 }
+
+// A single row in the To do list (Today) and the bell. The hook hands over finished copy and a
+// link; the components only decide how a tone looks.
 export interface AttentionItem {
   key: string
   icon: LucideIcon
-  iconWrap: string // e.g. 'bg-danger-soft text-danger'
-  cardCls: string // danger edge for the full-class item; '' otherwise
-  badge: string | null
-  badgeCls: string | null
+  tone: AttentionTone
   title: string
   detail: string
   ctaLabel: string
   to: string
-  wide: boolean // danger item spans both columns
 }
 
 function plural(n: number, one: string, many: string) {
@@ -42,16 +48,21 @@ function daysSince(iso: string): number {
   return Math.max(0, Math.floor((now - then) / (1000 * 60 * 60 * 24)))
 }
 
-// Composes the existing admin hooks into a prioritized work queue. Every item is derived from
-// real data; an item is only produced when its count is > 0, so the caller can render the
-// all-clear empty state simply by checking `items.length`.
-export function useAdminAttention(): { items: AttentionItem[]; loading: boolean } {
-  const { classes, loading: classesLoading } = useAdminClasses()
-  const { students, loading: studentsLoading } = useAdminStudents()
-  const { applications, loading: appsLoading } = useVolunteerApplications()
-  const { slots, loading: interviewsLoading } = useInterviews()
+// Opens that class on the Classes page (the ?open= deep link the search uses), so its sections show.
+function classLink(classId: string | undefined) {
+  return classId ? `/admin/classes?open=${encodeURIComponent(classId)}` : '/admin/classes'
+}
+
+// Composes the existing admin hooks into a work queue, most serious first. Every item is derived
+// from real data and only produced when its count is > 0, so an empty list means nothing is waiting.
+// `refetch` reloads quietly: the list stays on screen while it refreshes.
+export function useAdminAttention(): { items: AttentionItem[]; loading: boolean; refetch: () => Promise<void> } {
+  const { classes, loading: classesLoading, fillError, refetch: refetchClasses } = useAdminClasses()
+  const { applications, loading: appsLoading, refetch: refetchApps } = useVolunteerApplications()
+  const { slots, loading: interviewsLoading, refetch: refetchSlots } = useInterviews()
+  // Polls on focus by itself (useRefetchOnFocus inside).
   const { sections: boardSections, session: todaySession, loading: boardLoading } = useAttendanceBoard()
-  const { sessions, loading: sessionsLoading } = useSessions()
+  const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions()
   // Possible duplicate campers (same name, different accounts); an error just hides the item.
   const [dupes, setDupes] = useState<DuplicatePair[] | null>(null)
   // Emails that failed for good (3 attempts) — spec 09.
@@ -60,28 +71,53 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
   const [openRequests, setOpenRequests] = useState(0)
   // Volunteers who can't make it (spec 25).
   const [absences, setAbsences] = useState<CrewAbsence[]>([])
-  useEffect(() => {
-    let alive = true
-    supabase.rpc('admin_crew_absences').then(({ data, error }) => {
-      if (alive && !error) setAbsences((data ?? []) as CrewAbsence[])
-    })
-    supabase.rpc('possible_duplicate_campers').then(({ data, error }) => {
-      if (alive) setDupes(error ? [] : ((data ?? []) as DuplicatePair[]))
-    })
-    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3)
-      .then(({ count }) => { if (alive) setFailedEmails(count ?? 0) })
-    supabase.from('change_requests').select('id', { count: 'exact', head: true }).eq('status', 'open')
-      .then(({ count }) => { if (alive) setOpenRequests(count ?? 0) })
-    return () => { alive = false }
+
+  const loadExtras = useCallback(async () => {
+    const [abs, dup, failed, requests] = await Promise.all([
+      supabase.rpc('admin_crew_absences'),
+      supabase.rpc('possible_duplicate_campers'),
+      supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3),
+      supabase.from('change_requests').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    ])
+    return {
+      absences: abs.error ? null : ((abs.data ?? []) as CrewAbsence[]),
+      dupes: dup.error ? [] : ((dup.data ?? []) as DuplicatePair[]),
+      failed: failed.count ?? 0,
+      requests: requests.count ?? 0,
+    }
   }, [])
 
-  const loading = classesLoading || studentsLoading || appsLoading || interviewsLoading || boardLoading
-    || sessionsLoading || dupes === null
+  const applyExtras = useCallback((x: Awaited<ReturnType<typeof loadExtras>>) => {
+    if (x.absences) setAbsences(x.absences)
+    setDupes(x.dupes)
+    setFailedEmails(x.failed)
+    setOpenRequests(x.requests)
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    void loadExtras().then(x => { if (alive) applyExtras(x) })
+    return () => { alive = false }
+  }, [loadExtras, applyExtras])
+
+  async function refetch() {
+    const [x] = await Promise.all([loadExtras(), refetchClasses(), refetchApps(), refetchSlots(), refetchSessions()])
+    applyExtras(x)
+  }
+
+  // Loading means "nothing to show yet". Once the first load lands, a refresh keeps the current
+  // list on screen instead of dropping back to skeletons.
+  const firstLoad = classesLoading || appsLoading || interviewsLoading || boardLoading || sessionsLoading || dupes === null
+  const [settled, setSettled] = useState(false)
+  if (!firstLoad && !settled) setSettled(true)
+  const loading = !settled && firstLoad
 
   const items: AttentionItem[] = []
-  if (loading) return { items, loading }
+  if (loading) return { items, loading, refetch }
 
-  // ── 0. Camp day: campers unaccounted for right now (top of the list while camp is on) ──
+  const classIdByName = new Map(classes.map(c => [c.name, c.id]))
+
+  // ── Camp day: campers unaccounted for right now ──────────────────────────
   if (todaySession) {
     const missing = boardSections.flatMap(s => s.unaccounted.map(st => ({ st, s })))
     const untaken = boardSections.filter(s => s.latest === null)
@@ -90,244 +126,189 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean 
       items.push({
         key: 'unaccounted',
         icon: TriangleAlert,
-        iconWrap: 'bg-danger-soft text-danger',
-        cardCls: 'border-danger ring-1 ring-danger',
-        badge: 'Now',
-        badgeCls: 'bg-danger-soft text-danger',
+        tone: 'danger',
         title: `${missing.length} ${plural(missing.length, 'camper is', 'campers are')} unaccounted for`,
-        detail: `${first.st.full_name} · ${first.s.className} ${first.s.label} — missed ${rollCallLabel(first.s.latest!)}${missing.length > 1 ? ` · ${missing.length - 1} more` : ''}`,
+        detail: `${first.st.full_name} · ${first.s.className} ${first.s.label} · missed ${rollCallLabel(first.s.latest!)}${missing.length > 1 ? ` · ${missing.length - 1} more` : ''}`,
         ctaLabel: 'Open attendance',
         to: '/admin/attendance',
-        wide: true,
       })
     } else if (untaken.length > 0) {
       items.push({
         key: 'no-roll-call',
-        icon: ClipboardCheck,
-        iconWrap: 'bg-warning-soft text-warning',
-        cardCls: '',
-        badge: null,
-        badgeCls: null,
+        icon: ClipboardList,
+        tone: 'attention',
         title: `${untaken.length} ${plural(untaken.length, 'section has', 'sections have')} no roll call yet today`,
         detail: untaken.map(s => `${s.className} ${s.label}`).slice(0, 3).join(' · '),
         ctaLabel: 'Open attendance',
         to: '/admin/attendance',
-        wide: false,
       })
     }
   }
 
-  // ── Per-section seat/waitlist tally from real registrations ──────────────
-  const bySection = new Map<string, { taken: number; waitlisted: number }>()
-  for (const st of students) {
-    for (const r of st.registrations) {
-      const e = bySection.get(r.section_id) ?? { taken: 0, waitlisted: 0 }
-      if (r.status === 'waitlisted') e.waitlisted++
-      else if (r.status !== 'cancelled') e.taken++ // pending/confirmed occupy a seat
-      bySection.set(r.section_id, e)
-    }
-  }
-
-  const sectionRows = classes.flatMap(c =>
-    c.sections.map(s => {
-      const counts = bySection.get(s.id) ?? { taken: 0, waitlisted: 0 }
-      return { className: c.name, label: s.label, capacity: s.capacity, ...counts }
-    }),
-  )
-
-  // ── 1. Class full / nearly full (highest priority → danger edge) ─────────
-  const fullSecs = sectionRows.filter(s => s.capacity > 0 && s.taken >= s.capacity)
-  const nearSecs = sectionRows.filter(
-    s => s.capacity > 0 && s.taken < s.capacity && s.taken / s.capacity >= 0.9,
-  )
-  const capacitySecs = [...fullSecs, ...nearSecs]
-  if (capacitySecs.length > 0) {
-    const anyFull = fullSecs.length > 0
-    // Surface the most pressing section: a full one with the longest waitlist, else the fullest.
-    const focus = anyFull
-      ? [...fullSecs].sort((a, b) => b.waitlisted - a.waitlisted)[0]
-      : [...nearSecs].sort((a, b) => b.taken / b.capacity - a.taken / a.capacity)[0]
-    const waitNote = focus.waitlisted > 0 ? `, ${focus.waitlisted} waitlisted` : ''
-    // Say what the rest are rather than a bare "+N more": other full sections, then nearly full ones.
-    const otherFull = anyFull ? fullSecs.length - 1 : 0
-    const otherNear = anyFull ? nearSecs.length : nearSecs.length - 1
-    const moreNote =
-      (otherFull > 0 ? ` · ${otherFull} more full` : '') +
-      (otherNear > 0 ? ` · ${otherNear} ${anyFull ? '' : 'more '}nearly full` : '')
+  // ── Emails that couldn't be sent (spec 09) ───────────────────────────────
+  if (failedEmails > 0) {
     items.push({
-      key: 'capacity',
-      icon: anyFull ? TriangleAlert : Gauge,
-      iconWrap: anyFull ? 'bg-danger-soft text-danger' : 'bg-warning-soft text-warning',
-      cardCls: anyFull ? 'border-danger ring-1 ring-danger' : '',
-      badge: anyFull ? 'Full' : null,
-      badgeCls: anyFull ? 'bg-danger-soft text-danger' : null,
-      title: anyFull
-        ? `${fullSecs.length} ${plural(fullSecs.length, 'section is', 'sections are')} at capacity`
-        : `${nearSecs.length} ${plural(nearSecs.length, 'section is', 'sections are')} nearly full`,
-      detail: `${focus.className} · ${focus.label} — ${focus.taken}/${focus.capacity}${waitNote}${moreNote}`,
-      ctaLabel: 'Review classes',
-      to: '/admin/classes',
-      wide: anyFull,
+      key: 'failed-emails',
+      icon: MailWarning,
+      tone: 'danger',
+      title: `${failedEmails} ${plural(failedEmails, "email couldn't", "emails couldn't")} be sent`,
+      detail: 'Families may not know about a confirmation or change. Check the email log.',
+      ctaLabel: 'Open email log',
+      to: '/admin/updates',
     })
   }
 
-  // ── 1b. Sections with no lead in a session that hasn't ended (spec 14) ───
+  // ── Sections with no lead in a session that hasn't ended (spec 14) ───────
   const today = localDateISO()
   const liveSessionIds = new Set(sessions.filter(se => se.is_active && se.end_date >= today).map(se => se.id))
   const noLead = classes.flatMap(c => c.sections
     .filter(sec => !sec.cancelled_at && !sec.lead_id
       // A both-weeks section (no session) counts while any session is still to come.
       && (sec.session_id ? liveSessionIds.has(sec.session_id) : liveSessionIds.size > 0))
-    .map(sec => ({ className: c.name, label: sec.label, week: sec.week })))
+    .map(sec => ({
+      classId: c.id, className: c.name, room: sec.room, taken: sec.registered_count,
+      name: `${sec.label}${sec.week ? ` Week ${sec.week}` : ''}`,
+    })))
   if (noLead.length > 0) {
     const first = noLead[0]
     items.push({
       key: 'no-lead',
-      icon: UserX,
-      iconWrap: 'bg-danger-soft text-danger',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
-      title: `${noLead.length} ${plural(noLead.length, 'section has', 'sections have')} no lead`,
-      detail: `${first.className} · ${first.label}${first.week ? ` (Week ${first.week})` : ''}${noLead.length > 1 ? ` · ${noLead.length - 1} more` : ''}`,
+      icon: UserRoundX,
+      tone: 'attention',
+      title: noLead.length === 1 ? `${first.name} has no lead` : `${noLead.length} sections have no lead`,
+      detail: noLead.length === 1
+        ? [first.className, first.room, fillError ? null : `${first.taken} ${plural(first.taken, 'camper', 'campers')} so far`].filter(Boolean).join(' · ')
+        : noLead.slice(0, 3).map(n => n.name).join(' · ') + (noLead.length > 3 ? ` · ${noLead.length - 3} more` : ''),
       ctaLabel: 'Assign a lead',
-      to: '/admin/classes',
-      wide: false,
+      to: classLink(first.classId),
     })
   }
 
-  // ── 1b2. Crew absences coming up (spec 25): a missing lead first ─────────
+  // ── Crew absences coming up (spec 25) ────────────────────────────────────
   if (absences.length > 0) {
     const first = absences[0]
     const day = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     const when = first.from_date === first.to_date ? day(first.from_date) : `${day(first.from_date)}–${day(first.to_date)}`
-    const anyLead = absences.some(a => a.is_lead)
     items.push({
       key: 'crew-absence',
       icon: CalendarX,
-      iconWrap: anyLead ? 'bg-danger-soft text-danger' : 'bg-warning-soft text-warning',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
+      tone: 'attention',
       title: absences.length === 1
         ? `${first.volunteer_name} can't make it ${when}`
         : `${absences.length} crew absences coming up`,
       detail: `${first.is_lead ? 'Lead' : 'Crew'} of ${first.class_name} · ${first.section_label}${first.week ? ` (Week ${first.week})` : ''}`
         + (first.suggestions.length > 0 ? ` · could cover: ${first.suggestions.slice(0, 3).join(', ')}` : ' · no free senior that week'),
       ctaLabel: 'Find cover',
-      to: '/admin/classes',
-      wide: false,
+      to: classLink(classIdByName.get(first.class_name)),
     })
   }
 
-  // ── 1c. Possible duplicate campers (spec 14b) ────────────────────────────
+  // ── Change requests from families (spec 11) and volunteers (spec 25) ─────
+  if (openRequests > 0) {
+    items.push({
+      key: 'change-requests',
+      icon: MessageSquareText,
+      tone: 'attention',
+      title: `${openRequests} open change ${plural(openRequests, 'request', 'requests')}`,
+      detail: 'Families past the online deadline, or volunteers asking to switch sections.',
+      ctaLabel: 'Review requests',
+      to: '/admin/students#requests',
+    })
+  }
+
+  // ── Seats: from the same fill counts as the Classes page and Today's seat grid ──
+  // Skipped when the counts didn't load, rather than reporting zeros as fact.
+  const sectionRows = fillError ? [] : classes.flatMap(c =>
+    c.sections.filter(s => !s.cancelled_at).map(s => ({
+      classId: c.id, className: c.name, label: s.label, capacity: s.capacity,
+      taken: s.registered_count, waitlisted: s.waitlist_count,
+    })),
+  )
+
+  // Waitlisted campers who could take a free seat now.
+  const placeable = sectionRows.filter(s => s.capacity > 0 && s.taken < s.capacity && s.waitlisted > 0)
+  if (placeable.length > 0) {
+    items.push({
+      key: 'waitlist',
+      icon: ListChecks,
+      tone: 'attention',
+      title: 'Waitlist spots opened up',
+      detail: `Open seats in ${placeable.length} ${plural(placeable.length, 'section', 'sections')} with campers waiting`,
+      ctaLabel: 'Place campers',
+      to: '/admin/students',
+    })
+  }
+
+  // ── Possible duplicate campers (spec 14b) ────────────────────────────────
   if (dupes && dupes.length > 0) {
     const first = dupes[0]
     items.push({
       key: 'duplicates',
       icon: Copy,
-      iconWrap: 'bg-warning-soft text-warning',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
+      tone: 'attention',
       title: `${dupes.length} possible duplicate ${plural(dupes.length, 'camper', 'campers')}`,
       detail: `${first.a_name} (${first.a_parent ?? 'one account'}) and ${first.b_name} (${first.b_parent ?? 'another account'}): ${first.reason}`,
       ctaLabel: 'Review campers',
       to: `/admin/students?q=${encodeURIComponent(first.a_name)}`,
-      wide: false,
     })
   }
 
-  // ── 1c2. Change requests from families (spec 11) and volunteers (spec 25) ─
-  if (openRequests > 0) {
-    items.push({
-      key: 'change-requests',
-      icon: MessageSquare,
-      iconWrap: 'bg-warning-soft text-warning',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
-      title: `${openRequests} open change ${plural(openRequests, 'request', 'requests')}`,
-      detail: 'Families past the online deadline, or volunteers asking to switch sections.',
-      ctaLabel: 'Review requests',
-      to: '/admin/students#requests',
-      wide: false,
-    })
-  }
-
-  // ── 1d. Emails that couldn't be sent (spec 09) ───────────────────────────
-  if (failedEmails > 0) {
-    items.push({
-      key: 'failed-emails',
-      icon: MailWarning,
-      iconWrap: 'bg-danger-soft text-danger',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
-      title: `${failedEmails} ${plural(failedEmails, "email couldn't", "emails couldn't")} be sent`,
-      detail: 'Families may not know about a confirmation or change. Check the email log.',
-      ctaLabel: 'Open email log',
-      to: '/admin/updates',
-      wide: false,
-    })
-  }
-
-  // ── 2. Volunteer applications pending review ─────────────────────────────
+  // ── Volunteer applications pending review ────────────────────────────────
   const pending = applications.filter(a => a.status === 'pending')
   if (pending.length > 0) {
     const oldest = Math.max(...pending.map(a => daysSince(a.created_at)))
     items.push({
       key: 'volunteers',
-      icon: Users,
-      iconWrap: 'bg-role-volunteer-soft text-role-volunteer',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
+      icon: Inbox,
+      tone: 'attention',
       title: `${pending.length} volunteer ${plural(pending.length, 'application', 'applications')} pending`,
-      detail: `Awaiting review — oldest is ${oldest} ${plural(oldest, 'day', 'days')} old`,
+      detail: `Oldest is ${oldest} ${plural(oldest, 'day', 'days')} old.`,
       ctaLabel: 'Review applications',
       to: '/admin/volunteers?tab=applications',
-      wide: false,
     })
   }
 
-  // ── 3. Applicants awaiting review who haven't picked an interview time ────
+  // ── Applicants awaiting review who haven't picked an interview time ──────
   // (the interview comes before a decision, so this is about pending applications)
   const bookedAppIds = new Set(slots.filter(s => s.booking).map(s => s.booking!.application_id))
   const unscheduled = applications.filter(a => a.status === 'pending' && !bookedAppIds.has(a.id))
   if (unscheduled.length > 0) {
     items.push({
       key: 'interviews',
-      icon: Mic,
-      iconWrap: 'bg-info-soft text-info',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
+      icon: CalendarClock,
+      tone: 'attention',
       title: `${unscheduled.length} ${plural(unscheduled.length, 'applicant has', 'applicants have')} no interview yet`,
-      detail: "They haven't picked a time — post more slots or book them in",
-      ctaLabel: 'Open interviews',
+      detail: "They haven't picked a time. Post more slots or book them in.",
+      ctaLabel: 'Book interviews',
       to: '/admin/interviews',
-      wide: false,
     })
   }
 
-  // ── 4. Waitlisted campers who can now be placed ──────────────────────────
-  const placeable = sectionRows.filter(s => s.capacity > 0 && s.taken < s.capacity && s.waitlisted > 0)
-  if (placeable.length > 0) {
+  // ── Full and nearly full sections: worth knowing, not a fault ────────────
+  const fullSecs = sectionRows.filter(s => s.capacity > 0 && s.taken >= s.capacity)
+  const nearSecs = sectionRows.filter(s => s.capacity > 0 && s.taken < s.capacity && s.taken / s.capacity >= 0.9)
+  if (fullSecs.length > 0 || nearSecs.length > 0) {
+    const anyFull = fullSecs.length > 0
+    // The most pressing section: a full one with the longest waitlist, else the fullest.
+    const focus = anyFull
+      ? [...fullSecs].sort((a, b) => b.waitlisted - a.waitlisted)[0]
+      : [...nearSecs].sort((a, b) => b.taken / b.capacity - a.taken / a.capacity)[0]
+    const waiting = fullSecs.reduce((n, s) => n + s.waitlisted, 0)
+    const nearNote = anyFull && nearSecs.length > 0 ? ` · ${nearSecs.length} nearly full` : ''
     items.push({
-      key: 'waitlist',
-      icon: List,
-      iconWrap: 'bg-info-soft text-info',
-      cardCls: '',
-      badge: null,
-      badgeCls: null,
-      title: 'Waitlist spots opened up',
-      detail: `Open seats in ${placeable.length} ${plural(placeable.length, 'section', 'sections')} with campers waiting`,
-      ctaLabel: 'Place campers',
-      to: '/admin/students',
-      wide: false,
+      key: 'capacity',
+      icon: Armchair,
+      tone: 'info',
+      title: anyFull
+        ? `${fullSecs.length} ${plural(fullSecs.length, 'section', 'sections')} full · ${waiting} waitlisted`
+        : `${nearSecs.length} ${plural(nearSecs.length, 'section is', 'sections are')} nearly full`,
+      detail: `${focus.className} · ${focus.label} has ${focus.taken} of ${focus.capacity} seats taken${focus.waitlisted > 0 ? `, ${focus.waitlisted} waitlisted` : ''}${nearNote}`,
+      ctaLabel: 'See seats',
+      to: classLink(focus.classId),
     })
   }
 
-  return { items, loading }
+  // Most serious first; the order above breaks ties.
+  items.sort((a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone])
+  return { items, loading, refetch }
 }

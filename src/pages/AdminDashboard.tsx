@@ -1,145 +1,98 @@
-import { Link } from 'react-router-dom'
-import {
-  GraduationCap, Users, LayoutGrid, List, CalendarDays, Shield, Settings2, Mic,
-  CircleCheck, Clock, ClipboardCheck, Megaphone,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
-import { useAdminStats } from '../hooks/useAdminStats'
-import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
-import { useAuth } from '../context/AuthContext'
-import StatCard from '../components/StatCard'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import SignBand from '../components/SignBand'
 import AdminNeedsAttention from '../components/AdminNeedsAttention'
+import SeatGrid from '../components/SeatGrid'
+import { useAdminAttention } from '../hooks/useAdminAttention'
+import { useAdminClasses } from '../hooks/useAdminClasses'
+import { useSessions, activeCampYear, campSessions } from '../hooks/useSessions'
+import { useSeasonSettings } from '../hooks/useSeasonSettings'
+import { useFormConfigs } from '../hooks/useFormConfigs'
+import { useRefetchOnFocus } from '../hooks/useRefetchOnFocus'
+import { registrationSign, seatTotals } from '../lib/registrationStatus'
+import { formatCampTime } from '../lib/denverTime'
 
-function greeting(hour: number) {
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-}
+const h2 = 'text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]'
 
-interface QuickLink {
-  to: string
-  label: string
-  desc: string
-  icon: LucideIcon
-}
-
-const QUICK_LINKS: QuickLink[] = [
-  { to: '/admin/attendance', label: 'Attendance', desc: "Today's roll calls and who's unaccounted for.", icon: ClipboardCheck },
-  { to: '/admin/updates', label: 'Updates', desc: 'Post to families, volunteers or one section.', icon: Megaphone },
-  { to: '/admin/classes', label: 'Classes', desc: 'Create, edit, set capacity.', icon: LayoutGrid },
-  { to: '/admin/volunteers', label: 'Volunteers', desc: 'Roster, assignments, applications.', icon: Users },
-  { to: '/admin/students', label: 'Students', desc: 'Manage registrations and rosters.', icon: GraduationCap },
-  { to: '/admin/users', label: 'Users & roles', desc: 'Promote, demote, manage accounts.', icon: Shield },
-  { to: '/admin/sessions', label: 'Sessions', desc: 'Manage camp sessions and dates.', icon: CalendarDays },
-  { to: '/admin/duties', label: 'Duty schedule', desc: 'Daily volunteer duty slots.', icon: List },
-  { to: '/admin/interviews', label: 'Interviews', desc: 'Schedule and record notes.', icon: Mic },
-  { to: '/admin/forms', label: 'Form editor', desc: 'Configure fields and labels.', icon: Settings2 },
-]
-
+// Admin home. The sign answers "is registration open?"; To do lists what needs a person, most
+// serious first; Seats shows every section's fill. Refreshes on tab focus and every minute.
 export default function AdminDashboard() {
-  const { stats, loading } = useAdminStats()
-  const { applications } = useVolunteerApplications()
-  const { profile } = useAuth()
+  const attention = useAdminAttention()
+  const { classes, loading: classesLoading, error: classesError, fillError, refetch: refetchClasses } = useAdminClasses()
+  const { sessions, loading: sessionsLoading } = useSessions()
+  const { settings: season, loading: seasonLoading, error: seasonError, refetch: refetchSeason } =
+    useSeasonSettings(sessionsLoading ? null : activeCampYear(sessions))
+  const { configs, loading: formsLoading, error: formsError, refetch: refetchForms } = useFormConfigs()
 
-  const firstName = profile?.display_name?.split(' ')[0] ?? 'there'
-  const ready = !loading && !!stats
+  // The clock the sign reads (the opening countdown, the phase), ticking every 30 seconds.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
-  const dash = ready
-    ? {
-        students: stats.totalStudents,
-        classes: stats.totalClasses,
-        volunteers: stats.totalVolunteers,
-        confirmed: stats.confirmedRegistrations,
-        waitlisted: stats.waitlistedRegistrations,
-      }
-    : { students: '—', classes: '—', volunteers: '—', confirmed: '—', waitlisted: '—' }
+  // Skeletons only until the first load; refreshes keep what's on screen. "Updated" is the last
+  // time everything read, so a failed read never looks fresh.
+  const firstLoad = classesLoading || seasonLoading || formsLoading
+  const anyError = !!(classesError || fillError || seasonError || formsError)
+  const [loaded, setLoaded] = useState(false)
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null)
+  if (!firstLoad && !loaded) {
+    setLoaded(true)
+    if (!anyError) setUpdatedAt(now)
+  }
 
-  // Real, live context for the captions ------------------------------------
-  const pendingReviews = applications.filter(a => a.status === 'pending').length
-  const confirmedPct =
-    ready && stats.totalRegistrations > 0
-      ? Math.round((stats.confirmedRegistrations / stats.totalRegistrations) * 100)
-      : null
+  // Hook refetchers are new functions every render; the focus listener reads the latest ones.
+  const refetchers = useRef([attention.refetch, refetchClasses, refetchSeason, refetchForms])
+  useEffect(() => { refetchers.current = [attention.refetch, refetchClasses, refetchSeason, refetchForms] })
+  const refresh = useCallback(() => {
+    // A refetcher resolves false when its read failed.
+    void Promise.all(refetchers.current.map(fn => fn())).then(results => {
+      const t = Date.now()
+      setNow(t)
+      if (results.every(ok => ok !== false)) setUpdatedAt(t)
+    })
+  }, [])
+  useRefetchOnFocus(refresh, 60_000)
+
+  const regForm = configs.find(c => c.form_key === 'student_registration')
+  const sign = registrationSign({
+    // A failed read is unknown, never open. After a good read, no row means the database doesn't
+    // block on it (it only refuses when enabled is false).
+    formEnabled: formsError ? null : regForm ? regForm.config.enabled !== false : true,
+    opensAt: season?.registration_opens_at ?? null,
+    openingUnknown: !!seasonError,
+    seats: classesError || fillError ? null : seatTotals(classes.flatMap(c => c.sections)),
+    updatedAt: updatedAt ? formatCampTime(updatedAt).replace(/\s?[AP]M$/, '') : null,
+    now,
+  })
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10 space-y-10">
-      {/* Greeting */}
-      <div>
-        <h1 className="font-display font-bold text-[40px] leading-[46px] tracking-[-0.01em] text-ink mb-1">
-          {greeting(new Date().getHours())}, {firstName}
-        </h1>
-        <p className="font-slab text-ink-muted text-lg">Manage classes, volunteers, and registrations.</p>
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="font-display font-bold text-[1.75rem] leading-[1.15] tracking-[-0.01em] text-balance">Today</h1>
+
+      <div className="mt-5">
+        {loaded
+          ? <SignBand {...sign} />
+          : <div role="status" className="h-[172px] rounded bg-surface-sunken animate-pulse"><span className="sr-only">Loading registration status</span></div>}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatCard label="Students" value={dash.students} icon={GraduationCap} />
-        <StatCard
-          label="Classes"
-          value={dash.classes}
-          icon={LayoutGrid}
-          iconColor="text-info"
-          iconBg="bg-info-soft"
-        />
-        <StatCard
-          label="Volunteers"
-          value={dash.volunteers}
-          icon={Users}
-          iconColor="text-role-volunteer"
-          iconBg="bg-role-volunteer-soft"
-          delta={
-            ready
-              ? pendingReviews > 0
-                ? { text: `${pendingReviews} pending review`, tone: 'warn', icon: Clock }
-                : { text: 'All applications reviewed', tone: 'muted' }
-              : undefined
-          }
-        />
-        <StatCard
-          label="Confirmed"
-          value={dash.confirmed}
-          icon={CircleCheck}
-          iconColor="text-success"
-          iconBg="bg-success-soft"
-          delta={
-            confirmedPct !== null
-              ? { text: `${confirmedPct}% of registrations`, tone: 'muted' }
-              : undefined
-          }
-        />
-        <StatCard
-          label="Waitlisted"
-          value={dash.waitlisted}
-          icon={List}
-          iconColor="text-ink-muted"
-          iconBg="bg-surface-sunken"
-          delta={ready ? { text: 'Awaiting open seats', tone: 'info' } : undefined}
-        />
-      </div>
+      <div className="mt-10 grid items-start gap-10 xl:grid-cols-[3fr_2fr] xl:gap-8">
+        <section aria-labelledby="todo-heading" className="min-w-0">
+          <h2 id="todo-heading" className={h2}>To do</h2>
+          <div className="mt-3">
+            <AdminNeedsAttention items={attention.items} loading={attention.loading} />
+          </div>
+        </section>
 
-      {/* Needs attention — the real work queue, above secondary navigation */}
-      <AdminNeedsAttention />
-
-      {/* Jump to — calm, neutral secondary nav (single gold hover accent) */}
-      <div>
-        <h2 className="font-sans text-xs font-semibold uppercase tracking-widest text-ink-muted mb-3">Jump to</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {QUICK_LINKS.map(({ to, label, desc, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              className="group bg-surface border border-border rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-px transition"
-            >
-              <div className="w-11 h-11 rounded-full bg-surface-sunken flex items-center justify-center shrink-0 transition group-hover:bg-brand-soft">
-                <Icon size={20} className="text-ink-muted transition group-hover:text-warning" />
-              </div>
-              <div>
-                <h3 className="font-sans font-semibold text-sm text-ink mb-0.5">{label}</h3>
-                <p className="font-sans text-xs text-ink-muted">{desc}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <section aria-labelledby="seats-heading" className="min-w-0">
+          <h2 id="seats-heading" className={h2}>Seats</h2>
+          <p className="mt-2 text-sm text-ink-muted">Full sections show their waitlist. Select a section to open its class.</p>
+          <div className="mt-3">
+            {loaded
+              ? <SeatGrid classes={classes} weeks={campSessions(sessions)} countsMissing={!!fillError} error={classesError} />
+              : <div aria-hidden="true" className="h-64 rounded bg-surface-sunken animate-pulse" />}
+          </div>
+        </section>
       </div>
     </div>
   )

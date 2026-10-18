@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Check, Calendar, Copy } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Pencil, Trash2, Check, Calendar, Copy, ArrowRight } from 'lucide-react'
 import { useSessions, formatSessionDates, activeCampYear, type Session } from '../hooks/useSessions'
 import SeasonSettingsCard from '../components/SeasonSettingsCard'
 import { useScheduleItems } from '../hooks/useScheduleItems'
@@ -7,6 +8,9 @@ import { formatTimeRange } from '../lib/campDay'
 import type { ScheduleItem } from '../types/database'
 import { ActionError } from '../components/ActionError'
 import InlineConfirm from '../components/InlineConfirm'
+import Button from '../components/Button'
+import { useAppSettings } from '../hooks/useAppSettings'
+import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
 
 interface SessionFormState {
   name: string
@@ -204,6 +208,35 @@ function ScheduleItemForm({
   )
 }
 
+// Volunteer applications open and close on Volunteers › Applications only; this is the status.
+function ApplicationsStatus() {
+  const { settings, loading, error } = useAppSettings()
+  const { applications } = useVolunteerApplications()
+  const open = settings['volunteer_applications_open'] === 'true'
+  const pending = applications.filter(a => a.status === 'pending').length
+  return (
+    <section aria-labelledby="applications-heading" className="pt-5 border-t-2 border-ink">
+      <h2 id="applications-heading" className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">Volunteer applications</h2>
+      {loading ? (
+        <div aria-hidden="true" className="mt-3 h-11 rounded bg-surface-sunken animate-pulse" />
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <p className="text-pretty">
+            {error
+              ? <b title={error} className="font-extrabold text-danger">Couldn't check whether they're open</b>
+              : <b className="font-extrabold">{open ? 'Open' : 'Closed'}</b>}
+            {error ? '' : open ? ' at /apply' : ". The form at /apply isn't taking applications"}
+            {pending > 0 && ` · ${pending} pending`}
+          </p>
+          <Link to="/admin/volunteers?tab=applications" className="inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px]">
+            {error ? 'See them' : open ? 'Close them' : 'Open them'} in Volunteers <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" />
+          </Link>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function AdminSessions() {
   const { sessions, loading, error, createSession, updateSession, deleteSession } = useSessions()
   const [editing, setEditing] = useState<'new' | string | null>(null)
@@ -259,24 +292,31 @@ export default function AdminSessions() {
 
   return (
     <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div className="flex items-start sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display font-bold text-2xl text-ink mb-1">Sessions</h1>
-          <p className="font-sans text-sm text-ink-muted">Each session is one camp week. The year's first and second sessions by date are Week 1 and Week 2, shown or hidden.</p>
-        </div>
-        {editing !== 'new' && (
-          <button
-            onClick={() => { setPendingDelete(null); setEditing('new') }}
-            className="ui-btn ui-btn--primary shrink-0"
-          >
-            <Plus size={16} /> New session
-          </button>
-        )}
+      <div>
+        <h1 className="font-display font-bold text-[1.75rem] leading-[1.15] tracking-[-0.01em] text-ink">Sessions</h1>
+        <p className="mt-2 text-ink-muted text-pretty">
+          {!loading && `Season ${activeCampYear(sessions)}. `}Registration opens and closes here, and only here.
+        </p>
       </div>
 
       <ActionError message={actionError} onDismiss={() => setActionError(null)} />
-      {!loading && sessions.length > 0 && <SeasonSettingsCard year={activeCampYear(sessions)} />}
+      {/* Always here once loaded, even before any session exists: this holds the only registration
+          switch. With no sessions, the season is this calendar year (activeCampYear). */}
+      {!loading && <SeasonSettingsCard year={activeCampYear(sessions)} />}
+      {!loading && <ApplicationsStatus />}
       {error && <div className="px-4 py-3 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">⚠ {error}</div>}
+
+      <div className="pt-5 border-t-2 border-ink flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-[1.375rem] font-bold leading-[1.2] tracking-[-0.01em]">Weeks</h2>
+          <p className="mt-1 text-sm text-ink-muted">Each session is one camp week.</p>
+        </div>
+        {editing !== 'new' && (
+          <Button onClick={() => { setPendingDelete(null); setEditing('new') }}>
+            <Plus size={16} aria-hidden="true" /> New session
+          </Button>
+        )}
+      </div>
 
       {editing === 'new' && (
         <SessionForm

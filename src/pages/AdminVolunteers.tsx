@@ -1,6 +1,6 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Wand2, Check, X, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Download } from 'lucide-react'
+import { Wand2, Check, X, ChevronDown, ChevronUp, Copy, Download } from 'lucide-react'
 import { useVolunteers } from '../hooks/useVolunteers'
 import { useAdminClasses } from '../hooks/useAdminClasses'
 import { useAppSettings } from '../hooks/useAppSettings'
@@ -8,6 +8,8 @@ import { useVolunteerApplications } from '../hooks/useVolunteerApplications'
 import { useSessions, campSessions, formatSessionDates } from '../hooks/useSessions'
 import { matchVolunteers, type AssignmentPair } from '../lib/volunteerMatcher'
 import DataTable from '../components/DataTable'
+import Button from '../components/Button'
+import InlineConfirm from '../components/InlineConfirm'
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
 import type { VolunteerApplication, ExperienceLevel } from '../types/database'
 
@@ -360,7 +362,7 @@ function ApplicationReview({
 export default function AdminVolunteers() {
   const { volunteers, loading: vLoading, refetch: refetchVolunteers } = useVolunteers()
   const { classes, updateSection, refetch: refetchClasses } = useAdminClasses()
-  const { settings, loading: settingsLoading, updateSetting } = useAppSettings()
+  const { settings, loading: settingsLoading, error: settingsReadError, updateSetting } = useAppSettings()
   const { applications, loading: appsLoading, acceptApplication, rejectApplication } = useVolunteerApplications()
 
   // ?tab=applications (from the top-bar search / dashboard links) opens that tab.
@@ -379,6 +381,17 @@ export default function AdminVolunteers() {
   const [appFilter, setAppFilter] = useState<AppFilter>('pending')
   const [assignError, setAssignError] = useState<string | null>(null)
   const [settingError, setSettingError] = useState<string | null>(null)
+  const [closingApps, setClosingApps] = useState(false)
+  const [settingBusy, setSettingBusy] = useState(false)
+  // When the confirm closes (cancel, Escape or done), focus goes back to the Close/Open button.
+  const appsButton = useRef<HTMLButtonElement>(null)
+  const refocusApps = useRef(false)
+  useEffect(() => {
+    if (refocusApps.current && !closingApps && !settingBusy) {
+      refocusApps.current = false
+      appsButton.current?.focus()
+    }
+  }, [closingApps, settingBusy])
   const { sessions } = useSessions()
   const weeks = campSessions(sessions)
   const weekLabels: [string, string] = [0, 1].map(i =>
@@ -387,6 +400,19 @@ export default function AdminVolunteers() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const applicationsOpen = settings['volunteer_applications_open'] === 'true'
+
+  async function setApplicationsOpen(open: boolean) {
+    setSettingBusy(true); setSettingError(null)
+    try {
+      await updateSetting('volunteer_applications_open', open ? 'true' : 'false')
+      if (closingApps) refocusApps.current = true
+      setClosingApps(false)
+    } catch (e) {
+      setSettingError(`Couldn't ${open ? 'open' : 'close'} applications: ${e instanceof Error ? e.message : 'unknown error'}. Try again.`)
+    } finally {
+      setSettingBusy(false)
+    }
+  }
   const pendingCount = applications.filter(a => a.status === 'pending').length
   const filteredApps = appFilter === 'all' ? applications : applications.filter(a => a.status === appFilter)
 
@@ -620,52 +646,52 @@ export default function AdminVolunteers() {
             <div className="flex items-center justify-between gap-3">
               <h1 className="font-display font-bold text-2xl text-ink">Volunteer applications</h1>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => exportApplicationsCSV(applications)}
-                  className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
-                >
-                  <Download size={15} /> Export CSV
-                </button>
-                <button
-                  onClick={() => {
-                    setSettingError(null)
-                    updateSetting('volunteer_applications_open', applicationsOpen ? 'false' : 'true')
-                      .catch(e => setSettingError(`Couldn't change this: ${e instanceof Error ? e.message : 'unknown error'}`))
-                  }}
-                  aria-pressed={applicationsOpen}
-                  disabled={settingsLoading}
-                  className={`flex items-center gap-2 h-10 px-4 rounded-[10px] font-sans font-semibold text-sm border transition disabled:opacity-50 ${
-                    applicationsOpen
-                      ? 'bg-success-soft text-success border-success/30 hover:bg-success/10'
-                      : 'bg-surface border-border-strong text-ink-muted hover:bg-surface-sunken'
-                  }`}
-                >
-                  {applicationsOpen
-                    ? <><ToggleRight size={18} /> Applications open</>
-                    : <><ToggleLeft size={18} /> Applications closed</>}
-                </button>
-              </div>
+              <button
+                onClick={() => exportApplicationsCSV(applications)}
+                className="h-9 px-4 bg-surface border border-border-strong text-ink font-sans font-semibold text-sm rounded-[10px] flex items-center gap-2 hover:bg-surface-sunken transition"
+              >
+                <Download size={15} /> Export CSV
+              </button>
             </div>
 
-            {settingError && <p role="alert" className="px-3 py-2 bg-danger-soft text-danger rounded-[10px] font-sans text-sm">{settingError}</p>}
-
-            {applicationsOpen && (
-              <div className="flex items-center gap-2 text-xs font-sans text-success bg-success-soft border border-success/20 rounded-[10px] px-3 py-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                <span>
-                  The application form is live at{' '}
-                  <a href="/apply" target="_blank" rel="noreferrer" className="font-semibold underline">{window.location.origin}/apply</a>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}/apply`) }}
-                  className="ml-auto h-7 px-2.5 rounded-[6px] bg-surface border border-success/30 font-semibold hover:bg-success/10 transition"
-                >
-                  Copy link
-                </button>
-              </div>
+            {/* The one open/close control for the form at /apply (issue #171). Closing asks first. */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 border-y-2 border-ink">
+              <p className="flex-1 min-w-[16rem] text-pretty">
+                {settingsLoading
+                  ? 'Checking whether applications are open…'
+                  : settingsReadError
+                    ? <b title={settingsReadError} className="font-extrabold text-danger">Couldn't check whether applications are open. Reload the page to try again.</b>
+                  : applicationsOpen
+                    ? <><b className="font-extrabold">Applications are open</b> at <a href="/apply" target="_blank" rel="noreferrer" className="font-bold underline underline-offset-[3px]">{window.location.host}/apply</a></>
+                    : <><b className="font-extrabold">Applications are closed.</b> The form at /apply isn't taking new applications.</>}
+              </p>
+              {applicationsOpen && (
+                <Button variant="text" onClick={() => { void navigator.clipboard?.writeText(`${window.location.origin}/apply`) }}>
+                  <Copy size={16} aria-hidden="true" /> Copy link
+                </Button>
+              )}
+              {!settingsReadError && <Button
+                ref={appsButton}
+                disabled={settingsLoading || settingBusy}
+                aria-expanded={applicationsOpen ? closingApps : undefined}
+                onClick={() => { if (applicationsOpen) setClosingApps(true); else void setApplicationsOpen(true) }}
+              >
+                {applicationsOpen ? 'Close applications' : 'Open applications'}
+              </Button>}
+            </div>
+            {closingApps && applicationsOpen && (
+              <InlineConfirm
+                frame
+                message={`Close volunteer applications? The form at /apply stops taking new applications until you open it again. The ${applications.length} already in stay as they are.`}
+                confirmLabel="Close applications"
+                cancelLabel="Keep them open"
+                busy={settingBusy}
+                onConfirm={() => { void setApplicationsOpen(false) }}
+                onCancel={() => { refocusApps.current = true; setClosingApps(false) }}
+              />
             )}
+
+            {settingError && <p role="alert" className="text-sm font-bold text-danger">{settingError}</p>}
 
             {/* Filter pills */}
             <div className="flex gap-2">

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { keepLastGood } from '../lib/readResult'
 
 import type { FieldConfig } from '../lib/formFields'
 export type { FieldConfig }
@@ -19,6 +20,8 @@ export interface FormConfigRow {
 export function useFormConfigs() {
   const [configs, setConfigs] = useState<FormConfigRow[]>([])
   const [loading, setLoading] = useState(true)
+  // Set when the last read failed; `configs` then still holds the last good copy.
+  const [error, setError] = useState<string | null>(null)
 
   // Writes replace the whole config JSON, so two edits built from the same on-screen copy would
   // overwrite each other. Each write waits for the one before it and merges into a fresh read.
@@ -27,10 +30,13 @@ export function useFormConfigs() {
   useEffect(() => { fetchConfigs() }, [])
 
   // No loading flag on refetch: flipping it would unmount the editor rows and drop a half-typed label.
-  async function fetchConfigs() {
-    const { data } = await supabase.from('form_configs').select('*').order('form_key')
-    setConfigs(data ?? [])
+  // Resolves false when the read failed.
+  async function fetchConfigs(): Promise<boolean> {
+    const read = await supabase.from('form_configs').select('*').order('form_key')
+    setConfigs(prev => keepLastGood<FormConfigRow[]>(prev, read, []).value)
+    setError(read.error?.message ?? null)
     setLoading(false)
+    return !read.error
   }
 
   function write(formKey: string, change: (current: FormConfig) => FormConfig): Promise<void> {
@@ -62,5 +68,5 @@ export function useFormConfigs() {
     return write(formKey, c => ({ ...c, fields: { ...c.fields, [fieldKey]: { ...c.fields[fieldKey], ...patch } } }))
   }
 
-  return { configs, loading, setFormEnabled, updateField, refetch: fetchConfigs }
+  return { configs, loading, error, setFormEnabled, updateField, refetch: fetchConfigs }
 }

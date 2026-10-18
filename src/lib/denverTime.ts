@@ -54,8 +54,8 @@ export function campDateKey(iso: string): string {
   return `${p.year}-${pad(p.month)}-${pad(p.day)}`
 }
 
-// "9:00 AM", Denver time.
-export function formatCampTime(iso: string): string {
+// "9:00 AM", Denver time (an ISO string or a timestamp).
+export function formatCampTime(iso: string | number): string {
   return new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
 }
 
@@ -75,4 +75,15 @@ export function timeUntil(ms: number): string {
   if (hours > 0) return minutes > 0 ? `${unit(hours, 'hour')}, ${unit(minutes, 'minute')}` : unit(hours, 'hour')
   if (minutes > 0) return unit(minutes, 'minute')
   return unit(s, 'second')
+}
+
+// "Sat, Feb 6"
+export function formatCampDay(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: CAMP_TIME_ZONE, weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(iso))
+}
+
+// True when both instants fall on the same calendar day in Denver.
+export function isSameCampDay(a: string | number, b: string | number): boolean {
+  const pa = zonedParts(new Date(a)), pb = zonedParts(new Date(b))
+  return pa.year === pb.year && pa.month === pb.month && pa.day === pb.day
 }
