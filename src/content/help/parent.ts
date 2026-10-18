@@ -65,22 +65,6 @@ export const PARENT_GUIDE: HelpGuide = {
           ],
         },
         {
-          id: 'confirmation-email',
-          title: 'The account confirmation email didn\'t arrive',
-          keywords: 'verify activate link resend spam',
-          body: [
-            {
-              kind: 'steps',
-              items: [
-                'Check your spam or junk folder.',
-                'On the "Check your email" screen, tap **Resend the email** (it unlocks after a minute).',
-                'Click the link in the newest email, then sign in.',
-              ],
-            },
-            { kind: 'p', text: 'Until you click the link, signing in says "Wrong email or password". If nothing arrives, email the camp.' },
-          ],
-        },
-        {
           id: 'forgot-password',
           title: 'You forgot your password',
           keywords: 'reset password sign in',
