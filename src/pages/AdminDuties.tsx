@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Lock, Plus, UserPlus } from 'lucide-react'
-import { useDutyTypes, useDutySlots, useDutySettings, type DutySlot } from '../hooks/useDutyRoles'
+import { useDutyTypes, useDutySlots, useDutySettings, useDutyShortfall, type DutySlot, type DutyType } from '../hooks/useDutyRoles'
+import type { DutyShortfall } from '../types/database'
 import { useSessions, campSessions } from '../hooks/useSessions'
 import { shortRange } from '../lib/weekRange'
-import { sessionDays, parseLocalDate } from '../lib/campDay'
+import { sessionDays, parseLocalDate, localDateISO } from '../lib/campDay'
 import { closeAndFocus } from '../lib/focus'
 import InlineConfirm from '../components/InlineConfirm'
 import Button from '../components/Button'
@@ -17,11 +18,12 @@ const label = 'block font-bold mb-1.5'
 const dayHead = (iso: string) => { const d = parseLocalDate(iso); return `${d.toLocaleDateString('en-US', { weekday: 'short' })} ${d.getDate()}` }
 const dayLong = (iso: string) => parseLocalDate(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 const openOf = (s: DutySlot) => Math.max(s.capacity - s.assigned_count, 0)
+const addDays = (iso: string, n: number) => { const d = parseLocalDate(iso); d.setDate(d.getDate() + n); return localDateISO(d) }
 
 export default function AdminDuties() {
   const { sessions } = useSessions()
   const weeks = campSessions(sessions)
-  const { types, loading: typesLoading, error: typesError, createType, deleteType, refetch: refetchTypes } = useDutyTypes()
+  const { types, loading: typesLoading, error: typesError, createType, setTypeMinutes, deleteType, refetch: refetchTypes } = useDutyTypes()
   // The Duty types fold opens by itself when there are none yet or they couldn't load, since
   // nothing else on the page works without them. It never closes itself.
   const typesFold = useRef<HTMLDetailsElement>(null)
@@ -31,15 +33,20 @@ export default function AdminDuties() {
   const [pickedWeek, setPickedWeek] = useState<string>('')
   // Every slot loads once and is placed by its date, so a slot whose session link is missing (or
   // points at another week) still shows under the week it falls in.
-  const { slots, loading, error: slotsError, createSlot, deleteSlot, setSlotLocked, refetch } = useDutySlots(undefined)
-  const { lockDays } = useDutySettings()
+  const { slots, loading, error: slotsError, createSlot, deleteSlot, setSlotLocked, claimSlot, refetch } = useDutySlots(undefined)
+  const { rulesFor, save: saveRules, loading: rulesLoading } = useDutySettings()
   const [locking, setLocking] = useState<string | null>(null)
 
   const selectedSession = weeks.some(w => w.id === pickedWeek) ? pickedWeek : (weeks[0]?.id ?? '')
   const week = weeks.find(w => w.id === selectedSession) ?? null
   const days = week ? sessionDays(week) : []
+  const year = week?.year ?? new Date().getFullYear()
+  const rules = rulesFor(year)
+  // Spec 38: who in this week's crew is under the duty minimum.
+  const { rows: short, error: shortError, refetch: refetchShort } = useDutyShortfall(selectedSession)
 
   const [newTypeName, setNewTypeName] = useState('')
+  const [newTypeMinutes, setNewTypeMinutes] = useState('30')
   const [addingType, setAddingType] = useState(false)
   const [typeErr, setTypeErr] = useState<string | null>(null)
 
@@ -57,7 +64,7 @@ export default function AdminDuties() {
     if (!newTypeName.trim()) { setTypeErr('Give the duty a name'); return }
     setAddingType(true)
     setTypeErr(null)
-    try { await createType(newTypeName.trim()); setNewTypeName('') }
+    try { await createType(newTypeName.trim(), undefined, Number(newTypeMinutes) || 30); setNewTypeName('') }
     catch (e) { setTypeErr(e instanceof Error ? e.message : 'Something went wrong') }
     finally { setAddingType(false) }
   }
@@ -129,7 +136,7 @@ export default function AdminDuties() {
   // deletes its slots) would vanish from the grid, so list them too.
   const rowTypes = [...types, ...[...new Set(weekSlots.map(s => s.duty_type_id))]
     .filter(id => !types.some(t => t.id === id))
-    .map(id => ({ id, name: weekSlots.find(s => s.duty_type_id === id)?.duty_type?.name ?? 'Duty', description: null as string | null }))]
+    .map(id => ({ id, name: weekSlots.find(s => s.duty_type_id === id)?.duty_type?.name ?? 'Duty', description: null as string | null, minutes: 0 }))]
   const pendingSlot = pendingDelete?.kind === 'slot' ? slots.find(s => s.id === pendingDelete.id) ?? null : null
 
   const slotConfirm = (slot: DutySlot) => (
@@ -149,7 +156,7 @@ export default function AdminDuties() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Duties" lede={`Accepted volunteers sign up for these from their Duties tab, and can drop one until ${lockDays(week?.year ?? new Date().getFullYear())} days before it. Lock a slot to stop all changes to it.`} />
+      <AdminPageHead title="Duties" lede={`Accepted volunteers sign up for these from their Duties tab, and can drop one until ${rules.drop_lock_days} days before it.${rules.minutes_per_week > 0 ? ` Each needs ${rules.minutes_per_week} duty minutes in a week they're on a crew.` : ''} Lock a slot to stop all changes to it.`} />
 
       {weeks.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -213,6 +220,7 @@ export default function AdminDuties() {
                     <tr className="border-t border-border first:border-t-0">
                       <th scope="row" className="sticky left-0 z-[1] bg-surface px-3 py-3 text-left align-top font-bold">
                         {t.name}
+                        {t.minutes > 0 && <span className="block text-sm font-normal text-ink-muted">{t.minutes} min</span>}
                         {t.description && <span className="block text-sm font-normal text-ink-muted text-pretty">{t.description}</span>}
                       </th>
                       {days.map(d => {
@@ -274,6 +282,13 @@ export default function AdminDuties() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {week && rules.minutes_per_week > 0 && !loading && !slotsError && (
+        <ShortList week={week} required={rules.minutes_per_week} deadlineDays={rules.signup_deadline_days}
+          rows={short} error={shortError} slots={weekSlots} types={types}
+          onAssign={async (slotId, volunteerId) => { await claimSlot(slotId, volunteerId); await refetchShort() }}
+          onRetry={() => void refetchShort()} />
       )}
 
       {otherSlots.length > 0 && (
@@ -342,8 +357,9 @@ export default function AdminDuties() {
           <ul className="mt-2 border-y-2 border-ink max-w-[640px]">
             {types.map(t => (
               <li key={t.id} className="border-t border-border first:border-t-0">
-                <div className="flex items-center gap-4 min-h-12 py-1">
-                  <span className="flex-1 min-w-0">{t.name}</span>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-h-12 py-1">
+                  <span className="flex-1 min-w-[min(100%,10rem)]">{t.name}</span>
+                  <TypeMinutes key={`${t.id}-${t.minutes}`} type={t} onSave={async m => { await setTypeMinutes(t.id, m); void refetchShort() }} />
                   <button type="button" id={`remove-type-${t.id}`} className={`${linkBtn} text-ink-muted`}
                     aria-expanded={pendingDelete?.kind === 'type' && pendingDelete.id === t.id}
                     onClick={() => setPendingDelete({ kind: 'type', id: t.id })}>
@@ -378,11 +394,188 @@ export default function AdminDuties() {
               <Input id="new-duty-type" type="text" placeholder="For example, Water refill" value={newTypeName}
                 onChange={e => setNewTypeName(e.target.value)} />
             </div>
+            <div>
+              <label htmlFor="new-duty-minutes" className={label}>Minutes</label>
+              <Input id="new-duty-minutes" type="number" inputMode="numeric" min={5} max={480} step={5} value={newTypeMinutes} className="w-[6.5rem]"
+                onChange={e => setNewTypeMinutes(e.target.value)} />
+            </div>
             <Button type="submit" disabled={addingType}>{addingType ? 'Adding…' : 'Add duty type'}</Button>
           </form>
           {typeErr && <p role="alert" className="mt-2 text-sm font-bold text-danger">{typeErr}</p>}
         </details>
+
+        <DutyRules key={`${year}-${rulesLoading ? 'loading' : 'loaded'}`} year={year} values={rules}
+          onSave={async v => { await saveRules(year, v); void refetchShort() }} />
       </section>
     </div>
+  )
+}
+
+const fieldNote = 'mt-1 text-sm text-ink-muted'
+
+// A duty type's length, edited in place (spec 38). Save shows once the number changes.
+function TypeMinutes({ type, onSave }: { type: DutyType; onSave: (minutes: number) => Promise<void> }) {
+  const [value, setValue] = useState(String(type.minutes))
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const n = Number(value)
+  const dirty = n !== type.minutes
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!Number.isInteger(n) || n < 5 || n > 480) { setErr('5 to 480 minutes'); return }
+    setBusy(true); setErr(null)
+    try { await onSave(n) } catch (e) { setErr(e instanceof Error ? e.message : 'Couldn\'t save') } finally { setBusy(false) }
+  }
+  return (
+    <form onSubmit={submit} className="flex items-center gap-2">
+      <label htmlFor={`minutes-${type.id}`} className="sr-only">Minutes for {type.name}</label>
+      <Input id={`minutes-${type.id}`} type="number" inputMode="numeric" min={5} max={480} step={5} value={value}
+        className="w-[5.5rem]" onChange={e => setValue(e.target.value)} />
+      <span aria-hidden="true" className="text-sm text-ink-muted">min</span>
+      {dirty && <Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save'}</Button>}
+      {err && <span role="alert" className="text-sm font-bold text-danger">{err}</span>}
+    </form>
+  )
+}
+
+type Rules = { drop_lock_days: number; minutes_per_week: number; signup_deadline_days: number }
+
+// The year's duty rules (specs 37, 38), saved together.
+function DutyRules({ year, values, onSave }: { year: number; values: Rules; onSave: (v: Rules) => Promise<void> }) {
+  const [form, setForm] = useState({ minutes_per_week: String(values.minutes_per_week), signup_deadline_days: String(values.signup_deadline_days), drop_lock_days: String(values.drop_lock_days) })
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => { setForm(f => ({ ...f, [k]: e.target.value })); setMsg(null) }
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const v = { minutes_per_week: Number(form.minutes_per_week), signup_deadline_days: Number(form.signup_deadline_days), drop_lock_days: Number(form.drop_lock_days) }
+    if (!Number.isInteger(v.minutes_per_week) || v.minutes_per_week < 0 || v.minutes_per_week > 1200) { setMsg({ ok: false, text: 'Minutes per week: 0 to 1200' }); return }
+    if (!Number.isInteger(v.signup_deadline_days) || v.signup_deadline_days < 0 || v.signup_deadline_days > 60) { setMsg({ ok: false, text: 'Deadline: 0 to 60 days' }); return }
+    if (!Number.isInteger(v.drop_lock_days) || v.drop_lock_days < 0 || v.drop_lock_days > 30) { setMsg({ ok: false, text: 'Drop lock: 0 to 30 days' }); return }
+    setBusy(true); setMsg(null)
+    try { await onSave(v); setMsg({ ok: true, text: 'Saved.' }) }
+    catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : 'Couldn\'t save' }) }
+    finally { setBusy(false) }
+  }
+  return (
+    <details className="group mt-6">
+      <summary className="inline-flex items-center gap-1.5 min-h-11 font-bold cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        Duty rules for {year}
+        <ChevronDown size={18} aria-hidden="true" className="transition-transform group-open:rotate-180" />
+      </summary>
+      <form onSubmit={submit} className="mt-2 max-w-[640px] space-y-4">
+        <div>
+          <label htmlFor="rule-minutes" className={label}>Duty minutes each volunteer needs per week</label>
+          <Input id="rule-minutes" type="number" inputMode="numeric" min={0} max={1200} step={5} value={form.minutes_per_week}
+            className="w-[7rem]" aria-describedby="rule-minutes-note" onChange={set('minutes_per_week')} />
+          <p id="rule-minutes-note" className={fieldNote}>Any mix of duties counts. Applies to each week a volunteer is on a crew. 0 means no minimum.</p>
+        </div>
+        <div>
+          <label htmlFor="rule-deadline" className={label}>Sign-ups due (days before the week starts)</label>
+          <Input id="rule-deadline" type="number" inputMode="numeric" min={0} max={60} value={form.signup_deadline_days}
+            className="w-[7rem]" aria-describedby="rule-deadline-note" onChange={set('signup_deadline_days')} />
+          <p id="rule-deadline-note" className={fieldNote}>Anyone still short gets a reminder 2 days before. After it, you assign them, and they can't drop a duty they need for the minimum.</p>
+        </div>
+        <div>
+          <label htmlFor="rule-lock" className={label}>Drops lock (days before the duty)</label>
+          <Input id="rule-lock" type="number" inputMode="numeric" min={0} max={30} value={form.drop_lock_days}
+            className="w-[7rem]" aria-describedby="rule-lock-note" onChange={set('drop_lock_days')} />
+          <p id="rule-lock-note" className={fieldNote}>Late sign-ups stay open and lock at once.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save rules'}</Button>
+          {msg && <p role={msg.ok ? 'status' : 'alert'} className={`text-sm font-bold ${msg.ok ? 'text-ink-muted' : 'text-danger'}`}>{msg.text}</p>}
+        </div>
+      </form>
+    </details>
+  )
+}
+
+// Spec 38: crewed volunteers under the week's minimum, each with a picker of the week's open slots.
+function ShortList({ week, required, deadlineDays, rows, error, slots, types, onAssign, onRetry }: {
+  week: { name: string; start_date: string }
+  required: number
+  deadlineDays: number
+  rows: DutyShortfall[]
+  error: string | null
+  slots: DutySlot[]
+  types: DutyType[]
+  onAssign: (slotId: string, volunteerId: string) => Promise<void>
+  onRetry: () => void
+}) {
+  const [picked, setPicked] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState<string | null>(null)
+  const [err, setErr] = useState<{ id: string; text: string } | null>(null)
+  const deadline = addDays(week.start_date, -deadlineDays)
+  const today = localDateISO()
+  const due = parseLocalDate(deadline).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  const minutesOf = (s: DutySlot) => types.find(t => t.id === s.duty_type_id)?.minutes ?? 0
+
+  async function assign(v: DutyShortfall) {
+    const slotId = picked[v.volunteer_id]
+    if (!slotId) { setErr({ id: v.volunteer_id, text: 'Pick a duty first' }); return }
+    setBusy(v.volunteer_id); setErr(null)
+    try {
+      await onAssign(slotId, v.volunteer_id)
+      setPicked(p => ({ ...p, [v.volunteer_id]: '' }))
+      // A person who now meets the minimum leaves the list, and their button with it: keep the
+      // focus on the list instead of losing it to the page.
+      setTimeout(() => { if (!document.getElementById(`assign-btn-${v.volunteer_id}`)) document.getElementById('short-heading')?.focus() }, 0)
+    }
+    catch (e) { setErr({ id: v.volunteer_id, text: e instanceof Error ? e.message : 'Couldn\'t assign' }) }
+    finally { setBusy(null) }
+  }
+
+  return (
+    <section aria-labelledby="short-heading" className="mt-8">
+      <h2 id="short-heading" tabIndex={-1} className={`${h2Class} focus:outline-none`}>Short on duty minutes</h2>
+      <p className="mt-1 text-ink-muted text-pretty">
+        {today > deadline
+          ? `Sign-ups for ${week.name} were due ${due}. Put each person on an open duty; they get an email.`
+          : `Volunteers pick their own until ${due}${today === deadline ? ' (today)' : ''}. You can add someone now too.`}
+      </p>
+      {error ? (
+        <div role="alert" className="mt-3 py-3 border-y-2 border-ink flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p title={error} className="flex-1 font-bold text-danger">Couldn't load who is short.</p>
+          <Button onClick={onRetry}>Try again</Button>
+        </div>
+      ) : rows.length === 0 ? (
+        <p className="mt-3 py-3 border-y-2 border-ink">Everyone on the {week.name} crew has at least {required} duty minutes.</p>
+      ) : (
+        <ul className="mt-3 border-y-2 border-ink">
+          {rows.map(v => {
+            const open = slots.filter(s => s.slot_date >= today && s.assigned_count < s.capacity && !s.assignments?.some(a => a.volunteer_id === v.volunteer_id))
+            const id = `assign-${v.volunteer_id}`
+            return (
+              <li key={v.volunteer_id} className="py-3 border-t border-border first:border-t-0 flex flex-wrap items-end gap-x-4 gap-y-2">
+                <p className="flex-[1_1_12rem] min-w-0">
+                  <b className="font-bold">{v.display_name}</b>
+                  <span className="block text-sm text-ink-muted">{v.minutes} of {v.required_minutes} min</span>
+                </p>
+                {open.length === 0 ? (
+                  <p className="text-sm text-ink-muted">No open duties left this week. Add a slot below.</p>
+                ) : (
+                  <>
+                    <div className="flex-[1_1_16rem] min-w-0 max-w-[24rem]">
+                      <label htmlFor={id} className="sr-only">Duty for {v.display_name}</label>
+                      <Select id={id} value={picked[v.volunteer_id] ?? ''} onChange={e => setPicked(p => ({ ...p, [v.volunteer_id]: e.target.value }))}>
+                        <option value="">Choose a duty…</option>
+                        {open.map(s => (
+                          <option key={s.id} value={s.id}>{dayHead(s.slot_date)} · {s.duty_type?.name ?? 'Duty'} · {minutesOf(s)} min{s.locked ? ' · locked' : ''}</option>
+                        ))}
+                      </Select>
+                    </div>
+                    <Button id={`assign-btn-${v.volunteer_id}`} onClick={() => void assign(v)} disabled={busy === v.volunteer_id}>
+                      {busy === v.volunteer_id ? 'Assigning…' : 'Assign'}<span className="sr-only"> {v.display_name}</span>
+                    </Button>
+                  </>
+                )}
+                {err?.id === v.volunteer_id && <p role="alert" className="basis-full text-sm font-bold text-danger">{err.text}</p>}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
   )
 }

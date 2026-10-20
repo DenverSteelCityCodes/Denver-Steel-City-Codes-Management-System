@@ -1,6 +1,6 @@
 # 38: A weekly duty minimum, in minutes
 
-**Status:** 🟨 in progress · **Issue:** #205 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
+**Status:** 🟨 in review · **Issue:** #205 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
 **Depends on:** 09 ✅ (outbox), 37 · **Unblocks:** B2 (hours certificate reads duty minutes)
 **Plan reference:** V4 (duty slots); decided by the Regional Director 2026-10-19
 

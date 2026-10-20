@@ -72,6 +72,12 @@ function denverWhen(iso: unknown): string {
   return `${day} at ${at}`
 }
 
+// "Tuesday, October 20" for a calendar date ('YYYY-MM-DD'), whatever the server's zone.
+function calendarDay(day: unknown): string {
+  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return 'soon'
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' })
+}
+
 // A meeting link is used only when it is https (the database refuses anything else; belt and braces).
 function meetingUrl(p: Payload): string | null {
   return typeof p.meeting_url === 'string' && /^https:\/\/[^\s<>"]+$/.test(p.meeting_url) ? p.meeting_url : null
@@ -396,6 +402,28 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
         `Hi ${first}, thank you for applying to volunteer with Steel City Codes Denver. We weren't able to offer you a spot this year.`,
         'We\'d love for you to apply again next summer. If you have questions, reply to this email.',
       ], null)
+
+    // Spec 38: an admin put a volunteer on a duty.
+    case 'duty_assigned': {
+      const day = calendarDay(p.slot_date)
+      const mins = Number(p.minutes) > 0 ? ` (${Number(p.minutes)} minutes)` : ''
+      return build(`You're on ${p.duty ?? 'a duty'}, ${day}`, 'The camp added you to a duty', [
+        `Hi ${first}, the camp put you on <strong>${esc(p.duty ?? 'a duty')}</strong> on <strong>${esc(day)}</strong>${mins}.`,
+        ...(p.description ? [esc(p.description)] : []),
+        'It\'s on your Duties tab. If you can\'t make it, tell the camp there as soon as you can.',
+      ], { label: 'Open your duties', url: `${appUrl}/volunteer/duties` })
+    }
+
+    // Spec 38: still short of the weekly duty minimum, 2 days before the deadline.
+    case 'duty_minimum_reminder': {
+      const have = Number(p.minutes) || 0
+      const need = Number(p.required) || 0
+      const by = calendarDay(p.deadline)
+      return build(`Sign up for duties in ${p.week ?? 'your week'} by ${by}`, 'Pick your duties', [
+        `Hi ${first}, each volunteer does at least <strong>${need} minutes</strong> of duties in a week they're on the crew. You have <strong>${have}</strong> in ${esc(p.week ?? 'your week')}, so pick ${need - have} more minutes by <strong>${esc(by)}</strong>.`,
+        'Choose the duties and days that suit you, with whoever you like to work with. After that date the camp fills any gap for you.',
+      ], { label: 'Find a duty', url: `${appUrl}/volunteer/duties` })
+    }
 
     case 'volunteer_removed':
       return build(`You're no longer on the ${p.year ?? 'camp'} volunteer crew`, 'You\'re no longer on the crew', [

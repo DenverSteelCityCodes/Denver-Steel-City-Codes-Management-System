@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import { Check, CircleAlert, Lock } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useVolunteerHome } from '../../hooks/useVolunteerHome'
-import { useDutySettings, useDutySlots, useDutyTypes, type DutySlot } from '../../hooks/useDutyRoles'
+import { useDutySettings, useDutySlots, useDutyTypes, useMyDutyWeeks, type DutySlot } from '../../hooks/useDutyRoles'
 import InlineConfirm from '../../components/InlineConfirm'
 import { formatDayLong, localDateISO, parseLocalDate } from '../../lib/campDay'
 import { segCls, segItemCls } from '../../lib/segmented'
-import { countLabel, dutyDropLocked, dutyYear, groupDutyWeeks } from '../../lib/volunteerHome'
+import { countLabel, dutyDropLocked, dutyWeekLine, dutyYear, groupDutyWeeks, neededForMinimum } from '../../lib/volunteerHome'
 import { PageHead, Sect, Segmented, inkCls, linkCls, listCls, primaryCls, rowCls } from './parts'
 
 const weekday = (iso: string) => parseLocalDate(iso).toLocaleDateString('en-US', { weekday: 'short' })
@@ -16,13 +16,14 @@ const shortDate = (iso: string) => parseLocalDate(iso).toLocaleDateString('en-US
 
 // Drop and sign-up refusals from the database (spec 37) are written for volunteers; anything else
 // gets the caller's wording.
-const DUTY_RULE = /^(Duties lock|The camp has locked|That duty has already)/
+const DUTY_RULE = /^(Duties lock|The camp has locked|That duty has already|You need this duty)/
 const ruleOr = (e: unknown, text: string) => e instanceof Error && DUTY_RULE.test(e.message) ? e.message : text
 
 // One of your duties: a date block (it is a real date), the duty and what it involves, and (on the
-// Duties tab) a Cancel that asks first, or "Locked" once it can't be dropped. On its own it is a
-// row of a framed list (Today); pass `className=""` when the caller draws the row.
-export function MyDutyRow({ slot, description, onDrop, locked = false, className = rowCls }: { slot: DutySlot; description?: string | null; onDrop?: () => void; locked?: boolean; className?: string }) {
+// Duties tab) a Cancel that asks first, or why it can't be dropped ("Locked", spec 37; "Needed
+// for your minimum", spec 38). On its own it is a row of a framed list (Today); pass
+// `className=""` when the caller draws the row.
+export function MyDutyRow({ slot, description, minutes, onDrop, held, className = rowCls }: { slot: DutySlot; description?: string | null; minutes?: number; onDrop?: () => void; held?: string | null; className?: string }) {
   const duty = slot.duty_type?.name ?? 'Duty'
   return (
     <div className={`flex items-center gap-4 ${className}`}>
@@ -31,20 +32,26 @@ export function MyDutyRow({ slot, description, onDrop, locked = false, className
         <span className="block mt-1 text-[1.375rem] font-extrabold text-ink">{dayNum(slot.slot_date)}</span>
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block text-lg font-bold leading-[1.3] text-ink">{duty}</span>
+        <span className="block text-lg font-bold leading-[1.3] text-ink">{duty}{minutes ? <DutyLength minutes={minutes} /> : null}</span>
         {description && <span className="block text-ink-muted text-pretty">{description}</span>}
+        {held && (
+          <span className="mt-1 flex items-center gap-1.5 text-sm font-bold text-ink-muted">
+            <Lock size={16} strokeWidth={2.5} aria-hidden="true" className="shrink-0" /> {held}
+          </span>
+        )}
       </span>
-      {locked ? (
-        <span className="shrink-0 inline-flex items-center gap-1.5 text-sm font-bold text-ink-muted">
-          <Lock size={16} strokeWidth={2.5} aria-hidden="true" /> Locked
-        </span>
-      ) : onDrop && (
+      {!held && onDrop && (
         <button type="button" onClick={onDrop} className={`${linkCls} shrink-0 text-danger`}>
           Cancel<span className="sr-only"> {duty}, {formatDayLong(slot.slot_date)}</span>
         </button>
       )}
     </div>
   )
+}
+
+// A duty's length (spec 38), after its name.
+function DutyLength({ minutes }: { minutes: number }) {
+  return <span className="text-base font-normal text-ink-muted whitespace-nowrap"> · {minutes} min</span>
 }
 
 // Duties tab: your duties first, then one week and one day at a time instead of every slot in one
@@ -58,6 +65,9 @@ export default function VolunteerDuties() {
   // Spec 37: a duty can't be dropped once it is this close (or an admin locked it).
   const { lockDays } = useDutySettings()
   const describe = (s: DutySlot) => types.find(t => t.id === s.duty_type_id)?.description ?? null
+  const minutesOf = (s: DutySlot) => types.find(t => t.id === s.duty_type_id)?.minutes ?? 0
+  // Spec 38: the weekly minimum, for each week you're crewed (none when the camp sets no minimum).
+  const { weeks: minWeeks, refetch: refetchWeeks } = useMyDutyWeeks()
   const today = localDateISO()
   const upcoming = slots.filter(s => s.slot_date >= today)
   const weeks = groupDutyWeeks(upcoming, sessions)
@@ -65,6 +75,8 @@ export default function VolunteerDuties() {
   const daysFor = (s: DutySlot) => lockDays(dutyYear(s, sessions))
   const dropLocked = (s: DutySlot) => dutyDropLocked(s, today, daysFor(s))
   const anyLocked = mine.some(dropLocked)
+  const heldFor = (s: DutySlot) => dropLocked(s) ? 'Locked'
+    : neededForMinimum(s, minutesOf(s), minWeeks, today) ? 'Needed for your minimum' : null
 
   const [weekKey, setWeekKey] = useState<string | null>(null)
   const [dayPick, setDayPick] = useState<string | null>(null)
@@ -79,7 +91,7 @@ export default function VolunteerDuties() {
   // sign-up re-reads the slots, since the usual cause is that someone else just took the seat.
   async function act(slotId: string, fn: () => Promise<void>, text: string, reread = false) {
     setBusy(slotId); setErr(null)
-    try { await fn(); setDropping(null) }
+    try { await fn(); setDropping(null); void refetchWeeks() }
     catch (e) { setErr({ slotId, text: ruleOr(e, text) }); if (reread || DUTY_RULE.test(ruleOr(e, ''))) void refetch() }
     finally { setBusy(null) }
   }
@@ -106,11 +118,24 @@ export default function VolunteerDuties() {
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-10 lg:items-start">
       <div>
         <PageHead title={mine.length ? `You're on ${countLabel(mine.length, 'duty', 'duties')}` : 'No duties yet'} />
+        {minWeeks.length > 0 && (
+          <ul aria-label="Weekly duty minimum" className="mt-2 space-y-1">
+            {minWeeks.map(w => {
+              const line = dutyWeekLine(w, today)
+              return (
+                <li key={w.session_id} className={`flex items-start gap-1.5 text-pretty ${line.met ? 'text-ink-muted' : 'text-ink'}`}>
+                  {line.met && <Check size={18} strokeWidth={2.5} aria-hidden="true" className="shrink-0 mt-0.5 text-success" />}
+                  <span><b className={line.met ? 'font-normal' : 'font-bold'}>{line.lead}</b> {line.rest}</span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
         {mine.length > 0 ? (
           <ul className={`${listCls} mt-4`}>
             {mine.map(s => (
               <li key={s.id} className={rowCls}>
-                <MyDutyRow slot={s} description={describe(s)} className="" locked={dropLocked(s)}
+                <MyDutyRow slot={s} description={describe(s)} minutes={minutesOf(s)} className="" held={heldFor(s)}
                   onDrop={dropping === s.id ? undefined : () => { setErr(null); setDropping(s.id) }} />
                 {dropping === s.id && (
                   <div className="mt-3">
@@ -178,7 +203,7 @@ export default function VolunteerDuties() {
                 <li key={slot.id} className={rowCls}>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <span className="flex-[1_1_12rem] min-w-0">
-                      <span className="block text-lg font-bold leading-[1.3] text-ink">{duty}</span>
+                      <span className="block text-lg font-bold leading-[1.3] text-ink">{duty}{minutesOf(slot) ? <DutyLength minutes={minutesOf(slot)} /> : null}</span>
                       {description && <span className="block text-ink-muted text-pretty">{description}</span>}
                       {mineHere
                         ? <span className="block text-sm text-ink-muted">{slot.assigned_count > 1 ? `You and ${countLabel(slot.assigned_count - 1, 'other', 'others')}` : 'Just you so far'}</span>
