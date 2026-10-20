@@ -272,7 +272,7 @@ flowchart TD
 ✅ **Decided 2026-10-16 (Q-V1): preferences + admin assigns.** Volunteers can edit their availability and course preferences and request a switch; admins (with the auto-matcher) still assign, so the senior/junior pairing holds. No self-pick. It's P1 either way.
 
 #### V4. Duty slots ✅
-Claim/unclaim with capacity enforced by a locked trigger. Friction: 🟡 no reminders, no swap.
+Claim/unclaim with capacity enforced by a locked trigger. Friction: 🟡 no reminders, no swap. Drop lock and weekly minimums: specs 37 and 38 (Q-V4).
 
 #### V5. Camp day (lead/support) ✅
 Roster with allergies and emergency tel: links, three roll calls, lead posts section updates, printable roster. Works.
@@ -703,6 +703,7 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | Q-F5 Naming (2026-10-17) | **"Region"** for the Denver-level unit; "chapter" is national's word for a school-year club | Spec 20 renamed to regions; 21, 23, 26, L7 follow |
 | Q-F3 Pickups (2026-10-17) | **Record them in the site**: listed pickup adults, dated walk-home consent, who collected each camper | Spec 36 (B6 promoted) |
 | Q-F1a Grade rule | **Rising grade** (already how the app stores grade: "Grade (entering fall)") | Spec 31 uses it everywhere |
+| Q-V4 Duty changes and minimums (2026-10-19) | **Drops lock 3 days before the duty** (late sign-ups stay open); admins can lock a slot; no changes to past slots. **Each duty type has a length; every crewed volunteer needs N duty minutes per week**, any mix, by a deadline N days before the week; **admins assign anyone short** (no auto-assign) | Specs 37 and 38 |
 
 ### Still open
 

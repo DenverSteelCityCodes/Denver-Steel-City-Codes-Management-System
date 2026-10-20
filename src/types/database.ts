@@ -277,7 +277,16 @@ export interface DutySlot {
   session_id: string | null
   slot_date: string
   capacity: number
+  // Spec 37: an admin lock; volunteers can't join or drop a locked slot.
+  locked: boolean
   created_at: string
+}
+
+// One camp year's duty rules (migration_duty_locks.sql, spec 37). No row means the defaults.
+export interface DutySettings {
+  year: number
+  drop_lock_days: number
+  updated_at: string
 }
 
 export interface DutyAssignment {

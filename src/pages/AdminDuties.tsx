@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { ChevronDown, Plus, UserPlus } from 'lucide-react'
-import { useDutyTypes, useDutySlots, type DutySlot } from '../hooks/useDutyRoles'
+import { ChevronDown, Lock, Plus, UserPlus } from 'lucide-react'
+import { useDutyTypes, useDutySlots, useDutySettings, type DutySlot } from '../hooks/useDutyRoles'
 import { useSessions, campSessions } from '../hooks/useSessions'
 import { shortRange } from '../lib/weekRange'
 import { sessionDays, parseLocalDate } from '../lib/campDay'
@@ -31,7 +31,9 @@ export default function AdminDuties() {
   const [pickedWeek, setPickedWeek] = useState<string>('')
   // Every slot loads once and is placed by its date, so a slot whose session link is missing (or
   // points at another week) still shows under the week it falls in.
-  const { slots, loading, error: slotsError, createSlot, deleteSlot, refetch } = useDutySlots(undefined)
+  const { slots, loading, error: slotsError, createSlot, deleteSlot, setSlotLocked, refetch } = useDutySlots(undefined)
+  const { lockDays } = useDutySettings()
+  const [locking, setLocking] = useState<string | null>(null)
 
   const selectedSession = weeks.some(w => w.id === pickedWeek) ? pickedWeek : (weeks[0]?.id ?? '')
   const week = weeks.find(w => w.id === selectedSession) ?? null
@@ -93,6 +95,15 @@ export default function AdminDuties() {
     }
   }
 
+  // Spec 37: a locked slot can't be joined or dropped by volunteers; admins still change it.
+  async function toggleLock(slot: DutySlot) {
+    setLocking(slot.id)
+    setActionError(null)
+    try { await setSlotLocked(slot.id, !slot.locked) }
+    catch (e) { setActionError(`Couldn't ${slot.locked ? 'unlock' : 'lock'} it: ${e instanceof Error ? e.message : 'unknown error'}`) }
+    finally { setLocking(null) }
+  }
+
   async function confirmDelete() {
     if (!pendingDelete) return
     setDeleting(true)
@@ -138,7 +149,7 @@ export default function AdminDuties() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Duties" lede="Accepted volunteers sign up for these from their Duties tab." />
+      <AdminPageHead title="Duties" lede={`Accepted volunteers sign up for these from their Duties tab, and can drop one until ${lockDays(week?.year ?? new Date().getFullYear())} days before it. Lock a slot to stop all changes to it.`} />
 
       {weeks.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -215,6 +226,11 @@ export default function AdminDuties() {
                               const gap = openOf(slot)
                               return (
                                 <div key={slot.id} className="[&+&]:mt-3 [&+&]:pt-3 [&+&]:border-t [&+&]:border-border">
+                                  {slot.locked && (
+                                    <p className="mb-0.5 inline-flex items-center gap-1.5 text-sm font-bold text-ink-muted">
+                                      <Lock size={14} strokeWidth={2.5} aria-hidden="true" /> Locked
+                                    </p>
+                                  )}
                                   {names.length > 0 && (
                                     <ul className="leading-[1.4]">
                                       {names.map((n, i) => <li key={i} className="[overflow-wrap:anywhere]">{n}</li>)}
@@ -225,8 +241,13 @@ export default function AdminDuties() {
                                       <UserPlus size={16} strokeWidth={2.5} aria-hidden="true" /> {gap} open
                                     </p>
                                   )}
-                                  <div>
-                                    {/* Quiet until the cell is hovered or the link is focused; always shown on touch screens. */}
+                                  <div className="flex flex-wrap gap-x-3">
+                                    {/* Quiet until the cell is hovered or a link is focused; always shown on touch screens. */}
+                                    <button type="button" disabled={locking === slot.id} aria-pressed={slot.locked}
+                                      className={`${linkBtn} text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 focus-visible:opacity-100`}
+                                      onClick={() => void toggleLock(slot)}>
+                                      {slot.locked ? 'Unlock' : 'Lock'}<span className="sr-only"> {t.name} on {dayLong(d)}</span>
+                                    </button>
                                     <button type="button" id={`delete-slot-${slot.id}`} className={`${linkBtn} text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100`}
                                       aria-expanded={pendingDelete?.kind === 'slot' && pendingDelete.id === slot.id}
                                       onClick={() => setPendingDelete({ kind: 'slot', id: slot.id })}>
