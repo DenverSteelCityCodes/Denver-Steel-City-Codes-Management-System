@@ -97,6 +97,7 @@ export default function AdminDuties() {
 
   // Spec 37: a locked slot can't be joined or dropped by volunteers; admins still change it.
   async function toggleLock(slot: DutySlot) {
+    if (locking === slot.id) return
     setLocking(slot.id)
     setActionError(null)
     try { await setSlotLocked(slot.id, !slot.locked) }
@@ -243,7 +244,8 @@ export default function AdminDuties() {
                                   )}
                                   <div className="flex flex-wrap gap-x-3">
                                     {/* Quiet until the cell is hovered or a link is focused; always shown on touch screens. */}
-                                    <button type="button" disabled={locking === slot.id} aria-pressed={slot.locked}
+                                    {/* aria-disabled, not disabled: a disabled button drops keyboard focus mid-save. */}
+                                    <button type="button" aria-disabled={locking === slot.id || undefined} aria-pressed={slot.locked}
                                       className={`${linkBtn} text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 focus-visible:opacity-100`}
                                       onClick={() => void toggleLock(slot)}>
                                       {slot.locked ? 'Unlock' : 'Lock'}<span className="sr-only"> {t.name} on {dayLong(d)}</span>
