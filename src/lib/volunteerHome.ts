@@ -116,6 +116,28 @@ export function dutyYear(slot: { slot_date: string; session_id: string | null },
   return sessions.find(s => s.id === slot.session_id)?.year ?? Number(slot.slot_date.slice(0, 4))
 }
 
+// One line per crewed week about the weekly duty minimum (spec 38): `lead` is the count, `rest`
+// what to do. `deadline` is the last day to sign up; after it the camp may assign the volunteer.
+export function dutyWeekLine(w: { name: string; required_minutes: number; my_minutes: number; deadline: string }, today: string): { lead: string; rest: string; met: boolean } {
+  if (w.my_minutes >= w.required_minutes) {
+    return { met: true, lead: `${w.name}: ${w.my_minutes} duty minutes.`, rest: `You've met the ${w.required_minutes}-minute minimum.` }
+  }
+  const lead = `${w.name}: ${w.my_minutes} of ${w.required_minutes} duty minutes.`
+  if (today > w.deadline) {
+    const closed = new Date(`${w.deadline}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    return { met: false, lead, rest: `Sign-ups closed ${closed}, so the camp may add you. Pick a duty to choose it yourself.` }
+  }
+  const by = today === w.deadline ? 'today' : new Date(`${w.deadline}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  return { met: false, lead, rest: `Sign up for ${w.required_minutes - w.my_minutes} more by ${by}.` }
+}
+
+// After a week's deadline a volunteer can't drop a duty that takes them under its minimum
+// (spec 38). Mirrors private.duty_assignments_minimum(); the database decides.
+export function neededForMinimum(slot: { slot_date: string }, minutes: number, weeks: { start_date: string; end_date: string; required_minutes: number; my_minutes: number; deadline: string }[], today: string): boolean {
+  return weeks.some(w => slot.slot_date >= w.start_date && slot.slot_date <= w.end_date
+    && today > w.deadline && w.my_minutes - minutes < w.required_minutes)
+}
+
 // "1 duty" / "2 duties"
 export function countLabel(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`

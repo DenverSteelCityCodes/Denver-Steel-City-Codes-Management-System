@@ -255,6 +255,7 @@ export const ADMIN_GUIDE: HelpGuide = {
                 'To fill empty spots automatically, open [[admin-crew]] and use **Fill open spots**: pick the week and tap **Preview matches**. Check the table, then tap **Apply assignments**.',
                 'To set a crew by hand, select the section on [[admin-classes]] (it sits in its week\'s column), open **Edit**, and choose the **Lead** and **Supports**. Each name says their level, whether they\'re free that week and what they already crew; free people are listed first. Tap **Save** (the button names the section).',
                 'Daily jobs live on [[admin-duties]]: add a type under **Duty types**, then under **Add a duty slot** pick the duty, the date and how many volunteers, and tap **Add slot**. The grid shows each day\'s names, and "1 open" where a spot is free. Volunteers sign up themselves, and can drop a duty until 3 days before it. **Lock** on a slot stops volunteers joining or dropping it; you can still change it.',
+                'To make everyone take a share, open **Duty rules** on [[admin-duties]]: set the duty minutes each volunteer needs per week (each duty type has a length, set in **Duty types**), the sign-up deadline and the drop lock, then tap **Save rules**. Volunteers still short get a reminder 2 days before the deadline. After it, **Short on duty minutes** lists them: choose a duty next to each name and tap **Assign**. They get an email.',
               ],
             },
             {
