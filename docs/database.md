@@ -48,6 +48,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 36 | `migration_urgent_and_incidents.sql` | Urgent notices (emailed to a whole audience at once, first in the outbox, through the batch sender) and the week audiences on updates, the incident log with its parent notice, and roll-call notes (spec 34). Deploy `send-notifications` first |
 | 37 | `migration_volunteer_onboarding.sql` | Volunteer interviews and onboarding: private meeting links, interview and decision emails with a reminder job, the volunteer profile and photo bucket, the onboarding checklist, remove from the season, and Meet the teachers (spec 35). Deploy `send-notifications` first |
 | 38 | `migration_authorized_pickups.sql` | Adults who may collect each camper and the dated walk-home consent; who collected each camper at dismissal; the admin dismissal board; a `pickup_changed` email to the lead (spec 36). Redefines `section_roster()` after step 35 (laptop loans); uses step 37's crew helpers. Deploy `send-notifications` first |
+| 39 | `migration_duty_locks.sql` | Duty rules per year (`duty_settings`), an admin lock on a duty slot, and the volunteer rules: no drops within 3 days of the duty (the default), no changes to past or locked slots, claim or drop only (spec 37) |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 

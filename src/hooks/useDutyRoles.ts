@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import type { DutySettings } from '../types/database'
 
 export interface DutyType {
   id: string
@@ -14,6 +15,7 @@ export interface DutySlot {
   session_id: string | null
   slot_date: string
   capacity: number
+  locked: boolean
   created_at: string
   duty_type?: { name: string }
   assignments?: DutyAssignment[]
@@ -114,6 +116,12 @@ export function useDutySlots(sessionId?: string) {
     setSlots(s => s.filter(x => x.id !== id))
   }
 
+  async function setSlotLocked(id: string, locked: boolean) {
+    const { error } = await supabase.from('duty_slots').update({ locked }).eq('id', id)
+    if (error) throw new Error(error.message)
+    setSlots(s => s.map(x => x.id === id ? { ...x, locked } : x))
+  }
+
   async function claimSlot(slotId: string, volunteerId: string) {
     const { error } = await supabase.from('duty_assignments').insert({ duty_slot_id: slotId, volunteer_id: volunteerId })
     if (error) throw new Error(error.message)
@@ -130,5 +138,26 @@ export function useDutySlots(sessionId?: string) {
     await fetchSlots()
   }
 
-  return { slots, loading, error, createSlot, deleteSlot, claimSlot, unclaimSlot, refetch: fetchSlots }
+  return { slots, loading, error, createSlot, deleteSlot, setSlotLocked, claimSlot, unclaimSlot, refetch: fetchSlots }
+}
+
+// Every year's duty rules (spec 37). A year without a row uses the defaults, like the database.
+export const DEFAULT_DROP_LOCK_DAYS = 3
+
+export function useDutySettings() {
+  const [rows, setRows] = useState<DutySettings[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => { fetchRows() }, [])
+
+  async function fetchRows() {
+    const { data } = await supabase.from('duty_settings').select('*')
+    setRows(data ?? [])
+    setLoading(false)
+  }
+
+  const forYear = (year: number) => rows.find(r => r.year === year)
+  const lockDays = (year: number) => forYear(year)?.drop_lock_days ?? DEFAULT_DROP_LOCK_DAYS
+
+  return { rows, loading, forYear, lockDays, refetch: fetchRows }
 }
