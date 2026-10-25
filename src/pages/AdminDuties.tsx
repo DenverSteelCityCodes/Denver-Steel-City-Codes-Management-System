@@ -514,8 +514,13 @@ function ShortList({ week, required, deadlineDays, rows, error, slots, types, on
   const minutesOf = (s: DutySlot) => types.find(t => t.id === s.duty_type_id)?.minutes ?? 0
 
   async function assign(v: DutyShortfall) {
+    if (busy === v.volunteer_id) return
     const slotId = picked[v.volunteer_id]
-    if (!slotId) { setErr({ id: v.volunteer_id, text: 'Pick a duty first' }); return }
+    if (!slotId) {
+      setErr({ id: v.volunteer_id, text: 'Pick a duty first' })
+      document.getElementById(`assign-${v.volunteer_id}`)?.focus()
+      return
+    }
     setBusy(v.volunteer_id); setErr(null)
     try {
       await onAssign(slotId, v.volunteer_id)
@@ -560,19 +565,21 @@ function ShortList({ week, required, deadlineDays, rows, error, slots, types, on
                   <>
                     <div className="flex-[1_1_16rem] min-w-0 max-w-[24rem]">
                       <label htmlFor={id} className="sr-only">Duty for {v.display_name}</label>
-                      <Select id={id} value={picked[v.volunteer_id] ?? ''} onChange={e => setPicked(p => ({ ...p, [v.volunteer_id]: e.target.value }))}>
+                      <Select id={id} value={picked[v.volunteer_id] ?? ''}
+                        aria-invalid={err?.id === v.volunteer_id || undefined} aria-describedby={err?.id === v.volunteer_id ? `${id}-err` : undefined}
+                        onChange={e => { setPicked(p => ({ ...p, [v.volunteer_id]: e.target.value })); if (err?.id === v.volunteer_id) setErr(null) }}>
                         <option value="">Choose a duty…</option>
                         {open.map(s => (
                           <option key={s.id} value={s.id}>{dayHead(s.slot_date)} · {s.duty_type?.name ?? 'Duty'} · {minutesOf(s)} min{s.locked ? ' · locked' : ''}</option>
                         ))}
                       </Select>
                     </div>
-                    <Button id={`assign-btn-${v.volunteer_id}`} onClick={() => void assign(v)} disabled={busy === v.volunteer_id}>
+                    <Button id={`assign-btn-${v.volunteer_id}`} onClick={() => void assign(v)} aria-disabled={busy === v.volunteer_id || undefined}>
                       {busy === v.volunteer_id ? 'Assigning…' : 'Assign'}<span className="sr-only"> {v.display_name}</span>
                     </Button>
                   </>
                 )}
-                {err?.id === v.volunteer_id && <p role="alert" className="basis-full text-sm font-bold text-danger">{err.text}</p>}
+                {err?.id === v.volunteer_id && <p id={`${id}-err`} role="alert" className="basis-full text-sm font-bold text-danger">{err.text}</p>}
               </li>
             )
           })}
