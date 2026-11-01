@@ -1,6 +1,6 @@
 # 38: A weekly duty minimum, in minutes
 
-**Status:** 🟨 in review · **Issue:** #205 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
+**Status:** ✅ [PR #207](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/207) · **Issue:** #205 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
 **Depends on:** 09 ✅ (outbox), 37 · **Unblocks:** B2 (hours certificate reads duty minutes)
 **Plan reference:** V4 (duty slots); decided by the Regional Director 2026-10-19
 
@@ -44,13 +44,13 @@
 - Counting crew absences against the minimum.
 
 ## Done when
-- [ ] A crewed volunteer sees their minutes against the minimum for each week they're crewed, and every duty shows its length.
-- [ ] After the deadline, the database refuses a drop that takes a volunteer below the minimum. Before it, the drop works (outside the 3-day lock).
-- [ ] The admin sees who is short for a week and can assign each one to an open slot. That volunteer gets a `duty_assigned` email.
-- [ ] The reminder job queues one `duty_minimum_reminder` per short volunteer per week, 2 days before the deadline, and none for volunteers who've met it.
-- [ ] Minimum 0 hides every minimum line and sends nothing.
-- [ ] `test-plans/duty-minimums-tests.sql` prints only `ok`. Templates render in `send-notifications`.
-- [ ] Checked at 375 px, light and dark, as volunteer and admin.
+- [x] A crewed volunteer sees their minutes against the minimum for each week they're crewed, and every duty shows its length.
+- [x] After the deadline, the database refuses a drop that takes a volunteer below the minimum. Before it, the drop works (outside the 3-day lock).
+- [ ] The admin sees who is short for a week and can assign each one to an open slot. That volunteer gets a `duty_assigned` email. *(The list and pickers were checked in the browser, and the SQL test queues `duty_assigned` on an admin assignment. Real delivery waits on redeploying `send-notifications`: the deployed version 6 has neither duty template, so these emails are held until then.)*
+- [x] The reminder job queues one `duty_minimum_reminder` per short volunteer per week, 2 days before the deadline, and none for volunteers who've met it.
+- [ ] Minimum 0 hides every minimum line and sends nothing. *(SQL: with 0 there are no weeks to show and drops aren't held back; the reminder job skips a 0 minimum in code. Not yet viewed in the browser with the minimum set to 0.)*
+- [x] `test-plans/duty-minimums-tests.sql` prints only `ok`. Templates render in `send-notifications`. *(17/17 on the demo DB 2026-11-01; both templates render in `notificationTemplates.test.ts`.)*
+- [x] Checked at 375 px, light and dark, as volunteer and admin. *(2026-10-25; found and fixed Assign errors not taking focus.)*
 
 ## Tests and verification
 - SQL: minutes math (session dates, both-weeks sections, removed volunteers), the after-deadline drop rule, shortfall RLS (volunteer refused), the reminder job's dedupe, `duty_assigned` only for admin inserts.

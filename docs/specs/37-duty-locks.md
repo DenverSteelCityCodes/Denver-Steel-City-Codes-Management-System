@@ -1,6 +1,6 @@
 # 37: Duty sign-ups lock close to the day
 
-**Status:** 🟨 in review · **Issue:** #204 · **Priority:** P0 · **Effort:** S · **Phase:** B (before go-live)
+**Status:** ✅ [PR #206](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/206) · **Issue:** #204 · **Priority:** P0 · **Effort:** S · **Phase:** B (before go-live)
 **Depends on:** 05 ✅, 35 ✅ · **Unblocks:** 38
 **Plan reference:** V4 (duty slots); decided by the Regional Director 2026-10-19
 
@@ -38,13 +38,13 @@
 - The weekly minimum (spec 38).
 
 ## Done when
-- [ ] As a volunteer: dropping a duty 3 or fewer days out is refused by the database (not just hidden), and so is dropping or joining a past slot.
-- [ ] As a volunteer: a locked slot can't be joined or dropped. As an admin: it can.
-- [ ] As a volunteer: `PATCH duty_assignments` changes nothing.
-- [ ] Signing up for tomorrow's duty works and is shown as locked right away.
-- [ ] `private.reset_demo()` still seeds duties (it runs without a user, so the trigger skips it).
-- [ ] `test-plans/duty-locks-tests.sql` prints only `ok`.
-- [ ] Checked at 375 px, light and dark, as volunteer and admin.
+- [x] As a volunteer: dropping a duty 3 or fewer days out is refused by the database (not just hidden), and so is dropping or joining a past slot.
+- [x] As a volunteer: a locked slot can't be joined or dropped. As an admin: it can.
+- [x] As a volunteer: `PATCH duty_assignments` changes nothing.
+- [ ] Signing up for tomorrow's duty works and is shown as locked right away. *(The database half is tested: a late sign-up works and can't then be dropped. In the browser, the slot says "You can't drop this one later" before the tap; nobody has yet watched it turn to Locked after a real sign-up.)*
+- [x] `private.reset_demo()` still seeds duties (it runs without a user, so the trigger skips it).
+- [x] `test-plans/duty-locks-tests.sql` prints only `ok`. *(19/19, rerun on the demo DB 2026-11-01.)*
+- [x] Checked at 375 px, light and dark, as volunteer and admin. *(2026-10-25; found and fixed Lock dropping keyboard focus while it saved.)*
 
 ## Tests and verification
 - SQL: the matrix above (volunteer insert/delete × past / inside lock / outside lock / locked slot; admin bypass; update blocked; no-user job bypass).
