@@ -223,7 +223,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
         {
           id: 'duties',
           title: 'Sign up for a duty, or drop one',
-          keywords: 'duty slot check-in lunch claim cancel',
+          keywords: 'duty slot check-in lunch claim cancel drop locked lock',
           body: [
             {
               kind: 'steps',
@@ -243,6 +243,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
               ],
             },
             { kind: 'p', text: 'A full slot can\'t take more people. Drop duties as early as you can so someone else can take them.' },
+            { kind: 'p', text: 'Duties lock **3 days before** the day: after that, **Cancel** becomes **Locked**, and if you can\'t make it, use **Tell the camp** on [[volunteer-duties]]. You can still sign up late to cover a gap, but that duty is locked straight away. The camp can also lock a slot so nobody changes it.' },
           ],
         },
       ],

@@ -105,6 +105,17 @@ function mondayOf(day: string): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+// Whether a volunteer can no longer drop a duty (spec 37): an admin locked it, it has happened,
+// or it is lockDays or fewer days away. Mirrors private.duty_drop_block(); the database decides.
+export function dutyDropLocked(slot: { slot_date: string; locked?: boolean }, today: string, lockDays: number): boolean {
+  return !!slot.locked || daysBetween(today, slot.slot_date) <= lockDays
+}
+
+// The camp year a duty belongs to: its session's, else its date's (private.duty_slot_year()).
+export function dutyYear(slot: { slot_date: string; session_id: string | null }, sessions: Pick<Session, 'id' | 'year'>[]): number {
+  return sessions.find(s => s.id === slot.session_id)?.year ?? Number(slot.slot_date.slice(0, 4))
+}
+
 // "1 duty" / "2 duties"
 export function countLabel(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`
