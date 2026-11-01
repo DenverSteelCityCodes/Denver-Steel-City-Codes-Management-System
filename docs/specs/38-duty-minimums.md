@@ -46,7 +46,7 @@
 ## Done when
 - [x] A crewed volunteer sees their minutes against the minimum for each week they're crewed, and every duty shows its length.
 - [x] After the deadline, the database refuses a drop that takes a volunteer below the minimum. Before it, the drop works (outside the 3-day lock).
-- [ ] The admin sees who is short for a week and can assign each one to an open slot. That volunteer gets a `duty_assigned` email. *(The list and pickers were checked in the browser, and the SQL test queues `duty_assigned` on an admin assignment. Real delivery waits on redeploying `send-notifications`: the deployed version 6 has neither duty template, so these emails are held until then.)*
+- [ ] The admin sees who is short for a week and can assign each one to an open slot. That volunteer gets a `duty_assigned` email. *(The list and pickers were checked in the browser, and the SQL test queues `duty_assigned` on an admin assignment. `send-notifications` with both duty templates was deployed to the demo on 2026-11-01 (version 7). Real delivery is still unchecked: the demo's volunteers have undeliverable addresses, so their `duty_assigned` rows are cancelled before sending.)*
 - [x] The reminder job queues one `duty_minimum_reminder` per short volunteer per week, 2 days before the deadline, and none for volunteers who've met it.
 - [ ] Minimum 0 hides every minimum line and sends nothing. *(SQL: with 0 there are no weeks to show and drops aren't held back; the reminder job skips a 0 minimum in code. Not yet viewed in the browser with the minimum set to 0.)*
 - [x] `test-plans/duty-minimums-tests.sql` prints only `ok`. Templates render in `send-notifications`. *(17/17 on the demo DB 2026-11-01; both templates render in `notificationTemplates.test.ts`.)*
