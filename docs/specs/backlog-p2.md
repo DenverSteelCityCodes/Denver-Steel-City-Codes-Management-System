@@ -62,6 +62,21 @@
 - **Build:** a `parent_profiles.language` choice and translated versions of the transactional templates (Spanish first); no machine translation of free text.
 - **Done when:** a parent who picks Spanish gets every transactional email in Spanish.
 
+## B14. Full form builder (parked 2026-10-19)
+- **Why:** the Forms page can only rename questions, hide unlocked ones and set required. The director asked for full editing (add questions, edit choices, help text, order, steps, unlock locked questions). Office hours (2026-10-19) decided to keep the structure in code for February: the director is the only editor until handoff and can change code in minutes, the opening-day flow must not gain a new failure mode, and the future editors aren't named yet. Specs [39](39-form-answers-shown-and-exported.md) and [40](40-editable-answer-choices.md) took the parts that matter now.
+- **Pick up when:** a named person after handoff (national or another region) needs to change questions without a developer.
+- **Build (from the 2026-10-19 research: ACTIVE Camps, CampMinder, Jumbula, UltraCamp, Jotform, Typeform, Google Forms, Tally):**
+  - A locked core (camper name, grade, volunteer email/age, one signature) plus custom questions on top. Every camp product works this way; ACTIVE says some questions "cannot be removed or edited" because accounts and waivers depend on them. The director asked to unlock everything else, with a typed confirmation before hiding allergies, medical or emergency contact.
+  - Six custom types: short text, long text, single choice, checkboxes, yes/no, date (plus a text-only info block). No file upload, matrix or payment.
+  - Draft, Preview (the real wizard in preview mode), Publish. Each publish freezes a `form_versions` row; each registration/application stores the version it used, and the server validates against that version, so a family mid-wizard finishes on the version they started (director chose this).
+  - Custom answers in a JSONB column with the question wording copied in (`{"q_7f3": {"label", "value", "display"}}`); permanent ids for questions and options; "delete" becomes archive once answers exist; block deleting a question another question's show-if depends on.
+  - Reorder with up/down buttons and "Move to step" (WCAG 2.5.7), no drag. A question opens in place (no modal).
+  - Answers appear on camper detail, application review, both CSVs, and the volunteer roster when marked.
+  - Phase 2: one-level show-if ("show only if [choice] is [option]"), then per-session questions. Never a shared question library across seasons (ACTIVE's trap).
+  - The director also wanted waiver text and health questions in the editor: that means rewriting [L2](L2-waivers-and-consents.md) and [33](33-health-and-accommodations.md) around form versions. Decide that when this is picked up, after counsel has seen the waiver.
+  - Keep custom questions to about 10 per form (CampMinder: every added question lowers completion).
+- **Done when:** a non-developer adds a question, publishes, a family answers it, and the answer is on camper detail and in the CSV.
+
 ## Decided against (recorded so nobody re-proposes them by accident)
 
 | Idea | Decision (2026-10-16) |

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { fetchAll } from '../lib/fetchAll'
+import type { CamperAnswerSource } from '../lib/camperAnswers'
 import type { LaptopLoanStatus, RegistrationStatus } from '../types/database'
 
 export interface StudentRegistration {
@@ -32,9 +33,26 @@ interface RawStudent {
   emergency_contact_phone: string | null
   emergency_contact_relation: string | null
   registration_year: number | null
+  email: string | null
+  school_district: string | null
+  shirt_size: string | null
+  gender: string | null
+  ethnic_background: string[] | null
+  parent_name: string | null
+  other_info: string | null
+  free_reduced_lunch: boolean | null
+  lunch_provision: boolean | null
+  how_heard: string | null
+  previous_program: boolean | null
+  program_last_year: string | null
+  candy_consent: boolean | null
+  waiver_signature: string | null
+  guardian_signature: string | null
+  waiver_signed_at: string | null
   created_at: string
   parent_id: string
-  profiles: { display_name: string } | null
+  // The parent's email lives on their profile (#52), one-to-one with profiles.
+  profiles: { display_name: string; parent_profiles: { email: string | null } | { email: string | null }[] | null } | null
   registrations: {
     id: string
     status: RegistrationStatus
@@ -45,23 +63,12 @@ interface RawStudent {
   }[] | null
 }
 
-export interface AdminStudent {
+// Every saved answer (spec 39) plus the account it belongs to. parent_name is the name typed in
+// the wizard, falling back to the account's display name for campers added another way.
+export interface AdminStudent extends CamperAnswerSource {
   id: string
-  full_name: string
-  age: number
-  medical_info: string | null
-  grade: string | null
-  school_name: string | null
-  allergies: string | null
-  medical_conditions: string | null
-  parent_phone: string | null
-  emergency_contact_name: string | null
-  emergency_contact_phone: string | null
-  emergency_contact_relation: string | null
-  registration_year: number | null
   created_at: string
   parent_id: string
-  parent_name: string
   registrations: StudentRegistration[]
 }
 
@@ -90,7 +97,10 @@ export function useAdminStudents() {
         id, full_name, age, medical_info, created_at, parent_id,
         grade, school_name, allergies, medical_conditions, parent_phone,
         emergency_contact_name, emergency_contact_phone, emergency_contact_relation, registration_year,
-        profiles:parent_id ( display_name ),
+        email, school_district, shirt_size, gender, ethnic_background, parent_name, other_info,
+        free_reduced_lunch, lunch_provision, how_heard, previous_program, program_last_year,
+        candy_consent, waiver_signature, guardian_signature, waiver_signed_at,
+        profiles:parent_id ( display_name, parent_profiles ( email ) ),
         registrations (
           id, status, section_id,
           laptop_loans ( status ),
@@ -115,24 +125,11 @@ export function useAdminStudents() {
 
     const placed = await placedPromise
     const placeWith = new Map(((placed.data ?? []) as { registration_id: string; place_with: string }[]).map(p => [p.registration_id, p.place_with]))
-    const shaped: AdminStudent[] = ((data ?? []) as unknown as RawStudent[]).map(s => ({
-      id: s.id,
-      full_name: s.full_name,
-      age: s.age,
-      medical_info: s.medical_info,
-      grade: s.grade,
-      school_name: s.school_name,
-      allergies: s.allergies,
-      medical_conditions: s.medical_conditions,
-      parent_phone: s.parent_phone,
-      emergency_contact_name: s.emergency_contact_name,
-      emergency_contact_phone: s.emergency_contact_phone,
-      emergency_contact_relation: s.emergency_contact_relation,
-      registration_year: s.registration_year,
-      created_at: s.created_at,
-      parent_id: s.parent_id,
-      parent_name: s.profiles?.display_name ?? 'Unknown',
-      registrations: (s.registrations ?? []).map(r => ({
+    const shaped: AdminStudent[] = ((data ?? []) as unknown as RawStudent[]).map(({ profiles, registrations, ...s }) => ({
+      ...s,
+      parent_name: s.parent_name?.trim() || profiles?.display_name || 'Unknown',
+      parent_email: (Array.isArray(profiles?.parent_profiles) ? profiles.parent_profiles[0] : profiles?.parent_profiles)?.email ?? null,
+      registrations: (registrations ?? []).map(r => ({
         id: r.id,
         status: r.status,
         section_id: r.section_id,

@@ -57,6 +57,8 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | 🟨 | [35](35-volunteer-onboarding.md) | #155 | Volunteer interviews + onboarding: private links, emails, checklist, profile | P1 | M | 09 | B |
 | 🟨 | [36](36-authorized-pickups.md) | #156 | Authorized pickups + dated walk-home consent at dismissal | P1 | M | — | B |
 | ⬜ | [B2](backlog-p2.md) | #157 | Volunteer hours certificate (promoted from P2) | P1 | S | 35 | B |
+| 🟨 | [39](39-form-answers-shown-and-exported.md) | #202 | Every form answer shown on camper/application detail and exportable by column group | P1 | M | — | B |
+| ⬜ | [40](40-editable-answer-choices.md) | #203 | Editable answer choices (districts, schools, shirt sizes, how-heard…) on the Forms page | P1 | S | 39 | B |
 | ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
 | ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |
@@ -74,7 +76,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [28](28-data-deletion-requests.md) | #102 | Family data-deletion requests | P1 | S | 05, L4 | C |
 | ⬜ | [L6](L6-accessibility.md) | #103 | Full accessibility audit, axe in CI, statement | P1 | M | L6a, 08 | C |
 | ⬜ | [L7](L7-volunteer-clearances.md) | #104 | Volunteer clearances with expiry | P1 ★ | S | 20 | C |
-| ⬜ | [P2](backlog-p2.md) | — | P2 backlog (9 mini-specs + decided-against list) | P2 | — | — | later |
+| ⬜ | [P2](backlog-p2.md) | — | P2 backlog (mini-specs incl. B14 full form builder + decided-against list) | P2 | — | — | later |
 
 **Target dates:** Phase A merged by **Nov 30**, Phase B + legal by **Jan 31**, dry run in the first week of February, registration opens on the date set in spec 13 (❓ not chosen yet). **Critical path:** 01 → 02 → 09 → 10 → 12 → 19, with L2 joining at 09.
 
