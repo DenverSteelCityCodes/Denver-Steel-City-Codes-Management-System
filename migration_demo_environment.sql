@@ -506,6 +506,14 @@ BEGIN
    ORDER BY st2.full_name LIMIT 1;
 
   -- ── 7. Duty schedule: four duties each camp day; volunteers have claimed most spots ──
+  -- Duty lengths and rules (specs 37, 38): a 60-minute weekly minimum whose deadline has passed
+  -- for both weeks, so the admin's "Short on duty minutes" list has people on it.
+  UPDATE duty_types SET minutes = CASE name WHEN 'Morning Check-In' THEN 30 WHEN 'Lunch Duty' THEN 45
+                                            WHEN 'Afternoon Dismissal' THEN 30 WHEN 'Break Supervision' THEN 15
+                                            ELSE minutes END;
+  INSERT INTO duty_settings (year, drop_lock_days, minutes_per_week, signup_deadline_days)
+  VALUES (camp_year, 3, 60, 10)
+  ON CONFLICT (year) DO UPDATE SET drop_lock_days = 3, minutes_per_week = 60, signup_deadline_days = 10;
   FOR d IN SELECT gs::date FROM generate_series(w1_start, w2_end, interval '1 day') gs LOOP
     CONTINUE WHEN extract(isodow FROM d) > 5;
     FOR t IN SELECT id, name FROM duty_types ORDER BY name LOOP

@@ -49,6 +49,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 37 | `migration_volunteer_onboarding.sql` | Volunteer interviews and onboarding: private meeting links, interview and decision emails with a reminder job, the volunteer profile and photo bucket, the onboarding checklist, remove from the season, and Meet the teachers (spec 35). Deploy `send-notifications` first |
 | 38 | `migration_authorized_pickups.sql` | Adults who may collect each camper and the dated walk-home consent; who collected each camper at dismissal; the admin dismissal board; a `pickup_changed` email to the lead (spec 36). Redefines `section_roster()` after step 35 (laptop loans); uses step 37's crew helpers. Deploy `send-notifications` first |
 | 39 | `migration_duty_locks.sql` | Duty rules per year (`duty_settings`), an admin lock on a duty slot, and the volunteer rules: no drops within 3 days of the duty (the default), no changes to past or locked slots, claim or drop only (spec 37) |
+| 40 | `migration_duty_minimums.sql` | Duty lengths (`duty_types.minutes`), a weekly duty minimum and sign-up deadline per year, no drop below the minimum after the deadline, the volunteer's week totals and the admin's "short" list, and two emails: `duty_assigned` and a daily `duty_minimum_reminder` job (spec 38). Deploy `send-notifications` first |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 
@@ -68,7 +69,7 @@ Some headers say "then RE-APPLY X". That is for upgrading a database that alread
    supabase functions deploy send-notifications
    supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="Your Chapter <no-reply@your-domain>" APP_URL=https://your-site
    ```
-   `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three, spec 29 four, spec 36 one).
+   `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three, spec 29 four, spec 36 one, spec 38 two).
 5. **Notify-me links:** `migration_public_camp_page.sql` creates the Vault secret `interest_link_key` that signs confirm and unsubscribe links. Never copy it between projects; a new key only breaks links already sent.
 
 ## Demo environment

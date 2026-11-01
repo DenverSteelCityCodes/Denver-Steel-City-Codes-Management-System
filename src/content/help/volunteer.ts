@@ -223,7 +223,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
         {
           id: 'duties',
           title: 'Sign up for a duty, or drop one',
-          keywords: 'duty slot check-in lunch claim cancel drop locked lock',
+          keywords: 'duty slot check-in lunch claim cancel drop locked lock minimum minutes hours deadline',
           body: [
             {
               kind: 'steps',
@@ -244,6 +244,7 @@ export const VOLUNTEER_GUIDE: HelpGuide = {
             },
             { kind: 'p', text: 'A full slot can\'t take more people. Drop duties as early as you can so someone else can take them.' },
             { kind: 'p', text: 'Duties lock **3 days before** the day: after that, **Cancel** becomes **Locked**, and if you can\'t make it, use **Tell the camp** on [[volunteer-duties]]. You can still sign up late to cover a gap, but that duty is locked straight away. The camp can also lock a slot so nobody changes it.' },
+            { kind: 'p', text: 'Each duty shows how long it takes. If the camp sets a **weekly minimum**, the top of [[volunteer-duties]] shows your minutes for each week you\'re on a crew and the date to sign up by. Any mix of duties counts. After that date the camp fills any gap, and you can\'t drop a duty you need for the minimum.' },
           ],
         },
       ],
