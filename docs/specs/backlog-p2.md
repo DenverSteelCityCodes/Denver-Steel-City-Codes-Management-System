@@ -8,6 +8,7 @@
 - **Done when:** opted-in parents get those three texts; nobody else does; STOP works.
 
 ## B2. Volunteer hours certificate (→ P1, 2026-10-17)
+- **Promoted:** the full build spec is [B2-volunteer-hours.md](B2-volunteer-hours.md).
 - **For:** teen volunteers (school service hours). **Why:** 52 letters were made by hand in June 2026, some still going out in September; volunteers asked for their legal name instead of a nickname.
 - **Build:** hours = crewed days × section hours (from `sections` times, `sessions` dates, crew in `sections.lead_id` / `section_supports`, minus `crew_absences`), plus duty slots. A "My hours" card and a printable letter matching the 2026 template: date, "Volunteer Record / Service Hour Verification", "This is to certify that <legal name> has completed <N> hours of service during Week <n> (<dates>) at Steel City Codes", contact `denver@steelcitycodes.org`, signer name and title from settings, optional signature image. Admin: generate all letters for a week at once.
 - **Done when:** a volunteer downloads a letter whose hours match the admin's records and whose name is their legal name (spec 35).

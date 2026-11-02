@@ -19,6 +19,7 @@ import AdminFormEditor from './pages/AdminFormEditor'
 import AdminAttendance from './pages/AdminAttendance'
 import AdminUpdates from './pages/AdminUpdates'
 import PrintRoster from './pages/PrintRoster'
+import PrintHours from './pages/PrintHours'
 import VolunteerLayout from './components/VolunteerLayout'
 import VolunteerToday from './pages/volunteer/VolunteerToday'
 import VolunteerClasses from './pages/volunteer/VolunteerClasses'
@@ -113,10 +114,11 @@ function App() {
             </Route>
           </Route>
 
-          {/* Paper fallback: printable section roster for admins and the section's crew */}
+          {/* Paper: printable section roster for admins and the section's crew; service-hour letters (spec B2) */}
           <Route element={<ProtectedRoute allowedRoles={['admin', 'volunteer']} />}>
             <Route element={<MfaGate />}>
               <Route path="/print/roster/:sectionId" element={<PrintRoster />} />
+              <Route path="/print/hours/:sessionId" element={<PrintHours />} />
             </Route>
           </Route>
 

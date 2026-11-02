@@ -50,6 +50,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 38 | `migration_authorized_pickups.sql` | Adults who may collect each camper and the dated walk-home consent; who collected each camper at dismissal; the admin dismissal board; a `pickup_changed` email to the lead (spec 36). Redefines `section_roster()` after step 35 (laptop loans); uses step 37's crew helpers. Deploy `send-notifications` first |
 | 39 | `migration_duty_locks.sql` | Duty rules per year (`duty_settings`), an admin lock on a duty slot, and the volunteer rules: no drops within 3 days of the duty (the default), no changes to past or locked slots, claim or drop only (spec 37) |
 | 40 | `migration_duty_minimums.sql` | Duty lengths (`duty_types.minutes`), a weekly duty minimum and sign-up deadline per year, no drop below the minimum after the deadline, the volunteer's week totals and the admin's "short" list, and two emails: `duty_assigned` and a daily `duty_minimum_reminder` job (spec 38). Deploy `send-notifications` first |
+| 41 | `migration_volunteer_hours.sql` | Service hours per volunteer per week (crewed weekdays so far × section times, minus days off, plus duties), read by the volunteer's Profile and the admin's Volunteers › Hours, and the letter signer settings (spec B2) |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 
