@@ -3,14 +3,14 @@
 -- Order: after migration_duty_minimums.sql (duty_types.minutes) and
 -- migration_volunteer_onboarding.sql (volunteers.legal_name, removed_at).
 --
--- Hours for a week = crewed minutes + duty minutes, over the days of that week that have
--- happened (today included, Denver time):
---   * crewed: each weekday between the session's dates on which the volunteer leads or supports
---     a section with times, times the section's length. Two sections count their overlapping time once.
---     Days inside one of the volunteer's crew_absences don't count. A section with no start or
---     end time adds nothing (the admin list flags it). sections.days isn't parsed: every
---     section runs Mon–Fri today.
---   * duty: each duty they hold that week, at its type's minutes, except on an absence day.
+-- Hours for a week (decided 2026-11-01, Q-D2a): the advertised 40 hours per camp week, as
+-- 8 hours per crewed day, over the days of that week that have happened (today included, Denver time):
+--   * crewed day: a weekday between the session's dates on which the volunteer leads or supports
+--     a section, minus days inside one of their crew_absences. Section times don't matter.
+--   * duty: a duty held on a day that isn't already a crewed day (a volunteer on duties only, or a
+--     duty on a weekend) adds its type's minutes, except on an absence day. A crewed day's duties
+--     are inside its 8 hours, so a crewed week never goes past 40.
+-- Not here yet (B2's Discord follow-ups): the bonding deduction, week roles, admin adjustments.
 -- Removed volunteers get nothing: they can't sign in, and the admin list leaves them out.
 -- The letter's signer is app_settings hours_letter_signer_name / hours_letter_signer_title
 -- (readable by everyone already, written by admins).
@@ -25,35 +25,34 @@ RETURNS INT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
 $$;
 REVOKE ALL ON FUNCTION private.session_week_number(sessions) FROM PUBLIC, anon, authenticated;
 
+-- The return type changed while B2 was in review (section minutes → 8 hours a day).
+DROP FUNCTION IF EXISTS public.admin_volunteer_hours(UUID);
+DROP FUNCTION IF EXISTS private.volunteer_week_hours(UUID, UUID);
+
 CREATE OR REPLACE FUNCTION private.volunteer_week_hours(p_volunteer UUID, p_session UUID)
-RETURNS TABLE (crewed BOOLEAN, crew_days INT, crew_minutes INT, duty_minutes INT, untimed_sections INT)
+RETURNS TABLE (crewed BOOLEAN, crew_days INT, crew_minutes INT, duty_minutes INT)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
   WITH se AS (
     SELECT * FROM sessions WHERE id = p_session
   ), today AS (
     SELECT (now() AT TIME ZONE 'America/Denver')::date AS d
-  ), secs AS (
-    SELECT s.start_time, s.end_time
-    FROM sections s, se
-    WHERE s.cancelled_at IS NULL
-      -- A section names its session; one without (a "both weeks" section, or a week whose session
-      -- row is missing) belongs to this season's weeks: all of them, or its week number's.
-      AND (s.session_id = se.id
-           OR (s.session_id IS NULL AND se.year = private.current_camp_year()
-               AND (s.week IS NULL OR s.week = private.session_week_number((SELECT x FROM sessions x WHERE x.id = p_session)))))
-      AND (s.lead_id = p_volunteer
-           OR EXISTS (SELECT 1 FROM section_supports ss WHERE ss.section_id = s.id AND ss.volunteer_id = p_volunteer))
-  ), day_minutes AS (
-    -- The length of one crewed day: the union of the sections' times, so overlaps count once.
-    SELECT coalesce((
-      SELECT sum(extract(epoch FROM upper(r) - lower(r)))::int / 60
-      FROM unnest((SELECT range_agg(tsrange(date '2000-01-01' + start_time, date '2000-01-01' + end_time))
-                   FROM secs WHERE start_time IS NOT NULL AND end_time > start_time)) r
-    ), 0) AS m
+  ), crewed AS (
+    SELECT EXISTS (
+      SELECT 1 FROM sections s, se
+      WHERE s.cancelled_at IS NULL
+        -- A section names its session; one without (a "both weeks" section, or a week whose session
+        -- row is missing) belongs to this season's weeks: all of them, or its week number's.
+        AND (s.session_id = se.id
+             OR (s.session_id IS NULL AND se.year = private.current_camp_year()
+                 AND (s.week IS NULL OR s.week = private.session_week_number((SELECT x FROM sessions x WHERE x.id = p_session)))))
+        AND (s.lead_id = p_volunteer
+             OR EXISTS (SELECT 1 FROM section_supports ss WHERE ss.section_id = s.id AND ss.volunteer_id = p_volunteer))
+    ) AS yes
   ), worked AS (
     SELECT g::date AS d
-    FROM se, today, generate_series(se.start_date, least(se.end_date, today.d), interval '1 day') g
-    WHERE extract(isodow FROM g) < 6
+    FROM se, today, crewed, generate_series(se.start_date, least(se.end_date, today.d), interval '1 day') g
+    WHERE crewed.yes
+      AND extract(isodow FROM g) < 6
       AND NOT EXISTS (SELECT 1 FROM crew_absences a
                       WHERE a.volunteer_id = p_volunteer AND g::date BETWEEN a.from_date AND a.to_date)
   ), duty AS (
@@ -64,15 +63,14 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, private AS $$
     CROSS JOIN se CROSS JOIN today
     WHERE da.volunteer_id = p_volunteer
       AND ds.slot_date BETWEEN se.start_date AND least(se.end_date, today.d)
+      AND ds.slot_date NOT IN (SELECT d FROM worked)
       AND NOT EXISTS (SELECT 1 FROM crew_absences a
                       WHERE a.volunteer_id = p_volunteer AND ds.slot_date BETWEEN a.from_date AND a.to_date)
   )
-  -- A crewed day needs a section with times: one without them adds no days and no minutes.
-  SELECT EXISTS (SELECT 1 FROM secs),
-         CASE WHEN (SELECT m FROM day_minutes) > 0 THEN (SELECT count(*) FROM worked)::int ELSE 0 END,
-         (SELECT count(*) FROM worked)::int * (SELECT m FROM day_minutes),
-         (SELECT m FROM duty),
-         (SELECT count(*) FROM secs WHERE start_time IS NULL OR end_time IS NULL OR end_time <= start_time)::int
+  SELECT (SELECT yes FROM crewed),
+         (SELECT count(*) FROM worked)::int,
+         (SELECT count(*) FROM worked)::int * 480,
+         (SELECT m FROM duty)
   FROM se;
 $$;
 REVOKE ALL ON FUNCTION private.volunteer_week_hours(UUID, UUID) FROM PUBLIC, anon, authenticated;
@@ -117,10 +115,10 @@ REVOKE ALL ON FUNCTION public.my_volunteer_hours() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.my_volunteer_hours() TO authenticated;
 
 -- Admins: everyone crewed in a session or holding a duty in it, with the same numbers the
--- volunteer sees, and what to fix before letters go out.
+-- volunteer sees.
 CREATE OR REPLACE FUNCTION public.admin_volunteer_hours(p_session_id UUID)
 RETURNS TABLE (volunteer_id UUID, display_name TEXT, letter_name TEXT, has_legal_name BOOLEAN,
-               crew_days INT, crew_minutes INT, duty_minutes INT, untimed_sections INT,
+               crew_days INT, crew_minutes INT, duty_minutes INT,
                week_number INT, session_name TEXT, start_date DATE, end_date DATE, letter_ready BOOLEAN,
                signer_name TEXT, signer_title TEXT)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private AS $$
@@ -135,7 +133,7 @@ BEGIN
   RETURN QUERY
     SELECT v.id, p.display_name, private.volunteer_letter_name(v.id),
            nullif(btrim(v.legal_name), '') IS NOT NULL,
-           h.crew_days, h.crew_minutes, h.duty_minutes, h.untimed_sections,
+           h.crew_days, h.crew_minutes, h.duty_minutes,
            private.session_week_number(se), se.name, se.start_date, se.end_date,
            (now() AT TIME ZONE 'America/Denver')::date >= se.end_date AND h.crew_minutes + h.duty_minutes > 0,
            (SELECT nullif(btrim(value), '') FROM app_settings WHERE key = 'hours_letter_signer_name'),

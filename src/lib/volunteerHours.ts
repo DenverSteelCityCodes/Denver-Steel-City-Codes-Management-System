@@ -25,7 +25,6 @@ export interface HoursWeek {
 export interface AdminHoursRow extends Omit<HoursWeek, 'session_id'> {
   volunteer_id: string
   display_name: string
-  untimed_sections: number
 }
 
 export const totalMinutes = (w: Pick<HoursWeek, 'crew_minutes' | 'duty_minutes'>) => w.crew_minutes + w.duty_minutes

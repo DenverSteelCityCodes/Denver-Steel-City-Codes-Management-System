@@ -79,8 +79,6 @@ export default function AdminVolunteerHours() {
   const week = weeks.find(w => w.id === pickedWeek) ?? defaultWeek
   const sessionId = week?.id ?? null
   const { rows, loading, error, refetch } = useAdminVolunteerHours(sessionId)
-  // Counted per volunteer, so a section with two crew shows up twice: say which crew, not a count.
-  const untimed = rows.filter(row => row.untimed_sections > 0)
   const lettersReady = rows.some(row => row.letter_ready)
   const loadError = sessionsError ?? error
 
@@ -92,7 +90,7 @@ export default function AdminVolunteerHours() {
             options={weeks.map(w => ({ value: w.id, label: w.name }))} />
         )}
         {week && <p className="font-bold">{formatWeekDates(week.start_date, week.end_date)}</p>}
-        <p className="text-ink-muted text-pretty">Hours count weekdays crewed so far, minus days off, plus duties. Letters are ready from the week's last day.</p>
+        <p className="text-ink-muted text-pretty">Each weekday crewed so far is 8 hours, minus days off; duties count on days the volunteer isn't crewed. Letters are ready from the week's last day.</p>
 
         {sessionsLoading || loading ? <HoursSkeleton /> : loadError ? (
           <div role="alert" className="py-4 border-y-2 border-ink flex flex-wrap items-center gap-3">
@@ -103,14 +101,6 @@ export default function AdminVolunteerHours() {
           <p className="py-4 border-y-2 border-ink text-ink-muted">No camp weeks yet.</p>
         ) : (
           <>
-            {untimed.length > 0 && (
-              <div className="border-2 border-ink rounded p-4 text-ink">
-                <p className="text-pretty">
-                  {untimed.length === 1 ? `${untimed[0].display_name} crews` : `${untimed.length} volunteers (marked below) crew`} a section with no start or end time this week, so it adds no hours. Set its times in Classes.
-                </p>
-                <Link to="/admin/classes" className={buttonClass('text')}>Classes</Link>
-              </div>
-            )}
             <div>
               {lettersReady ? (
                 <Link to={`/print/hours/${sessionId}`} className={buttonClass('ink')}>Print all letters</Link>
@@ -140,7 +130,6 @@ export default function AdminVolunteerHours() {
                         <b className="font-bold">{row.display_name}</b>
                         <span className="block text-sm text-ink-muted">Letter name: {row.letter_name}</span>
                         {!row.has_legal_name && <span className="block text-sm text-ink-muted">No legal name on file</span>}
-                        {row.untimed_sections > 0 && <span className="block text-sm font-bold text-ink">Section times missing: class hours not counted</span>}
                       </td>
                       <td className={`${td} md:text-right`}><span className={mobileLabel}>Days crewed</span>{row.crew_days}</td>
                       <td className={`${td} text-right`}><span className={mobileLabel}>Crew hours</span>{formatHours(row.crew_minutes)}</td>

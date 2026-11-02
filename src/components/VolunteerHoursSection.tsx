@@ -31,7 +31,7 @@ export default function VolunteerHoursSection() {
     <section aria-labelledby="hours-heading" id="hours" className="scroll-mt-24">
       <h2 id="hours-heading" className={h2}>Service hours</h2>
       <p className="mt-1 text-ink-muted text-pretty">
-        Days you crewed so far, minus days off, plus your duties. Each week's letter for school is ready from its last day.
+        Each weekday you crew is 8 hours, minus days off. Duties count on days you aren't crewed. Each week's letter for school is ready from its last day.
       </p>
 
       <ul className="mt-3 border-y-2 border-ink">

@@ -12,7 +12,7 @@ declare
   dmin int := (select minutes from duty_types order by name limit 1);
   w1 uuid; w2 uuid; fut uuid;
   vol uuid; untimed_vol uuid; duty_vol uuid; gone uuid;
-  a uuid; c uuid; nw uuid; s1 uuid; s2 uuid; s3 uuid;
+  a uuid; c uuid; nw uuid; s1 uuid; s2 uuid; s3 uuid; s4 uuid;
   h record; res text := ''; n int;
   today date := (now() at time zone 'America/Denver')::date;
 begin
@@ -25,39 +25,41 @@ begin
   insert into sessions (name, year, start_date, end_date, is_active) values ('[TEST] W2', yr, '2000-06-12', '2000-06-16', false) returning id into w2;
   insert into sessions (name, year, start_date, end_date, is_active) values ('[TEST] future', yr, today + 1, today + 5, false) returning id into fut;
 
-  -- vol: leads A 09:00–12:00 and supports B 11:00–15:00 in Week 1 (union 6 h a day); off Wednesday.
+  -- vol: leads A and supports B in Week 1 (one crewed day each weekday, 8 hours); off Wednesday.
   insert into sections (class_id, label, age_min, age_max, capacity, week, session_id, start_time, end_time, lead_id)
     values (cls, '[TEST] A', 8, 17, 10, 1, w1, '09:00', '12:00', vol) returning id into a;
   insert into sections (class_id, label, age_min, age_max, capacity, week, session_id, start_time, end_time)
     values (cls, '[TEST] B', 8, 17, 10, 1, w1, '11:00', '15:00') returning id into nw;
   insert into section_supports (section_id, volunteer_id) values (nw, vol);
   insert into crew_absences (volunteer_id, from_date, to_date) values (vol, '2000-06-07', '2000-06-07');
-  -- A duty on Tuesday counts; one on the day off doesn't.
+  -- A duty on a crewed day is inside its 8 hours; one on the day off counts nothing; one on the
+  -- Saturday (inside the session dates, not a crewed day) adds its minutes.
   insert into duty_slots (duty_type_id, session_id, slot_date) values (t_duty, w1, '2000-06-06') returning id into s1;
   insert into duty_slots (duty_type_id, session_id, slot_date) values (t_duty, w1, '2000-06-07') returning id into s2;
-  insert into duty_assignments (duty_slot_id, volunteer_id) values (s1, vol), (s2, vol);
+  insert into duty_slots (duty_type_id, session_id, slot_date) values (t_duty, w1, '2000-06-10') returning id into s4;
+  insert into duty_assignments (duty_slot_id, volunteer_id) values (s1, vol), (s2, vol), (s4, vol);
 
   select * into h from private.volunteer_week_hours(vol, w1);
-  res := res || E'\nweekdays only, minus the day off, overlap once: ' ||
-    case when h.crew_days = 4 and h.crew_minutes = 4 * 360 then 'ok' else 'BAD ' || h::text end;
-  res := res || E'\nduty counts, except on the day off: ' || case when h.duty_minutes = dmin then 'ok' else 'BAD ' || h::text end;
+  res := res || E'\nweekdays only, minus the day off, two sections one day: ' ||
+    case when h.crew_days = 4 and h.crew_minutes = 4 * 480 then 'ok' else 'BAD ' || h::text end;
+  res := res || E'\nonly the Saturday duty adds minutes: ' || case when h.duty_minutes = dmin then 'ok' else 'BAD ' || h::text end;
 
   -- A Week-2 section saved without its session row (week set, session_id null) counts in Week 2 only.
   insert into sections (class_id, label, age_min, age_max, capacity, week, session_id, start_time, end_time, lead_id)
     values (cls, '[TEST] N', 8, 17, 10, 2, w2, '13:00', '14:00', vol) returning id into nw;
   update sections set session_id = null where id = nw;
   select * into h from private.volunteer_week_hours(vol, w1);
-  res := res || E'\nweek-2 section without a session stays out of Week 1: ' || case when h.crew_minutes = 4 * 360 then 'ok' else 'BAD ' || h::text end;
+  res := res || E'\nweek-2 section without a session stays out of Week 1: ' || case when h.crew_minutes = 4 * 480 then 'ok' else 'BAD ' || h::text end;
   select * into h from private.volunteer_week_hours(vol, w2);
-  res := res || E'\n...and counts in Week 2: ' || case when h.crew_days = 5 and h.crew_minutes = 5 * 60 then 'ok' else 'BAD ' || h::text end;
+  res := res || E'\n...and counts in Week 2: ' || case when h.crew_days = 5 and h.crew_minutes = 5 * 480 then 'ok' else 'BAD ' || h::text end;
 
-  -- A section with no times: crewed, flagged, but no days and no minutes.
+  -- A section with no times still counts: a full week is the advertised 40 hours, never more.
   insert into sections (class_id, label, age_min, age_max, capacity, week, session_id)
     values (cls, '[TEST] C', 8, 17, 10, 1, w1) returning id into c;
   insert into section_supports (section_id, volunteer_id) values (c, untimed_vol);
   select * into h from private.volunteer_week_hours(untimed_vol, w1);
-  res := res || E'\nuntimed section: crewed, flagged, no days: ' ||
-    case when h.crewed and h.untimed_sections = 1 and h.crew_days = 0 and h.crew_minutes = 0 then 'ok' else 'BAD ' || h::text end;
+  res := res || E'\nsection without times, full week = 40 hours: ' ||
+    case when h.crewed and h.crew_days = 5 and h.crew_minutes = 40 * 60 then 'ok' else 'BAD ' || h::text end;
 
   -- A duty in a week the volunteer isn't crewed counts too.
   insert into duty_slots (duty_type_id, session_id, slot_date) values (t_duty, w2, '2000-06-13') returning id into s3;
@@ -75,7 +77,7 @@ begin
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('sub', vol, 'role', 'authenticated')::text, true);
   select count(*) into n from public.my_volunteer_hours() m where m.session_id = w1 and m.letter_ready
-    and m.crew_minutes = 4 * 360 and m.week_number = 1;
+    and m.crew_minutes = 4 * 480 and m.week_number = 1;
   res := res || E'\nvolunteer sees their Week 1, letter ready: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
   select count(*) into n from public.my_volunteer_hours() m where m.session_id = fut and not m.letter_ready;
   res := res || E'\nno letter before the week ends: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
