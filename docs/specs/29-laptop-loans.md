@@ -77,3 +77,14 @@ What exists today is `students.laptop_available` (`migration_student_registratio
 
 ## Notes for the builder
 - Add to the registration-day runbook (19): test the coding platform on a district student account two weeks before camp.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Close the waitlist gap: when an offer is claimed for a week whose wizard answer was "needs a laptop", create the loan request (or ask the parent on accept). The wizard skips waitlisted registrations today (`src/pages/ParentRegistrationPage.tsx:688`). (Discord M02)
+- [ ] Record the charger with the device on hand-out and return, and a `damaged` status with a note. Admins can already hand out after the start and over the cap (`migration_laptop_loans.sql:207`, `:304`). (Discord M02)
+- [ ] An end-of-week "not returned" list and a per-section end-of-day "devices and chargers back" count, with no asset tags. (Discord M02)
+- [ ] Show crew their section's loaner count on volunteer Today. (Discord M02)
+- [ ] Offer a loaner only for classes that allow one. A class that needs the camper's own laptop (USB access) says so instead. (Discord M31)
+- [ ] Suggest the default loaner cap from history (about 25% of campers in 2023); the admin picks the number. (Discord M31)

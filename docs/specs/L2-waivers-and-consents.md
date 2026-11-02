@@ -40,3 +40,9 @@ The waiver is hardcoded in `ParentRegistrationPage.tsx`. It says "Denver Summer 
 
 ## Notes for the builder
 - Keep `students.waiver_signature/guardian_signature/waiver_signed_at` populated for now, for older screens, but treat `consents` as the record.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Give the version table an audience (family or volunteer), so spec 35's volunteer handbook reuses it. (Discord M39)

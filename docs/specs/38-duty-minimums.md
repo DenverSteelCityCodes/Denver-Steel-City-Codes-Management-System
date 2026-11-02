@@ -59,3 +59,15 @@
 
 ## Deploy note
 Deploy `send-notifications` (two new templates) before applying the migration, like specs 29–36.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] `duty_slots.min_volunteers` and a post or location label ("cafeteria exit", "hallway table") shown to the volunteer. (Discord M33)
+- [ ] An attention item and a volunteer-facing "Needs 2 more" badge for slots below their minimum in the next 3 days. (Discord M33)
+- [ ] A "room check" duty type, and one-day activity types with 0 minutes allowed (the check is 5–480 today, `migration_duty_minimums.sql:23`). Dated custom types already work. (Discord M33)
+- [ ] An admin duty roll call (present or absent) that feeds duty minutes and B2 hours. (Discord M33)
+- [ ] Next week's duties published by an admin-set time. (Discord M33)
+- [ ] "Offer my slot" (B5): another volunteer claims it; inside spec 37's lock only with admin approval (Q-V4); volunteers free that day get a one-tap "I can cover"; recorded in History. The findings propose promoting B5 to P1 for this. (Discord M33)
+- On-call duty types: spec 41 owns `duty_types.is_on_call`. (Discord M48)

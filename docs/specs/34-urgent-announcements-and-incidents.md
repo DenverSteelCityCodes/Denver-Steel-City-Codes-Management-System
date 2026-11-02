@@ -62,3 +62,27 @@ Today:
 
 ## Open questions
 - How long are incident records kept? ❓ (L4). Default: 1 year after the season, then anonymize the camper link.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] A "Past families" audience, for announcements only: families from earlier seasons, minus `email_opt_out`, minus families whose campers are all past the top grade, merged with notify-me signups without duplicates. This revises "every family audience is limited to the current season" for that one audience. Opt-out covers announcements; safety and transactional mail still go. (Discord M07)
+- [ ] A "Past volunteers" audience (accepted in an earlier season, not removed, not graduated), and "volunteers" limited to this season's accepted volunteers; it includes past seasons today (`migration_volunteer_onboarding.sql:922`). (Discord M24, M19)
+- [ ] "Needs confirmation" on any crew or week-crew update, with a one-tap "Got it" per volunteer. Admins see "12 of 15 confirmed" and a "Nudge the rest" email, at most once a day. (Discord M19; Q-D13)
+- [ ] A correction supersedes the earlier notice on volunteer Today instead of stacking. (Discord M19)
+- [ ] Incidents: an optional subject `volunteer_id` (conduct entries admin-only, never readable by the volunteer's peers) and more than one section per incident. (Discord M32)
+- [ ] Levels `parent_called` and `sent_home`, and kind `property`. A per-camper count of behaviour incidents this week on the admin list. No strike ladder or next step until SCC writes one (Q-D16, SCC to confirm). (Discord M41)
+- [ ] An admin-set "See admin before class" marker on a later section's roster for a camper with an earlier incident this season, with no details shown. (Discord M41)
+- [ ] The volunteer holding that day's duty slot (lunch, break) can log an incident with a free-text camper description, which an admin links to the camper. (Discord M41)
+- [ ] Injury incidents with a camper raise the parent-notice item at the end of the same day, not after 24 hours (`src/hooks/useAdminAttention.ts:184`). (Discord M41)
+- [ ] Admin "parent contact" notes against a camper or incident, for complaints that arrive by other channels. (Discord M41, M17)
+- [ ] A parent "Tell the camp" on the camper card for the current week (absent today, arriving late at, leaving early at), stored as a planned notice that shows on that day's roll call and the admin board. The note setter needs an existing mark (`migration_urgent_and_incidents.sql:449`), so this is a separate table. (Discord M44)
+- [ ] A weekly show rate from arrival roll calls on the admin attendance page (feeds B17). (Discord M44)
+- [ ] A crew "Site hold" prewritten body (stay in the room, doors locked, no hallway or bathroom trips, wait for the all-clear), separate from the family one. (Discord M47)
+- [ ] Acknowledgement on urgent crew notices, with a list of sections where nobody has confirmed within N minutes, so a director can phone them. (Discord M47)
+- [ ] An "All clear" that ends the banner. Today it lasts until midnight; this revises the end-of-day rule. (Discord M47)
+- [ ] A per-venue "Emergency procedures" card on volunteer Today (exits, hold rule, bathroom rule, fire-drill assembly point), with SCC's and the venue's text. (Discord M47)
+- [ ] A scheduled `camp_survey` email to parents and volunteers the day after the last session, with a survey URL in season settings, also linked from the final-day dashboard. (Discord M55)
+- [ ] Saved announcement drafts reusable next season (recap, lost and found, thanks), and a lost-and-found template for "Families in week N" with a claim deadline. (Discord M55)
+- Roll calls on volunteer Today replaced the daily attendance link (Discord M62). Dropping `attendance_logs` is still B9.

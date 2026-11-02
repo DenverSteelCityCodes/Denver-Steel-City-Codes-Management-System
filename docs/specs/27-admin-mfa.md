@@ -43,3 +43,9 @@ Admins can see every child's medical information and every family's contact deta
   - the browser, with the switch briefly on for the demo: enrolment and the code step, using RFC 6238 codes computed in the page; a wrong code is refused.
 - Still to check by hand: a real iPhone and Android authenticator app scanning the QR code.
 - Roll out before giving anyone new admin access in Phase C.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Warn on the Users page when fewer than two admins are MFA-enrolled. Two admins are recommended today, not checked. (Discord M01)

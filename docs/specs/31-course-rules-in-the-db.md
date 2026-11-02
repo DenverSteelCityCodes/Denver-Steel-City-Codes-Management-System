@@ -51,3 +51,15 @@ Already true, and kept: grade is stored as the grade the camper enters in the fa
 
 ## Notes for the builder
 - Update spec 23 to say it only makes these columns per region.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] First season: import 2026 completions from the Drive roster as past-year registrations. The exception request the wizard already sends (`src/pages/ParentRegistrationPage.tsx:715`) stays as it is. Prerequisites already accept an earlier week or any past year (`migration_course_rules.sql:153`). (Discord M05)
+- [ ] A reverse-order warning (the week-2 class is the prerequisite of the week-1 class) and an admin list of registrations that still repeat or reverse after the warning, with the camper's past courses. (Discord M05)
+- [ ] `classes.default_capacity`, so new sections of a kit-limited course inherit their cap (Microcontrollers 14–20, web dev 20). Teacher minimums are spec 39's `classes.min_teachers`. (Discord M05)
+- [ ] A "filled within hours of opening" note on the admin dashboard. (Discord M05)
+- [ ] Show the class requirement note in the wizard's course choice (`src/pages/ParentRegistrationPage.tsx:1196`) and in the confirmation and kickoff emails. The class browser and `/camp` already show it (`src/lib/courseRules.ts:92`). (Discord M31)
+- [ ] A season-level eligible grade range, stored as the fall grade and enforced in `registrations_before_insert()` for every class; `grades_allowed` narrows it. The wording ("entering grade N in fall 2027") comes from that one setting in the wizard, `/camp` and emails. Current 9th graders and older are pointed to `/apply`. This tightens "null = any grade". Section age bands (`migration_one_class_per_week.sql:121`) compare only the camper's age with the section's band, so a section whose band includes a 2nd grader's age admits one today; the SQL tests cover exactly that case. (Discord M49; Q-D6)
+- No change for "place with" (built). B11 still holds the volunteer-sibling warning. (Discord M61)

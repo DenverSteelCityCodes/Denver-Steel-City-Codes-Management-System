@@ -36,3 +36,11 @@ Every new seat sits as `pending` ("Spot held · We'll confirm soon") until an ad
 ## Notes for the builder
 - Built 2026-10-17. The demo seed no longer creates `pending` registrations (the reset function was re-applied from `migration_demo_environment.sql`). The seed has one section with no lead (MC-1, Week 2), so the demo admin dashboard now shows the no-lead alert by default, which is accurate. The duplicate report finds 0 pairs in the seed.
 - The demo login blurb in `lib/demo.ts` mentions campers in different states. Keep it accurate after the seed change.
+
+## Follow-ups from the Discord findings (2026-11-01)
+
+These are outside this spec's merged scope: build each as its own small issue. From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`.
+
+- [ ] A minimum-present check: "PY-B is below minimum crew on Tue, Jun 2" when crew minus that day's absences is below spec 39's minimum (default 2; `classes.min_teachers` overrides). The alert already fires for lead and support absences (`src/hooks/useAdminAttention.ts:223`); this adds the count. (Discord M14)
+- [ ] Cover suggestions list spec 39's senior floaters first, then seniors whose languages include the section's course; suggestions stay senior-only until Q-V2 is decided. The cover is spec 33's dated cover. (Discord M14, M53)
+- [ ] 14b: a tolerant duplicate match (same last name plus the same grade or school, or a shared phone or emergency contact) at add-camper time and in spec 32's register, including two camper rows under one parent account. Today's report needs the same normalized full name under different parents (`migration_auto_confirm.sql:35`). Date of birth isn't collected (Q-P2), so it isn't used. (Discord M40)

@@ -33,3 +33,11 @@ Nothing is ever deleted. 🔎 Colorado requires a written disposal policy for pe
 ## Notes for the builder
 - Anonymize means overwrite PII columns (names → "Former camper", contacts → null), not delete rows that reports depend on.
 - Spec 30's notify list: delete `interest_signups` rows 60 days after that year's `season_settings.registration_opens_at` (and their `audit.log` rows, which copy the address).
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Record how long earlier volunteer applications, decline reasons, removal reasons and conduct incidents are kept, since reapplication review reads them. Rejected applications default to 1 year; incident retention is still Q-F4. (Discord M11, M32)
+- [ ] Season totals (B17) are computed and kept before records are anonymized. (Discord M56)
+- [ ] Returning-family lookups need the prior year's camper name and grade: say for how long. (Discord M12)
