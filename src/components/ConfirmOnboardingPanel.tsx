@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { GRADES } from '../lib/campers'
+import { withAnswered } from '../lib/formFields'
+import { useFormConfig } from '../hooks/useFormConfig'
 import { buttonClass } from '../lib/ui'
 import { ErrorLine, Segmented, labelCls } from '../pages/parent/parts'
 import type { Student, OnboardingConfirmation } from '../types/database'
@@ -38,6 +40,10 @@ const FIELD_ID: Partial<Record<ErrKey, string>> = {
 }
 
 export default function ConfirmOnboardingPanel({ student, parentDefaults, campYear, full = false, submitting, onConfirm, onClose }: Props) {
+  // The Forms page's shirt sizes (spec 43); the camper's saved size stays on the list even if removed.
+  // Until they load (or if they can't), only the saved size is offered, never the code defaults.
+  const shirtConfig = useFormConfig('student_registration')
+  const shirtSizes = shirtConfig.loading || shirtConfig.loadError ? [] : shirtConfig.field('shirt_size').options
   const [form, setForm] = useState<OnboardingConfirmation>({
     full_name: student.full_name,
     grade: student.grade ?? null,
@@ -175,9 +181,15 @@ export default function ConfirmOnboardingPanel({ student, parentDefaults, campYe
               <label htmlFor="ob-3" className={labelCls}>Shirt size *</label>
               <select id="ob-3" {...invalid('shirt_size')} className={inputCls} value={form.shirt_size ?? ''} onChange={e => set('shirt_size', e.target.value)}>
                 <option value="">Select…</option>
-                {['XS', 'S', 'M', 'L', 'XL'].map(s => <option key={s} value={s}>{s}</option>)}
+                {withAnswered(shirtSizes, form.shirt_size).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
               {errorUnder('shirt_size')}
+              {shirtConfig.loadError && (
+                <>
+                  <ErrorLine className="mt-1.5">Couldn't load the shirt sizes.</ErrorLine>
+                  <button type="button" onClick={shirtConfig.retry} className={buttonClass('text')}>Try again</button>
+                </>
+              )}
             </div>
           </div>
 
