@@ -79,7 +79,7 @@ function HealthText({ s }: { s: AdminStudent }) {
   )
 }
 
-// Every saved answer (spec 39), grouped like the wizard, health first and red when there's
+// Every saved answer (spec 42), grouped like the wizard, health first and red when there's
 // something to know, or when a required health answer was never given (not knowing is a safety
 // question too). Phones are call links; a required answer that's missing says "Not given".
 const DETAIL_GROUPS = [

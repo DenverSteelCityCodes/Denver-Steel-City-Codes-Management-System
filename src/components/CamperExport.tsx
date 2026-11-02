@@ -5,7 +5,7 @@ import Segmented from './Segmented'
 import { toCsv, downloadCsv } from '../lib/csv'
 import { CAMPER_ANSWERS, CAMPER_GROUPS, camperCsv, camperCsvRowCount, type CamperGroup, type CsvCamper, type RowShape } from '../lib/camperAnswers'
 
-// Campers › Export (spec 39): an inline panel, never a modal. The admin picks the column groups
+// Campers › Export (spec 42): an inline panel, never a modal. The admin picks the column groups
 // and the row shape; it exports what the list's current filter shows. The choice is remembered on
 // this device only.
 

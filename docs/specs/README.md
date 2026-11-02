@@ -56,9 +56,14 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | 🟨 | [34](34-urgent-announcements-and-incidents.md) | #154 | Urgent announcements, week audiences, incident log, roll-call notes | P1 | M | 09 follow-up | B |
 | 🟨 | [35](35-volunteer-onboarding.md) | #155 | Volunteer interviews + onboarding: private links, emails, checklist, profile | P1 | M | 09 | B |
 | 🟨 | [36](36-authorized-pickups.md) | #156 | Authorized pickups + dated walk-home consent at dismissal | P1 | M | — | B |
+| 🟨 | [37](37-duty-locks.md) | #204 | Duty drops lock 3 days out; admins lock slots; no past-date changes | P0 | S | 05, 35 | B |
+| 🟨 | [38](38-duty-minimums.md) | #205 | Weekly duty minimum in minutes; admins assign anyone short; reminder email | P1 | M | 09, 37 | B |
+| ⬜ | [39](39-staffing-board.md) | — | Staffing board: campers per crew, teachers per course, unassigned volunteers, room clashes, week roles | P1 | M | 13, 14, 25, 33, 35 | B |
+| ⬜ | [40](40-crew-day-plan.md) | — | Crew day plan on volunteer Today: call time, meeting point, crew-only schedule, crew FAQ, night-before email | P1 | M | 02, 09, 34, 39 | B |
+| ⬜ | [41](41-on-call-help.md) | — | On-call help: "Need help" from Today reaches the on-call admin, "On my way" | P1 | S | 09, 34, 37, 38, 39 | B |
+| 🟨 | [42](42-form-answers-shown-and-exported.md) | #202 | Every form answer shown on camper/application detail and exportable by column group | P1 | M | — | B |
+| ⬜ | [43](43-editable-answer-choices.md) | #203 | Editable answer choices (districts, schools, shirt sizes, how-heard…) on the Forms page | P1 | S | 42 | B |
 | ⬜ | [B2](backlog-p2.md) | #157 | Volunteer hours certificate (promoted from P2) | P1 | S | 35 | B |
-| 🟨 | [39](39-form-answers-shown-and-exported.md) | #202 | Every form answer shown on camper/application detail and exportable by column group | P1 | M | — | B |
-| ⬜ | [40](40-editable-answer-choices.md) | #203 | Editable answer choices (districts, schools, shirt sizes, how-heard…) on the Forms page | P1 | S | 39 | B |
 | ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
 | ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |
@@ -76,11 +81,13 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [28](28-data-deletion-requests.md) | #102 | Family data-deletion requests | P1 | S | 05, L4 | C |
 | ⬜ | [L6](L6-accessibility.md) | #103 | Full accessibility audit, axe in CI, statement | P1 | M | L6a, 08 | C |
 | ⬜ | [L7](L7-volunteer-clearances.md) | #104 | Volunteer clearances with expiry | P1 ★ | S | 20 | C |
-| ⬜ | [P2](backlog-p2.md) | — | P2 backlog (mini-specs incl. B14 full form builder + decided-against list) | P2 | — | — | later |
+| ⬜ | [P2](backlog-p2.md) | — | P2 backlog (mini-specs + decided-against list); B14–B20 (all P2) added from the Discord findings; B21 full form builder | P2 | — | — | later |
 
 **Target dates:** Phase A merged by **Nov 30**, Phase B + legal by **Jan 31**, dry run in the first week of February, registration opens on the date set in spec 13 (❓ not chosen yet). **Critical path:** 01 → 02 → 09 → 10 → 12 → 19, with L2 joining at 09.
 
 **Go-live gate (decided 2026-10-17):** registration goes live when national provides DNS for `steelcitycodes.org` (spec 02 sending domain, the prod URL in 01) and the texts only SCC can supply (L1 approval, L2 waiver; Q-L9 for L7). **Until then, every spec that doesn't need national is built, in tracker order, so the app is as ready as possible.** Specs that wait on national are still built up to the switch-over (02 against a test sender, 01 in the account that has Pro). Specs 29–36 and B2 come from the [Denver inbox and Drive findings](../research/inbox-findings.md).
+
+Specs 39–41 and backlog items B14–B20 come from the [Denver Discord findings](../research/discord-findings.md) (2026-11-01): 62 findings from six years of leadership and volunteer chat, each checked against `main` at `d046434`. The findings also added a "From the Discord findings" section (or "Follow-ups" for merged specs) to the specs they extend, and 16 questions (Q-D1 to Q-D16) to the plan's §6.
 
 **Bugs found during the findings check: all fixed and live on the demo (2026-10-17).** [#143](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/143) demoted volunteers kept access → [PR #159](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/159) · [#145](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/145) past-season families in "parents"/"everyone" → [PR #161](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/161) · [#144](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/144) interview slots readable by all → [PR #163](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/163) · [#146](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/146) volunteer emails linked to /parent → [PR #164](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/164) · [#147](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/147) interview time zone → [PR #165](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/165) · [#148](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/148) emails promised but never sent → [PR #166](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/166).
 

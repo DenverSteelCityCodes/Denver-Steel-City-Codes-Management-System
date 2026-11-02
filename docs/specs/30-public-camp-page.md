@@ -79,3 +79,18 @@ What the build changed or settled, so the next reader doesn't have to diff it:
 - **Opening minute.** When the countdown passes, `/camp` shows "Registration is opening…" and asks again every 5 seconds, at most 6 times, until the status changes; the status slot is never empty. An opening time with no classes yet says the classes aren't posted.
 - **Demo:** `private.reset_demo()` seeds the place and clears the list nightly. In demo mode, signed-out `/` stays on `/login` (the one-click seats), and `/camp` says the camp is made up and switches the notify form off, so the demo never collects addresses.
 - **To ship:** deploy `send-notifications` **before** applying the migration (three new templates: `interest_confirm`, `registration_opening_soon`, `registration_now_open`). The redeployed sender holds any template it doesn't know for 6 hours, without spending an attempt, instead of failing it (a shorter hold would let held rows fill every batch, since the claim takes the oldest due rows first).
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] The unset-dates state (already built, `src/pages/CampPage.tsx:137`) adds "Camp usually runs the first two weeks of June", as information only, never as dates. (Discord M13)
+- [ ] The same "Place to be announced" wording in the wizard and the confirmation email. `/camp` already uses it (`src/pages/CampPage.tsx:265`). (Discord M13; Q-D9)
+- [ ] When an admin first sets or changes a session's location, queue one `location_changed` email to every family holding a seat that week (spec 09). (Discord M13)
+- [ ] A per-season venue record: building and rooms by section. Admin only; no school-staff contact details in public tables. (Discord M36)
+- [ ] "Rooms needed vs rooms booked" on Classes. (Discord M36)
+- [ ] Show spec 40's per-day location (`location_override`) on `/camp`, and prompt a spec 34 notice to that week's families and crew when it changes. (Discord M36)
+- [ ] FAQ lines: the camp inbox is the only after-camp contact for lost items (M55); one rule for sharing materials with absent campers (M44); "a district-required adult is on site all day" only once SCC confirms it (M36). (Discord M36, M44, M55)
+- [ ] A per-week "Waitlist only" state when every section of a week is full. The whole-season state already exists (`migration_public_camp_page.sql:98`). (Discord M27)
+- [ ] A "volunteer" option on notify-me, for interest before applications open. (Discord M21)
+- [ ] The donation link from B20, shown after registration closes, only once Q-P5 is answered yes. (Discord M58)

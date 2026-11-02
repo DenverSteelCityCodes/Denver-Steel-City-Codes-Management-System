@@ -31,3 +31,10 @@ Each camper belongs to one parent account. A second guardian makes their own acc
 
 ## Notes for the builder
 - None.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Build before February: two guardians registering one child for different classes happened again in 2026. (Discord M40)
+- [ ] On merge, keep the earliest seat (already the rule) and send the family a change request asking which class they want, instead of only cancelling the other. (Discord M40; Q-D8)
