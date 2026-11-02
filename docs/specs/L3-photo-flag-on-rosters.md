@@ -30,3 +30,11 @@ A photo opt-out is useless if the crew taking photos can't see it.
 
 ## Notes for the builder
 - None.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] The camper "No photos" flag also goes on the admin export used for social posting. (Discord M06)
+- [ ] Camp photos stay out of the app; spec 26 documents the shared folder and posting rules. Volunteer profile photos (spec 35) are unaffected. (Discord M06)
+- Volunteer consent to appear in social posts is a separate tick in spec 35 (Discord M06).

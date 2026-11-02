@@ -45,3 +45,14 @@ The app sends no email of its own. Status changes reach a parent only when they 
 - Not queued: writes with no signed-in user and no reason (SQL editor, the nightly demo reset), and example.com addresses (recorded as "skipped").
 - **Not built yet:** announcements via the outbox ("Also email" still opens the mail app, so no unsubscribe link is needed yet), and the in-camp-week `medical_changed` email to the lead. Both are small follow-ups once a provider is live. Specs 10–12 add their templates to `templates.ts`.
 - Keep templates in one folder in the Edge Function, so national can edit the wording without touching logic.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] When a registration starts holding a seat (late add, accepted offer, admin register) after "Families in week N" announcements or the kickoff went out, queue those to that family once and show them on the family's dashboard. (Discord M50)
+- [ ] "Resend to this family" on the sent log and on the admin family record (confirmation, kickoff). (Discord M50)
+- [ ] The existing follow-up (ordinary "Also email" through the outbox, one email per family, instead of the mail link at `src/components/UpdateComposer.tsx:115`) also covers crew updates, so every notice reaches the volunteer's account address and class emails never need a pasted parent list. (Discord M50, M19, M45)
+- [ ] The admin family page lists every notification sent to that family, plus short contact notes with author and time. The general sent log already exists (`src/components/EmailLog.tsx:39`). (Discord M17)
+- [ ] Ship B12 bounce tracking before camp week. (Discord M50)
+- [ ] Confirmation email: add the venue (or "Place to be announced") and the class requirement note. Neither is in the payload today (`migration_notifications.sql:98`). (Discord M13, M28, M31)

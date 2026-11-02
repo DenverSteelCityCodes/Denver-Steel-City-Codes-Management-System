@@ -39,3 +39,9 @@ New accounts must confirm by email, and Supabase's built-in sender is capped at 
 
 ## Notes for the builder
 - Store SMTP credentials only in the Supabase dashboard, never in the repo.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Before relying on `steelcitycodes.org`, confirm the domain is renewed and its DNS is under national's control. (Discord M01)

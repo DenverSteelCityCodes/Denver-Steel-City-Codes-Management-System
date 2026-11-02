@@ -39,3 +39,11 @@ The plan's load numbers are estimates. Before opening day we need proof the syst
 
 ## Notes for the builder
 - Never load-test prod. Never seed fake families into prod.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- No change to the load test: day one ranged from about 15 signups (2022) to about 100 (2024). Keep the waiting room deferred. (Discord M51)
+- [ ] Two weeks out, test the coding platform on a district student account (already in Scope) **and** on the venue's guest wifi and on cellular. (Discord M31, M47)
+- [ ] Runbook: an internet-outage plan (a hotspot per class, or B16's print pack printed the day before). The print pack itself is B16. (Discord M36, M47)
