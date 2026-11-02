@@ -1,6 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Lock, ExternalLink, ArrowRight } from 'lucide-react'
+import { Lock, ExternalLink, ArrowRight, ChevronDown } from 'lucide-react'
 import { useFormConfigs } from '../hooks/useFormConfigs'
 import { useAppSettings } from '../hooks/useAppSettings'
 import { useSessions, activeCampYear } from '../hooks/useSessions'
@@ -8,25 +8,37 @@ import { useSeasonSettings } from '../hooks/useSeasonSettings'
 import { registrationPhase } from '../lib/registrationStatus'
 import { FORM_DEFINITIONS, resolveField, type FieldConfig, type FieldDef, type FormKey } from '../lib/formFields'
 import Segmented from '../components/Segmented'
+import ChoiceListEditor from '../components/ChoiceListEditor'
 import AdminPageHead, { pageClass } from '../components/AdminPageHead'
 
+// Who answers each form, for "12 campers chose it" when removing a choice.
+const ANSWERED_BY: Record<FormKey, { one: string; many: string }> = {
+  volunteer_application: { one: 'applicant', many: 'applicants' },
+  student_registration: { one: 'camper', many: 'campers' },
+}
+
 // One question: Show switch, the label (renamed in place, saved on leaving the field), and whether
-// it must be answered. Locked questions can be renamed but not hidden or made optional.
+// it must be answered. Locked questions can be renamed but not hidden or made optional. A choice
+// question also opens its list of choices in place, in a row under it (spec 43).
 function FieldRow({
   formKey,
   def,
   overrides,
   saving,
   onUpdate,
+  onSaveOptions,
 }: {
   formKey: FormKey
   def: FieldDef
   overrides: Record<string, FieldConfig>
   saving: boolean
   onUpdate: (patch: FieldConfig) => void
+  onSaveOptions: (list: string[]) => Promise<void>
 }) {
   const resolved = resolveField(formKey, def.key, overrides)
   const [draft, setDraft] = useState(resolved.label)
+  const [choicesOpen, setChoicesOpen] = useState(false)
+  const choicesId = `choices-${formKey}-${def.key}`
 
   // Escape blurs the field too; this tells that blur to discard instead of save.
   const discard = useRef(false)
@@ -49,7 +61,9 @@ function FieldRow({
   }
 
   const td = 'px-3 py-2 align-middle max-md:p-0'
+  const choiceCount = resolved.options.length
   return (
+    <Fragment>
     <tr className="border-t border-border first:border-t-0 max-md:grid max-md:grid-cols-[4rem_minmax(0,1fr)] max-md:items-center max-md:gap-x-2 max-md:py-2">
       <td className={td}>
         {def.locked ? (
@@ -94,6 +108,18 @@ function FieldRow({
         {resolved.label !== def.label && (
           <p className="text-sm text-ink-muted">Default: {def.label}</p>
         )}
+        {def.options && (
+          <button
+            type="button"
+            aria-expanded={choicesOpen}
+            aria-controls={choicesId}
+            onClick={() => setChoicesOpen(o => !o)}
+            className="inline-flex items-center gap-1.5 min-h-11 font-bold underline underline-offset-[3px]"
+          >
+            {choiceCount} choice{choiceCount === 1 ? '' : 's'}<span className="sr-only"> for “{resolved.label}”</span>
+            <ChevronDown size={16} strokeWidth={2.5} aria-hidden="true" className={`transition-transform ${choicesOpen ? 'rotate-180' : ''}`} />
+          </button>
+        )}
       </td>
 
       <td className={`${td} max-md:col-start-2`}>
@@ -110,6 +136,22 @@ function FieldRow({
         )}
       </td>
     </tr>
+    {def.options && choicesOpen && (
+      <tr className="max-md:block">
+        <td colSpan={3} className="px-3 pb-2 max-md:block max-md:p-0">
+          <ChoiceListEditor
+            id={choicesId}
+            formKey={formKey}
+            def={def}
+            options={resolved.options}
+            questionLabel={resolved.label}
+            answeredBy={ANSWERED_BY[formKey]}
+            onSave={onSaveOptions}
+          />
+        </td>
+      </tr>
+    )}
+    </Fragment>
   )
 }
 
@@ -119,7 +161,7 @@ const FORM_TABS: { key: FormKey; short: string; rest: string }[] = [
 ]
 
 export default function AdminFormEditor() {
-  const { configs, loading, error: configsError, updateField } = useFormConfigs()
+  const { configs, loading, error: configsError, updateField, saveOptions } = useFormConfigs()
   const { settings, loading: settingsLoading, error: settingsError } = useAppSettings()
   const { sessions, loading: sessionsLoading } = useSessions()
   const { settings: season } = useSeasonSettings(sessionsLoading ? null : activeCampYear(sessions))
@@ -156,7 +198,7 @@ export default function AdminFormEditor() {
 
   return (
     <div className={pageClass}>
-      <AdminPageHead title="Forms" lede="Rename questions, hide optional ones and choose what's required. Changes apply to the live forms immediately." />
+      <AdminPageHead title="Forms" lede="Rename questions, hide optional ones, choose what's required and edit the answer choices. Changes apply to the live forms immediately." />
 
       <div className="max-w-[880px]">
         <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -221,6 +263,7 @@ export default function AdminFormEditor() {
                     overrides={overrides}
                     saving={saving === def.key}
                     onUpdate={patch => run(def.key, () => updateField(activeForm, def.key, patch))}
+                    onSaveOptions={list => saveOptions(activeForm, def.key, list)}
                   />
                 ))}
               </tbody>

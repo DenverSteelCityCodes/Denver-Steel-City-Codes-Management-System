@@ -1,7 +1,8 @@
-import { useState, useMemo, Fragment } from 'react'
+import { useState, useMemo, useRef, Fragment } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import { Search, Download, HeartPulse, ChevronDown, ArrowLeft, ArrowRight, Laptop } from 'lucide-react'
 import InlineConfirm from '../components/InlineConfirm'
+import CamperExport from '../components/CamperExport'
 import HistoryStrip from '../components/HistoryStrip'
 import AdminChangeRequests from '../components/AdminChangeRequests'
 import Button from '../components/Button'
@@ -9,11 +10,12 @@ import Segmented from '../components/Segmented'
 import RegistrationStatusWord from '../components/RegistrationStatusWord'
 import { Input, Select } from '../components/Field'
 import { supabase } from '../lib/supabase'
-import { healthLines, telHref } from '../lib/campers'
-import { toCsv, downloadCsv } from '../lib/csv'
+import { healthLines, realNote, telHref } from '../lib/campers'
+import { CAMPER_GROUPS, shownAnswers } from '../lib/camperAnswers'
 import { adminLaptopWord } from '../lib/laptopLoans'
 import { useAdminStudents, type AdminStudent, type StudentRegistration } from '../hooks/useAdminStudents'
 import { useAdminClasses } from '../hooks/useAdminClasses'
+import { useFormConfig } from '../hooks/useFormConfig'
 import type { RegistrationStatus } from '../types/database'
 
 // Campers (A-admin §9): change requests first, then search and one status filter over a table of
@@ -77,6 +79,49 @@ function HealthText({ s }: { s: AdminStudent }) {
   )
 }
 
+// Every saved answer (spec 42), grouped like the wizard, health first and red when there's
+// something to know, or when a required health answer was never given (not knowing is a safety
+// question too). Phones are call links; a required answer that's missing says "Not given".
+const DETAIL_GROUPS = [
+  ...CAMPER_GROUPS.filter(g => g.key === 'health'),
+  ...CAMPER_GROUPS.filter(g => g.key !== 'health'),
+]
+const PHONE_ANSWERS = new Set(['parent_phone', 'emergency_phone'])
+
+function CamperAnswers({ student, required }: { student: AdminStudent; required: (field: string) => boolean }) {
+  return (
+    <div className="min-w-0">
+      <h3 className="text-lg font-bold leading-[1.3]">Details</h3>
+      {DETAIL_GROUPS.map(g => {
+        const answers = shownAnswers(g.key, student, required)
+        if (answers.length === 0) return null
+        return (
+          <section key={g.key} aria-labelledby={`answers-${student.id}-${g.key}`} className="mt-4">
+            <h4 id={`answers-${student.id}-${g.key}`} className="font-bold">{g.label}</h4>
+            <dl className="mt-1.5 grid grid-cols-1 min-[480px]:grid-cols-[minmax(120px,max-content)_1fr] gap-x-4 gap-y-1 min-[480px]:gap-y-2 items-baseline">
+              {answers.map(a => (
+                <Fragment key={a.key}>
+                  <dt className="text-sm font-bold text-ink-muted">{a.label}</dt>
+                  <dd className={`mb-2 min-[480px]:mb-0 min-w-0 [overflow-wrap:anywhere] text-pretty whitespace-pre-line ${a.missing && g.key !== 'health' ? 'text-ink-muted' : ''}`}>
+                    {g.key === 'health' && (a.missing || realNote(a.text)) ? (
+                      <span className="flex items-start gap-1.5 font-bold text-danger">
+                        <HeartPulse size={16} strokeWidth={2.5} aria-hidden="true" className="mt-1 shrink-0" />
+                        <span>{a.text}</span>
+                      </span>
+                    ) : PHONE_ANSWERS.has(a.key) && !a.missing ? (
+                      <a href={telHref(a.text)} className="font-bold underline underline-offset-[3px] inline-flex items-center min-h-11">{a.text}</a>
+                    ) : a.text}
+                  </dd>
+                </Fragment>
+              ))}
+            </dl>
+          </section>
+        )
+      })}
+    </div>
+  )
+}
+
 // Inline detail under an expanded camper row.
 function CamperDetail({
   student,
@@ -86,8 +131,10 @@ function CamperDetail({
   onMoveSection,
   sectionName,
   onReverted,
+  required,
 }: {
   student: AdminStudent
+  required: (field: string) => boolean
   allSections: SectionOption[]
   fillKnown: boolean
   sectionName: (id: string) => string
@@ -231,41 +278,11 @@ function CamperDetail({
     return `${sec.label} · ${sec.class_name} · ${seats} · ages ${sec.age_min}–${sec.age_max}${fits ? '' : ` (${student.full_name.split(' ')[0]} is ${student.age})`}`
   }
 
-  const health = healthLines(student)
-  const ec = student.emergency_contact_name || student.emergency_contact_phone
   const label = 'block font-bold'
-  const tel = (n: string) => <a href={telHref(n)} className="font-bold underline underline-offset-[3px] inline-flex items-center min-h-11">{n}</a>
 
   return (
     <div className="grid gap-x-8 gap-y-6 min-[1100px]:grid-cols-[5fr_7fr]">
-      <div className="min-w-0">
-        <h3 className="text-lg font-bold leading-[1.3]">Details</h3>
-        {health.length > 0 && <p className="mt-2"><HealthText s={student} /></p>}
-        <dl className="mt-3 grid grid-cols-1 min-[480px]:grid-cols-[minmax(120px,max-content)_1fr] gap-x-4 gap-y-1 min-[480px]:gap-y-2 items-baseline">
-          <dt className="text-sm font-bold text-ink-muted">Age</dt>
-          <dd className="mb-2 min-[480px]:mb-0">{student.age}{student.grade ? ` · entering ${student.grade} grade` : ''}</dd>
-          {student.school_name && <>
-            <dt className="text-sm font-bold text-ink-muted">School</dt>
-            <dd className="mb-2 min-[480px]:mb-0 break-words">{student.school_name}</dd>
-          </>}
-          {student.registration_year && <>
-            <dt className="text-sm font-bold text-ink-muted">Registered for</dt>
-            <dd className="mb-2 min-[480px]:mb-0">{student.registration_year}</dd>
-          </>}
-          <dt className="text-sm font-bold text-ink-muted">Parent</dt>
-          <dd className="mb-2 min-[480px]:mb-0 break-words">
-            {student.parent_name}{student.parent_phone && <> · {tel(student.parent_phone)}</>}
-          </dd>
-          <dt className="text-sm font-bold text-ink-muted">Emergency contact</dt>
-          <dd className="mb-2 min-[480px]:mb-0 break-words">
-            {ec ? <>
-              {student.emergency_contact_name ?? 'No name given'}
-              {student.emergency_contact_relation && `, ${student.emergency_contact_relation.toLowerCase()}`}
-              {student.emergency_contact_phone && <> · {tel(student.emergency_contact_phone)}</>}
-            </> : <span className="text-ink-muted">None given</span>}
-          </dd>
-        </dl>
-      </div>
+      <CamperAnswers student={student} required={required} />
 
       <div className="min-w-0">
         <h3 className="text-lg font-bold leading-[1.3]">Registrations</h3>
@@ -379,37 +396,6 @@ function CamperDetail({
   )
 }
 
-function exportCamperCSV(students: AdminStudent[]) {
-  // Allergies is its own required field; medical conditions replaced the older medical_info.
-  const headers = ['Student Name', 'Age', 'Allergies', 'Medical Conditions', 'Parent Name', 'Class', 'Section', 'Week', 'Status', 'Place With', 'Laptop']
-  const rows: (string | number)[][] = []
-
-  for (const s of students) {
-    const health = [s.allergies ?? '', s.medical_conditions || s.medical_info || '']
-    if (s.registrations.length === 0) {
-      rows.push([s.full_name, s.age, ...health, s.parent_name, '', '', '', 'unregistered', '', ''])
-    } else {
-      for (const r of s.registrations) {
-        rows.push([
-          s.full_name,
-          s.age,
-          ...health,
-          s.parent_name,
-          r.class_name,
-          r.section_label,
-          r.section_week ?? '',
-          r.status,
-          r.place_with ?? '',
-          // Spec 29: reserved / queued / handed_out / returned; blank when none (or released).
-          r.laptop && r.laptop !== 'released' ? r.laptop : '',
-        ])
-      }
-    }
-  }
-
-  downloadCsv(`campers-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(headers, rows))
-}
-
 // Confirmed is here too because Export CSV exports what the filter shows.
 type StatusFilter = 'all' | 'confirmed' | 'waitlisted' | 'offered' | 'cancelled' | 'unregistered'
 const FILTERS: { value: StatusFilter; label: string }[] = [
@@ -422,9 +408,21 @@ const FILTERS: { value: StatusFilter; label: string }[] = [
 ]
 const PAGE = 50
 
+// "all 212 campers", "the 40 waitlisted campers matching “lee”": what an export will write.
+function exportScope(n: number, filter: StatusFilter, q: string) {
+  const noun = n === 1 ? 'camper' : 'campers'
+  const which = filter === 'all' ? '' : filter === 'unregistered' ? ' not registered for a class' : ` with a ${filter} class`
+  const match = q ? ` matching “${q}”` : ''
+  return filter === 'all' && !q ? `all ${n} ${noun}` : `the ${n} ${noun}${which}${match}`
+}
+
 export default function AdminStudents() {
   const { students, loading, error, updateRegistrationStatus, moveStudentToSection, refetch: refetchStudents } = useAdminStudents()
   const { classes, fillError, refetch: refetchClasses } = useAdminClasses()
+  // The form editor's settings say which answers are required, so a missing one reads "Not given".
+  const { field } = useFormConfig('student_registration')
+  const [exportOpen, setExportOpen] = useState(false)
+  const exportButton = useRef<HTMLButtonElement>(null)
 
   // ?q= comes from the top-bar search; re-applied on every navigation (keyed on the location
   // key, not the query), so picking the same camper again after editing the box still works.
@@ -465,9 +463,9 @@ export default function AdminStudents() {
     [classes]
   )
 
-  const filtered = useMemo(() => {
+  const matching = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return students.filter(s => {
+    return new Set(students.filter(s => {
       const matchesSearch = !q ||
         s.full_name.toLowerCase().includes(q) ||
         s.parent_name.toLowerCase().includes(q)
@@ -476,10 +474,13 @@ export default function AdminStudents() {
         (statusFilter === 'unregistered' && s.registrations.length === 0) ||
         s.registrations.some(r => r.status === statusFilter)
 
-      // The open camper stays while it's open, even when a save takes it out of the filter.
-      return (matchesSearch && matchesStatus) || s.id === expandedId
-    })
-  }, [students, search, statusFilter, expandedId])
+      return matchesSearch && matchesStatus
+    }).map(s => s.id))
+  }, [students, search, statusFilter])
+  // The open camper stays while it's open, even when a save takes it out of the filter. Export
+  // leaves it out: it writes only what matches.
+  const filtered = useMemo(() => students.filter(s => matching.has(s.id) || s.id === expandedId), [students, matching, expandedId])
+  const exported = useMemo(() => students.filter(s => matching.has(s.id)), [students, matching])
 
   // Counts campers (each once per status they have), matching what the filter lists.
   const statusCounts = useMemo(() => {
@@ -513,10 +514,20 @@ export default function AdminStudents() {
             <p className="mt-2 text-ink-muted">{students.length} {students.length === 1 ? 'camper' : 'campers'}</p>
           )}
         </div>
-        <Button onClick={() => exportCamperCSV(filtered)} disabled={loading || filtered.length === 0}>
+        <Button ref={exportButton} onClick={() => setExportOpen(o => !o)} disabled={loading || !!error}
+          aria-expanded={exportOpen} aria-controls="camper-export">
           <Download size={18} strokeWidth={2.25} aria-hidden="true" /> Export CSV
         </Button>
       </div>
+
+      {exportOpen && (
+        <CamperExport
+          id="camper-export"
+          campers={exported}
+          scope={exportScope(exported.length, statusFilter, search.trim())}
+          onClose={() => { setExportOpen(false); exportButton.current?.focus() }}
+        />
+      )}
 
       <AdminChangeRequests onResolved={() => { void refetchStudents() }} focusWhenEmpty="all-campers" />
 
@@ -628,6 +639,7 @@ export default function AdminStudents() {
                                 onStatusChange={async (id, status) => { await updateRegistrationStatus(id, status); void refetchClasses() }}
                                 onMoveSection={async (regId, sectionId, status) => { await moveStudentToSection(regId, sectionId, status); void refetchClasses() }}
                                 sectionName={sectionName}
+                                required={f => field(f).required}
                                 onReverted={async () => { await refetchStudents(); void refetchClasses() }}
                               />
                             </td>

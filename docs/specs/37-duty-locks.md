@@ -49,3 +49,9 @@
 ## Tests and verification
 - SQL: the matrix above (volunteer insert/delete × past / inside lock / outside lock / locked slot; admin bypass; update blocked; no-user job bypass).
 - Browser: the volunteer Duties tab on the demo (Week 1 is the current week, so today's and tomorrow's duties are inside the lock).
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] A swap inside the 3-day lock goes through admin approval (spec 38 follow-up), so Q-V4 still holds. (Discord M33)

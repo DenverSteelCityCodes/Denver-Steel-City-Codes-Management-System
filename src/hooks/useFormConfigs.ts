@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { keepLastGood } from '../lib/readResult'
 
-import type { FieldConfig } from '../lib/formFields'
+import { FORM_DEFINITIONS, cleanOptions, type FieldConfig, type FormKey } from '../lib/formFields'
 export type { FieldConfig }
 
 export interface FormConfig {
@@ -68,5 +68,36 @@ export function useFormConfigs() {
     return write(formKey, c => ({ ...c, fields: { ...c.fields, [fieldKey]: { ...c.fields[fieldKey], ...patch } } }))
   }
 
-  return { configs, loading, error, setFormEnabled, updateField, refetch: fetchConfigs }
+  // Save a choice question's whole list (the Form editor checks it first). A list that matches the
+  // default is stored as no list, so a later change to the default in code still reaches it.
+  function saveOptions(formKey: FormKey, fieldKey: string, list: string[]) {
+    const def = FORM_DEFINITIONS[formKey].fields.find(f => f.key === fieldKey)
+    if (!def?.options) return Promise.reject(new Error(`"${fieldKey}" has no choices`))
+    const next = cleanOptions(list, def.other)
+    if (!next.some(o => o !== def.other)) return Promise.reject(new Error('A question needs at least one choice'))
+    const isDefault = next.join('\n') === cleanOptions(def.options, def.other).join('\n')
+    return write(formKey, c => ({ ...c, fields: { ...c.fields, [fieldKey]: { ...c.fields[fieldKey], options: isDefault ? undefined : next } } }))
+  }
+
+  return { configs, loading, error, setFormEnabled, updateField, saveOptions, refetch: fetchConfigs }
+}
+
+// Where each choice question's answer is saved, so removing a choice can say how many people gave it.
+const ANSWER_COLUMNS: Record<string, { table: string; column: string; list?: boolean }> = {
+  'student_registration.school_district': { table: 'students', column: 'school_district' },
+  'student_registration.shirt_size': { table: 'students', column: 'shirt_size' },
+  'student_registration.ethnic_background': { table: 'students', column: 'ethnic_background', list: true },
+  'student_registration.how_heard': { table: 'students', column: 'how_heard' },
+  'volunteer_application.school': { table: 'volunteer_applications', column: 'school' },
+  'volunteer_application.shirtSize': { table: 'volunteer_applications', column: 'shirt_size' },
+  'volunteer_application.csLanguages': { table: 'volunteer_applications', column: 'cs_languages', list: true },
+}
+
+// How many saved records gave this choice (any year); null when it couldn't be counted.
+export async function countChoiceUses(formKey: FormKey, fieldKey: string, choice: string): Promise<number | null> {
+  const where = ANSWER_COLUMNS[`${formKey}.${fieldKey}`]
+  if (!where) return null
+  const query = supabase.from(where.table).select('id', { count: 'exact', head: true })
+  const { count, error } = await (where.list ? query.contains(where.column, [choice]) : query.eq(where.column, choice))
+  return error ? null : count ?? 0
 }

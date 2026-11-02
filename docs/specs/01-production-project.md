@@ -48,3 +48,9 @@ The only Supabase project (`rdckxazvoeixgwtjhrlf`) is the public demo. Its night
 ## Notes for the builder
 - Never point a prod build at the demo project or vice versa: name the env vars clearly and check them in the deploy log.
 - Keep service-role keys out of Vercel client env vars. Only the anon key goes in `VITE_*`.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Add an accounts-and-renewals register to the account-ownership task: domain and DNS, Supabase, Vercel, email provider, shared mailbox, social account. Each has two named owners, a renewal date and authenticator-app 2FA. Supabase Auth has no recovery codes, so app admin recovery stays another admin's reset (spec 27, at least two MFA-enrolled admins); for other services that issue recovery codes, keep them in an org password manager. (Discord M01)

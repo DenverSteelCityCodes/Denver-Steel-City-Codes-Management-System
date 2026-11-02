@@ -33,3 +33,10 @@ Measured 2026-10-16: the parent dashboard makes ~12 calls (dev showed 23), becau
 
 ## Notes for the builder
 - If time runs short before February, cut this first. The app works without it, just slower.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Volunteer assignment views refresh on focus and after an admin change, with no reload. `useAssignedClass` loads once per user today (`src/hooks/useAssignedClass.ts:77`). (Discord M38)
+- `register_camper()` also closes the "camper saved, booking failed" path (`src/pages/ParentRegistrationPage.tsx:653`) that the Discord findings saw as lost registrations (Discord M28).

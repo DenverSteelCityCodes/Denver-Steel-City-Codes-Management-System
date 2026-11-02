@@ -39,3 +39,17 @@ After acceptance, volunteers can't change anything about themselves (self-update
 - Q-V2 (can a junior cover as lead?) is still open. Suggestions list seniors only until it's decided.
 - Spec 22 (any number of weeks) will need per-session availability instead of `availability_week_1/2`.
 
+## Follow-ups from the Discord findings (2026-11-01)
+
+These are outside this spec's merged scope: build each as its own small issue. From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`.
+
+- [ ] The matcher and crew editor use the skill ratings and course ranks the application already collects (`schema.sql:89`). The matcher picks by availability and seniority only today (`src/lib/volunteerMatcher.ts:59`). (Discord M29)
+- [ ] Crew editor warnings: placed in a course rated 1–2, two part-timers in one section, an all-part-time crew, an admin-only avoid-pair together, or no experienced volunteer in the section. (Discord M29; Q-D11)
+- [ ] Per-day availability (Mon–Fri; full, morning or afternoon) and an availability re-confirm prompt about 3 weeks before camp. (Discord M29)
+- [ ] Volunteers can edit spec 35's preferred grade band and preferred role in prefs. The fields live on the application and are defined only in spec 35. (Discord M29, M43)
+- [ ] An admin-only note on each crew assignment ("why here"). (Discord M29)
+- [ ] `crew_assigned` and `crew_changed` emails to the volunteer when an admin adds, moves or removes them: section, week, room, times, class lead and co-crew names. `new_lead` goes to families only (`migration_volunteer_self_service.sql:149`). (Discord M38)
+- [ ] The volunteer's section card adds co-crew names and "Your choices" next to "Your assignment". A season setting "Assignments published on <date>" shows on volunteer home until then. (Discord M38)
+- [ ] "I can't make it" takes an optional arrive-late or leave-early time and a "Running late" option with an ETA. Each absence emails the section's co-crew. Admins can already add absences for anyone (`migration_volunteer_self_service.sql:81`). (Discord M14, M33)
+- [ ] Self-service "Withdraw my application" (before a decision) and "Step down for the season" (after acceptance), which free crew spots and duty claims like `remove_from_season()` and alert admins with the affected sections. (Discord M14)
+- [ ] An optional crew check-in tick on volunteer Today, feeding B2. (Discord M14)

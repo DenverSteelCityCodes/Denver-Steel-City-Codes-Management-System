@@ -12,6 +12,7 @@ import NotifyMeSwitch from '../components/NotifyMeSwitch'
 import { formatCampDateTime } from '../lib/denverTime'
 import { useParentProfile } from '../hooks/useParentProfile'
 import { useFormConfig } from '../hooks/useFormConfig'
+import { withAnswered } from '../lib/formFields'
 import { courseRuleReason, repeatWarning, takenClasses, type TakenClass } from '../lib/courseRules'
 import { GRADES, gradeToAge } from '../lib/campers'
 import { draftKey, readDraft, writeDraft, clearDraft } from '../lib/registrationDraft'
@@ -24,29 +25,6 @@ import { LEAVE_MODES, pickupDraftError, type PickupDraft } from '../lib/pickups'
 import { saveWizardPickups } from '../hooks/usePickups'
 import type { LeaveMode } from '../types/database'
 import { ErrorLine, Segmented, hintCls, labelCls, mutedTextBtn } from './parent/parts'
-
-const SCHOOL_DISTRICTS = [
-  'Cherry Creek School District',
-  'Douglas County School District',
-  'Jefferson County Public Schools',
-  'Adams 12 Five Star Schools',
-  'Other',
-]
-const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL']
-const ETHNIC_OPTIONS = [
-  'American Indian or Alaska Native',
-  'Asian',
-  'Black or African American',
-  'Hispanic or Latino',
-  'Native Hawaiian or Other Pacific Islander',
-  'White',
-  'Two or more races',
-  'Prefer not to say',
-]
-const HOW_HEARD = [
-  'School announcement', 'Teacher/counselor', 'Friend or family',
-  'Social media', 'Flyer', 'Returning camper', 'Other',
-]
 
 interface FormData {
   // Student info — the official form asks first/last separately; full_name is kept as the
@@ -810,7 +788,8 @@ export default function ParentRegistrationPage() {
     )
   }
 
-  if (camperPrefillPending || camperPrefillError) {
+  // Wait for the form settings too: they hold the choice lists.
+  if (formConfigLoading || camperPrefillPending || camperPrefillError) {
     return (
       <div className="max-w-[640px] mx-auto">
         {camperPrefillError ? (
@@ -829,7 +808,7 @@ export default function ParentRegistrationPage() {
         ) : (
           <div role="status" className="flex justify-center py-10">
             <span aria-hidden="true" className="w-8 h-8 rounded-full border-2 border-ink border-t-transparent animate-spin" />
-            <span className="sr-only">Loading your camper's details</span>
+            <span className="sr-only">{camperPrefillPending ? "Loading your camper's details" : 'Loading the form'}</span>
           </div>
         )}
       </div>
@@ -889,7 +868,7 @@ export default function ParentRegistrationPage() {
                 <label htmlFor="reg-district" className={labelCls}>{labelText('school_district')}</label>
                 <select id="reg-district" {...invalidProps('reg-district')} className={inputCls} value={form.school_district} onChange={e => set('school_district', e.target.value)}>
                   <option value="">Select…</option>
-                  {SCHOOL_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  {withAnswered(q('school_district').options, form.school_district).map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
                 {fieldError('reg-district')}
               </div>}
@@ -912,7 +891,7 @@ export default function ParentRegistrationPage() {
                   <label htmlFor="reg-shirt" className={labelCls}>{labelText('shirt_size')}</label>
                   <select id="reg-shirt" {...invalidProps('reg-shirt')} className={inputCls} value={form.shirt_size} onChange={e => set('shirt_size', e.target.value)}>
                     <option value="">Select…</option>
-                    {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {withAnswered(q('shirt_size').options, form.shirt_size).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   {fieldError('reg-shirt')}
                 </div>}
@@ -928,7 +907,7 @@ export default function ParentRegistrationPage() {
               {q('ethnic_background').show && <div>
                 <p id="reg-ethnic" className={labelCls}>{labelText('ethnic_background', 'for grant reporting only')}</p>
                 <div role="group" aria-labelledby="reg-ethnic" {...invalidProps('reg-ethnic')} className="flex flex-wrap gap-2">
-                  {ETHNIC_OPTIONS.map(opt => {
+                  {withAnswered(q('ethnic_background').options, form.ethnic_background).map(opt => {
                     const on = form.ethnic_background.includes(opt)
                     return (
                       <button key={opt} type="button" aria-pressed={on} onClick={() => toggleEthnic(opt)}
@@ -1116,7 +1095,7 @@ export default function ParentRegistrationPage() {
                 <label htmlFor="reg-how-heard" className={labelCls}>{labelText('how_heard')}</label>
                 <select id="reg-how-heard" {...invalidProps('reg-how-heard')} className={inputCls} value={form.how_heard} onChange={e => set('how_heard', e.target.value)}>
                   <option value="">Select…</option>
-                  {HOW_HEARD.map(h => <option key={h} value={h}>{h}</option>)}
+                  {withAnswered(q('how_heard').options, form.how_heard).map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
                 {fieldError('reg-how-heard')}
               </div>}

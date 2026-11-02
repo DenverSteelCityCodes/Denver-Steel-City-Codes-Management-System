@@ -32,3 +32,9 @@ Pennsylvania requires three clearances for adult volunteers responsible for chil
 
 ## Notes for the builder
 - None.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Get Q-L9 answered before February. Whatever the answer, leads and organizers pass the same crewing guard as volunteers (spec 35 follow-up). (Discord M04; Q-D12)

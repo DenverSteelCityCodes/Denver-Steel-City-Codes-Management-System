@@ -6,11 +6,24 @@
 - **For:** parents. **Why:** email is missed; comparables offer SMS ([SignUpGenius](https://www.signupgenius.com/blog/new-feature-text-messaging), [VolunteerHub](https://support.volunteerhub.com/support/solutions/articles/60000610954-can-i-send-text-messages-to-volunteers-through-volunteerhub-)).
 - **Build:** opt-in checkbox with TCPA consent wording (from SCC); `parent_profiles.sms_opt_in_at`; an SMS channel in the spec 09 outbox (Twilio or similar) for three templates only: offer made, offer expiring, camp starts tomorrow. Quiet hours 9 pm–8 am Denver. STOP handling.
 - **Done when:** opted-in parents get those three texts; nobody else does; STOP works.
+- **Discord M19 (2026-11-01):** proposes extending SMS to opted-in volunteers (guardian consent under 18) for urgent and day-of notices. Waits on Q-D13; until then, parents only.
 
 ## B2. Volunteer hours certificate (→ P1, 2026-10-17)
 - **For:** teen volunteers (school service hours). **Why:** 52 letters were made by hand in June 2026, some still going out in September; volunteers asked for their legal name instead of a nickname.
 - **Build:** hours = crewed days × section hours (from `sections` times, `sessions` dates, crew in `sections.lead_id` / `section_supports`, minus `crew_absences`), plus duty slots. A "My hours" card and a printable letter matching the 2026 template: date, "Volunteer Record / Service Hour Verification", "This is to certify that <legal name> has completed <N> hours of service during Week <n> (<dates>) at Steel City Codes", contact `denver@steelcitycodes.org`, signer name and title from settings, optional signature image. Admin: generate all letters for a week at once.
 - **Done when:** a volunteer downloads a letter whose hours match the admin's records and whose name is their legal name (spec 35).
+- **From the Discord findings (2026-11-01).** From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`. B2 itself is unbuilt; these extend it.
+  - [ ] The weekly credit is 40 hours per camp week (8 per crewed day). The bonding rule (director, 2026-11-01) deducts 5 hours per week volunteered from that 40 when the volunteer never attended bonding. Whether orientation is credited on top stays an open question (Q-D2), so orientation credit waits on it. This replaces the section-time formula above. (Discord M10; Q-D2, Q-D2a)
+  - [ ] An admin screen to record absences and partial days for any crew member, past dates included. The database already allows this for admins (`migration_volunteer_self_service.sql:81`); only volunteers are limited to today or later. A "did not run / ran partly" flag on a camp day, so a hold or closure counts for no one. (Discord M10)
+  - [ ] Audited admin adjustment lines per volunteer per week, with a required reason. (Discord M10)
+  - [ ] The bonding deduction as an automatic adjustment line from bonding sign-in (spec 35's event task): 5 hours off the week's 40 per week volunteered. Credit for other events (prep, setup) only if logged as events; orientation credit waits on Q-D2. (Discord M10, M18)
+  - [ ] Week roles (admin room, floater; spec 39) earn the same daily credit as section crew. (Discord M53)
+  - [ ] Spec 38's duty roll call decides which duty minutes count. (Discord M33)
+  - [ ] "Report a mistake" on My hours creates a change request (kind `hours`); hours lock at a cutoff before the bulk run. (Discord M10)
+  - [ ] Letters show hours per week and date range, the verifier's name, title and org email, and a short letter ID a school can check without emailing. (Discord M10)
+  - [ ] Generate and email all letters for a week from the last camp day. (Discord M10)
+  - [ ] Multi-season totals on My hours and a per-volunteer CSV for award forms, within L4. (Discord M10)
+  - [ ] One letter renderer shared with B15 (camper certificates). (Discord M42)
 
 ## B3. Self-host the Josefin fonts
 - **Why:** Google Fonts sends visitors' IP addresses to Google (privacy, §2.4).
@@ -25,6 +38,7 @@
 ## B5. Duty reminders and swaps
 - **For:** volunteers. **Build:** a reminder email the day before a claimed duty slot (outbox); "Offer my slot" lets another volunteer claim it, and capacity is still enforced by the existing trigger.
 - **Done when:** reminders go out; a swap completes without an admin.
+- **Discord M33 (2026-11-01):** proposes promoting this to P1. A swap inside spec 37's 3-day lock needs admin approval (Q-V4), so "without an admin" holds only outside the lock. See spec 38's Discord section.
 
 ## B6. Authorized-pickup list → promoted to spec [36](36-authorized-pickups.md) (2026-10-17)
 
@@ -39,6 +53,7 @@
 ## B9. Drop the unused `attendance_logs` table
 - **Context:** replaced by roll calls (camp-week audit, owner decision 5). Nothing reads it.
 - **Build:** export it once (CSV) for the record, then drop the table and its policies in a migration.
+- **Discord M62 (2026-11-01):** still to do; the table is still defined (`schema.sql:57`).
 
 ---
 
@@ -51,16 +66,93 @@
 - **Why:** seats are reserved for volunteers' siblings, but a sibling must not be in their volunteer-sibling's section (asked for by families twice). Volunteers also share rides.
 - **Build:** `volunteer_family_links(volunteer_id, student_id)` set by admins; the matcher and section builder warn when a linked camper and volunteer share a section. A free-text `transport_note` on volunteer availability.
 - **Done when:** assigning a volunteer to their sibling's section shows a warning.
+- **Discord M26 (2026-11-01):** the same family link also warns when an interviewer is linked to the applicant (spec 35).
 
 ## B12. Bounce tracking (follow-up to spec 09)
 - **Why:** typo addresses (".con", misspelled school domains) bounced on every bulk email for up to three seasons and nobody noticed. Accounts are email-confirmed, which prevents most of this, but a second guardian's or volunteer's address can still go bad.
 - **Build:** the provider's bounce/complaint webhook (Edge Function, signed) marks `notifications` as bounced and the address as undeliverable; an attention item lists them; the parent sees "We couldn't email you, please check your address" on the dashboard.
 - **Done when:** a test bounce appears in the attention queue within a minute.
+- **Discord M07, M50 (2026-11-01):** ship before camp week. It also marks stale addresses for spec 34's "Past families" audience.
 
 ## B13. Translated parent emails
 - **Why:** several families wrote in Chinese, Korean or limited English, and a funder sends bilingual notices.
 - **Build:** a `parent_profiles.language` choice and translated versions of the transactional templates (Spanish first); no machine translation of free text.
 - **Done when:** a parent who picks Spanish gets every transactional email in Spanish.
+
+---
+
+B14–B20 come from [the Discord findings](../research/discord-findings.md) (2026-11-01), checked against `main` at `d046434`. All seven are P2.
+
+## B14. Still-coming check and no-show release (Discord M52)
+- **For:** admins and waitlisted families. **Why:** about 15 of 80 registered campers didn't come in 2021, and in 2024 week-1 no-show seats sat empty while a waitlist existed (14 conversations, 2021–2025). No-shows stayed on rosters and certificates until pruned by hand. The "one in five" figure is a chat estimate, not app data.
+- **Already built:** a parent or admin cancellation frees the seat and offers it on (`migration_parent_changes.sql:39`, `migration_waitlist_offers.sql:98`).
+- **Build:**
+  - A `still_coming` email about 17 days before each session, so it lands before the 14-day change deadline (Q-W1), with a one-tap link to the existing parent cancel. After the deadline, a release goes through "Request a change".
+  - After the day-one arrival roll call, an admin attention list "Seated, absent on day 1, no note", to contact.
+  - An admin "Mark no-show and release" from day two (cancel reason `no_show`), which frees the seat and offers it like any cancellation (spec 10's final-week window). Q-D14 asks whether offers stop at session start; until §6 says so, they don't.
+- **Done when:** a parent releases a seat from the email and the next waitlisted camper gets an offer; the day-one list shows only seated campers marked absent with no note.
+- **Open question:** may a seat be released from day two at all? ❓ Default: yes, admin action only.
+
+## B15. Camper certificates (Discord M42)
+- **For:** campers and leads. **Why:** every camp week from 2021 to 2025 ended with certificates built per class in a design tool from the roster, not attendance, and colour-printed on volunteers' home printers the night before (a 63-page job in 2022). No-shows were pruned by hand, a moved camper was left off, a class had the wrong course name (21 conversations).
+- **Already built:** roll calls and historical attendance (`migration_camp_week_ops.sql:67`, `src/components/AttendanceExport.tsx:84`). B2's renderer isn't built either, so B2 and B15 share one renderer, whichever lands first.
+- **Build:** one print-ready PDF per section from roll-call data. The rule is a season setting (default: at least one arrival roll call "present"; one-day attendees flagged for the lead to decide). Each page shows the camper's name as registered, the course actually attended, week and dates, the crew as signers and an optional signature image from settings. Works in black and white. "Print all sections for the week", and reissue one camper's certificate after camp. No camper data leaves the app.
+- **Done when:** a section's PDF includes exactly the campers who meet the rule, each with the course they attended.
+- **Open question:** campers have no preferred-name field. ❓ Default: the registered name.
+
+## B16. Print pack (Discord M25)
+- **For:** admins on camp days. **Why:** each week leads hand-built check-in sheets, door signs, name tags, computer labels and allergy sheets from a master sheet, then hand-corrected them after every change (56 conversations, 2021–2026).
+- **Already built:** a live per-section print roster with room, health, contacts, loaners and three roll-call boxes (`src/pages/PrintRoster.tsx:149`, `:157`). It doesn't render the pickup adults its RPC returns.
+- **Build:** per session, from live data:
+  - an alphabetical check-in sheet (section, room, course, a column per day, authorized pickups from 36)
+  - door signs per section (double-sided between weeks)
+  - name tags (name and room)
+  - loaner labels (29) for that week's registrants only
+  - a per-section allergy sheet (33) with "No photos" marks (L3)
+  - per-class headcounts for printing booklets
+  - "Changes since last print" per week (joined, moved, cancelled), from a stored print timestamp, so reprints are targeted
+- **Done when:** after one camper moves, "changes since last print" lists exactly that move, and every sheet reflects it.
+
+## B17. Season report (Discord M56)
+- **For:** leads, national and funders. **Why:** leads rebuilt the same numbers every year from memory and spreadsheets: totals by year, registered against attended, grant figures reused from an older year (28 conversations).
+- **Already built:** fixed "How did you hear" choices, stored (`src/pages/ParentRegistrationPage.tsx:46`; required by default, `src/lib/formFields.ts:70`); the attendance CSV; live seat totals. Optional gender and ethnic-background fields already exist on campers (`migration_student_registration.sql:13`).
+- **Build:** per year and week: registered, waitlisted, attended at the arrival roll call (show rate), unique campers against enrollments, share attending both weeks, repeat campers, grade mix, fill by class, laptop loans, lunches provided, volunteers and hours, referral source, and year-over-year totals. CSV export. Spec 21 can reuse it. Totals are stored per year before L4 anonymizes records.
+- **Privacy:** demographic fields about minors (the existing ones included) are optional, need an SCC decision with a stated purpose and L1 review, and are only ever reported in aggregate.
+- **Done when:** the report for a demo season matches hand counts from the roster and roll calls.
+
+## B18. Roster exports for platform accounts and materials (Discord M57)
+- **For:** admins before day one. **Why:** day one usually starts with campers creating coding-platform accounts; in 2025 leads pre-created accounts the night before because district emails were blocked. Booklet counts disagreed with registrations (25 conversations).
+- **Already built:** a camper CSV with camper, class, section, week and status, but no camper email (`src/pages/AdminStudents.tsx:382`); enrollment counts (`src/hooks/useAdminClasses.ts:91`). The district-account test is already in spec 19.
+- **Build:** a per-week roster CSV laid out for bulk account creation (camper, section, week, the camper's own email where given; admins only, crew never see it); a "materials per course" count card; a season setting naming the coding platform used.
+- **Done when:** the CSV imports into a spreadsheet with one row per seated camper for the chosen week.
+- **Open question:** camper email is still Q-P3/Q-L5. This gives it a purpose but doesn't settle it.
+
+## B19. Shirt size tally (Discord M60)
+- **For:** admins ordering shirts. **Why:** shirt orders were sized by hand and placed before rosters were final, then broke with drops and late adds; 37 volunteer shirts needed rush shipping in 2023 (11 conversations).
+- **Already built:** camper registration and the volunteer application already collect shirt size, and the application CSV includes it (`migration_student_registration.sql:11`, `schema.sql:82`, `src/pages/AdminVolunteers.tsx:84`).
+- **Build:** volunteers can edit their size on the profile (spec 35); an admin "Shirt sizes" export per week from seated campers plus crewed volunteers and week roles, counting a two-week camper once, with a "since last export" diff.
+- **Done when:** the tally matches the seated and crewed lists, and a camper in both weeks counts once.
+
+## B20. Donation link (Discord M58)
+- **For:** families. **Why:** camp is free and funded by donations and a grant. Leads put a donation link at fixed moments, and refused a family's offer to pay for a waitlist spot (17 conversations). National holds the money.
+- **Build:** an admin setting `donation_url` (a static link; no payments, no donation log) shown on `/camp` after registration closes and in the post-camp email. Never in waitlist offers, the confirmation email or any step that affects a seat.
+- **Done when:** the link shows only in those two places.
+- **Blocked on Q-P5:** build only after SCC answers yes to donations being in scope. If yes, the static link only.
+
+## B21. Full form builder (parked 2026-10-19)
+- **Why:** the Forms page can only rename questions, hide unlocked ones and set required. The director asked for full editing (add questions, edit choices, help text, order, steps, unlock locked questions). Office hours (2026-10-19) decided to keep the structure in code for February: the director is the only editor until handoff and can change code in minutes, the opening-day flow must not gain a new failure mode, and the future editors aren't named yet. Specs [42](42-form-answers-shown-and-exported.md) and [43](43-editable-answer-choices.md) took the parts that matter now.
+- **Pick up when:** a named person after handoff (national or another region) needs to change questions without a developer.
+- **Build (from the 2026-10-19 research: ACTIVE Camps, CampMinder, Jumbula, UltraCamp, Jotform, Typeform, Google Forms, Tally):**
+  - A locked core (camper name, grade, volunteer email/age, one signature) plus custom questions on top. Every camp product works this way; ACTIVE says some questions "cannot be removed or edited" because accounts and waivers depend on them. The director asked to unlock everything else, with a typed confirmation before hiding allergies, medical or emergency contact.
+  - Six custom types: short text, long text, single choice, checkboxes, yes/no, date (plus a text-only info block). No file upload, matrix or payment.
+  - Draft, Preview (the real wizard in preview mode), Publish. Each publish freezes a `form_versions` row; each registration/application stores the version it used, and the server validates against that version, so a family mid-wizard finishes on the version they started (director chose this).
+  - Custom answers in a JSONB column with the question wording copied in (`{"q_7f3": {"label", "value", "display"}}`); permanent ids for questions and options; "delete" becomes archive once answers exist; block deleting a question another question's show-if depends on.
+  - Reorder with up/down buttons and "Move to step" (WCAG 2.5.7), no drag. A question opens in place (no modal).
+  - Answers appear on camper detail, application review, both CSVs, and the volunteer roster when marked.
+  - Phase 2: one-level show-if ("show only if [choice] is [option]"), then per-session questions. Never a shared question library across seasons (ACTIVE's trap).
+  - The director also wanted waiver text and health questions in the editor: that means rewriting [L2](L2-waivers-and-consents.md) and [33](33-health-and-accommodations.md) around form versions. Decide that when this is picked up, after counsel has seen the waiver.
+  - Keep custom questions to about 10 per form (CampMinder: every added question lowers completion).
+- **Done when:** a non-developer adds a question, publishes, a family answers it, and the answer is on camper detail and in the CSV.
 
 ## Decided against (recorded so nobody re-proposes them by accident)
 

@@ -15,7 +15,7 @@ import PublicShell, { AsideLine, ContactLink, PageHead } from '../components/Pub
 import { ChoiceRow, FieldError, FormError, FormField, PasswordInput, Spinner } from '../components/PublicForm'
 import type { FieldA11y } from '../components/PublicForm'
 import {
-  CS_LANGUAGES, FALLBACK_COURSES, GRADES, INITIAL_FORM, MIN_AGE, SCHOOLS, SHIRT_SIZES, SKILLS, STEPS, STEP_COUNT,
+  FALLBACK_COURSES, GRADES, INITIAL_FORM, MIN_AGE, SKILLS, STEPS, STEP_COUNT,
   applicationRow, needsGuardian, secondChoices, validateStep,
 } from '../lib/applyForm'
 import type { ApplyForm } from '../lib/applyForm'
@@ -160,7 +160,7 @@ export default function VolunteerApplyPage() {
   const campYear = activeCampYear(sessions)
   const weeks = campSessions(sessions)
   // Labels / visibility / required-ness come from the admin Form editor.
-  const { field: q } = useFormConfig('volunteer_application')
+  const { field: q, loading: configLoading, loadError: configError, retry: retryConfig } = useFormConfig('volunteer_application')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   // Interview times are booked in-app (SignUpGenius-style) as the last step.
@@ -348,7 +348,7 @@ export default function VolunteerApplyPage() {
 
   const title = `Volunteer application, ${campYear}`
 
-  if (load === 'loading') {
+  if (load === 'loading' || configLoading) {
     return (
       <PublicShell>
         <div role="status" aria-label="Loading the application" className="animate-pulse">
@@ -360,11 +360,15 @@ export default function VolunteerApplyPage() {
     )
   }
 
-  if (load === 'error') {
+  // The choice lists come from the form settings, so the form waits for them too.
+  if (load === 'error' || configError) {
     return (
       <PublicShell>
         <PageHead title={title} lede="We couldn't load the application. Check your connection and try again." ledeRole="alert" />
-        <Button variant="primary" onClick={() => { setLoad('loading'); setLoadAttempt(a => a + 1) }}>Try again</Button>
+        <Button variant="primary" onClick={() => {
+          if (load === 'error') { setLoad('loading'); setLoadAttempt(a => a + 1) }
+          if (configError) retryConfig()
+        }}>Try again</Button>
       </PublicShell>
     )
   }
@@ -484,7 +488,7 @@ export default function VolunteerApplyPage() {
                 {a => (
                   <Select {...a} value={form.school} onChange={e => set('school', e.target.value)}>
                     <option value="">Choose…</option>
-                    {SCHOOLS.map(s => <option key={s} value={s}>{s}</option>)}
+                    {q('school').options.map(s => <option key={s} value={s}>{s}</option>)}
                   </Select>
                 )}
               </FormField>
@@ -540,7 +544,7 @@ export default function VolunteerApplyPage() {
                 {a => (
                   <Select {...a} value={form.shirtSize} onChange={e => set('shirtSize', e.target.value)}>
                     <option value="">Choose…</option>
-                    {SHIRT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {q('shirtSize').options.map(s => <option key={s} value={s}>{s}</option>)}
                   </Select>
                 )}
               </FormField>
@@ -575,7 +579,7 @@ export default function VolunteerApplyPage() {
               >
                 {a => (
                   <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))]">
-                    {CS_LANGUAGES.map(lang => (
+                    {q('csLanguages').options.map(lang => (
                       <ChoiceRow key={lang} type="checkbox" {...a} className="min-h-11 px-3 py-1" checked={form.csLanguages.includes(lang)} onChange={() => toggleLanguage(lang)}>{lang}</ChoiceRow>
                     ))}
                   </div>
