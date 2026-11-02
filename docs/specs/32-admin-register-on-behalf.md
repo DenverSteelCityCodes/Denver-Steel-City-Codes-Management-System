@@ -42,3 +42,11 @@
 
 ## Open questions
 - Should a registration created after the waiver step (L2) be flagged until the parent signs? Default: yes, a red "waiver missing" badge on the roster.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] A family's late request goes to spec 11's queue; the only insert is spec 32's `admin_register()`. Late adds after `registration_closes_at` (spec 13 follow-up) use source `late` or `phone` and land behind the waitlist unless the admin names an override reason. Staff and volunteer families included. (Discord M22, M27)
+- [ ] When a lead registers for a guardian who can't use the form, record who attested the waiver and how (phone, in person). (Discord safety flags)
+- [ ] Run the tolerant duplicate check (spec 14 follow-up) before inserting. (Discord M40)

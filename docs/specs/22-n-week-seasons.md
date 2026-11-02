@@ -32,3 +32,9 @@ Two weeks are hardwired: `sections.week CHECK (1,2)`, `volunteers.availability_w
 
 ## Notes for the builder
 - If Denver 2027 needs 3+ weeks, move this into Phase B.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- No change. Denver ran two one-week sessions in the first two weeks of June in every year from 2021 to 2026, so this stays P1 (answers part of Q-H4). (Discord M59)

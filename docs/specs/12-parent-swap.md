@@ -34,3 +34,11 @@ Switching classes needs an admin today. A self-swap before the deadline saves ad
 - Built 2026-10-17 (`migration_parent_swap.sql`). `my_swap_options()` lists the other same-week classes the camper fits (age band, the Microcontrollers grade rule matched by class name like `courseConstraints.ts`, no clash with a seat in the other week for a both-weeks section) with live spots left. Full ones are listed too, so the card can explain why they can't be picked. `swap_my_registration()` re-checks everything under the locks (the camper's advisory lock, then both sections in id order). It checks the earlier of the two classes' deadlines and moves the same row (audit reason `parent_swap`). The spec 10 trigger offers the freed seat; the spec 09 trigger sends one `registration_moved` email.
 - Concurrency was verified with two real connections: see `test-plans/parent-swap-concurrency.md`.
 - The admin move (`moveStudentToSection`) bypasses these checks on purpose. Leave it, but log it (spec 05).
+
+## Follow-ups from the Discord findings (2026-11-01)
+
+These are outside this spec's merged scope: build each as its own small issue. From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`.
+
+- Parent swaps stay same-week (Decided rules). Changing weeks stays cancel-and-register, or B10 for both weeks in one transaction. The Discord evidence for parent cross-week moves is open question Q-D15 in the plan's §6. (Discord M37)
+- [ ] When an admin moves, adds or cancels a camper inside the change window or during camp week, email both affected section leads and tag the camper "Joined today" or "Moved out" on the roll call and print roster. Admins can already move a registration across weeks (`src/hooks/useAdminStudents.ts:166`). (Discord M37)
+- [ ] A phone-sized admin quick move for the check-in desk, with roster and attendance following. (Discord M37)

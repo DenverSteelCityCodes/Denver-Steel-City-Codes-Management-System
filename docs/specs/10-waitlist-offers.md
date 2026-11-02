@@ -45,3 +45,11 @@ When a seat frees today, an admin sees "Waitlist spots opened up", picks someone
 - Re-running the older suites found that the history-revert test assumed a freed seat stays free. With offers, it doesn't (correct), so the test now uses a section without a waitlist.
 - Adding an enum value can't be used in the same transaction that adds it. Split the migration.
 - Remember `ParentBell`, `StudentCard` STATUS_CONFIG, `buildSubhead` and the admin status filters need an `offered` entry.
+
+## Follow-ups from the Discord findings (2026-11-01)
+
+These are outside this spec's merged scope: build each as its own small issue. From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`.
+
+- No change to offers after a session starts: the Decided rules keep 48-hour offers moving, and the expiry email tells families they can rejoin. A 2025-06-09 chat decision to stop joins and offers at session start is open question Q-D14 in the plan's §6. (Discord M27)
+- [ ] Late requests from staff and volunteer families queue behind the waitlist unless an admin names an override reason (spec 32; decided 2026-06-06). (Discord M27)
+- `/camp` already shows waitlist-only and full states (`migration_public_camp_page.sql:98`); a per-week state is a spec 30 follow-up.

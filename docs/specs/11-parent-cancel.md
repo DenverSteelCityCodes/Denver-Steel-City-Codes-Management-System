@@ -39,3 +39,12 @@ Parents have no UPDATE or DELETE on registrations, and no in-app way to reach th
 ## Notes for the builder
 - Built 2026-10-17. The deadline is midnight (Denver) at the start of `session start − change_deadline_days`, so with 14 days and a June 7 session, the last online-cancel day is May 23; the card says so. A both-weeks section uses the year's earliest session. In the demo both weeks start within 14 days, so seats show "Request a change". Leaving a waitlist is always allowed. Resolving a request emails the family (template `change_request_resolved`). The contact card edits `parent_profiles`; each camper keeps its own emergency contact too.
 - Read the deadline from the spec 13 settings, not a constant.
+
+## Follow-ups from the Discord findings (2026-11-01)
+
+These are outside this spec's merged scope: build each as its own small issue. From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`.
+
+- [ ] `change_requests.assigned_to` and `claimed_at`: a "Claim" action on each open request, shown to other admins as "Claimed by …", so two admins never work one request. Done and declined already exist (`migration_parent_changes.sql:78`). (Discord M17)
+- [ ] The same "claimed by" on the other admin attention queues: laptop requests, pickup alerts, crew absences. (Discord M17)
+- [ ] Add `withdrawn` to the status check, so a parent can withdraw an open request. (Discord M37)
+- [ ] A kind `hours` for a volunteer's "Report a mistake" on My hours (B2). (Discord M10)

@@ -37,3 +37,15 @@ Registration opens when an admin flips a switch (`form_configs.student_registrat
 ## Notes for the builder
 - Built 2026-10-17. Times are entered and shown in Denver time whatever the viewer's device clock (`src/lib/denverTime.ts`). The class browser disables Register until opening, the wizard refuses step 4, and the countdown flips to open without a reload. The demo has no settings row (registration open). `private.season_settings_for(year)` gives later RPCs the settings with defaults.
 - Store `timestamptz`; display in the region's time zone (America/Denver until spec 20).
+
+## Follow-ups from the Discord findings (2026-11-01)
+
+These are outside this spec's merged scope: build each as its own small issue. From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`.
+
+- [ ] `season_settings.registration_closes_at` (Denver time), enforced in `registrations_before_insert()` for non-admins like the opening time. After it, `/camp` and the class browser say "Registration closed" with notify-me and "Request a late spot". A family's late request goes to spec 11's queue; the only insert is spec 32's `admin_register()`. Spec 30's closed status derives from it. (Discord M22)
+- [ ] The emergency form switch asks for a reason, and flips show in the History strip. Flips are already audited (`migration_audit_log.sql:88`). (Discord M22)
+- [ ] Volunteer application open and close times, shown on `/apply` and `/camp`. `/apply` closes itself at that time (the manual switch stays, `migration_security_hardening.sql:220`); an admin can reopen, audited. After the close, an optional "late application", optionally only for weeks spec 39 marks short, lands marked late for one-click decision. An optional per-week target switches the form to a standby list. (Discord M21; Q-D4)
+- [ ] A pre-opening checklist card on the admin dashboard: venue set (or "to be announced"), every section has a room, opening time set, volunteer window set. It warns; it never blocks. Aim to fix the opening date by Dec 1. Capacity is already required on every section (`migration_sections.sql:15`). (Discord M13, M30; Q-D9)
+- [ ] Dashboard counts: unique campers per week (a camper in both weeks counted once), rooms in use, crewed volunteers, and signups against the same day last year. The seat grid already exists (`src/pages/AdminDashboard.tsx:87`). (Discord M30)
+- [ ] An optional `camper_cap_per_week` that warns, never blocks, when section capacity exceeds it. Section capacity stays the only hard limit. (Discord M30; Q-D7)
+- [ ] Admins overfill only by raising capacity, which is audited and already triggers offers (`migration_waitlist_offers.sql:113`); remove the direct overfill path (`src/pages/AdminStudents.tsx:166`). (Discord M30)
