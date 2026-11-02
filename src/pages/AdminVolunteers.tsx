@@ -11,6 +11,8 @@ import { matchVolunteers, type AssignmentPair } from '../lib/volunteerMatcher'
 import { formatCampSlot } from '../lib/denverTime'
 import { shortRange } from '../lib/weekRange'
 import { telHref } from '../lib/campers'
+import { APPLICATION_ANSWERS, applicationCsv } from '../lib/applicationAnswers'
+import { toCsv, downloadCsv } from '../lib/csv'
 import Button from '../components/Button'
 import { Textarea, Select } from '../components/Field'
 import InlineConfirm from '../components/InlineConfirm'
@@ -61,47 +63,12 @@ function exportVolunteerCSV(volunteers: VolunteerWithProfile[], classes: ClassWi
     }
   }
 
-  const csv = [headers, ...rows]
-    .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `volunteers-${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  downloadCsv(`volunteers-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(headers, rows))
 }
 
 function exportApplicationsCSV(apps: VolunteerApplication[]) {
-  const headers = [
-    'Name', 'Email', 'Phone', 'Age', 'Grade', 'School', 'Shirt Size',
-    'Week 1', 'Week 2', 'Status', '1st Choice', '2nd Choice', 'CS Languages', 'Interview Notes'
-  ]
-  const rows = apps.map(a => [
-    `${a.first_name} ${a.last_name}`,
-    a.email, a.phone, String(a.age), a.grade, a.school, a.shirt_size,
-    a.availability_week_1 ? 'Yes' : 'No',
-    a.availability_week_2 ? 'Yes' : 'No',
-    a.status,
-    a.course_first_choice,
-    a.course_second_choice,
-    a.cs_languages.join('; '),
-    a.admin_notes ?? '',
-  ])
-
-  const csv = [headers, ...rows]
-    .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `volunteer-applications-${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  const { headers, rows } = applicationCsv(apps)
+  downloadCsv(`volunteer-applications-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(headers, rows))
 }
 
 type Tab = 'applications' | 'crew' | 'onboarding'
@@ -171,63 +138,36 @@ function ApplicationReview({
     requestAnimationFrame(() => rejectButton.current?.focus())
   }
 
-  const skills = [
-    { label: 'Python', value: app.skill_python },
-    { label: 'Java', value: app.skill_java },
-    { label: 'HTML', value: app.skill_html },
-    { label: 'CSS', value: app.skill_css },
-    { label: 'JavaScript', value: app.skill_javascript },
-    { label: 'Microcontrollers', value: app.skill_microcontrollers },
-  ].filter(s => s.value !== null)
-  const weeks = [app.availability_week_1 && weekLabels[0], app.availability_week_2 && weekLabels[1]].filter(Boolean)
   const name = `${app.first_name} ${app.last_name}`
-
-  const facts: [string, React.ReactNode][] = [
-    ['Email', app.email],
-    ['Phone', <a key="tel" href={telHref(app.phone)} className="font-bold underline underline-offset-[3px]">{app.phone}</a>],
-    ['Age', String(app.age)],
-    ['Grade', app.grade],
-    ['School', app.school],
-    ['Shirt size', app.shirt_size],
-    ['Weeks', weeks.length ? weeks.join(' and ') : 'Neither week'],
-    ['Courses', `1st ${app.course_first_choice} · 2nd ${app.course_second_choice}`],
-    ...(app.other_curricula ? [['Other curricula', app.other_curricula] as [string, React.ReactNode]] : []),
-    ['Languages', app.cs_languages.length ? app.cs_languages.join(', ') : 'None listed'],
-    ...(app.cs_classes ? [['CS classes', app.cs_classes] as [string, React.ReactNode]] : []),
-    ...(skills.length ? [['Skill levels', skills.map(s => `${s.label} ${s.value}/5`).join(' · ')] as [string, React.ReactNode]] : []),
-    ['Volunteered before', app.previous_scc_volunteer ? 'Yes' : 'No'],
-    ['Signatures', app.guardian_signature ? `${app.volunteer_signature} and ${app.guardian_signature} (guardian)` : app.volunteer_signature],
-    ['Signed up for an interview', app.interview_confirmed ? 'Yes' : 'No'],
-  ]
+  const answers = APPLICATION_ANSWERS.flatMap(a => {
+    const text = a.text(app, weekLabels)
+    return text === null ? [] : [{ ...a, text }]
+  })
+  const facts = answers.filter(a => !a.paragraph)
+  const paragraphs = answers.filter(a => a.paragraph)
 
   return (
     <div className="pb-6">
       <div className="grid gap-x-8 gap-y-6 min-[1100px]:grid-cols-[5fr_7fr]">
         <dl className="grid grid-cols-1 min-[480px]:grid-cols-[minmax(8rem,max-content)_1fr] gap-x-4 gap-y-1 min-[480px]:gap-y-2 items-baseline">
-          {facts.map(([dt, dd]) => (
-            <Fragment key={dt}>
-              <dt className="text-sm font-bold text-ink-muted">{dt}</dt>
-              <dd className="min-w-0 [overflow-wrap:anywhere] max-[479px]:mb-2">{dd}</dd>
+          {facts.map(a => (
+            <Fragment key={a.key}>
+              <dt className="text-sm font-bold text-ink-muted">{a.label}</dt>
+              <dd className="min-w-0 [overflow-wrap:anywhere] max-[479px]:mb-2">
+                {a.key === 'phone'
+                  ? <a href={telHref(a.text)} className="font-bold underline underline-offset-[3px] inline-flex items-center min-h-11">{a.text}</a>
+                  : a.text}
+              </dd>
             </Fragment>
           ))}
         </dl>
         <div className="space-y-5 min-w-0">
-          <div>
-            <p className="font-bold">Why {app.first_name} wants to volunteer</p>
-            <p className="mt-1 max-w-[68ch] text-pretty whitespace-pre-line">{app.why_volunteer}</p>
-          </div>
-          {app.experience_children && (
-            <div>
-              <p className="font-bold">Experience with children</p>
-              <p className="mt-1 max-w-[68ch] text-pretty whitespace-pre-line">{app.experience_children}</p>
+          {paragraphs.map(a => (
+            <div key={a.key}>
+              <p className="font-bold">{a.label}</p>
+              <p className="mt-1 max-w-[68ch] text-pretty whitespace-pre-line">{a.text}</p>
             </div>
-          )}
-          {app.admin_notes && (
-            <div>
-              <p className="font-bold">Admin notes</p>
-              <p className="mt-1 max-w-[68ch] text-pretty whitespace-pre-line">{app.admin_notes}</p>
-            </div>
-          )}
+          ))}
         </div>
       </div>
 
@@ -427,8 +367,8 @@ export default function AdminVolunteers() {
         title="Volunteers"
         tabs
         actions={tab === 'onboarding' ? undefined : tab === 'applications'
-          ? <Button onClick={() => exportApplicationsCSV(applications)} disabled={appsLoading}>
-              <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of applications</span>
+          ? <Button onClick={() => exportApplicationsCSV(filteredApps)} disabled={appsLoading}>
+              <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of the applications shown</span>
             </Button>
           : <Button onClick={() => exportVolunteerCSV(volunteers, classes)} disabled={vLoading}>
               <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of the crew</span>

@@ -61,6 +61,8 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [39](39-staffing-board.md) | — | Staffing board: campers per crew, teachers per course, unassigned volunteers, room clashes, week roles | P1 | M | 13, 14, 25, 33, 35 | B |
 | ⬜ | [40](40-crew-day-plan.md) | — | Crew day plan on volunteer Today: call time, meeting point, crew-only schedule, crew FAQ, night-before email | P1 | M | 02, 09, 34, 39 | B |
 | ⬜ | [41](41-on-call-help.md) | — | On-call help: "Need help" from Today reaches the on-call admin, "On my way" | P1 | S | 09, 34, 37, 38, 39 | B |
+| 🟨 | [42](42-form-answers-shown-and-exported.md) | #202 | Every form answer shown on camper/application detail and exportable by column group | P1 | M | — | B |
+| ⬜ | [43](43-editable-answer-choices.md) | #203 | Editable answer choices (districts, schools, shirt sizes, how-heard…) on the Forms page | P1 | S | 42 | B |
 | ⬜ | [B2](backlog-p2.md) | #157 | Volunteer hours certificate (promoted from P2) | P1 | S | 35 | B |
 | ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
 | ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
@@ -79,7 +81,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [28](28-data-deletion-requests.md) | #102 | Family data-deletion requests | P1 | S | 05, L4 | C |
 | ⬜ | [L6](L6-accessibility.md) | #103 | Full accessibility audit, axe in CI, statement | P1 | M | L6a, 08 | C |
 | ⬜ | [L7](L7-volunteer-clearances.md) | #104 | Volunteer clearances with expiry | P1 ★ | S | 20 | C |
-| ⬜ | [P2](backlog-p2.md) | — | P2 backlog (mini-specs + decided-against list); B14–B20 (all P2) added from the Discord findings | P2 | — | — | later |
+| ⬜ | [P2](backlog-p2.md) | — | P2 backlog (mini-specs + decided-against list); B14–B20 (all P2) added from the Discord findings; B21 full form builder | P2 | — | — | later |
 
 **Target dates:** Phase A merged by **Nov 30**, Phase B + legal by **Jan 31**, dry run in the first week of February, registration opens on the date set in spec 13 (❓ not chosen yet). **Critical path:** 01 → 02 → 09 → 10 → 12 → 19, with L2 joining at 09.
 
