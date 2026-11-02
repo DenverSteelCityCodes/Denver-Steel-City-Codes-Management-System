@@ -5,7 +5,7 @@
 // `locked` fields can be relabelled but never hidden or made optional — the database requires
 // them (NOT NULL), or camp safety / matching / eligibility depends on them.
 //
-// Choice questions carry their default `options`; the Form editor can replace the list (spec 40).
+// Choice questions carry their default `options`; the Form editor can replace the list (spec 43).
 // Answers are saved as the option's text, so editing a list never rewrites an answer already given.
 
 export interface FieldDef {

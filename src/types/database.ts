@@ -268,6 +268,8 @@ export interface DutyType {
   id: string
   name: string
   description: string | null
+  // Spec 38: how long the duty takes; counts toward the weekly minimum.
+  minutes: number
   created_at: string
 }
 
@@ -277,7 +279,39 @@ export interface DutySlot {
   session_id: string | null
   slot_date: string
   capacity: number
+  // Spec 37: an admin lock; volunteers can't join or drop a locked slot.
+  locked: boolean
   created_at: string
+}
+
+// One camp year's duty rules (migration_duty_locks.sql, spec 37). No row means the defaults.
+export interface DutySettings {
+  year: number
+  drop_lock_days: number
+  // Spec 38: duty minutes each crewed volunteer needs per week (0 = none), and how many days
+  // before the week starts sign-ups are due.
+  minutes_per_week: number
+  signup_deadline_days: number
+  updated_at: string
+}
+
+// public.my_duty_weeks(): the caller's crewed weeks with a minimum (spec 38).
+export interface MyDutyWeek {
+  session_id: string
+  name: string
+  start_date: string
+  end_date: string
+  required_minutes: number
+  my_minutes: number
+  deadline: string
+}
+
+// public.admin_duty_shortfall(): crewed volunteers under a week's minimum (spec 38).
+export interface DutyShortfall {
+  volunteer_id: string
+  display_name: string
+  minutes: number
+  required_minutes: number
 }
 
 export interface DutyAssignment {

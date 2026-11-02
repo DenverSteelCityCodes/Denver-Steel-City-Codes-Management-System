@@ -47,3 +47,10 @@
 
 ## Open questions
 - Does national have a release policy (minimum age to leave alone, ID check)? ❓ Default: Denver's kickoff-email rule.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- No change: the findings confirm this scope (Discord M46). Curbside drop-off and late parents stay procedures.
+- [ ] The print roster renders the pickup adults the roster RPC already returns (B16 print pack). (Discord M25)

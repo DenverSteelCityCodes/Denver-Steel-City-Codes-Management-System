@@ -1,4 +1,4 @@
-// Every answer on a volunteer application, in one catalogue (spec 39): the application review and
+// Every answer on a volunteer application, in one catalogue (spec 42): the application review and
 // the applications CSV both read it, so they never disagree. `paragraph` answers are the
 // applicant's own words, shown as paragraphs beside the facts.
 

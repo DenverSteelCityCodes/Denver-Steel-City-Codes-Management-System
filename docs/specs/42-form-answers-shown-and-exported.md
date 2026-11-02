@@ -1,8 +1,8 @@
-# 39: Every form answer shown and exportable
+# 42: Every form answer shown and exportable
 
 **Status:** 🟨 in progress · **Issue:** #202 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
-**Depends on:** none · **Unblocks:** 40
-**Plan reference:** office-hours decision 2026-10-19 (keep form structure in code; full form builder parked as [B14](backlog-p2.md))
+**Depends on:** none · **Unblocks:** 43
+**Plan reference:** office-hours decision 2026-10-19 (keep form structure in code; full form builder parked as [B21](backlog-p2.md))
 
 ## Why
 - **Answers are collected and then lost.** The wizard saves shirt size, district, camper email, gender, ethnic background, how they heard, last year's program, free/reduced lunch, wants lunch, candy consent, other info and both signatures (`ParentRegistrationPage.tsx` student payload). Camper detail shows none of them (`AdminStudents.tsx` `CamperDetail`).
@@ -25,7 +25,7 @@
 - The volunteer crew CSV moves onto the shared `toCsv` / `downloadCsv` helpers (formula-safe cells, UTF-8 BOM).
 
 ## Out of scope
-- Adding or editing questions (B14). Editable choice lists (40).
+- Adding or editing questions (B21). Editable choice lists (43).
 - Pickups and laptop loans: already shown on their own screens.
 
 ## Done when

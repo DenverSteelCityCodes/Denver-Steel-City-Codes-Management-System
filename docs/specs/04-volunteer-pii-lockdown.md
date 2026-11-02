@@ -39,3 +39,10 @@ Verified 2026-10-16: signed in as the demo volunteer, a direct API `select` on `
 
 ## Notes for the builder
 - Do this before any real data exists in prod. It's small and should go first.
+
+## Follow-ups from the Discord findings (2026-11-01)
+
+These are outside this spec's merged scope: build each as its own small issue. From [the Discord findings](../research/discord-findings.md), checked against `main` at `d046434`.
+
+- [ ] RLS test: parents can't read any volunteer contact field (email, phone), only what `meet_the_crew()` returns (`migration_volunteer_onboarding.sql:793`). (Discord M45)
+- Spec 33 owns the dated cover and merge roster grant (Discord M54); this spec and spec 39 link to it and add no second path.

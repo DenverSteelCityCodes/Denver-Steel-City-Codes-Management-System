@@ -58,3 +58,17 @@ The app copies that shape today:
 
 ## Open questions
 - Is a diet "preference" ever a safety issue (for example a religious restriction) that should look like an allergy on the roster? Default: diet shows as a neutral tag.
+
+## From the Discord findings (2026-11-01)
+
+From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
+
+- [ ] Quick-pick allergens (peanut, tree nut, gluten, dairy, egg, food dye) before free text, so "nut" is never ambiguous. Add gluten-free, nut-free and no-dye to diet. (Discord M03)
+- [ ] The lunch list and a per-section printable food sheet (for snacks and prizes) show severe-allergy and diet badges and candy consent, never lunch eligibility. This changes "the lunch list shows only names" in Done when. (Discord M03)
+- [ ] When "A parent or aide will be on site" is ticked (wording already in Scope), an admin to-do: brief the section lead before day one. (Discord M03)
+- [ ] Late adds appear on the live food sheet with no separate rebuild. (Discord M03)
+- [ ] Admin lunch totals per session and day: seated `lunch_provision` campers minus reported absences, with diet and allergy counts, ready the day before (24-hour preorders) and updated after the arrival roll call. The two lunch answers are already separate (`src/pages/ParentRegistrationPage.tsx:1103`). (Discord M34)
+- [ ] Lunch duty can mark a camper not on the list as "forgot lunch", counted separately. An end-of-lunch "not yet handed out" list from `lunch_marks`. Eligibility stays invisible to volunteers. (Discord M34)
+- [ ] State the lunch rule in the kickoff template. (Discord M34)
+- [ ] A dated, audited "cover" or "merge" set by an admin: a substitute, or the host crew of a merged section, gets that day's roster with badges and accommodations for that date only, ending at midnight. Record it as an exception to "their own seated campers only". This is the only dated roster grant; specs 04 and 39 (floaters covering) use it. (Discord M54)
+- [ ] The class's candy-consent and anaphylaxis counts on volunteer Today, before food is handed out. (Discord M54)

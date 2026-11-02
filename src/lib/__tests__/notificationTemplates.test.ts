@@ -189,3 +189,22 @@ describe('volunteer interviews and onboarding (spec 35)', () => {
     expect(removed.html).toContain('Missed &lt;b&gt;onboarding&lt;/b&gt;')
   })
 })
+
+describe('duty emails (spec 38)', () => {
+  it('names the duty, the calendar day and its length when an admin assigns one', () => {
+    const r = render('duty_assigned', { first_name: 'Sam', duty: 'Lunch Duty', minutes: 45, slot_date: '2026-10-27' }, APP)!
+    expect(r.subject).toBe("You're on Lunch Duty, Tuesday, October 27")
+    expect(r.text).toContain('Hi Sam')
+    expect(r.text).toContain('(45 minutes)')
+    expect(r.text).toContain(`${APP}/volunteer/duties`)
+  })
+  it('says how many minutes are still needed and by when', () => {
+    const r = render('duty_minimum_reminder', { first_name: 'Sam', week: 'Week 2', minutes: 30, required: 60, deadline: '2026-10-19' }, APP)!
+    expect(r.subject).toBe('Sign up for duties in Week 2 by Monday, October 19')
+    expect(r.text).toContain('You have 30 in Week 2, so pick 30 more minutes by Monday, October 19')
+  })
+  it('escapes duty names', () => {
+    const r = render('duty_assigned', { duty: '<b>x</b>', slot_date: '2026-10-27' }, APP)!
+    expect(r.html).not.toContain('<b>x</b>')
+  })
+})

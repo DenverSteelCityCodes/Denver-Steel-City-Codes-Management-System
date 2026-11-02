@@ -63,7 +63,7 @@ interface RawStudent {
   }[] | null
 }
 
-// Every saved answer (spec 39) plus the account it belongs to. parent_name is the name typed in
+// Every saved answer (spec 42) plus the account it belongs to. parent_name is the name typed in
 // the wizard, falling back to the account's display name for campers added another way.
 export interface AdminStudent extends CamperAnswerSource {
   id: string

@@ -272,7 +272,7 @@ flowchart TD
 ✅ **Decided 2026-10-16 (Q-V1): preferences + admin assigns.** Volunteers can edit their availability and course preferences and request a switch; admins (with the auto-matcher) still assign, so the senior/junior pairing holds. No self-pick. It's P1 either way.
 
 #### V4. Duty slots ✅
-Claim/unclaim with capacity enforced by a locked trigger. Friction: 🟡 no reminders, no swap.
+Claim/unclaim with capacity enforced by a locked trigger. Friction: 🟡 no reminders, no swap. Drop lock and weekly minimums: specs 37 and 38 (Q-V4).
 
 #### V5. Camp day (lead/support) ✅
 Roster with allergies and emergency tel: links, three roll calls, lead posts section updates, printable roster. Works.
@@ -703,6 +703,8 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 | Q-F5 Naming (2026-10-17) | **"Region"** for the Denver-level unit; "chapter" is national's word for a school-year club | Spec 20 renamed to regions; 21, 23, 26, L7 follow |
 | Q-F3 Pickups (2026-10-17) | **Record them in the site**: listed pickup adults, dated walk-home consent, who collected each camper | Spec 36 (B6 promoted) |
 | Q-F1a Grade rule | **Rising grade** (already how the app stores grade: "Grade (entering fall)") | Spec 31 uses it everywhere |
+| Q-V4 Duty changes and minimums (2026-10-19) | **Drops lock 3 days before the duty** (late sign-ups stay open); admins can lock a slot; no changes to past slots. **Each duty type has a length; every crewed volunteer needs N duty minutes per week**, any mix, by a deadline N days before the week; **admins assign anyone short** (no auto-assign) | Specs 37 and 38 |
+| Q-D2a Weekly hours and bonding deduction (2026-11-01) | **The weekly credit is 40 hours per camp week (8 per crewed day). The bonding rule (director, 2026-11-01) deducts 5 hours per week volunteered from that 40 when the volunteer never attended bonding** | B2 credits 40 per camp week and records the deduction as an automatic adjustment line from bonding sign-in (spec 35 event task). Whether orientation is credited on top stays open (Q-D2) |
 
 ### Still open
 
@@ -743,6 +745,25 @@ The original §2.4 proposal of "anonymize after 3 years" conflicted with defendi
 - Q-F2. How many loaner laptops in 2027, and will the host school lend them again? Is first-come the right order? (Spec 29.)
 - Q-F4. How long are incident records kept? Default: 1 year after the season (spec 34, L4).
 - Q-F6. May volunteer photos (many are minors) appear on the parents' "Meet the teachers" page with the volunteer's consent, or does national require a guardian's too? (Spec 35.)
+
+
+**From the Discord findings (2026-11-01, [docs/research/discord-findings.md](research/discord-findings.md) §5).** The leads changed these rules from year to year. Each default is what the spec uses if nobody decides first.
+- Q-D1. Who must interview? Default: waive with 2+ prior accepted seasons (the leads' 2026-05-03 chat rule for 2027); anyone with a conduct note or "do not re-accept" flag interviews (spec 35).
+- Q-D2. Is orientation credited on top of the 40-hour week, and when can admins dock hours? The weekly credit is 40 hours per camp week (8 per crewed day). The bonding rule (director, 2026-11-01) deducts 5 hours per week volunteered from that 40 when the volunteer never attended bonding. Whether orientation is credited on top is this question. Default for adjustments: only with a written reason, audited; prep and setup count only if logged as events (B2).
+- Q-D3. Target ratio and minimum crew per section? Default: 1:4, minimum 2 crew, 3 for Microcontrollers; warnings, never blocks (spec 39).
+- Q-D4. Late volunteer applications after the window closes? Default: accepted as "late" for an admin decision, still under the interview rule; admins can limit them to weeks marked short (spec 13).
+- Q-D5. Is orientation required for returning volunteers? Default: yes; absentees and late accepts get a make-up task due before day one (spec 35).
+- Q-D6. Camper grade range for 2027? Default: entering grades 5–9 in the fall, stored as the fall grade; current 9th graders are pointed to volunteering (spec 31).
+- Q-D7. Is the cap per week or per camp, and should offers pause when crew is short? Default: per week; section capacity is the only hard limit; offers stay automatic, and a section under ratio shows on the staffing board (specs 10, 13, 39).
+- Q-D8. Which duplicate registration wins? Default: the earliest seat, with a change request to the family to pick the class (spec 24).
+- Q-D9. May registration open before the venue is confirmed? Default: yes, with "Place to be announced" (built) and a `location_changed` email; the pre-opening checklist warns but doesn't block (spec 30).
+- Q-D10. Does in-app volunteer access end with the season? Default: yes, unless the person is accepted again; profiles and history stay (L5).
+- Q-D11. Can a volunteer be moved out of a course they listed? Default: listing a course means you may be placed there; a low self-rating warns, never blocks; a move gets an admin note (spec 25).
+- Q-D12. Do leads and organizers go through the same vetting? Default: everyone crewed has an accepted application and a verified signed agreement; the interview waiver is separate; clearances follow Q-L9 (spec 35, L7).
+- Q-D13. What is the official channel for volunteer notices? Default: app email through the outbox, with "Got it" on must-read notices; chat stays informal; volunteer SMS (B1) waits (spec 34).
+- Q-D14. Should waitlist joins and offers stop once a session starts (a 2025-06-09 chat decision)? Default: no change; Q-W2's 48-hour offers keep moving and the expiry email still says families can rejoin, until this is decided here (spec 10, B14).
+- Q-D15. May parents move a registration to the other week themselves? Default: no; spec 12 stays same-week, and changing weeks stays cancel-and-register or B10 (spec 12).
+- Q-D16. Does SCC have a written camper discipline ladder (the 2026 chat mentions three strikes, then the admin room)? SCC to confirm. Until then the app counts behaviour incidents per camper per week and encodes no next step (spec 34).
 
 **Flows I'm least sure about (walk these first):** N1 national view (Q-N2, Q-N3). Done: P5 cancel/swap rules, P6 offer rules and order, V3 volunteer class picking, Q-P4, opening day, cancelled sections. **Legal:** settled. SCC handles org-level compliance. The site uses SCC's official waiver text and gets its own privacy policy, terms and accessibility statement (Claude drafts, SCC reviews).
 

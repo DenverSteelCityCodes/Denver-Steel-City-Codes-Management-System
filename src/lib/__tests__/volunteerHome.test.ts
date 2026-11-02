@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { campPhase, countLabel, currentItem, daysBetween, groupDutyWeeks, relativeDay } from '../volunteerHome'
+import { campPhase, countLabel, currentItem, daysBetween, dutyDropLocked, dutyWeekLine, dutyYear, groupDutyWeeks, neededForMinimum, relativeDay } from '../volunteerHome'
 import type { Session } from '../../types/database'
 
 const session = (id: string, start: string, end: string): Session =>
@@ -77,5 +77,64 @@ describe('countLabel', () => {
   it('pluralises', () => {
     expect(countLabel(1, 'duty', 'duties')).toBe('1 duty')
     expect(countLabel(3, 'duty', 'duties')).toBe('3 duties')
+  })
+})
+
+describe('dutyDropLocked', () => {
+  const today = '2026-06-08'
+  it('locks a duty 3 days out with the default lock', () => {
+    expect(dutyDropLocked({ slot_date: '2026-06-11' }, today, 3)).toBe(true)
+  })
+  it('leaves a duty 4 days out open', () => {
+    expect(dutyDropLocked({ slot_date: '2026-06-12' }, today, 3)).toBe(false)
+  })
+  it('locks today and the past', () => {
+    expect(dutyDropLocked({ slot_date: today }, today, 0)).toBe(true)
+    expect(dutyDropLocked({ slot_date: '2026-06-01' }, today, 0)).toBe(true)
+  })
+  it('locks a slot an admin locked, however far out', () => {
+    expect(dutyDropLocked({ slot_date: '2026-08-01', locked: true }, today, 3)).toBe(true)
+  })
+  it('counts days across a month end', () => {
+    expect(dutyDropLocked({ slot_date: '2026-07-03' }, '2026-06-29', 3)).toBe(false)
+  })
+})
+
+describe('dutyYear', () => {
+  it("uses the session's year, else the date's", () => {
+    expect(dutyYear({ slot_date: '2027-01-02', session_id: 'w1' }, [W1])).toBe(2026)
+    expect(dutyYear({ slot_date: '2027-01-02', session_id: null }, [W1])).toBe(2027)
+  })
+})
+
+describe('dutyWeekLine', () => {
+  const w = { name: 'Week 2', required_minutes: 60, my_minutes: 30, deadline: '2026-06-08' }
+  it('says how many more minutes and by when', () => {
+    expect(dutyWeekLine(w, '2026-06-05')).toEqual({ met: false, lead: 'Week 2: 30 of 60 duty minutes.', rest: 'Sign up for 30 more by Monday, Jun 8.' })
+  })
+  it('says today on the deadline itself', () => {
+    expect(dutyWeekLine(w, '2026-06-08').rest).toBe('Sign up for 30 more by today.')
+  })
+  it('warns after the deadline', () => {
+    expect(dutyWeekLine(w, '2026-06-09').rest).toBe('Sign-ups closed Jun 8, so the camp may add you. Pick a duty to choose it yourself.')
+  })
+  it('confirms a met minimum', () => {
+    expect(dutyWeekLine({ ...w, my_minutes: 75 }, '2026-06-09')).toEqual({ met: true, lead: 'Week 2: 75 duty minutes.', rest: "You've met the 60-minute minimum." })
+  })
+})
+
+describe('neededForMinimum', () => {
+  const weeks = [{ start_date: '2026-06-15', end_date: '2026-06-19', required_minutes: 60, my_minutes: 90, deadline: '2026-06-08' }]
+  it('holds a duty whose drop would go under the minimum after the deadline', () => {
+    expect(neededForMinimum({ slot_date: '2026-06-16' }, 45, weeks, '2026-06-09')).toBe(true)
+  })
+  it('frees a duty the minimum can spare', () => {
+    expect(neededForMinimum({ slot_date: '2026-06-16' }, 15, weeks, '2026-06-09')).toBe(false)
+  })
+  it('frees everything before the deadline', () => {
+    expect(neededForMinimum({ slot_date: '2026-06-16' }, 45, weeks, '2026-06-08')).toBe(false)
+  })
+  it('ignores duties outside the week', () => {
+    expect(neededForMinimum({ slot_date: '2026-06-22' }, 45, weeks, '2026-06-09')).toBe(false)
   })
 })

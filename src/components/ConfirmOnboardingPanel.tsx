@@ -40,7 +40,7 @@ const FIELD_ID: Partial<Record<ErrKey, string>> = {
 }
 
 export default function ConfirmOnboardingPanel({ student, parentDefaults, campYear, full = false, submitting, onConfirm, onClose }: Props) {
-  // The Forms page's shirt sizes (spec 40); the camper's saved size stays on the list even if removed.
+  // The Forms page's shirt sizes (spec 43); the camper's saved size stays on the list even if removed.
   // Until they load (or if they can't), only the saved size is offered, never the code defaults.
   const shirtConfig = useFormConfig('student_registration')
   const shirtSizes = shirtConfig.loading || shirtConfig.loadError ? [] : shirtConfig.field('shirt_size').options

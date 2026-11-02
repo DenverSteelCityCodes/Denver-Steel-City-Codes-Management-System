@@ -1,7 +1,7 @@
-# 40: Editable answer choices on the Forms page
+# 43: Editable answer choices on the Forms page
 
 **Status:** 🟨 in progress · **Issue:** #203 · **Priority:** P1 · **Effort:** S · **Phase:** B (before go-live)
-**Depends on:** 39 · **Unblocks:** 23 (per-region district list)
+**Depends on:** 42 · **Unblocks:** 23 (per-region district list)
 **Plan reference:** office-hours decision 2026-10-19
 
 ## Why
@@ -21,7 +21,7 @@
 - Wizard and `/apply` read the resolved lists.
 
 ## Out of scope
-- Adding questions, help text, sections, logic (B14).
+- Adding questions, help text, sections, logic (B21).
 
 ## Done when
 - [x] An admin can change the districts, schools, shirt sizes and how-heard lists, and the live forms show them.

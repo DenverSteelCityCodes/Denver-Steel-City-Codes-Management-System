@@ -19,7 +19,7 @@ const ANSWERED_BY: Record<FormKey, { one: string; many: string }> = {
 
 // One question: Show switch, the label (renamed in place, saved on leaving the field), and whether
 // it must be answered. Locked questions can be renamed but not hidden or made optional. A choice
-// question also opens its list of choices in place, in a row under it (spec 40).
+// question also opens its list of choices in place, in a row under it (spec 43).
 function FieldRow({
   formKey,
   def,

@@ -6,7 +6,7 @@ import Button from './Button'
 import { Input } from './Field'
 import InlineConfirm from './InlineConfirm'
 
-// A choice question's list on the Forms page (spec 40), opened in place under its row: rename a
+// A choice question's list on the Forms page (spec 43), opened in place under its row: rename a
 // choice where it stands (saved on leaving the field), move it with up/down buttons (no drag,
 // WCAG 2.5.7), remove it, or add one. Answers already given keep their text whatever happens here.
 //

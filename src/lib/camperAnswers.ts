@@ -1,4 +1,4 @@
-// Every answer the registration wizard saves about a camper, in one catalogue (spec 39). Camper
+// Every answer the registration wizard saves about a camper, in one catalogue (spec 42). Camper
 // detail and the Campers CSV both read it, so what an admin sees and what they export never
 // disagree. Labels are short admin labels, not the parent-facing sentence.
 
