@@ -4,16 +4,7 @@ import type { ResolvedField } from './formFields'
 import { emailProblem } from './authErrors'
 
 export const GRADES = ['9th', '10th', '11th', '12th', 'College']
-export const SCHOOLS = [
-  'Cherry Creek High School',
-  'Grandview High School',
-  'Smoky Hill High School',
-  'Eaglecrest High School',
-  'Rock Canyon High School',
-  'Other',
-]
-export const SHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-export const CS_LANGUAGES = ['Python', 'Java', 'HTML', 'CSS', 'JavaScript', 'CircuitPython', 'Other']
+// School, shirt size and CS language choices live in formFields.ts (editable on the Forms page).
 export const FALLBACK_COURSES = [
   'Intro to Python',
   'Intermediate Python',

@@ -3,12 +3,14 @@ import { supabase } from '../lib/supabase'
 import { resolveField, type FieldConfig, type FormKey, type ResolvedField } from '../lib/formFields'
 
 // Read-side of the admin Form editor for the public forms: field(key) gives the label to show,
-// whether to render the field at all, and whether to require it.
+// whether to render the field at all, whether to require it, and its choices. Until `loading` is
+// false the choices are the code defaults, so forms wait for it before showing a choice list.
 export function useFormConfig(formKey: FormKey) {
   const [overrides, setOverrides] = useState<Record<string, FieldConfig> | undefined>(undefined)
   const [enabled, setEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -28,11 +30,17 @@ export function useFormConfig(formKey: FormKey) {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [formKey])
+  }, [formKey, attempt])
+
+  function retry() {
+    setLoading(true)
+    setLoadError(null)
+    setAttempt(a => a + 1)
+  }
 
   function field(key: string): ResolvedField {
     return resolveField(formKey, key, overrides)
   }
 
-  return { field, enabled, loading, loadError }
+  return { field, enabled, loading, loadError, retry }
 }

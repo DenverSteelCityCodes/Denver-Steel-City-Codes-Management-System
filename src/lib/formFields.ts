@@ -4,12 +4,18 @@
 //
 // `locked` fields can be relabelled but never hidden or made optional — the database requires
 // them (NOT NULL), or camp safety / matching / eligibility depends on them.
+//
+// Choice questions carry their default `options`; the Form editor can replace the list (spec 43).
+// Answers are saved as the option's text, so editing a list never rewrites an answer already given.
 
 export interface FieldDef {
   key: string
   label: string
   required?: boolean
   locked?: boolean
+  options?: string[]
+  // The option that opens a box to type in. It always stays last and can't be renamed or removed.
+  other?: string
 }
 
 export type FormKey = 'volunteer_application' | 'student_registration'
@@ -25,12 +31,17 @@ export const FORM_DEFINITIONS: Record<FormKey, { label: string; description: str
       { key: 'phone', label: 'Phone number', required: true, locked: true },
       { key: 'age', label: 'Age', required: true, locked: true },
       { key: 'grade', label: 'Current grade', required: true, locked: true },
-      { key: 'school', label: 'School', required: true, locked: true },
-      { key: 'shirtSize', label: 'Shirt size', required: true, locked: true },
+      { key: 'school', label: 'School', required: true, locked: true, other: 'Other', options: [
+        'Cherry Creek High School', 'Grandview High School', 'Smoky Hill High School',
+        'Eaglecrest High School', 'Rock Canyon High School', 'Other',
+      ] },
+      { key: 'shirtSize', label: 'Shirt size', required: true, locked: true, options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
       { key: 'availability', label: 'Which sessions can you attend?', required: true, locked: true },
       { key: 'whyVolunteer', label: 'Why do you want to volunteer with Steel City Codes?', required: true, locked: true },
       { key: 'previousScc', label: 'Have you volunteered at a previous Steel City Codes activity?', required: true },
-      { key: 'csLanguages', label: 'CS languages you know', required: true },
+      { key: 'csLanguages', label: 'CS languages you know', required: true, options: [
+        'Python', 'Java', 'HTML', 'CSS', 'JavaScript', 'CircuitPython', 'Other',
+      ] },
       { key: 'csClasses', label: "CS classes you've taken" },
       { key: 'experienceChildren', label: 'Experience working with children or volunteering' },
       { key: 'skills', label: 'Skill levels' },
@@ -48,13 +59,19 @@ export const FORM_DEFINITIONS: Record<FormKey, { label: string; description: str
       { key: 'first_name', label: 'First name', required: true, locked: true },
       { key: 'last_name', label: 'Last name', required: true, locked: true },
       { key: 'email', label: "Student's preferred email", required: true },
-      { key: 'school_district', label: 'School district', required: true },
+      { key: 'school_district', label: 'School district', required: true, options: [
+        'Cherry Creek School District', 'Douglas County School District', 'Jefferson County Public Schools',
+        'Adams 12 Five Star Schools', 'Other',
+      ] },
       { key: 'school_name', label: 'School name', required: true },
       { key: 'grade', label: 'Grade (entering fall)', required: true, locked: true },
-      { key: 'shirt_size', label: 'Shirt size', required: true },
+      { key: 'shirt_size', label: 'Shirt size', required: true, options: ['XS', 'S', 'M', 'L', 'XL'] },
       // Spec 29: replaces "Does your student have access to a personal laptop?" (laptop_available).
       { key: 'borrow_laptop', label: 'Will your camper need to borrow a laptop at camp?', required: true },
-      { key: 'ethnic_background', label: 'Ethnic background' },
+      { key: 'ethnic_background', label: 'Ethnic background', options: [
+        'American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino',
+        'Native Hawaiian or Other Pacific Islander', 'White', 'Two or more races', 'Prefer not to say',
+      ] },
       { key: 'gender', label: 'Gender' },
       { key: 'parent_name', label: 'Parent / guardian name', required: true, locked: true },
       { key: 'parent_email', label: 'Parent email', required: true, locked: true },
@@ -67,7 +84,9 @@ export const FORM_DEFINITIONS: Record<FormKey, { label: string; description: str
       { key: 'other_info', label: 'Other information about participant' },
       { key: 'free_reduced_lunch', label: 'Is your student eligible for free / reduced lunch?', required: true },
       { key: 'lunch_provision', label: 'I would like Steel City Codes to provide lunch for my student.' },
-      { key: 'how_heard', label: 'How did you hear about Steel City Codes?', required: true },
+      { key: 'how_heard', label: 'How did you hear about Steel City Codes?', required: true, options: [
+        'School announcement', 'Teacher/counselor', 'Friend or family', 'Social media', 'Flyer', 'Returning camper', 'Other',
+      ] },
       { key: 'previous_program', label: 'Did your student participate in Steel City Codes last year?', required: true },
       { key: 'candy_consent', label: 'I consent to my student receiving small candy treats during camp activities.' },
       { key: 'place_with', label: 'A friend or sibling to be placed with' },
@@ -81,12 +100,42 @@ export interface FieldConfig {
   visible?: boolean
   required?: boolean
   label?: string
+  options?: string[]
 }
 
 export interface ResolvedField {
   show: boolean
   required: boolean
   label: string
+  // The choices to offer, for a choice question; empty otherwise.
+  options: string[]
+}
+
+// Trimmed, blank and repeated (ignoring case) choices dropped, and the "other" choice moved last.
+export function cleanOptions(list: string[], other?: string): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of list) {
+    const o = raw.trim()
+    if (!o || o === other || seen.has(o.toLowerCase())) continue
+    seen.add(o.toLowerCase())
+    out.push(o)
+  }
+  return other ? [...out, other] : out
+}
+
+// A field's choices: the saved list, or the default one when nothing usable is saved.
+export function resolveOptions(def: FieldDef | undefined, saved: string[] | undefined): string[] {
+  if (!def?.options) return []
+  const list = saved ? cleanOptions(saved, def.other) : []
+  return list.some(o => o !== def.other) ? list : cleanOptions(def.options, def.other)
+}
+
+// The choices to show someone editing an answer: a choice they already gave stays on the list
+// even after an admin removed it, so editing a camper never quietly clears it.
+export function withAnswered(options: string[], answered: string | string[] | null | undefined): string[] {
+  const given = (Array.isArray(answered) ? answered : [answered]).filter((a): a is string => !!a && !options.includes(a))
+  return given.length ? [...options, ...given] : options
 }
 
 // Merge a field's admin overrides onto its definition. Locked fields ignore visible/required.
@@ -94,7 +143,8 @@ export function resolveField(formKey: FormKey, key: string, overrides: Record<st
   const def = FORM_DEFINITIONS[formKey].fields.find(f => f.key === key)
   const o = overrides?.[key] ?? {}
   const label = o.label?.trim() || def?.label || key
-  if (!def || def.locked) return { show: true, required: def?.required ?? false, label }
+  const options = resolveOptions(def, o.options)
+  if (!def || def.locked) return { show: true, required: def?.required ?? false, label, options }
   const show = o.visible !== false
-  return { show, required: show && (o.required ?? def.required ?? false), label }
+  return { show, required: show && (o.required ?? def.required ?? false), label, options }
 }
