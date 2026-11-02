@@ -63,7 +63,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [41](41-on-call-help.md) | — | On-call help: "Need help" from Today reaches the on-call admin, "On my way" | P1 | S | 09, 34, 37, 38, 39 | B |
 | ✅ | [42](42-form-answers-shown-and-exported.md) | #202 | Every form answer shown on camper/application detail and exportable by column group | P1 | M | — | B |
 | ✅ | [43](43-editable-answer-choices.md) | #203 | Editable answer choices (districts, schools, shirt sizes, how-heard…) on the Forms page | P1 | S | 42 | B |
-| ⬜ | [B2](backlog-p2.md) | #157 | Volunteer hours certificate (promoted from P2) | P1 | S | 35 | B |
+| ✅ | [B2](B2-volunteer-hours.md) | #157 | Volunteer hours letters: hours per week, printable letter, admin prints a week's letters (promoted from P2) | P1 | S | 35 | B |
 | ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
 | ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |

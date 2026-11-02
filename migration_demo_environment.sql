@@ -138,6 +138,10 @@ BEGIN
   INSERT INTO app_settings (key, value, updated_at) VALUES ('admin_mfa_required', 'false', now())
     ON CONFLICT (key) DO UPDATE SET value = 'false', updated_at = now();
   DELETE FROM auth.mfa_factors;
+  -- A fictional signer for the volunteer hours letters (spec B2).
+  INSERT INTO app_settings (key, value, updated_at) VALUES
+    ('hours_letter_signer_name', 'Jordan Lee', now()), ('hours_letter_signer_title', 'Regional Director', now())
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
 
   -- ── 2. Camp weeks and courses ──
   -- The place each week happens (spec 30): shown on /camp, the wizard and the volunteer apply page.

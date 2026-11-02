@@ -18,6 +18,7 @@ import { Textarea, Select } from '../components/Field'
 import InlineConfirm from '../components/InlineConfirm'
 import Segmented from '../components/Segmented'
 import AdminOnboarding from '../components/AdminOnboarding'
+import AdminVolunteerHours from '../components/AdminVolunteerHours'
 import StatusWord from '../components/StatusWord'
 import AdminPageHead, { pageClass } from '../components/AdminPageHead'
 import type { VolunteerWithProfile } from '../hooks/useVolunteers'
@@ -71,7 +72,7 @@ function exportApplicationsCSV(apps: VolunteerApplication[]) {
   downloadCsv(`volunteer-applications-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(headers, rows))
 }
 
-type Tab = 'applications' | 'crew' | 'onboarding'
+type Tab = 'applications' | 'crew' | 'onboarding' | 'hours'
 type AppFilter = 'all' | 'pending' | 'accepted' | 'rejected'
 
 const weeksText = (w1: boolean, w2: boolean) =>
@@ -236,7 +237,7 @@ export default function AdminVolunteers() {
   // and the To do links all land on the right one. ?tab=roster is the old name for Crew.
   const [params, setParams] = useSearchParams()
   const tab: Tab = params.get('tab') === 'crew' || params.get('tab') === 'roster' ? 'crew'
-    : params.get('tab') === 'onboarding' ? 'onboarding' : 'applications'
+    : params.get('tab') === 'onboarding' ? 'onboarding' : params.get('tab') === 'hours' ? 'hours' : 'applications'
 
   const [week, setWeek] = useState<1 | 2>(1)
   const [preview, setPreview] = useState<AssignmentPair[] | null>(null)
@@ -366,7 +367,7 @@ export default function AdminVolunteers() {
       <AdminPageHead
         title="Volunteers"
         tabs
-        actions={tab === 'onboarding' ? undefined : tab === 'applications'
+        actions={tab === 'onboarding' || tab === 'hours' ? undefined : tab === 'applications'
           ? <Button onClick={() => exportApplicationsCSV(filteredApps)} disabled={appsLoading}>
               <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of the applications shown</span>
             </Button>
@@ -374,7 +375,7 @@ export default function AdminVolunteers() {
               <Download size={18} aria-hidden="true" /> Export CSV<span className="sr-only"> of the crew</span>
             </Button>}
       />
-      {/* Two views of this page, kept in the URL (?tab=). The shell links Interviews and Duties as
+      {/* Views of this page, kept in the URL (?tab=). The shell links Interviews and Duties as
           their own pages, so these are tabs over panels, not navigation. */}
       <Segmented
         mode="tabs"
@@ -387,8 +388,15 @@ export default function AdminVolunteers() {
           { value: 'applications', label: 'Applications', count: appsLoading || counts.pending === 0 ? undefined : counts.pending, srLabel: appsLoading || counts.pending === 0 ? undefined : ' pending' },
           { value: 'crew', label: 'Crew' },
           { value: 'onboarding', label: 'Onboarding' },
+          { value: 'hours', label: 'Hours' },
         ]}
       />
+
+      {tab === 'hours' && (
+        <div role="tabpanel" id="vol-panel-hours" aria-labelledby="vol-tab-hours">
+          <AdminVolunteerHours />
+        </div>
+      )}
 
       {/* ── Onboarding (spec 35): overdue checklist items, every volunteer's checklist, removal ── */}
       {tab === 'onboarding' && (
