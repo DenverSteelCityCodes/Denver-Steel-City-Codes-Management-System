@@ -1,6 +1,6 @@
 # 32: Admin register-on-behalf (late, walk-in, phone, lost form)
 
-**Status:** 🟨 in review (PR to come) · **Issue:** #152 · **Priority:** P1 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in review ([PR #217](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/217)) · **Issue:** #152 · **Priority:** P1 · **Effort:** M · **Phase:** B
 **Depends on:** 05, 31 · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1
 
