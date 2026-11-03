@@ -1,6 +1,6 @@
 # 32: Admin register-on-behalf (late, walk-in, phone, lost form)
 
-**Status:** ⬜ not started · **Issue:** #152 · **Priority:** P1 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in review (PR to come) · **Issue:** #152 · **Priority:** P1 · **Effort:** M · **Phase:** B
 **Depends on:** 05, 31 · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1
 
@@ -50,3 +50,14 @@ From [the Discord findings](../research/discord-findings.md). Each item was chec
 - [ ] A family's late request goes to spec 11's queue; the only insert is spec 32's `admin_register()`. Late adds after `registration_closes_at` (spec 13 follow-up) use source `late` or `phone` and land behind the waitlist unless the admin names an override reason. Staff and volunteer families included. (Discord M22, M27)
 - [ ] When a lead registers for a guardian who can't use the form, record who attested the waiver and how (phone, in person). (Discord safety flags)
 - [ ] Run the tolerant duplicate check (spec 14 follow-up) before inserting. (Discord M40)
+
+## Build notes (2026-11-03)
+
+- **Rules and their names** (`p_overrides`, and the panel's checkboxes): `closed`, `opening`, `cancelled`, `grade`, `prerequisite`, `age`, `same_week`, `capacity`. One function, `private.registration_rule_failures()`, answers both the panel's preview (`admin_registration_check()`) and `admin_register()`, in the same words as the parents' trigger.
+- **"Deadline" is `closed`.** There is no `registration_closes_at` yet (spec 13 follow-up), so the close is the Forms page's on/off switch. When the column lands, add a `deadline` rule to `registration_rule_failures()`.
+- **`capacity` never refuses.** A full class waitlists the camper behind everyone already waiting; ticking it confirms over the limit. Every other broken rule must be ticked, and the reason is required for every admin sign-up, not only overrides.
+- **History reason** reads `Admin sign-up (walk-in) · skipped: grade, capacity · <reason>`, on both the registration and a camper created in the same call. A direct admin insert with no reason is still allowed (repairs) and is stamped `admin_insert_no_reason` ("Added by an admin with no reason given").
+- **Invite:** `admin-invite-parent` checks the caller by running `admin_find_parent()` with the caller's own JWT (so admin + MFA come from the database, not the function). Supabase's built-in sender only reaches the project team, so until spec 02 it falls back to creating the account and tells the admin to have the family use "Forgot password".
+- **Duplicates:** `admin_camper_matches()` is the spec 14 follow-up's tolerant match (same last name plus the same grade or school, or the same first and last name, any account including the family's own) for this flow. The add-camper step of the parent wizard and the shared-phone match are still open on spec 14.
+- **Waits on L2:** the red "waiver missing" badge and recording who attested the waiver for a guardian who can't use the form (Discord safety flags).
+- Tests: `test-plans/admin-register-tests.sql` (29 checks).

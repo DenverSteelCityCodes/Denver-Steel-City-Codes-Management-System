@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, Fragment } from 'react'
 import { useSearchParams, useLocation } from 'react-router-dom'
-import { Search, Download, HeartPulse, ChevronDown, ArrowLeft, ArrowRight, Laptop } from 'lucide-react'
+import { Search, Download, UserPlus, HeartPulse, ChevronDown, ArrowLeft, ArrowRight, Laptop } from 'lucide-react'
 import InlineConfirm from '../components/InlineConfirm'
 import CamperExport from '../components/CamperExport'
+import AdminAddRegistration from '../components/AdminAddRegistration'
 import HistoryStrip from '../components/HistoryStrip'
 import AdminChangeRequests from '../components/AdminChangeRequests'
 import Button from '../components/Button'
@@ -423,6 +424,9 @@ export default function AdminStudents() {
   const { field } = useFormConfig('student_registration')
   const [exportOpen, setExportOpen] = useState(false)
   const exportButton = useRef<HTMLButtonElement>(null)
+  // Late, walk-in, phone and lost-form sign-ups (spec 32).
+  const [addOpen, setAddOpen] = useState(false)
+  const addButton = useRef<HTMLButtonElement>(null)
 
   // ?q= comes from the top-bar search; re-applied on every navigation (keyed on the location
   // key, not the query), so picking the same camper again after editing the box still works.
@@ -514,11 +518,24 @@ export default function AdminStudents() {
             <p className="mt-2 text-ink-muted">{students.length} {students.length === 1 ? 'camper' : 'campers'}</p>
           )}
         </div>
+        <Button ref={addButton} onClick={() => setAddOpen(o => !o)} disabled={loading || !!error}
+          aria-expanded={addOpen} aria-controls="add-registration">
+          <UserPlus size={18} strokeWidth={2.25} aria-hidden="true" /> Add registration
+        </Button>
         <Button ref={exportButton} onClick={() => setExportOpen(o => !o)} disabled={loading || !!error}
           aria-expanded={exportOpen} aria-controls="camper-export">
           <Download size={18} strokeWidth={2.25} aria-hidden="true" /> Export CSV
         </Button>
       </div>
+
+      {addOpen && (
+        <AdminAddRegistration
+          id="add-registration"
+          sections={allSections}
+          onClose={() => { setAddOpen(false); addButton.current?.focus() }}
+          onDone={() => { void refetchStudents(); void refetchClasses() }}
+        />
+      )}
 
       {exportOpen && (
         <CamperExport

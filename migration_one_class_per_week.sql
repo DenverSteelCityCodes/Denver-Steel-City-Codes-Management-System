@@ -82,8 +82,17 @@ BEGIN
     NEW.year
   );
 
-  -- Admins (and trusted server contexts) may place anyone anywhere with any status.
-  IF auth.uid() IS NULL OR auth_user_role() = 'admin' THEN
+  -- Trusted server contexts (the SQL editor, cron, reset_demo()) skip the rules.
+  IF auth.uid() IS NULL THEN
+    RETURN NEW;
+  END IF;
+  -- Admins may place anyone anywhere with any status, for repairs. Sign-ups go through
+  -- admin_register() (spec 32), which runs these rules and records each one skipped; an admin
+  -- insert that set no reason is stamped so History shows it as a warning.
+  IF auth_user_role() = 'admin' THEN
+    IF nullif(current_setting('app.reason', true), '') IS NULL THEN
+      PERFORM private.set_reason('admin_insert_no_reason');
+    END IF;
     RETURN NEW;
   END IF;
 
