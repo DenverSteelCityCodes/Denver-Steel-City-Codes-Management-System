@@ -76,10 +76,15 @@ export default function AdminAddRegistration({ id, sections, onClose, onDone }: 
     await loadFamily()
   }
 
-  // Looks the family up again, keeping any message (after an invite or a new camper).
+  // Looks the family up again, keeping any message (after an invite or a new camper). Only the
+  // latest lookup for the email in the box counts: editing the email drops an answer in flight,
+  // so a camper can never be attached to the family of an email that's no longer there.
+  const lookup = useRef(0)
   async function loadFamily() {
+    const n = ++lookup.current
     setBusy('find')
     const { data, error } = await supabase.rpc('admin_find_parent', { p_email: email.trim() })
+    if (n !== lookup.current) return
     if (error) return fail(error.message)
     const found = (data as Family[] | null)?.[0] ?? null
     setFamily(found)
@@ -104,25 +109,33 @@ export default function AdminAddRegistration({ id, sections, onClose, onDone }: 
   }
 
   // Possible duplicates before a new camper is created (spec 14b), as the name is typed. Results
-  // are kept with the inputs they answer, so stale ones are never shown.
+  // are kept with the inputs they answer, so stale ones are never shown, and a new camper can't
+  // be registered until the check for the name in the boxes has come back.
   const isNew = camperId === NEW
-  const matchKey = isNew && camper.last.trim().length >= 2 ? [camper.first, camper.last, camper.grade, camper.school].join('|') : null
-  const [found, setFound] = useState<{ key: string; rows: Match[] }>({ key: '', rows: [] })
-  const matches = found.key === matchKey ? found.rows : []
+  const [matchTry, setMatchTry] = useState(0)
+  const matchKey = isNew && camper.last.trim().length >= 2 ? [camper.first, camper.last, camper.grade, camper.school, matchTry].join('|') : null
+  const [found, setFound] = useState<{ key: string; rows: Match[]; failed: boolean }>({ key: '', rows: [], failed: false })
+  const matchesIn = found.key === matchKey
+  const matches = matchesIn ? found.rows : []
+  const matchFailed = matchesIn && found.failed
   useEffect(() => {
     if (!matchKey) return
     const t = setTimeout(() => {
       void supabase.rpc('admin_camper_matches', {
         p_first: camper.first, p_last: camper.last, p_grade: camper.grade || null, p_school: camper.school || null,
-      }).then(({ data }) => setFound({ key: matchKey, rows: (data as Match[] | null) ?? [] }))
+      }).then(({ data, error }) => setFound({ key: matchKey, rows: (data as Match[] | null) ?? [], failed: !!error }))
     }, 300)
     return () => clearTimeout(t)
   }, [matchKey, camper.first, camper.last, camper.grade, camper.school])
+  const duplicatesChecked = !isNew || (matchesIn && !found.failed)
 
   // Which rules this sign-up breaks, for the camper and class picked now. Ticks reset with them.
   const age = Number(camper.age)
   const ready = !!sectionId && (camperId ? (!isNew || age > 0) : false)
-  const checkKey = ready ? [sectionId, camperId, isNew ? age : '', isNew ? camper.grade : ''].join('|') : null
+  // Bumped when Register is refused for a rule: the rules changed since the preview (registration
+  // closed, the class filled), so the preview runs again and shows the new ones to tick.
+  const [recheck, setRecheck] = useState(0)
+  const checkKey = ready ? [sectionId, camperId, isNew ? age : '', isNew ? camper.grade : '', recheck].join('|') : null
   const [checked, setChecked] = useState<{ key: string; failures: Failure[] }>({ key: '', failures: [] })
   const failures = checked.key === checkKey ? checked.failures : null
   const [ticks, setTicks] = useState<{ key: string | null; rules: Set<string> }>({ key: null, rules: new Set() })
@@ -148,7 +161,7 @@ export default function AdminAddRegistration({ id, sections, onClose, onDone }: 
 
   const unnamed = (failures ?? []).filter(f => f.rule !== 'capacity' && !skipped.has(f.rule))
   const full = failures?.some(f => f.rule === 'capacity') ?? false
-  const canRegister = ready && failures !== null && unnamed.length === 0 && reason.trim().length >= 3 && !busy
+  const canRegister = ready && failures !== null && unnamed.length === 0 && duplicatesChecked && reason.trim().length >= 3 && !busy
 
   async function register(e: React.FormEvent) {
     e.preventDefault()
@@ -163,7 +176,10 @@ export default function AdminAddRegistration({ id, sections, onClose, onDone }: 
       p_reason: reason.trim(),
       p_overrides: [...skipped],
     })
-    if (error) return fail(error.message)
+    if (error) {
+      if (error.hint?.startsWith('rules:')) setRecheck(n => n + 1)
+      return fail(error.hint?.startsWith('rules:') ? `${error.message}. The rules changed since the check: tick the ones listed below again.` : error.message)
+    }
     const row = (data as { status: string; student_id: string }[])[0]
     const who = isNew ? `${camper.first.trim()} ${camper.last.trim()}` : family.campers.find(c => c.id === camperId)?.full_name
     const where = sections.find(s => s.id === sectionId)
@@ -202,7 +218,11 @@ export default function AdminAddRegistration({ id, sections, onClose, onDone }: 
         <div className="flex-[1_1_260px] min-w-0 max-w-[420px]">
           <label htmlFor={`${id}-email`} className={label}>Family’s email</label>
           <Input id={`${id}-email`} type="email" autoComplete="off" value={email}
-            onChange={e => { setEmail(e.target.value); setFamily(null); setNoAccount(false) }} />
+            onChange={e => {
+              lookup.current++
+              setEmail(e.target.value); setFamily(null); setNoAccount(false)
+              setBusy(b => (b === 'find' ? null : b))
+            }} />
         </div>
         <Button type="submit" variant="ink" disabled={busy === 'find'}>{busy === 'find' ? 'Finding…' : 'Find family'}</Button>
       </form>
@@ -270,6 +290,12 @@ export default function AdminAddRegistration({ id, sections, onClose, onDone }: 
             </div>
           )}
 
+          {matchFailed && (
+            <div role="alert" className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="font-bold text-danger text-pretty">Couldn’t check for campers already on file.</p>
+              <Button variant="text" onClick={() => setMatchTry(n => n + 1)}>Check again</Button>
+            </div>
+          )}
           {isNew && matches.length > 0 && (
             <div role="status" className="mt-3 p-3 rounded border-2 border-ink">
               <p className="font-bold">Already on file? Check before adding a new camper.</p>
@@ -332,6 +358,9 @@ export default function AdminAddRegistration({ id, sections, onClose, onDone }: 
             </Button>
             <Button variant="text" onClick={onClose}>Close</Button>
             {ready && unnamed.length > 0 && <p className="text-sm text-ink-muted">Tick each rule you’re skipping to register.</p>}
+            {ready && unnamed.length === 0 && isNew && !duplicatesChecked && !matchFailed && (
+              <p className="text-sm text-ink-muted">Checking for campers already on file…</p>
+            )}
           </div>
         </form>
       )}

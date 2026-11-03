@@ -1,5 +1,5 @@
 -- Tests for migration_admin_register.sql (spec 32, #152) and the admin-insert warning it adds to
--- registrations_before_insert() (migration_one_class_per_week.sql).
+-- audit.log_change() (migration_audit_log.sql).
 -- Run against the demo DB after private.reset_demo(). The block raises its results at the end,
 -- so every test write rolls back. Every line should end in "ok".
 --
@@ -174,6 +174,20 @@ begin
     res := res || E'\nblank reason: refused ok';
   end;
   begin
+    perform * from public.admin_register(email1, s7, null, b1, 'phone', 'Called', array[null]::text[]);
+    res := res || E'\na null override: ALLOWED (BAD)';
+  exception when others then
+    get stacked diagnostics m = message_text;
+    res := res || E'\na null override: refused ' || case when m = 'Unknown rule in the overrides' then 'ok' else '(BAD: ' || m || ')' end;
+  end;
+  begin
+    perform * from public.admin_register(email1, s7, null, b1, 'phone', 'Called', '{closed,opening,capacity,everything}');
+    res := res || E'\nan unknown override: ALLOWED (BAD)';
+  exception when others then
+    get stacked diagnostics m = message_text;
+    res := res || E'\nan unknown override: refused ' || case when m = 'Unknown rule in the overrides' then 'ok' else '(BAD: ' || m || ')' end;
+  end;
+  begin
     perform * from public.admin_register(email1, filler, null, b2, 'phone', 'Called', '{closed,opening}');
     res := res || E'\nanother family''s camper: ALLOWED (BAD)';
   exception when others then
@@ -198,6 +212,13 @@ begin
   execute 'reset role';
   select l.reason into reason from audit.log l where l.table_name = 'registrations' and l.action = 'INSERT' and l.new ->> 'student_id' = s8::text and l.new ->> 'section_id' = a2::text;
   res := res || E'\ndirect admin insert with no reason is flagged: ' || case when reason = 'admin_insert_no_reason' then 'ok' else 'BAD (' || coalesce(reason, 'null') || ')' end;
+  -- ...and the flag stays on that row: a later write in the same transaction carries no reason.
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', claims_adm, true);
+  update students set school_name = 'Behalf Middle' where id = s8;
+  execute 'reset role';
+  select l.reason into reason from audit.log l where l.table_name = 'students' and l.action = 'UPDATE' and l.row_id = s8::text order by l.id desc limit 1;
+  res := res || E'\nthe flag doesn''t leak to the next write: ' || case when reason is null then 'ok' else 'BAD (' || reason || ')' end;
 
   raise exception 'RESULTS (all rolled back):%', res;
 end $$;

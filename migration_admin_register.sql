@@ -2,8 +2,8 @@
 -- Apply in Supabase Dashboard > SQL Editor (or via MCP / the Management API). Safe to re-run.
 --
 -- Order: after migration_course_rules.sql (private.prerequisite_met) and migration_season_settings.sql.
--- Then RE-APPLY migration_one_class_per_week.sql: its trigger now flags admin inserts that carry no
--- reason (section 5 below explains).
+-- Then RE-APPLY migration_audit_log.sql: its trigger now flags admin inserts that carry no reason
+-- (section 5 below explains).
 --
 -- Admins used to have no way to add a registration: the insert trigger let them skip every rule,
 -- silently. Now one RPC runs the same rules a parent meets. Each rule the admin skips must be named
@@ -23,6 +23,17 @@
 -- A family without an account is invited first by the admin-invite-parent Edge Function.
 
 -- ── 1. Which rules a sign-up breaks ───────────────────────────
+-- The camp year a section's sign-ups count in: its week's year, else the active season's, else
+-- this calendar year. admin_register() inserts with it, so the insert trigger's fallback
+-- (NEW.year) agrees with what was checked here.
+CREATE OR REPLACE FUNCTION private.section_year(p_section_id UUID)
+RETURNS INT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT coalesce((SELECT se.year FROM sections s JOIN sessions se ON se.id = s.session_id WHERE s.id = p_section_id),
+                  (SELECT max(year) FROM sessions WHERE is_active),
+                  extract(year FROM now())::int);
+$$;
+REVOKE ALL ON FUNCTION private.section_year(UUID) FROM PUBLIC, anon, authenticated;
+
 -- For an existing camper pass p_student_id; for one not created yet pass their age and grade
 -- (a new camper has no past classes, so a prerequisite is never met). Same order and words as
 -- registrations_before_insert(), one row per broken rule.
@@ -45,7 +56,7 @@ BEGIN
     RAISE EXCEPTION 'That section no longer exists' USING ERRCODE = 'P0001';
   END IF;
   SELECT * INTO cls FROM classes WHERE id = sec.class_id;
-  yr := coalesce((SELECT year FROM sessions WHERE id = sec.session_id), (SELECT max(year) FROM sessions WHERE is_active));
+  yr := private.section_year(sec.id);
   IF p_student_id IS NOT NULL THEN
     SELECT s.age, s.grade INTO age, grade FROM students s WHERE s.id = p_student_id;
   END IF;
@@ -196,6 +207,7 @@ DECLARE
   skipped   TEXT[];
   st        registration_status;
   rid       UUID;
+  ovr       TEXT[] := array_remove(coalesce(p_overrides, '{}'), NULL);
   v_first   TEXT;
   v_last    TEXT;
   why       TEXT := trim(coalesce(p_reason, ''));
@@ -208,6 +220,11 @@ BEGIN
   END IF;
   IF length(why) < 3 THEN
     RAISE EXCEPTION 'Add a reason for History' USING ERRCODE = '22023';
+  END IF;
+  -- Only known rule names; a blank or unknown name would otherwise match nothing and hide a skip.
+  IF EXISTS (SELECT 1 FROM unnest(coalesce(p_overrides, '{}')) o
+             WHERE o IS NULL OR o NOT IN ('closed', 'opening', 'cancelled', 'grade', 'prerequisite', 'age', 'same_week', 'capacity')) THEN
+    RAISE EXCEPTION 'Unknown rule in the overrides' USING ERRCODE = '22023';
   END IF;
 
   SELECT f.id INTO parent FROM public.admin_find_parent(p_parent_email) f;
@@ -240,13 +257,13 @@ BEGIN
 
   -- 'capacity' only decides the status; every other broken rule must be named.
   SELECT array_agg(f) INTO missing FROM unnest(fails) f
-  WHERE f <> 'capacity' AND NOT f = ANY (coalesce(p_overrides, '{}'));
+  WHERE f <> 'capacity' AND NOT f = ANY (ovr);
   IF missing IS NOT NULL THEN
     RAISE EXCEPTION 'Name each rule you are skipping: %', array_to_string(missing, ', ')
       USING ERRCODE = 'P0001', HINT = 'rules:' || array_to_string(fails, ',');
   END IF;
-  SELECT array_agg(f) INTO skipped FROM unnest(fails) f WHERE f = ANY (coalesce(p_overrides, '{}'));
-  st := CASE WHEN 'capacity' = ANY (fails) AND NOT 'capacity' = ANY (coalesce(p_overrides, '{}'))
+  SELECT array_agg(f) INTO skipped FROM unnest(fails) f WHERE f = ANY (ovr);
+  st := CASE WHEN 'capacity' = ANY (fails) AND NOT 'capacity' = ANY (ovr)
              THEN 'waitlisted' ELSE 'confirmed' END;
 
   PERFORM private.set_reason(
@@ -261,8 +278,8 @@ BEGIN
     RETURNING id INTO stu;
   END IF;
 
-  INSERT INTO registrations (student_id, section_id, status)
-  VALUES (stu, p_section_id, st)
+  INSERT INTO registrations (student_id, section_id, status, year)
+  VALUES (stu, p_section_id, st, private.section_year(p_section_id))
   RETURNING id INTO rid;
 
   PERFORM private.set_reason(NULL);
@@ -277,6 +294,6 @@ REVOKE ALL ON FUNCTION public.admin_register(TEXT, UUID, JSONB, UUID, TEXT, TEXT
 GRANT EXECUTE ON FUNCTION public.admin_register(TEXT, UUID, JSONB, UUID, TEXT, TEXT, TEXT[]) TO authenticated;
 
 -- ── 5. Admin inserts outside admin_register() ─────────────────
--- Still allowed (repairs), but registrations_before_insert() (migration_one_class_per_week.sql)
--- now stamps 'admin_insert_no_reason' as the audit reason when the admin set none, so History
--- shows the row as a warning. Re-apply that file after this one.
+-- Still allowed (repairs), but audit.log_change() (migration_audit_log.sql) records
+-- 'admin_insert_no_reason' for a registration an admin inserted without a reason, so History
+-- shows it as a warning. Re-apply that file after this one.
