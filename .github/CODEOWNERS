@@ -1,0 +1,9 @@
+# Review pipeline stage 3 (docs/review-pipeline.md): who is asked to review what.
+# One owner for now; add the national team's reviewers here at handoff.
+*                         @haanie09
+
+# Who can read children's data, the service role, auth and MFA: always a person's review.
+/migration_*.sql          @haanie09
+/schema.sql               @haanie09
+/supabase/                @haanie09
+/docs/legal/              @haanie09

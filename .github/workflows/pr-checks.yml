@@ -1,0 +1,31 @@
+# PR checks (review pipeline stage 2, docs/review-pipeline.md): the house rules a script can see,
+# in scripts/pr-checks.sh. Its own workflow so that editing the description re-runs it without
+# re-running lint, test and build. Required on main with "Lint, test, build".
+name: PR checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rules:
+    name: PR checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # The description goes in through env, never inline in the script (no injection).
+      - run: scripts/pr-checks.sh
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE: ${{ github.event.pull_request.base.sha }}

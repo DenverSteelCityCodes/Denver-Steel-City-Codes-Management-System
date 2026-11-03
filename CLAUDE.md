@@ -59,8 +59,14 @@ gh pr create --base main --title "<type>: <concise summary>" \
 - The PR body must `Closes #<issue>` so the issue auto-closes on merge.
 - Keep the diff focused on that one issue. If you discover an unrelated problem mid-PR, file a
   **new** issue for it (or use the background-task chip) rather than expanding this PR.
-- Before opening the PR: `npm run build` and `npm run lint` pass; verify previewable changes in
-  the browser per the verification workflow.
+- Every PR follows the **review pipeline** in [`docs/review-pipeline.md`](docs/review-pipeline.md):
+  1. author checks before opening (`npm run lint && npm test && npm run build`; SQL suites via
+     `scripts/sql-test.sh` for any DB change; browser check for any UI change);
+  2. CI green (`Lint, test, build` and `PR checks` are required on `main`);
+  3. `/code-review high` on the branch (`max` for RLS, `SECURITY DEFINER`, auth, Edge Functions or
+     cross-family data), every finding fixed or answered in the PR's **Review** section;
+  4. merge only when the user says so, with a merge commit;
+  5. after merge: apply migrations to the demo, redeploy, tick the spec tracker.
 
 ### Commit & PR conventions
 - Commit/push only when the user asks; never commit straight to `main` — always the feature
