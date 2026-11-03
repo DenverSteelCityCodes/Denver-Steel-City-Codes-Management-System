@@ -1,6 +1,6 @@
 # 42: Every form answer shown and exportable
 
-**Status:** 🟨 in progress · **Issue:** #202 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
+**Status:** ✅ [PR #209](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/209) · **Issue:** #202 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
 **Depends on:** none · **Unblocks:** 43
 **Plan reference:** office-hours decision 2026-10-19 (keep form structure in code; full form builder parked as [B21](backlog-p2.md))
 

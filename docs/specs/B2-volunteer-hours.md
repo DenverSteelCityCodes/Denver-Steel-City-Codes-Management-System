@@ -1,6 +1,6 @@
 # B2: Volunteer hours letters
 
-**Status:** 🟨 in progress · **Issue:** #157 · **Priority:** P1 (promoted from P2 on 2026-10-17) · **Effort:** S · **Phase:** B
+**Status:** ✅ [PR #212](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/212) · **Issue:** #157 · **Priority:** P1 (promoted from P2 on 2026-10-17) · **Effort:** S · **Phase:** B
 **Depends on:** 35 (legal name) · **Unblocks:** —
 **Plan reference:** [backlog-p2.md § B2](backlog-p2.md)
 

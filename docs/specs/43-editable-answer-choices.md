@@ -1,7 +1,7 @@
 # 43: Editable answer choices on the Forms page
 
-**Status:** 🟨 in progress · **Issue:** #203 · **Priority:** P1 · **Effort:** S · **Phase:** B (before go-live)
-**Depends on:** 42 · **Unblocks:** 23 (per-region district list)
+**Status:** ✅ [PR #211](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/211) · **Issue:** #203 · **Priority:** P1 · **Effort:** S · **Phase:** B (before go-live)
+**Depends on:** 42 ✅ · **Unblocks:** 23 (per-region district list)
 **Plan reference:** office-hours decision 2026-10-19
 
 ## Why
