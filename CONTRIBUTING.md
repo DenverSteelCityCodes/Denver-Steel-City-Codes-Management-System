@@ -17,7 +17,8 @@ Follow [Run it locally](README.md#run-it-locally) and [docs/database.md](docs/da
    npm test
    npm run build
    ```
-   CI runs the same three on every PR.
+   CI runs the same three on every PR, plus `PR checks` (the `Closes #` line; migrations come with their docs and SQL tests). For a database change, also run its SQL suite with `scripts/sql-test.sh`.
+5. **Review:** every PR goes through the [review pipeline](docs/review-pipeline.md): CI green, a code review with each finding fixed or answered in the PR, then merge.
 
 [CLAUDE.md](CLAUDE.md) has the long form of this workflow (it's written for Claude Code, but it applies to everyone).
 

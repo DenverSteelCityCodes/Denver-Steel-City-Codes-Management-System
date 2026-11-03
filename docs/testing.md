@@ -17,10 +17,18 @@ npm run build
 
 ## 2. SQL / RLS suites (by hand for now)
 
-`test-plans/*-tests.sql` each impersonate users (`set local role authenticated` plus `request.jwt.claims`). They end with `raise exception 'RESULTS …'`, so **everything rolls back**. Run one against the demo database, after `select private.reset_demo();`, in the Supabase SQL editor or with any runner, and read the lines it prints. Every line should say `ok`; any `BAD` is a failure.
+`test-plans/*-tests.sql` each impersonate users (`set local role authenticated` plus `request.jwt.claims`). They end with `raise exception 'RESULTS …'`, so **everything rolls back**. Run them against the demo database, after `select private.reset_demo();`, with the runner, which prints one line per suite and exits non-zero on any `BAD`:
+
+```bash
+scripts/sql-test.sh                                    # every suite
+scripts/sql-test.sh test-plans/x-tests.sql             # one
+scripts/sql-test.sh --with migration_x.sql test-plans/x-tests.sql   # an unapplied migration, rolled back with the suite
+```
+
+It connects with `DATABASE_URL` (psql) or `SUPABASE_PROJECT_REF` + `SUPABASE_ACCESS_TOKEN` (the Management API). The SQL editor works too: every line should say `ok`; any `BAD` is a failure. [The review pipeline](review-pipeline.md) says when to run which.
 
 - Where admin MFA is required (spec 27), an admin's claims need `'aal': 'aal2'`.
-- `camp-week-rls-tests.sql` is older: it prints `(BAD)` lines instead of raising.
+- `camp-week-rls-tests.sql` is older: it commits its own cleanup and prints `(BAD)` lines instead of raising, so the runner skips it unless named. Run it in the SQL editor.
 
 **Next (spec 08 after spec 01):** once migrations live in `supabase/migrations/`, CI starts the Supabase local stack (`supabase start`, `supabase db reset`) and runs these files with `psql`, failing on any `BAD`.
 
