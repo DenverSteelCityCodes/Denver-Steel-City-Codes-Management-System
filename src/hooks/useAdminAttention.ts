@@ -1,3 +1,4 @@
+import type { AdminStaffing } from '../types/database'
 import { useCallback, useEffect, useState } from 'react'
 import {
   TriangleAlert, Armchair, Inbox, CalendarClock, ListChecks, ClipboardList, UserRoundX, Copy, MailWarning,
@@ -82,8 +83,10 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
   // Onboarding checklist items past due (spec 35).
   const [lateOnboarding, setLateOnboarding] = useState<{ volunteer_id: string; volunteer_name: string; task_label: string }[]>([])
 
+  const [staffing, setStaffing] = useState<AdminStaffing[]>([])
+
   const loadExtras = useCallback(async () => {
-    const [abs, dup, failed, requests, risk, incidents, onboarding] = await Promise.all([
+    const [abs, dup, failed, requests, risk, incidents, onboarding, staffing] = await Promise.all([
       supabase.rpc('admin_crew_absences'),
       supabase.rpc('possible_duplicate_campers'),
       supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('attempts', 3),
@@ -93,8 +96,19 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
         .not('student_id', 'is', null).is('parent_notified_at', null)
         .lt('created_at', new Date(Date.now() - 24 * 3600_000).toISOString()),
       supabase.rpc('admin_onboarding_overdue'),
+      (async () => {
+        const today = localDateISO()
+        const until = new Date(`${today}T12:00:00`)
+        until.setDate(until.getDate() + 21)
+        const { data, error } = await supabase.from('sessions').select('id').gte('start_date', today).lte('start_date', localDateISO(until))
+        if (error) return null
+        const results = await Promise.all((data ?? []).map(s => supabase.rpc('admin_staffing', { p_session_id: s.id })))
+        if (results.some(r => r.error)) return null
+        return results.map(r => r.data as AdminStaffing)
+      })(),
     ])
     return {
+      staffing,
       absences: abs.error ? null : ((abs.data ?? []) as CrewAbsence[]),
       dupes: dup.error ? [] : ((dup.data ?? []) as DuplicatePair[]),
       failed: failed.count ?? 0,
@@ -106,6 +120,7 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
   }, [])
 
   const applyExtras = useCallback((x: Awaited<ReturnType<typeof loadExtras>>) => {
+    if (x.staffing) setStaffing(x.staffing)
     if (x.absences) setAbsences(x.absences)
     setDupes(x.dupes)
     setFailedEmails(x.failed)
@@ -376,6 +391,20 @@ export function useAdminAttention(): { items: AttentionItem[]; loading: boolean;
       detail: `${focus.className} · ${focus.label} has ${focus.taken} of ${focus.capacity} seats taken${focus.waitlisted > 0 ? `, ${focus.waitlisted} waitlisted` : ''}${nearNote}`,
       ctaLabel: 'See seats',
       to: classLink(focus.classId),
+    })
+  }
+
+  for (const week of staffing) {
+    const to = `/admin/classes?tab=staffing&session=${week.session_id}`
+    for (const section of week.sections.filter(s => s.tone === 'red')) items.push({
+      key: `staffing-${week.session_id}-${section.section_id}`, icon: TriangleAlert, tone: 'danger',
+      title: `${section.label} is under ratio for Week ${week.week_number}`,
+      detail: `${section.course} · ${section.word}`, ctaLabel: 'Open staffing', to,
+    })
+    if (week.unassigned.length > 0) items.push({
+      key: `unassigned-${week.session_id}`, icon: ClipboardList, tone: 'attention',
+      title: `${week.unassigned.length} accepted ${plural(week.unassigned.length, 'volunteer has', 'volunteers have')} no section, week role or duty slot in Week ${week.week_number}`,
+      detail: 'Available this week and waiting for an assignment.', ctaLabel: 'See unassigned', to: `${to}#unassigned`,
     })
   }
 

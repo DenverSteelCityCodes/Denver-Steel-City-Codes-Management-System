@@ -1,6 +1,8 @@
 # 39: Staffing board (ratios, teachers per course, week roles)
 
-**Status:** ⬜ not started · **Issue:** — · **Priority:** P1 · **Effort:** M · **Phase:** B
+**Status:** 🟨 in progress · **Issue:** [#218](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/218) · **Priority:** P1 · **Effort:** M · **Phase:** B
+Dated cover and floater-first cover suggestions wait on spec 33; cover suggestions remain as spec 25 has them today. Week roles call spec 35's crewing guard as it is today (removed volunteers refused); its follow-up (accepted this season, agreement verified) tightens sections and week roles together in its own PR.
+
 **Depends on:** 13 ✅ (season settings), 14 ✅ (attention items), 25 ✅ (availability, absences, cover suggestions), 35 🟨 (the crewing guard), 33 ⬜ (dated cover, for floaters covering a section) · **Unblocks:** B2 (week-role hours), the spec 14 minimum-crew follow-up
 **Plan reference:** [Discord findings](../research/discord-findings.md) M09, M53; decision Q-D3 (open)
 

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { guardedUpdate, EditConflictError } from '../lib/editConflict'
 
 export interface Session {
+  needs_teachers?: boolean
   id: string
   name: string
   year: number

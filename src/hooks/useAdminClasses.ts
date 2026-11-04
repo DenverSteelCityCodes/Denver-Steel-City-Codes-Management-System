@@ -99,7 +99,7 @@ export function useAdminClasses() {
   }
 
   // Course rules (spec 31) save with the class: grades_allowed, requires_class_id, requirement_note, next_class_id.
-  type ClassPayload = Pick<Class, 'name'> & Partial<Pick<Class, 'description' | 'grades_allowed' | 'requires_class_id' | 'requirement_note' | 'next_class_id'>>
+  type ClassPayload = Pick<Class, 'name'> & Partial<Pick<Class, 'description' | 'grades_allowed' | 'requires_class_id' | 'requirement_note' | 'next_class_id' | 'min_teachers'>>
 
   async function createClass(payload: ClassPayload) {
     const { data, error } = await supabase
@@ -117,7 +117,7 @@ export function useAdminClasses() {
     try {
       if (original) {
         await guardedUpdate('classes', {
-          id, updated_at: original.updated_at, name: original.name, description: original.description,
+          id, min_teachers: original.min_teachers ?? null, updated_at: original.updated_at, name: original.name, description: original.description,
           grades_allowed: original.grades_allowed ?? null, requires_class_id: original.requires_class_id ?? null,
           requirement_note: original.requirement_note ?? null, next_class_id: original.next_class_id ?? null,
         }, payload)

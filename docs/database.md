@@ -53,6 +53,8 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 41 | `migration_volunteer_hours.sql` | Service hours per volunteer per week (crewed weekdays so far × section times, minus days off, plus duties), read by the volunteer's Profile and the admin's Volunteers › Hours, and the letter signer settings (spec B2) |
 | 42 | `migration_admin_register.sql` | Admins register a family on its behalf (late, walk-in, phone, lost form) through `admin_register()`, which runs the parents' rules and records each one skipped, with a reason, in History; the family lookup by email, the tolerant duplicate-camper match and the rule preview the Campers panel uses (spec 32). **Then re-apply `migration_audit_log.sql`**: its trigger now flags a registration an admin inserted without a reason. Deploy `admin-invite-parent` too (below) |
 
+| 43 | `migration_staffing_board.sql` | Staffing targets, course minimums, week roles (admins only; released when a volunteer is demoted) and their service hours, spec 35's crewing guard on week roles, room clashes and `admin_staffing()` (spec 39). Deploy `send-notifications` for `week_role_changed` |
+
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 
 Some headers say "then RE-APPLY X". That is for upgrading a database that already ran an older copy of X. On a fresh install the repo copy is already current.
