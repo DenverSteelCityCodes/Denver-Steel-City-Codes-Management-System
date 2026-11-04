@@ -1,6 +1,6 @@
 # 36: Authorized pickups and walk-home consent
 
-**Status:** 🟨 in review · **Issue:** #156 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
+**Status:** ✅ merged ([PR #199](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/199)) · **Issue:** #156 · **Priority:** P1 · **Effort:** M · **Phase:** B (before go-live)
 **Depends on:** 04 ✅, 05 ✅ · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §2; promotes backlog B6 (decided 2026-10-17)
 
