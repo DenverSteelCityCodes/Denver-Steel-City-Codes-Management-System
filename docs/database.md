@@ -51,6 +51,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 39 | `migration_duty_locks.sql` | Duty rules per year (`duty_settings`), an admin lock on a duty slot, and the volunteer rules: no drops within 3 days of the duty (the default), no changes to past or locked slots, claim or drop only (spec 37) |
 | 40 | `migration_duty_minimums.sql` | Duty lengths (`duty_types.minutes`), a weekly duty minimum and sign-up deadline per year, no drop below the minimum after the deadline, the volunteer's week totals and the admin's "short" list, and two emails: `duty_assigned` and a daily `duty_minimum_reminder` job (spec 38). Deploy `send-notifications` first |
 | 41 | `migration_volunteer_hours.sql` | Service hours per volunteer per week (crewed weekdays so far × section times, minus days off, plus duties), read by the volunteer's Profile and the admin's Volunteers › Hours, and the letter signer settings (spec B2) |
+| 42 | `migration_admin_register.sql` | Admins register a family on its behalf (late, walk-in, phone, lost form) through `admin_register()`, which runs the parents' rules and records each one skipped, with a reason, in History; the family lookup by email, the tolerant duplicate-camper match and the rule preview the Campers panel uses (spec 32). **Then re-apply `migration_audit_log.sql`**: its trigger now flags a registration an admin inserted without a reason. Deploy `admin-invite-parent` too (below) |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 
@@ -71,7 +72,8 @@ Some headers say "then RE-APPLY X". That is for upgrading a database that alread
    supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="Your Chapter <no-reply@your-domain>" APP_URL=https://your-site
    ```
    `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three, spec 29 four, spec 36 one, spec 38 two).
-5. **Notify-me links:** `migration_public_camp_page.sql` creates the Vault secret `interest_link_key` that signs confirm and unsubscribe links. Never copy it between projects; a new key only breaks links already sent.
+5. **Admin invites:** `supabase functions deploy admin-invite-parent` (verify_jwt on). Campers › Add registration calls it for a family with no account (spec 32). It invites through Supabase Auth, so it needs custom SMTP (spec 02) to reach real families; until then it creates the account without the email and tells the admin to have the family use "Forgot password".
+6. **Notify-me links:** `migration_public_camp_page.sql` creates the Vault secret `interest_link_key` that signs confirm and unsubscribe links. Never copy it between projects; a new key only breaks links already sent.
 
 ## Demo environment
 

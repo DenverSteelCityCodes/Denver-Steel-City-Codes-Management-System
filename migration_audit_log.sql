@@ -54,6 +54,7 @@ DECLARE
   o   JSONB;
   n   JSONB;
   rid TEXT;
+  why TEXT;
 BEGIN
   IF TG_OP <> 'INSERT' THEN o := to_jsonb(OLD); END IF;
   IF TG_OP <> 'DELETE' THEN n := to_jsonb(NEW); END IF;
@@ -65,9 +66,17 @@ BEGIN
     INTO rid
     FROM unnest(string_to_array(coalesce(TG_ARGV[0], 'id'), ',')) WITH ORDINALITY AS t(k, ord);
 
+  why := nullif(current_setting('app.reason', true), '');
+  -- Admin sign-ups go through admin_register() (spec 32), which gives a reason. A registration
+  -- an admin inserted directly (a repair) is flagged so History shows it as a warning. Decided
+  -- here, per row, so the flag never carries over to later statements in the transaction.
+  IF why IS NULL AND TG_TABLE_NAME = 'registrations' AND TG_OP = 'INSERT'
+     AND private.auth_user_role() = 'admin' THEN
+    why := 'admin_insert_no_reason';
+  END IF;
+
   INSERT INTO audit.log (actor_id, actor_role, table_name, row_id, action, old, new, reason)
-  VALUES (auth.uid(), private.auth_user_role()::text, TG_TABLE_NAME, rid, TG_OP, o, n,
-          nullif(current_setting('app.reason', true), ''));
+  VALUES (auth.uid(), private.auth_user_role()::text, TG_TABLE_NAME, rid, TG_OP, o, n, why);
   RETURN NULL;
 END;
 $$;
