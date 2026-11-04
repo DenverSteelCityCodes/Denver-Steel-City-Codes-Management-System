@@ -58,7 +58,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | 🟨 | [36](36-authorized-pickups.md) | #156 | Authorized pickups + dated walk-home consent at dismissal | P1 | M | — | B |
 | ✅ | [37](37-duty-locks.md) | #204 | Duty drops lock 3 days out; admins lock slots; no past-date changes | P0 | S | 05, 35 | B |
 | ✅ | [38](38-duty-minimums.md) | #205 | Weekly duty minimum in minutes; admins assign anyone short; reminder email | P1 | M | 09, 37 | B |
-| ⬜ | [39](39-staffing-board.md) | — | Staffing board: campers per crew, teachers per course, unassigned volunteers, room clashes, week roles | P1 | M | 13, 14, 25, 33, 35 | B |
+| 🟨 | [39](39-staffing-board.md) | [#218](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/218) | Staffing board: campers per crew, teachers per course, unassigned volunteers, room clashes, week roles | P1 | M | 13, 14, 25, 33, 35 | B |
 | ⬜ | [40](40-crew-day-plan.md) | — | Crew day plan on volunteer Today: call time, meeting point, crew-only schedule, crew FAQ, night-before email | P1 | M | 02, 09, 34, 39 | B |
 | ⬜ | [41](41-on-call-help.md) | — | On-call help: "Need help" from Today reaches the on-call admin, "On my way" | P1 | S | 09, 34, 37, 38, 39 | B |
 | ✅ | [42](42-form-answers-shown-and-exported.md) | #202 | Every form answer shown on camper/application detail and exportable by column group | P1 | M | — | B |

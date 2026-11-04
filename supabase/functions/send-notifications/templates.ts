@@ -425,6 +425,14 @@ export function render(template: string, p: Payload, appUrl: string): Rendered |
       ], { label: 'Find a duty', url: `${appUrl}/volunteer/duties` })
     }
 
+    case 'week_role_changed':
+      return build(`Week ${p.week}: your camp role changed`, 'Your week role changed', [
+        p.removed ? `Your Week ${esc(p.week)} role was removed.`
+          : `Week ${esc(p.week)}: <strong>${p.role === 'floater' ? 'Floater' : 'Admin room'}</strong>.`,
+        ...(p.note && !p.removed ? [esc(p.note)] : []),
+        'Reply to this email if you have questions.',
+      ], { label: 'Your classes and roles', url: `${appUrl}/volunteer/classes` })
+
     case 'volunteer_removed':
       return build(`You're no longer on the ${p.year ?? 'camp'} volunteer crew`, 'You\'re no longer on the crew', [
         `Hi ${first}, we've taken you off this season's volunteer crew, so your class and duty spots have gone to other volunteers.`,

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import type { ReactNode } from 'react'
 import { useSearchParams, useLocation, Link } from 'react-router-dom'
 import { Plus, X, Printer, UserRoundX, HeartPulse, Check } from 'lucide-react'
+import StaffingBoard from '../components/StaffingBoard'
 import InlineConfirm from '../components/InlineConfirm'
 import HistoryStrip from '../components/HistoryStrip'
 import Button from '../components/Button'
@@ -64,6 +65,7 @@ function SaveButton({ saving, children }: { saving: boolean; children: ReactNode
 // A class and its course rules (spec 31). The database holds families to the rules; admins can
 // still place anyone.
 interface ClassFormValues {
+  min_teachers: number | null
   name: string
   description: string
   grades_allowed: string[] | null
@@ -73,6 +75,7 @@ interface ClassFormValues {
 }
 
 const classFormValues = (c?: ClassWithSections): ClassFormValues => ({
+  min_teachers: c?.min_teachers ?? null,
   name: c?.name ?? '', description: c?.description ?? '',
   grades_allowed: c?.grades_allowed ?? null, requires_class_id: c?.requires_class_id ?? null,
   requirement_note: c?.requirement_note ?? null, next_class_id: c?.next_class_id ?? null,
@@ -92,6 +95,7 @@ function ClassForm({
   onSave: (payload: ClassFormValues) => Promise<void>
   onCancel: () => void
 }) {
+  const [minTeachers, setMinTeachers] = useState(initial.min_teachers?.toString() ?? '')
   const [name, setName] = useState(initial.name)
   const [description, setDescription] = useState(initial.description)
   const [grades, setGrades] = useState<string[]>(initial.grades_allowed ?? [])
@@ -111,6 +115,7 @@ function ClassForm({
     setError(null)
     try {
       await onSave({
+        min_teachers: minTeachers ? Number(minTeachers) : null,
         name: name.trim(), description: description.trim(),
         // No grade ticked means any grade (NULL); keep them in school order.
         grades_allowed: grades.length > 0 ? GRADES.filter(g => grades.includes(g)) : null,
@@ -140,6 +145,14 @@ function ClassForm({
             aria-describedby="class-desc-hint" onChange={e => setDescription(e.target.value)} />
           <p id="class-desc-hint" className={hint}>Families see this when they pick a class.</p>
         </div>
+      </div>
+      <div className="mt-5 max-w-sm">
+        <label className={label} htmlFor="class-min-teachers">Minimum teachers (optional)</label>
+        <Select id="class-min-teachers" value={minTeachers} onChange={e => setMinTeachers(e.target.value)}>
+          <option value="">Use season minimum</option>
+          {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+        </Select>
+        <p className={hint}>Applies to every section of this course.</p>
       </div>
       <fieldset className="mt-6 max-w-[880px]">
         <legend className="text-lg font-bold leading-[1.3]">Who can take it</legend>
@@ -623,6 +636,21 @@ type Tab = 'roster' | 'edit' | 'history'
 type WeekKey = 1 | 2 | 'both'
 
 export default function AdminClasses() {
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'staffing' ? 'staffing' : 'classes'
+  return <>
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <Segmented mode="tabs" idBase="classes-view" label="Classes view" value={tab}
+        options={[{ value: 'classes', label: 'Classes' }, { value: 'staffing', label: 'Staffing' }]}
+        onChange={value => setParams({ tab: value })} />
+    </div>
+    <div role="tabpanel" id={`classes-view-panel-${tab}`} aria-labelledby={`classes-view-tab-${tab}`}>
+      {tab === 'staffing' ? <StaffingBoard /> : <ClassesEditor />}
+    </div>
+  </>
+}
+
+function ClassesEditor() {
   const {
     classes, loading, error, fillError, refetch, countRegistrations,
     createClass, updateClass, deleteClass, createSection, updateSection, deleteSection,

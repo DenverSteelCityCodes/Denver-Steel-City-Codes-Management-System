@@ -3,14 +3,8 @@ import { supabase } from '../lib/supabase'
 
 // One camp year's registration settings (migration_season_settings.sql, spec 13). No row means
 // no scheduled opening and the decided defaults (14-day change deadline, 48 h / 12 h offers).
-export interface SeasonSettings {
-  year: number
-  registration_opens_at: string | null
-  change_deadline_days: number
-  offer_hours: number
-  offer_hours_final_week: number
-  updated_at?: string
-}
+export type { SeasonSettings } from '../types/database'
+import type { SeasonSettings } from '../types/database'
 
 export const DEFAULT_SEASON_SETTINGS = { registration_opens_at: null, change_deadline_days: 14, offer_hours: 48, offer_hours_final_week: 12 }
 

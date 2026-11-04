@@ -120,6 +120,7 @@ BEGIN
   DELETE FROM attendance_logs; DELETE FROM registrations; DELETE FROM students;
   DELETE FROM duty_assignments; DELETE FROM duty_slots;
   DELETE FROM interview_bookings; DELETE FROM interview_slots; DELETE FROM volunteer_applications;
+  IF to_regclass('public.week_roles') IS NOT NULL THEN DELETE FROM week_roles; END IF;
   DELETE FROM section_supports; DELETE FROM sections; DELETE FROM classes;
   DELETE FROM volunteers; DELETE FROM parent_profiles; DELETE FROM sessions;
   -- Spec 30: visitors' "notify me" addresses go with every reset (audit.log's copies of them are
@@ -242,6 +243,11 @@ BEGIN
     vo.experience_level = 'senior', ARRAY['Python','Java'], CASE WHEN vo.experience_level = 'senior' THEN 4 ELSE 3 END,
     3, 2, 'Intro to Python', 'Intro to Java', p.display_name, true, 'accepted', now() - interval '120 days'
   FROM volunteers vo JOIN profiles p ON p.id = vo.id JOIN auth.users u ON u.id = vo.id;
+
+  -- Spec 39: Microcontrollers needs three teachers in every section.
+  IF to_regclass('public.week_roles') IS NOT NULL THEN
+    UPDATE classes SET min_teachers = 3 WHERE id = c_micro;
+  END IF;
 
   -- Crews: one senior lead per section (never two sections in the same week), one or two juniors.
   -- Web (Week 1) is left without supports and Microcontrollers Week 2 without a lead, so the
@@ -651,6 +657,21 @@ BEGIN
         VALUES (reg.student_id, w1, 'walk', reg.parent_id);
       END IF;
     END LOOP;
+  END IF;
+
+  -- Spec 39: guaranteed visible examples, independent of the crew/duty picker order.
+  IF to_regclass('public.week_roles') IS NOT NULL THEN
+    -- Two fictional seniors: one floater and one available with no assignment in Week 2.
+    UPDATE volunteers SET availability_week_2 = true WHERE id IN (vol_ids[1], vol_ids[2]);
+    UPDATE sections SET lead_id = NULL WHERE session_id = w2 AND lead_id IN (vol_ids[1], vol_ids[2]);
+    DELETE FROM section_supports ss USING sections s
+      WHERE ss.section_id = s.id AND s.session_id = w2 AND ss.volunteer_id IN (vol_ids[1], vol_ids[2]);
+    DELETE FROM duty_assignments da USING duty_slots ds
+      WHERE da.duty_slot_id = ds.id AND ds.session_id = w2 AND da.volunteer_id IN (vol_ids[1], vol_ids[2]);
+    INSERT INTO week_roles (volunteer_id, session_id, role, note)
+      VALUES (vol_ids[1], w2, 'floater', 'Report to room 104 at 8:15. Check with the admin before helping a room.');
+    UPDATE sessions SET needs_teachers = true WHERE id = w2;
+    -- WEB-1 already has one lead and no supports, below the default minimum of two.
   END IF;
 
   RETURN format('demo reset: %s families, %s campers, %s registrations, %s volunteers, %s applications',

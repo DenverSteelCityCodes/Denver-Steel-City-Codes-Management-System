@@ -1,3 +1,6 @@
+import { campSessions } from '../../lib/campYear'
+import { useMyWeekRoles } from '../../hooks/useMyWeekRoles'
+import WeekRoleCards from '../../components/WeekRoleCards'
 import { Link } from 'react-router-dom'
 import { PartyPopper } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
@@ -26,9 +29,24 @@ function TodayBody() {
   const { user } = useAuth()
   const { slots } = useDutySlots()
   const { items } = useScheduleItems()
+  const { roles: allRoles, loading: rolesLoading, error: rolesError } = useMyWeekRoles()
   const today = localDateISO()
+  const roles = allRoles.filter(r => campSessions(sessions).some(s => s.id === r.session_id))
+  const roleCards = <WeekRoleCards roles={roles} sessions={sessions} error={rolesError} />
 
-  if (assignedSections.length === 0) return <AcceptedWelcome today={today} />
+  if (rolesLoading) return <p role="status">Loading your assignments…</p>
+  const activeRole = roles.some(r => sessions.some(s => s.id === r.session_id && s.start_date <= today && s.end_date >= today))
+  if (activeRole || (assignedSections.length === 0 && roles.length > 0)) return <>
+    <PageHead dateline={formatDayLong(today)} title="Your week role">Your assignment and the camp’s note are below.</PageHead>
+    {roleCards}
+    <OnboardingChecklist />
+    <Sect title="Your duties" action={<Link to="/volunteer/duties" className={linkCls}>Open duties</Link>}>
+      {slots.filter(s => s.slot_date >= today && s.assignments?.some(a => a.volunteer_id === user?.id)).map(s => <MyDutyRow key={s.id} slot={s} />)}
+    </Sect>
+    {sessions.filter(s => roles.some(r => r.session_id === s.id)).map(s => <ScheduleBlock key={s.id} items={items.filter(i => i.session_id === s.id)} live={s.start_date <= today && s.end_date >= today} />)}
+    <LatestUpdate />
+  </>
+  if (assignedSections.length === 0) return <>{roleCards}<AcceptedWelcome today={today} /></>
 
   const phase = campPhase(assignedSections, sessions, today)
   const myDuties = slots.filter(s => s.slot_date >= today && s.assignments?.some(a => a.volunteer_id === user?.id))
@@ -39,6 +57,7 @@ function TodayBody() {
     const dutiesToday = myDuties.filter(s => s.slot_date === today).map(s => s.duty_type?.name).filter(Boolean)
     return (
       <>
+        {roleCards}
         <PageHead dateline={formatDayLong(today)} title={`Day ${phase.day} of ${phase.session.name}`}>
           {dayLine(running)}
           {dutiesToday.length > 0 && <> You're also on <b>{dutiesToday.join(' and ')}</b>.</>}
@@ -66,6 +85,7 @@ function TodayBody() {
 
   return (
     <>
+      {roleCards}
       <PageHead dateline={formatDayLong(today)} title={title}>
         {next ? <>Your first day is <b>{formatDayLong(next.start_date)}</b>{firstItem ? <>, and the day starts at <b>{formatTime(firstItem.start_time)}</b></> : ''}. Roll calls open that morning, right here.</>
           : phase.kind === 'over' ? 'Camp is over for this year. Thank you for volunteering.'

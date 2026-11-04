@@ -534,6 +534,7 @@ export default function VolunteerApplyPage() {
                     <ChoiceRow key={key} type="checkbox" {...a} checked={form[key]} onChange={e => set(key, e.target.checked)}>
                       <span className="block font-bold">{session ? session.name : fallback}</span>
                       {session && <span className="block text-sm text-ink-muted">{shortDates(session)}</span>}
+                      {session?.needs_teachers && <span className="block font-bold">Week {key === 'availabilityWeek1' ? 1 : 2} still needs teachers</span>}
                     </ChoiceRow>
                   ))}
                 </div>
