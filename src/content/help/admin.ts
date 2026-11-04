@@ -19,6 +19,22 @@ export const ADMIN_GUIDE: HelpGuide = {
       title: 'Running the season',
       topics: [
         {
+          id: 'staffing',
+          title: 'Plan staffing and week roles',
+          keywords: 'ratio teachers crew staffing rooms floater admin room colours minimum',
+          body: [
+            { kind: 'p', text: 'Open [Classes → Staffing](/admin/classes?tab=staffing), then choose a week. Nothing is auto-assigned. Targets warn; section capacity remains the registration limit.' },
+            { kind: 'list', items: [
+              'Red: crew is below the course minimum (or the season minimum), or campers per crew exceeds the target × 1.25. Amber: above target through target × 1.25. Green: at or under target, with the minimum met. Every colour has words beside it.',
+              'Required teachers is the larger of the minimum and seated campers ÷ target, rounded up. Small sections still need their minimum. Absences do not change these planned counts.',
+              'Edit season targets above the board. Edit a course to override its minimum for all its sections. The course summary shows assigned, required and additional available volunteers who ranked it.',
+              'Add, edit or remove Admin room and Floater week roles inline. A week-role holder cannot crew a section in that week. Week roles count toward total crew and service hours, but not a section ratio. Check-in stays a duty.',
+              'The unassigned list excludes volunteers holding duties; duty-only volunteers have their own group. Mark a week short of teachers to show it on Apply.',
+              'Two sections cannot share a room in the same week, ignoring case and extra spaces. A section with no session occupies both weeks. Crew assignments require this season’s accepted application and an admin-verified Signed volunteer agreement task.',
+            ] },
+          ],
+        },
+        {
           id: 'getting-started',
           title: 'Sign in and two-step sign-in',
           keywords: 'mfa 2fa authenticator code login totp start',

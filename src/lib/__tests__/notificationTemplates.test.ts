@@ -208,3 +208,19 @@ describe('duty emails (spec 38)', () => {
     expect(r.html).not.toContain('<b>x</b>')
   })
 })
+
+
+describe('week roles', () => {
+  it('explains assignments and escapes notes', () => {
+    const r = render('week_role_changed', { week: 2, role: 'floater', note: 'Room <104> at 8:15' }, APP)!
+    expect(r.html).toContain('Floater')
+    expect(r.html).toContain('Room &lt;104&gt; at 8:15')
+    expect(r.text).toContain('Week 2')
+    expect(r.html).toContain('/volunteer/classes')
+  })
+  it('explains removals without showing a new assignment', () => {
+    const r = render('week_role_changed', { week: 1, role: 'admin_room', removed: true, note: 'old note' }, APP)!
+    expect(r.text).toContain('role was removed')
+    expect(r.text).not.toContain('old note')
+  })
+})

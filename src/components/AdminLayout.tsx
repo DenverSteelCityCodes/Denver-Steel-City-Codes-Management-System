@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
@@ -9,6 +9,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import { useAdminAttention } from '../hooks/useAdminAttention'
+import type { AdminOutlet } from '../hooks/useAdminOutlet'
 import { useUpdates } from '../hooks/useUpdates'
 import { supabase } from '../lib/supabase'
 import AttentionBell from './AttentionBell'
@@ -93,6 +94,8 @@ export default function AdminLayout() {
   const { updates, refetch: refetchUpdates } = useUpdates(3)
   const reload = useRef([attention.refetch, refetchUpdates] as const)
   useEffect(() => { reload.current = [attention.refetch, refetchUpdates] })
+  // Pages that change what the To do queue counts (the staffing board) reload it at once.
+  const adminOutlet = useMemo<AdminOutlet>(() => ({ refreshAttention: () => { void reload.current[0]() } }), [])
   // Volunteers: applications waiting for a decision. Interviews: those with no interview booked.
   const [pending, setPending] = useState(0)
   const [unbooked, setUnbooked] = useState(0)
@@ -328,7 +331,7 @@ export default function AdminLayout() {
               </ul>
             </nav>
           )}
-          <Outlet />
+          <Outlet context={adminOutlet} />
         </main>
       </div>
     </div>

@@ -1,6 +1,6 @@
 # 29: Laptop loans
 
-**Status:** 🟨 in review ([PR #195](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/195)) · **Issue:** #149 · **Priority:** P0 · **Effort:** M · **Phase:** B
+**Status:** ✅ merged ([PR #195](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/195)) · **Issue:** #149 · **Priority:** P0 · **Effort:** M · **Phase:** B
 **Depends on:** 09 (templates; sending waits on 02) · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §1
 

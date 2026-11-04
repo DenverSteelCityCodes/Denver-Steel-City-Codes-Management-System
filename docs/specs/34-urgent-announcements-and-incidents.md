@@ -1,6 +1,6 @@
 # 34: Urgent announcements, week audiences, incident log and roll-call notes
 
-**Status:** 🟨 in progress (built on `feat/spec-34-urgent-announcements`) · **Issue:** #154 · **Priority:** P1 · **Effort:** M · **Phase:** B
+**Status:** ✅ merged ([PR #197](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/197)) · **Issue:** #154 · **Priority:** P1 · **Effort:** M · **Phase:** B
 **Depends on:** 09's announcements follow-up (Also email through the outbox), 05 ✅ · **Unblocks:** none
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §2
 

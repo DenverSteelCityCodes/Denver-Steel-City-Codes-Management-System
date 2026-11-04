@@ -109,6 +109,7 @@ export interface VolunteerTask {
 }
 
 export interface Class {
+  min_teachers?: number | null
   id: string
   name: string
   description: string | null
@@ -239,6 +240,7 @@ export interface Registration {
 }
 
 export interface Session {
+  needs_teachers?: boolean
   id: string
   name: string
   year: number
@@ -421,4 +423,45 @@ export interface ReleaseConsent {
   note: string | null
   consented_by: string | null
   consented_at: string
+}
+
+// Staffing board (migration_staffing_board.sql, spec 39).
+export type WeekRoleKind = 'admin_room' | 'floater'
+export interface WeekRole {
+  id: string
+  volunteer_id: string
+  session_id: string
+  role: WeekRoleKind
+  note: string | null
+  created_at: string
+  updated_at: string
+}
+export type StaffingTone = 'red' | 'amber' | 'green'
+export interface StaffingPerson { volunteer_id: string; name: string; level: ExperienceLevel }
+export interface StaffingSection {
+  section_id: string; class_id: string; course: string; label: string; room: string | null
+  seated: number; capacity: number; waitlist: number; crew: number; campers_per_crew: number | null
+  required: number; min_crew: number; grade_low: string | null; grade_high: string | null
+  tone: StaffingTone; word: string; small: boolean
+}
+// public.admin_staffing(p_session_id UUID) returns this read-only JSON object.
+export interface AdminStaffing {
+  session_id: string; week_number: number; session_name: string; target: number; min_crew: number
+  needs_teachers: boolean; projected_need: number; available_accepted: number; crew_total: number
+  sections: StaffingSection[]
+  courses: { class_id: string; course: string; required: number; assigned: number; ranked_available: number }[]
+  week_roles: (StaffingPerson & { id: string; role: WeekRoleKind; note: string | null; updated_at: string })[]
+  duty_holders: (StaffingPerson & { duties: string[] })[]
+  unassigned: StaffingPerson[]
+}
+
+export interface SeasonSettings {
+  year: number
+  registration_opens_at: string | null
+  change_deadline_days: number
+  offer_hours: number
+  offer_hours_final_week: number
+  target_campers_per_crew?: number
+  min_crew_per_section?: number
+  updated_at?: string
 }

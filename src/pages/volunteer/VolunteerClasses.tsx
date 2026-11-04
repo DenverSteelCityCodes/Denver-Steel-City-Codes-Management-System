@@ -1,3 +1,6 @@
+import { campSessions } from '../../lib/campYear'
+import { useMyWeekRoles } from '../../hooks/useMyWeekRoles'
+import WeekRoleCards from '../../components/WeekRoleCards'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GraduationCap, HeartPulse, Laptop, Megaphone, Printer } from 'lucide-react'
@@ -17,8 +20,13 @@ import type { AssignedSection } from '../../hooks/useAssignedClass'
 // behind a tap (DESIGN.md › Roll Call; issue #172).
 export default function VolunteerClasses() {
   const { assigned: { assignedSections }, sessions } = useVolunteerHome()
+  const { roles: allRoles, loading: rolesLoading, error: rolesError } = useMyWeekRoles()
+  const roles = allRoles.filter(r => campSessions(sessions).some(s => s.id === r.session_id))
+  const roleCards = <WeekRoleCards roles={roles} sessions={sessions} error={rolesError} />
   const [pick, setPick] = useState<string | null>(null)
 
+  if (rolesLoading) return <p role="status">Loading your assignments…</p>
+  if (assignedSections.length === 0 && (roles.length > 0 || rolesError)) return roleCards
   if (assignedSections.length === 0) {
     return (
       <div className="pt-4">
@@ -41,6 +49,7 @@ export default function VolunteerClasses() {
 
   return (
     <>
+      {roleCards}
       {keys.length > 1 && (
         <div role="group" aria-label="Week" className="grid grid-flow-col auto-cols-fr border border-border-strong rounded-[10px] overflow-hidden bg-surface mb-6">
           {keys.map(k => {
