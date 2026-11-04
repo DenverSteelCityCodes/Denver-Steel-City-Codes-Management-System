@@ -35,6 +35,8 @@ begin
   select s.lead_id into w1_vol from sections s join profiles p on p.id = s.lead_id and p.role = 'volunteer'
    where s.session_id = w1 and s.lead_id is not null
      and not exists (select 1 from sections x where x.session_id = w2 and x.lead_id = s.lead_id)
+     -- No week role (spec 39) either: w1_vol leads a both-weeks section below.
+     and not exists (select 1 from week_roles wr where wr.volunteer_id = s.lead_id)
      and not exists (select 1 from section_supports ss join sections x on x.id = ss.section_id
                      where x.session_id = w2 and ss.volunteer_id = s.lead_id)
    limit 1;
