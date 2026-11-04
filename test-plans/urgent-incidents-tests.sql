@@ -39,7 +39,11 @@ begin
                      where x.session_id = w2 and ss.volunteer_id = s.lead_id)
    limit 1;
   select r.student_id into camper_a from registrations r where r.section_id = sec_a and r.status = 'confirmed' limit 1;
-  select r.student_id into camper_b from registrations r where r.section_id = sec_b and r.status = 'confirmed' limit 1;
+  -- Not also seated in sec_a: the seed has a camper in both, and crew may log about that one.
+  select r.student_id into camper_b from registrations r where r.section_id = sec_b and r.status = 'confirmed'
+     and not exists (select 1 from registrations x where x.section_id = sec_a and x.student_id = r.student_id
+                     and x.status in ('confirmed', 'pending'))
+   order by r.student_id limit 1;
   -- A second camper in sec_a from another family (for the "no address" notice).
   select r.student_id into camper_c from registrations r join students st on st.id = r.student_id
    where r.section_id = sec_a and r.status = 'confirmed'
@@ -53,8 +57,8 @@ begin
     join sections s on s.id = r.section_id
    where r.status = 'confirmed' group by st.parent_id
   having bool_and(s.session_id = w1) order by st.parent_id limit 1;
-  if sec_a is null or sec_b is null or w1_vol is null or camper_a is null or fam_w2 is null or fam_w1 is null then
-    raise exception 'fixture missing: sec_a % sec_b % w1_vol % camper_a % fam_w2 % fam_w1 %', sec_a, sec_b, w1_vol, camper_a, fam_w2, fam_w1;
+  if sec_a is null or sec_b is null or w1_vol is null or camper_a is null or camper_b is null or fam_w2 is null or fam_w1 is null then
+    raise exception 'fixture missing: sec_a % sec_b % w1_vol % camper_a % camper_b % fam_w2 % fam_w1 %', sec_a, sec_b, w1_vol, camper_a, camper_b, fam_w2, fam_w1;
   end if;
 
   -- Deliverable test addresses (the seed uses example.com, which the outbox skips). Two families

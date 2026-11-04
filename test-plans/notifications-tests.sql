@@ -3,24 +3,23 @@
 do $$
 declare
   admin_id uuid := (select id from profiles where display_name='Jordan Rivera');
-  sec record; kid record; res text := ''; n int; r record; nid bigint;
+  cls uuid; sec record; kid record; res text := ''; n int; r record; nid bigint;
 begin
-  select s.* into sec from sections s
-   where s.cancelled_at is null and s.week is not null
-     and (select count(*) from registrations x where x.section_id=s.id and x.status in ('confirmed','pending')) < s.capacity
-   limit 1;
-  select st.id, st.parent_id, st.first_name into kid from students st
-   where st.age between sec.age_min and sec.age_max
-     and not exists (select 1 from registrations x join sections s2 on s2.id=x.section_id
-                     where x.student_id=st.id and x.status <> 'cancelled' and (s2.week is null or s2.week = sec.week))
-   limit 1;
+  -- Its own class with no course rules (spec 31) and a camper with no seats yet. The reset keeps
+  -- old emails, so every count below is limited to this transaction's (created_at = now()).
+  insert into classes (name) values ('Notifications Basics') returning id into cls;
+  insert into sections (class_id, label, week, age_min, age_max, capacity)
+    values (cls, 'NT1', 1, 5, 17, 10) returning * into sec;
+  insert into students (parent_id, full_name, first_name, age, grade)
+    values ((select id from profiles where role = 'parent' order by id limit 1), 'Notifications Camper', 'Notify', 11, '6th')
+    returning id, parent_id, first_name into kid;
   -- Give the family a deliverable (but reserved .test) address so the email queues.
   insert into parent_profiles (id, email) values (kid.parent_id, 'family@scc-demo.test')
     on conflict (id) do update set email = excluded.email;
 
   -- Trusted context (like the demo reset): no email.
   insert into registrations (student_id, section_id, status) values (kid.id, sec.id, 'confirmed');
-  select count(*) into n from notifications;
+  select count(*) into n from notifications where created_at = now();
   res := res || E'\nno email for SQL-editor/reset writes: ' || case when n=0 then 'ok' else 'BAD (' || n || ')' end;
   delete from registrations where student_id=kid.id and section_id=sec.id;
 
@@ -34,8 +33,8 @@ begin
     res := res || E'\nparent reads the email log: ' || case when n=0 then 'sees nothing ok' else 'SEES ROWS (BAD)' end;
   exception when others then res := res || E'\nparent reads the email log: blocked ok'; end;
   execute 'reset role';
-  select * into r from notifications order by id desc limit 1;
-  res := res || E'\nsign-up queues one confirmation: ' || case when r.template='registration_confirmed' and r.status='queued' and r.recipient_email='family@scc-demo.test' and r.payload->>'class' is not null then 'ok (' || (r.payload->>'class') || ')' else 'BAD (' || coalesce(r.template,'none') || '/' || coalesce(r.status,'') || ')' end;
+  select * into r from notifications where created_at = now() order by id desc limit 1;
+  res := res || E'\nsign-up queues one confirmation: ' || case when r.template='registration_confirmed' and r.status='queued' and r.recipient_email='family@scc-demo.test' and r.payload->>'class' is not null then 'ok' else 'BAD (' || coalesce(r.template,'none') || '/' || coalesce(r.status,'') || ')' end;
 
   -- Admin cancels the section → the family gets the "class was cancelled" wording.
   execute 'set local role authenticated';
@@ -44,9 +43,9 @@ begin
   select count(*) into n from notifications;
   res := res || E'\nadmin reads the email log: ' || case when n >= 2 then 'ok (' || n || ' rows)' else 'BAD (' || n || ')' end;
   execute 'reset role';
-  select count(*) into n from notifications where template='registration_cancelled' and payload->>'cancel_reason'='section_cancelled';
-  res := res || E'\ncancelled class queues cancel emails: ' || case when n >= 1 then 'ok (' || n || ', most to example.com so cancelled)' else 'BAD' end;
-  select count(*) into n from notifications where recipient_email like '%@example.com' and status <> 'cancelled';
+  select count(*) into n from notifications where created_at = now() and template='registration_cancelled' and payload->>'cancel_reason'='section_cancelled';
+  res := res || E'\ncancelled class queues cancel emails: ' || case when n >= 1 then 'ok' else 'BAD' end;
+  select count(*) into n from notifications where created_at = now() and recipient_email like '%@example.com' and status <> 'cancelled';
   res := res || E'\nexample.com addresses never queue: ' || case when n=0 then 'ok' else 'BAD (' || n || ')' end;
 
   -- The sender's side: claim marks sending; finish records sent.

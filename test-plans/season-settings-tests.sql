@@ -4,17 +4,16 @@ do $$
 declare
   admin_id uuid := (select id from profiles where display_name='Jordan Rivera');
   yr int := (select max(year) from sessions where is_active);
-  sec record; kid record; res text := ''; st text;
+  cls uuid; sec record; kid record; res text := ''; st text;
 begin
-  select s.* into sec from sections s
-   where s.cancelled_at is null and s.week is not null
-     and (select count(*) from registrations r where r.section_id=s.id and r.status in ('confirmed','pending')) < s.capacity
-   limit 1;
-  select st2.id, st2.parent_id into kid from students st2
-   where st2.age between sec.age_min and sec.age_max
-     and not exists (select 1 from registrations r join sections s2 on s2.id=r.section_id
-                     where r.student_id=st2.id and r.status <> 'cancelled' and (s2.week is null or s2.week = sec.week))
-   limit 1;
+  -- Its own class with no course rules (spec 31) and a camper with no seats yet, so nothing here
+  -- leans on the seed's course names.
+  insert into classes (name) values ('Season Settings Basics') returning id into cls;
+  insert into sections (class_id, label, week, age_min, age_max, capacity)
+    values (cls, 'SS1', 1, 5, 17, 10) returning * into sec;
+  insert into students (parent_id, full_name, first_name, age, grade)
+    values ((select id from profiles where role = 'parent' order by id limit 1), 'Season Settings Camper', 'Season', 11, '6th')
+    returning id, parent_id into kid;
 
   -- Opening is tomorrow → parent refused with the Denver-time message, admin allowed.
   insert into season_settings (year, registration_opens_at) values (yr, now() + interval '1 day')
@@ -25,7 +24,7 @@ begin
     insert into registrations (student_id, section_id) values (kid.id, sec.id);
     res := res || E'\nparent signs up before opening: ALLOWED (BAD)';
   exception when others then
-    res := res || E'\nparent signs up before opening: refused ' || case when sqlerrm like 'Registration opens %(Denver time)' then 'ok (' || sqlerrm || ')' else '(BAD message: ' || sqlerrm || ')' end;
+    res := res || E'\nparent signs up before opening: refused ' || case when sqlerrm like 'Registration opens %(Denver time)' then 'ok' else '(BAD message: ' || sqlerrm || ')' end;
   end;
   begin
     update season_settings set offer_hours = 1 where year = yr;

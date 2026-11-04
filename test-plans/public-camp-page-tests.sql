@@ -12,7 +12,7 @@ declare
   kid2      record;
   wk uuid; cls uuid; sec_a uuid; sec_b uuid; sec_x uuid;
   info jsonb; txt text; res text := ''; n int; k text[]; st text; yr int;
-  su record; tok text; utok text; bad int; on1 boolean; on2 boolean;
+  su record; tok text; utok text; on1 boolean; on2 boolean;
   addr text := 'fam.one@scc-demo.test';
 begin
   -- ── Fixtures: a 2099 camp ──
@@ -365,6 +365,5 @@ begin
   select count(*) into n from cron.job where jobname = 'interest-notices' and schedule = '* * * * *';
   res := res || E'\nnotice job runs every minute: ' || case when n = 1 then 'ok' else 'BAD' end;
 
-  bad := (length(res) - length(replace(res, 'BAD', ''))) / 3;
-  raise exception 'RESULTS (all rolled back): % BAD%', bad, res;
+  raise exception 'RESULTS (all rolled back):%', res;
 end $$;

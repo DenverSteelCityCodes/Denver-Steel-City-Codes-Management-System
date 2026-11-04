@@ -3,6 +3,7 @@
 do $$
 declare
   admin_id uuid := (select id from profiles where display_name='Jordan Rivera');
+  cls      uuid;
   sec      record;
   kid      record;
   other_parent uuid;
@@ -10,18 +11,14 @@ declare
   n        int;
   st       text;
 begin
-  -- A section with a free seat, and a camper of the right age with no seat that week.
-  select s.* into sec from sections s
-   where s.cancelled_at is null and s.week is not null
-     and (select count(*) from registrations r where r.section_id=s.id and r.status in ('confirmed','pending')) < s.capacity
-   limit 1;
-  select st2.id, st2.parent_id into kid from students st2
-   where st2.age between sec.age_min and sec.age_max
-     and not exists (select 1 from registrations r join sections s2 on s2.id=r.section_id
-                     where r.student_id=st2.id and r.status in ('confirmed','pending','waitlisted')
-                       and (s2.week is null or s2.week = sec.week))
-   limit 1;
-  if kid.id is null then raise exception 'RESULTS: no free camper for the test (seed changed?)'; end if;
+  -- Its own class with no course rules (spec 31) and a camper with no seats yet, so nothing here
+  -- leans on the seed's course names.
+  insert into classes (name) values ('Auto-confirm Basics') returning id into cls;
+  insert into sections (class_id, label, week, age_min, age_max, capacity)
+    values (cls, 'AC1', 1, 5, 17, 10) returning * into sec;
+  insert into students (parent_id, full_name, first_name, age, grade)
+    values ((select id from profiles where role = 'parent' order by id limit 1), 'Autoconfirm Camper', 'Autoconfirm', 11, '6th')
+    returning id, parent_id into kid;
 
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('sub', kid.parent_id, 'role', 'authenticated')::text, true);
