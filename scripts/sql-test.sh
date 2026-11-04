@@ -2,10 +2,7 @@
 # Runs SQL/RLS suites from test-plans/ and fails on any BAD (review pipeline stage 1,
 # docs/review-pipeline.md). Each suite ends with `raise exception 'RESULTS …'`, so it rolls back.
 #
-#   scripts/sql-test.sh                                   every test-plans/*-tests.sql except
-#                                                         camp-week-rls-tests.sql (older: it commits
-#                                                         its own cleanup and prints a table; run it
-#                                                         by hand in the SQL editor)
+#   scripts/sql-test.sh                                   every test-plans/*-tests.sql
 #   scripts/sql-test.sh test-plans/x-tests.sql …          just these
 #   scripts/sql-test.sh --with migration_x.sql [--with …] test-plans/x-tests.sql
 #       sends the migration(s) and the suite as ONE query, so an unapplied migration is tried
@@ -31,9 +28,7 @@ while (($#)); do
 done
 if ((${#suites[@]} == 0)); then
   shopt -s nullglob
-  for f in test-plans/*-tests.sql; do
-    [[ "$f" == */camp-week-rls-tests.sql ]] || suites+=("$f")
-  done
+  suites=(test-plans/*-tests.sql)
 fi
 ((${#suites[@]})) || { echo "No suites found (run from the repo root)." >&2; exit 2; }
 

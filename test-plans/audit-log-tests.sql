@@ -67,9 +67,11 @@ begin
   res := res || E'\nSQL-editor edit logged with null actor: ' || case when r.actor_id is null then 'ok' else 'BAD' end;
 
   -- ===== Composite key and text key =====
-  update app_settings set value = value where key = 'volunteer_applications_open';  -- no-op
+  -- A no-op and a stamp-only update (spec 07) don't log; a real change logs under its text key.
+  update app_settings set value = value where key = 'volunteer_applications_open';
   update app_settings set updated_at = now() where key = 'volunteer_applications_open';
-  select count(*) into n from audit.log where table_name='app_settings' and row_id='volunteer_applications_open';
+  update app_settings set value = value || ' (audit test)' where key = 'volunteer_applications_open';
+  select count(*) into n from audit.log where table_name='app_settings' and row_id='volunteer_applications_open' and at = now();
   res := res || E'\napp_settings keyed by text key: ' || case when n=1 then 'ok' else 'BAD (' || n || ')' end;
 
   -- ===== Overhead: 200 section updates with and without the trigger =====

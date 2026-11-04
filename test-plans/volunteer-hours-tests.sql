@@ -16,10 +16,11 @@ declare
   h record; res text := ''; n int;
   today date := (now() at time zone 'America/Denver')::date;
 begin
-  select v.id into vol from volunteers v join profiles p on p.id = v.id where v.removed_at is null order by p.display_name limit 1;
-  select v.id into untimed_vol from volunteers v join profiles p on p.id = v.id where v.removed_at is null order by p.display_name offset 1 limit 1;
-  select v.id into duty_vol from volunteers v join profiles p on p.id = v.id where v.removed_at is null order by p.display_name offset 2 limit 1;
-  select v.id into gone from volunteers v join profiles p on p.id = v.id where v.removed_at is null order by p.display_name offset 3 limit 1;
+  -- No week role (spec 39): the guard keeps week-role holders off crews, and these all crew.
+  select v.id into vol from volunteers v join profiles p on p.id = v.id where v.removed_at is null and v.id not in (select volunteer_id from week_roles) order by p.display_name limit 1;
+  select v.id into untimed_vol from volunteers v join profiles p on p.id = v.id where v.removed_at is null and v.id not in (select volunteer_id from week_roles) order by p.display_name offset 1 limit 1;
+  select v.id into duty_vol from volunteers v join profiles p on p.id = v.id where v.removed_at is null and v.id not in (select volunteer_id from week_roles) order by p.display_name offset 2 limit 1;
+  select v.id into gone from volunteers v join profiles p on p.id = v.id where v.removed_at is null and v.id not in (select volunteer_id from week_roles) order by p.display_name offset 3 limit 1;
 
   insert into sessions (name, year, start_date, end_date, is_active) values ('[TEST] W1', yr, '2000-06-05', '2000-06-11', false) returning id into w1;
   insert into sessions (name, year, start_date, end_date, is_active) values ('[TEST] W2', yr, '2000-06-12', '2000-06-16', false) returning id into w2;

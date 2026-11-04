@@ -34,10 +34,11 @@ begin
   -- ===== Admin "Remove registration" = cancel with reason, and restore clears it =====
   select id into reg from registrations where section_id = sec and status = 'confirmed' limit 1;
   update registrations set status = 'cancelled' where id = reg;
-  select * into r from registrations where id = reg;
+  -- Named columns: since spec 31 nobody can select place_with, so select * is refused.
+  select cancel_reason, cancelled_by, cancelled_at into r from registrations where id = reg;
   res := res || E'\nadmin cancel stamps reason/by/at: ' || case when r.cancel_reason='admin_removed' and r.cancelled_by=admin_id and r.cancelled_at is not null then 'ok' else 'BAD (' || coalesce(r.cancel_reason,'null') || ')' end;
   update registrations set status = 'confirmed' where id = reg;
-  select * into r from registrations where id = reg;
+  select cancel_reason, cancelled_by, cancelled_at into r from registrations where id = reg;
   res := res || E'\nrestore clears the stamp: ' || case when r.cancel_reason is null and r.cancelled_at is null then 'ok' else 'BAD' end;
 
   -- ===== Admin cancels the section =====
@@ -74,6 +75,8 @@ begin
   end if;
 
   -- ===== The nightly reset still works with RESTRICT =====
+  -- As the cron job runs it: no signed-in user, so the duty guards treat it as trusted.
+  perform set_config('request.jwt.claims', '', true);
   perform private.reset_demo();
   res := res || E'\nreset_demo() runs: ok (' || (select count(*) from students) || ' campers reseeded)';
 

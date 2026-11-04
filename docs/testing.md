@@ -28,7 +28,7 @@ scripts/sql-test.sh --with migration_x.sql test-plans/x-tests.sql   # an unappli
 It connects with `DATABASE_URL` (psql) or `SUPABASE_PROJECT_REF` + `SUPABASE_ACCESS_TOKEN` (the Management API). The SQL editor works too: every line should say `ok`; any `BAD` is a failure. [The review pipeline](review-pipeline.md) says when to run which.
 
 - Where admin MFA is required (spec 27), an admin's claims need `'aal': 'aal2'`.
-- `camp-week-rls-tests.sql` is older: it commits its own cleanup and prints `(BAD)` lines instead of raising, so the runner skips it unless named. Run it in the SQL editor.
+- A suite that signs campers up makes its own class with no course rules (spec 31), like `course-rules-tests.sql`, rather than picking a seeded section by name.
 
 **Next (spec 08 after spec 01):** once migrations live in `supabase/migrations/`, CI starts the Supabase local stack (`supabase start`, `supabase db reset`) and runs these files with `psql`, failing on any `BAD`.
 
