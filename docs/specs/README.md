@@ -48,17 +48,17 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [17](17-fewer-round-trips.md) | #86 | Shared query cache, `register_camper()` RPC, volunteer home RPC | P1 | M | 16 | B |
 | ✅ | [18](18-admin-paging.md) | #87 | Server-side paging + search for admin lists | P0 | S | — | B |
 | ⬜ | [19](19-load-test-runbook-dry-run.md) | #88 | Load test, restore drill, PITR, runbooks, dry run | P0 | M | 01–18, L1–L3, L5, L6a | B |
-| 🟨 | [29](29-laptop-loans.md) | #149 | Laptop loans per camper-week: cap per session, queue, roster column | P0 | M | 09 | B |
-| 🟨 | [30](30-public-camp-page.md) | #150 | Public camp page (status, dates, location, courses, FAQ) + notify-me list | P1 | M | 09, 13 | B |
-| 🟨 | [31](31-course-rules-in-the-db.md) | #151 | Course rules in the DB: grades, prerequisites, repeat warning, "place with" | P0 | M | 05 | B |
-| 🟨 | [32](32-admin-register-on-behalf.md) | #152 | Admin register-on-behalf with named, logged overrides | P1 | M | 05, 31 | B |
+| ✅ | [29](29-laptop-loans.md) | #149 | Laptop loans per camper-week: cap per session, queue, roster column | P0 | M | 09 | B |
+| ✅ | [30](30-public-camp-page.md) | #150 | Public camp page (status, dates, location, courses, FAQ) + notify-me list | P1 | M | 09, 13 | B |
+| ✅ | [31](31-course-rules-in-the-db.md) | #151 | Course rules in the DB: grades, prerequisites, repeat warning, "place with" | P0 | M | 05 | B |
+| ✅ | [32](32-admin-register-on-behalf.md) | #152 | Admin register-on-behalf with named, logged overrides | P1 | M | 05, 31 | B |
 | ⬜ | [33](33-health-and-accommodations.md) | #153 | Structured allergies, accommodations, lunch list | P0 | M | 04, L2 | B |
-| 🟨 | [34](34-urgent-announcements-and-incidents.md) | #154 | Urgent announcements, week audiences, incident log, roll-call notes | P1 | M | 09 follow-up | B |
-| 🟨 | [35](35-volunteer-onboarding.md) | #155 | Volunteer interviews + onboarding: private links, emails, checklist, profile | P1 | M | 09 | B |
-| 🟨 | [36](36-authorized-pickups.md) | #156 | Authorized pickups + dated walk-home consent at dismissal | P1 | M | — | B |
+| ✅ | [34](34-urgent-announcements-and-incidents.md) | #154 | Urgent announcements, week audiences, incident log, roll-call notes | P1 | M | 09 follow-up | B |
+| ✅ | [35](35-volunteer-onboarding.md) | #155 | Volunteer interviews + onboarding: private links, emails, checklist, profile | P1 | M | 09 | B |
+| ✅ | [36](36-authorized-pickups.md) | #156 | Authorized pickups + dated walk-home consent at dismissal | P1 | M | — | B |
 | ✅ | [37](37-duty-locks.md) | #204 | Duty drops lock 3 days out; admins lock slots; no past-date changes | P0 | S | 05, 35 | B |
 | ✅ | [38](38-duty-minimums.md) | #205 | Weekly duty minimum in minutes; admins assign anyone short; reminder email | P1 | M | 09, 37 | B |
-| 🟨 | [39](39-staffing-board.md) | [#218](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/218) | Staffing board: campers per crew, teachers per course, unassigned volunteers, room clashes, week roles | P1 | M | 13, 14, 25, 33, 35 | B |
+| ✅ | [39](39-staffing-board.md) | [#218](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/218) | Staffing board: campers per crew, teachers per course, unassigned volunteers, room clashes, week roles | P1 | M | 13, 14, 25, 33, 35 | B |
 | ⬜ | [40](40-crew-day-plan.md) | — | Crew day plan on volunteer Today: call time, meeting point, crew-only schedule, crew FAQ, night-before email | P1 | M | 02, 09, 34, 39 | B |
 | ⬜ | [41](41-on-call-help.md) | — | On-call help: "Need help" from Today reaches the on-call admin, "On my way" | P1 | S | 09, 34, 37, 38, 39 | B |
 | ✅ | [42](42-form-answers-shown-and-exported.md) | #202 | Every form answer shown on camper/application detail and exportable by column group | P1 | M | — | B |
