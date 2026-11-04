@@ -8,11 +8,11 @@ declare
 begin
   -- Its own class with no course rules (spec 31) and a camper with no seats yet, so nothing here
   -- leans on the seed's course names.
-  insert into classes (name) values ('Season Settings Basics') returning id into cls;
+  insert into classes (name) values ('[TEST] Season Settings Basics') returning id into cls;
   insert into sections (class_id, label, week, age_min, age_max, capacity)
     values (cls, 'SS1', 1, 5, 17, 10) returning * into sec;
   insert into students (parent_id, full_name, first_name, age, grade)
-    values ((select id from profiles where role = 'parent' order by id limit 1), 'Season Settings Camper', 'Season', 11, '6th')
+    values ((select id from profiles where role = 'parent' order by id limit 1), '[TEST] Season Settings Camper', 'Season', 11, '6th')
     returning id, parent_id into kid;
 
   -- Opening is tomorrow → parent refused with the Denver-time message, admin allowed.

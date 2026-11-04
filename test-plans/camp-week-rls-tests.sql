@@ -33,7 +33,7 @@ declare
 begin
   -- A cancelled spot in PY-B, so the unseated-roster check has one to leave out after a fresh reset.
   insert into students (parent_id, full_name, first_name, age, grade)
-    values (v_parent, 'Roster Cancelled', 'Cancelled', 11, '6th') returning id into new_id;
+    values (v_parent, '[TEST] Roster Cancelled', 'Cancelled', 11, '6th') returning id into new_id;
   insert into registrations (student_id, section_id, status) values (new_id, pyb, 'cancelled');
   all_students := all_students + 1;
   sam_unseated := array(select r.section_id || ':' || r.student_id from registrations r
