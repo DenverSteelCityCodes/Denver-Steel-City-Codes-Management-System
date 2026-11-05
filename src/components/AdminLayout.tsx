@@ -55,6 +55,7 @@ const SETUP: Job = {
   more: [
     { to: '/admin/forms', label: 'Forms', keywords: ['Form editor', 'Questions'] },
     { to: '/admin/users', label: 'Users & roles', keywords: ['Users and roles', 'Roles', 'Accounts', 'Admins'] },
+    { to: '/admin/retention', label: 'Retention', keywords: ['Legal hold', 'Anonymize', 'Retention report'] },
   ],
 }
 const HELP: Job = { to: '/admin/help', label: 'Help', icon: CircleQuestionMark, keywords: ['Guide', 'How to', 'Playbook'] }

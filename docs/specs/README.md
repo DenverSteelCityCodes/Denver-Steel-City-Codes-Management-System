@@ -67,7 +67,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 | ⬜ | [L1](L1-privacy-and-terms.md) | #89 | Website privacy policy, terms, 18+ guardian attestation | P0 | S | SCC review | Legal |
 | ⬜ | [L2](L2-waivers-and-consents.md) | #90 | Versioned waiver, separate consents, signature record, receipt | P0 | M | 09, SCC's text | Legal |
 | ⬜ | [L3](L3-photo-flag-on-rosters.md) | #91 | "No photos" flag on rosters | P0 | S | 04, L2 | Legal |
-| ⬜ | [L4](L4-retention.md) | #92 | Retention policy + nightly anonymize job | P0 policy / P1 job | S | 05 | Legal |
+| 🟨 | [L4](L4-retention.md) | #92 | Retention policy + nightly anonymize job | P0 policy / P1 job | S | 05 | Legal |
 | 🟨 | [L5](L5-breach-runbook.md) | #93 | Site security-incident runbook + access review | P0 | S | — | Legal |
 | 🟨 | [L6a](L6a-accessibility-registration.md) | #111 | Accessibility pass on the registration flow (WCAG 2.1 AA) | P0 | S | 03, 10–12, 16, L1, L2 | Legal |
 | ⬜ | [20](20-regions.md) | #94 | Regions + region-scoped admin RLS | P1 ★ | L | 05, 08 | C |

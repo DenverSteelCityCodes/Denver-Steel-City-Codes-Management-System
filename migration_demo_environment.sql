@@ -126,6 +126,11 @@ BEGIN
   -- Spec 30: visitors' "notify me" addresses go with every reset (audit.log's copies of them are
   -- trimmed after 7 days, below).
   DELETE FROM interest_signups;
+  -- Spec L4: report rows and stored season totals are wiped with the rest of the demo.
+  IF to_regclass('public.retention_holds') IS NOT NULL THEN DELETE FROM retention_holds; END IF;
+  IF to_regclass('public.retention_run_items') IS NOT NULL THEN DELETE FROM retention_run_items; END IF;
+  IF to_regclass('public.retention_runs') IS NOT NULL THEN DELETE FROM retention_runs; END IF;
+  IF to_regclass('public.season_totals') IS NOT NULL THEN DELETE FROM season_totals; END IF;
   -- Every account except the demo logins and the kept owner logins (also removes visitor sign-ups).
   DELETE FROM auth.users
   WHERE id NOT IN (SELECT id FROM private.demo_keep_users)
@@ -143,6 +148,9 @@ BEGIN
   INSERT INTO app_settings (key, value, updated_at) VALUES
     ('hours_letter_signer_name', 'Jordan Lee', now()), ('hours_letter_signer_title', 'Regional Director', now())
     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
+  -- Spec L4: the nightly retention job stays a dry run on the demo, even if a visitor flipped it.
+  INSERT INTO app_settings (key, value, updated_at) VALUES ('retention_live', 'false', now())
+    ON CONFLICT (key) DO UPDATE SET value = 'false', updated_at = now();
 
   -- ── 2. Camp weeks and courses ──
   -- The place each week happens (spec 30): shown on /camp, the wizard and the volunteer apply page.

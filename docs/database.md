@@ -54,6 +54,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 | 42 | `migration_admin_register.sql` | Admins register a family on its behalf (late, walk-in, phone, lost form) through `admin_register()`, which runs the parents' rules and records each one skipped, with a reason, in History; the family lookup by email, the tolerant duplicate-camper match and the rule preview the Campers panel uses (spec 32). **Then re-apply `migration_audit_log.sql`**: its trigger now flags a registration an admin inserted without a reason. Deploy `admin-invite-parent` too (below) |
 
 | 43 | `migration_staffing_board.sql` | Staffing targets, course minimums, week roles (admins only; released when a volunteer is demoted) and their service hours, spec 35's crewing guard on week roles, room clashes and `admin_staffing()` (spec 39). Deploy `send-notifications` for `week_role_changed` |
+| 44 | `migration_retention.sql` | Legal hold, a dry-run nightly anonymize job, its report, and season totals stored before a camper is anonymized (spec L4). On the demo, re-apply `migration_demo_environment.sql` so `private.reset_demo()` keeps `app_settings.retention_live` at `'false'` |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 

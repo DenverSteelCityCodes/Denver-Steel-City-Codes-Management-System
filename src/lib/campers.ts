@@ -5,6 +5,8 @@
 // trigger checks students.age) — keep this the single mapping so every form agrees.
 export const GRADES = ['4th', '5th', '6th', '7th', '8th', '9th'] as const
 const GRADE_AGE: Record<string, number> = { '4th': 9, '5th': 10, '6th': 11, '7th': 12, '8th': 13, '9th': 14 }
+// Youngest age the camp takes. Retention's age-21 hold uses this, not a later grade.
+export const YOUNGEST_CAMP_AGE = Math.min(...Object.values(GRADE_AGE))
 export function gradeToAge(grade: string | null | undefined): number | null {
   return grade ? GRADE_AGE[grade] ?? null : null
 }
