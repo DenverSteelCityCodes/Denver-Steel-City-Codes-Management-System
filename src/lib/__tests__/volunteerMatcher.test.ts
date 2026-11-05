@@ -4,7 +4,7 @@ import type { VolunteerWithProfile } from '../../hooks/useVolunteers'
 
 // Only the fields the matcher reads.
 const vol = (id: string, level: 'senior' | 'junior', w1 = true, w2 = true) =>
-  ({ id, experience_level: level, availability_week_1: w1, availability_week_2: w2 }) as unknown as VolunteerWithProfile
+  ({ id, experience_level: level, availability_week_1: w1, availability_week_2: w2, crew_known: true, crew_block: null }) as unknown as VolunteerWithProfile
 const sec = (id: string, week: 1 | 2 | null, lead_id: string | null = null, supports: string[] = []) =>
   ({ id, class_id: 'c', label: id, week, lead_id, supports: supports.map(s => ({ id: s })) }) as unknown as Parameters<typeof matchVolunteers>[1][number]
 
@@ -42,5 +42,18 @@ describe('matchVolunteers', () => {
   it('respects availability', () => {
     const [pair] = matchVolunteers([vol('s1', 'senior', false, true)], [sec('A', 1)], 1)
     expect(pair.lead).toBeNull()
+  })
+
+  it('leaves out a volunteer who cannot be crewed yet', () => {
+    const blocked = { ...vol('s1', 'senior'), crew_block: "Bella's volunteer agreement isn't verified yet, so they can't join a crew" }
+    const [pair] = matchVolunteers([blocked, vol('s2', 'senior'), vol('j1', 'junior', true, true)], [sec('A', 1)], 1)
+    expect(pair.lead?.id).toBe('s2')
+    expect(pair.support?.id).toBe('j1')
+  })
+
+  it('leaves out a volunteer whose eligibility is unknown', () => {
+    const unknown = { ...vol('s1', 'senior'), crew_known: false }
+    const [pair] = matchVolunteers([unknown, vol('s2', 'senior')], [sec('A', 1)], 1)
+    expect(pair.lead?.id).toBe('s2')
   })
 })

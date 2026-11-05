@@ -95,7 +95,7 @@ DECLARE
   parent_id UUID; student_id UUID; g TEXT; age INT; yr INT; ln TEXT; pf TEXT;
   wk INT; st registration_status; taken INT; cap INT;
   vol_ids UUID[] := '{}'; v UUID; i INT; d DATE; t RECORD;
-  demo RECORD; demo_parent UUID; demo_vol UUID; demo_app UUID; demo_admin UUID;
+  demo RECORD; demo_parent UUID; demo_vol UUID; demo_app UUID; demo_admin UUID; bella UUID;
   app_id UUID; slot_id UUID;
   today DATE := (now() AT TIME ZONE 'America/Denver')::date;
   -- Monday of the current week, or of next week when it's already the weekend.
@@ -252,6 +252,27 @@ BEGIN
     3, 2, 'Intro to Python', 'Intro to Java', p.display_name, true, 'accepted', now() - interval '120 days'
   FROM volunteers vo JOIN profiles p ON p.id = vo.id JOIN auth.users u ON u.id = vo.id;
 
+  -- Crewing guard (spec 35): acceptance this season and a verified agreement have to exist
+  -- before anyone is put on a crew. Bella Nguyen stays accepted, with no verified agreement
+  -- and no crew spot, so the crew editor has someone it must refuse.
+  IF to_regclass('public.volunteer_tasks') IS NOT NULL THEN
+    SELECT id INTO bella FROM profiles WHERE display_name = 'Bella Nguyen' ORDER BY created_at LIMIT 1;
+    IF coalesce(demo_admin, (SELECT id FROM profiles WHERE role = 'admin' ORDER BY created_at LIMIT 1)) IS NULL THEN
+      RAISE EXCEPTION 'reset_demo() needs an admin profile to verify the volunteer agreement';
+    END IF;
+    INSERT INTO onboarding_tasks (key, label, help_url, due_hours_after_accept, sort_order)
+    VALUES ('agreement', 'Signed volunteer agreement', NULL, 24, 5)
+    ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label;
+    UPDATE volunteers SET accepted_at = CASE WHEN id IS NOT DISTINCT FROM demo_vol THEN now() - interval '5 hours' ELSE now() - interval '113 days' END;
+    INSERT INTO volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+    SELECT vo.id, 'agreement', vo.accepted_at + interval '1 hour',
+           coalesce(demo_admin, (SELECT id FROM profiles WHERE role = 'admin' ORDER BY created_at LIMIT 1))
+    FROM volunteers vo
+    WHERE vo.id IS DISTINCT FROM bella
+    ON CONFLICT (volunteer_id, task_key) DO UPDATE
+      SET done_at = EXCLUDED.done_at, verified_by = EXCLUDED.verified_by;
+  END IF;
+
   -- Spec 39: Microcontrollers needs three teachers in every section.
   IF to_regclass('public.week_roles') IS NOT NULL THEN
     UPDATE classes SET min_teachers = 3 WHERE id = c_micro;
@@ -269,6 +290,7 @@ BEGIN
         AND NOT EXISTS (SELECT 1 FROM sections s2 WHERE s2.lead_id = v2.id AND s2.week = sec.week)
         -- the demo volunteer leads Python B and nothing else
         AND (v2.id IS DISTINCT FROM demo_vol OR (sec.name = 'Intro to Python' AND sec.label = 'PY-B'))
+        AND v2.id IS DISTINCT FROM bella
       -- fictional seniors before the owner's own account
       ORDER BY (v2.id = demo_vol AND sec.name = 'Intro to Python' AND sec.label = 'PY-B') DESC,
                (v2.id IN (SELECT id FROM private.demo_keep_users)), v2.created_at, v2.id LIMIT 1)
@@ -280,6 +302,7 @@ BEGIN
       AND CASE WHEN sec.week = 1 THEN v2.availability_week_1 ELSE v2.availability_week_2 END
       AND NOT EXISTS (SELECT 1 FROM section_supports ss JOIN sections s3 ON s3.id = ss.section_id
                       WHERE ss.volunteer_id = v2.id AND s3.week = sec.week)
+      AND v2.id IS DISTINCT FROM bella
     ORDER BY v2.id LIMIT CASE WHEN sec.name = 'Intro to Python' THEN 2 ELSE 1 END;
   END LOOP;
 
@@ -333,8 +356,10 @@ BEGIN
 
   -- ── 5b. Onboarding, crew profiles and interview links (spec 35) ──
   -- The crew was accepted in the spring and finished the checklist, except two juniors who still
-  -- haven't joined Remind or opened the shared folder (the admin's Overdue list). The demo volunteer
-  -- was accepted last night: two items done, two still due. The crew have preferred names, a
+  -- haven't joined Remind or opened the shared folder (the admin's Overdue list), and Bella Nguyen,
+  -- who is accepted with no verified agreement and no crew spot. The demo volunteer was accepted
+  -- last night: profile, Discord and the agreement done; Remind and the shared folder still due.
+  -- The crew have preferred names, a
   -- pronunciation where it helps and a short bio, so "Meet the teachers" has something to show.
   -- No photos: those are uploaded files. Each interview slot gets a fictional meeting link.
   IF to_regclass('public.volunteer_tasks') IS NOT NULL THEN
@@ -343,16 +368,24 @@ BEGIN
       ('profile', 'Fill in your volunteer profile: your names, a short bio and, if you like, a photo', '/volunteer/profile', 24, 1, now() - interval '200 days'),
       ('discord', 'Join the crew Discord', 'https://discord.example.com/scc-denver-crew', 24, 2, now() - interval '200 days'),
       ('remind', 'Join the Remind class for camp-day texts', 'https://remind.example.com/join/sccden', 24, 3, now() - interval '200 days'),
-      ('shared-folder', 'Open the shared volunteer folder and read the welcome doc', 'https://drive.example.com/scc-denver-volunteers', 48, 4, now() - interval '200 days');
+      ('shared-folder', 'Open the shared volunteer folder and read the welcome doc', 'https://drive.example.com/scc-denver-volunteers', 48, 4, now() - interval '200 days'),
+      ('agreement', 'Signed volunteer agreement', NULL, 24, 5, now() - interval '200 days');
     UPDATE volunteers SET accepted_at = CASE WHEN id = demo_vol THEN now() - interval '5 hours' ELSE now() - interval '113 days' END;
     INSERT INTO volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
-    SELECT vo.id, ot.key, vo.accepted_at + interval '3 hours', CASE WHEN ot.key <> 'profile' THEN demo_admin END
+    SELECT vo.id, ot.key, vo.accepted_at + interval '3 hours',
+           CASE WHEN ot.key = 'agreement' THEN coalesce(demo_admin, (SELECT id FROM profiles WHERE role = 'admin' ORDER BY created_at LIMIT 1))
+                WHEN ot.key <> 'profile' THEN demo_admin END
     FROM volunteers vo CROSS JOIN onboarding_tasks ot
     WHERE vo.id IS DISTINCT FROM demo_vol
-      AND NOT (vo.id IN (vol_ids[14], vol_ids[17]) AND ot.key IN ('remind', 'shared-folder'));
+      AND NOT (vo.id IN (vol_ids[14], vol_ids[17]) AND ot.key IN ('remind', 'shared-folder'))
+      -- Bella stays accepted and uncrewed, without a verified agreement.
+      AND NOT (vo.id IS NOT DISTINCT FROM bella AND ot.key = 'agreement');
     IF demo_vol IS NOT NULL THEN
-      INSERT INTO volunteer_tasks (volunteer_id, task_key, done_at)
-      VALUES (demo_vol, 'profile', now() - interval '4 hours'), (demo_vol, 'discord', now() - interval '4 hours');
+      INSERT INTO volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      VALUES (demo_vol, 'profile', now() - interval '4 hours', NULL),
+             (demo_vol, 'discord', now() - interval '4 hours', NULL),
+             (demo_vol, 'agreement', now() - interval '4 hours',
+              coalesce(demo_admin, (SELECT id FROM profiles WHERE role = 'admin' ORDER BY created_at LIMIT 1)));
     END IF;
     UPDATE volunteers vo SET
       legal_name = p.display_name,

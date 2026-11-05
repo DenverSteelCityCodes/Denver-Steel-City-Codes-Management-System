@@ -51,6 +51,23 @@ describe('section crew options', () => {
     expect(labels(r2)).toEqual(['Not available in both weeks'])
   })
 
+  it('does not list someone whose eligibility is unknown as free', () => {
+    const held: CrewPerson = { ...bella, unknown: true }
+    const r = crewGroups([held, sam], [], { week: 1 }, 'lead')
+    expect(labels(r)).toEqual(['Free in Week 1', "Couldn't check"])
+    expect(texts(r, 1)).toEqual(["Bella Nguyen · senior · Couldn't check yet"])
+    expect(r.freeSeniors).toBe(1)
+  })
+
+  it('puts someone the crewing guard would refuse in their own group, with the reason', () => {
+    const reason = "Bella's volunteer agreement isn't verified yet, so they can't join a crew"
+    const held: CrewPerson = { ...bella, blockReason: reason }
+    const r = crewGroups([held, sam], [], { week: 1 }, 'lead')
+    expect(labels(r)).toEqual(['Free in Week 1', "Can't join a crew yet"])
+    expect(texts(r, 1)).toEqual([`Bella Nguyen · senior · ${reason}`])
+    expect(r.freeSeniors).toBe(1)
+  })
+
   it('ignores cancelled sections', () => {
     const gone: CrewSection = { ...pyA2, cancelled: true }
     const r = crewGroups([harper], [gone], { week: 2 }, 'lead')

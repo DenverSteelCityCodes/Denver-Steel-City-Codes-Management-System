@@ -11,6 +11,7 @@
 --   Old Volunteer led the old session and was removed then. New Volunteer leads the recent session.
 do $$
 declare
+  guard_t record;
   today date;
   anon_end date; aged_end date; med_end date; recent_end date;
   anon_year int; aged_year int; med_year int; recent_year int;
@@ -71,6 +72,12 @@ begin
   res := res || E'\nnightly job is scheduled dry unless the setting is on: ' || case when n = 1 then 'ok' else 'BAD (' || n || ')' end;
 
   select id into adm from profiles where role = 'admin' order by id limit 1;
+  -- This suite builds past seasons' crews for people who aren't vetted this season. The crewing
+  -- guard (#220, crewing-guard-tests.sql) isn't what's tested here, so it's off for the suite;
+  -- like every write here, that rolls back.
+  for guard_t in select tgrelid::regclass::text as tbl from pg_trigger where tgname = 'guard_removed_crew' loop
+    execute format('alter table %s disable trigger guard_removed_crew', guard_t.tbl);
+  end loop;
   res := res || E'\nfixture: an admin account exists: ' || case when adm is not null then 'ok' else 'BAD' end;
 
   old_parent := private.demo_user('retention-old-parent@example.com', '[TEST] Retention Old Parent', 'parent');

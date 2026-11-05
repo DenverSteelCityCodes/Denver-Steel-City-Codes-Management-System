@@ -270,7 +270,9 @@ function SectionForm({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const saveAlert = useRef<HTMLParagraphElement>(null)
   const set = (patch: Partial<SectionFormState>) => { setSaved(false); setForm(f => ({ ...f, ...patch })) }
+  useEffect(() => { if (saveError) saveAlert.current?.focus() }, [saveError])
 
   function validate(): boolean {
     const e: typeof errors = {}
@@ -467,7 +469,11 @@ function SectionForm({
         </fieldset>
       </div>
 
-      {saveError && <p role="alert" className="mt-5 font-bold text-danger text-pretty">Couldn't save the section: {saveError}</p>}
+      {saveError && (
+        <p ref={saveAlert} tabIndex={-1} role="alert" className="mt-5 font-bold text-danger text-pretty focus:outline-none">
+          {saveError.includes("can't join a crew") ? saveError : `Couldn't save the section: ${saveError}`}
+        </p>
+      )}
       <div className="mt-6 pt-4 border-t border-border flex flex-wrap items-center gap-x-4 gap-y-3">
         <SaveButton saving={saving}>{section ? `Save ${section.label}` : 'Add section'}</SaveButton>
         <Button onClick={onCancel}>{section ? 'Close' : 'Cancel'}</Button>
@@ -656,12 +662,16 @@ function ClassesEditor() {
     createClass, updateClass, deleteClass, createSection, updateSection, deleteSection,
     cancelSection, cancelClass,
   } = useAdminClasses()
-  const { volunteers } = useVolunteers()
+  const { volunteers, crewError, refetch: refetchVolunteers } = useVolunteers()
+  const crewAlert = useRef<HTMLParagraphElement>(null)
+  useEffect(() => { if (crewError) crewAlert.current?.focus() }, [crewError])
   const { sessions } = useSessions()
 
   const people = useMemo<CrewPerson[]>(() => volunteers.map(v => ({
     id: v.id, name: v.profiles.display_name, level: v.experience_level,
     week1: v.availability_week_1, week2: v.availability_week_2,
+    blockReason: v.crew_known ? v.crew_block : null,
+    unknown: !v.crew_known,
   })), [volunteers])
   const crewSections = useMemo<CrewSection[]>(() => classes.flatMap(c => c.sections.map(s => ({
     id: s.id, label: s.label, week: s.week, lead_id: s.lead_id, support_ids: s.supports.map(x => x.id), cancelled: !!s.cancelled_at,
@@ -1062,6 +1072,12 @@ function ClassesEditor() {
           <p className="flex-[1_1_16rem] font-bold text-danger text-pretty">{actionError}</p>
           <button type="button" onClick={() => setActionError(null)} className="ui-btn ui-btn--text">Dismiss</button>
         </div>
+      )}
+      {crewError && (
+        <p ref={crewAlert} tabIndex={-1} role="alert" className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 py-3 border-y-2 border-ink font-bold text-danger text-pretty focus:outline-none">
+          <span className="flex-1 min-w-[16rem]" title={crewError}>Couldn't check who can join a crew, so nobody is listed as free.</span>
+          <Button onClick={() => { void refetchVolunteers() }}>Retry</Button>
+        </p>
       )}
       {error && (
         <div role="alert" className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 py-3 border-y-2 border-ink">

@@ -182,8 +182,8 @@ function TaskForm({ initial, submitLabel, onSubmit, onCancel }: {
   )
 }
 
-export default function AdminOnboarding() {
-  const actions = useAdminOnboarding()
+export default function AdminOnboarding({ onChanged }: { onChanged?: () => void }) {
+  const actions = useAdminOnboarding(onChanged)
   const { tasks, volunteers, done, overdue, loading, error, reload } = actions
   const [open, setOpen] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)

@@ -32,6 +32,25 @@ begin
   insert into sessions (name, year, start_date, end_date, is_active, laptop_loaners)
     values ('Laptop Test C', yr, today - 1, today + 3, false, 5) returning id into wc;
   insert into classes (name) values ('[TEST] Laptop Class') returning id into cls;
+  if to_regclass('public.volunteer_tasks') is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    update volunteers set accepted_at = greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver'))
+      where id in (vol, vol2)
+        and (accepted_at is null or accepted_at < (private.season_start()::timestamp at time zone 'America/Denver'));
+    update volunteer_applications a set status = 'accepted'
+      where a.user_id in (vol, vol2)
+        and a.id = (select a2.id from volunteer_applications a2 where a2.user_id = a.user_id order by a2.created_at desc, a2.id desc limit 1)
+        and a.status is distinct from 'accepted';
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      select x, 'agreement', greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver')), adm from unnest(array[vol, vol2]) x
+      where x is not null
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by
+        where volunteer_tasks.verified_by is null
+           or volunteer_tasks.done_at is null
+           or volunteer_tasks.done_at < (private.season_start()::timestamp at time zone 'America/Denver');
+  end if;
   insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id)
     values (cls, 'LA', 1, wa, 5, 17, 10, vol) returning id into sa;
   insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id)

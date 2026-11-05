@@ -34,6 +34,16 @@ begin
       values (who, '[TEST] Nebula', 'Mentor ' || i, 'staffing-test-' || i || '@example.com', '303-555-0101',
         18, '12th', '[TEST] Orbit School', 'M', 'Help campers learn', '[TEST] Nebula weaving', '[TEST] Comet crafting', 'Nebula Mentor', 'accepted');
   end loop;
+  -- Accepted this season already. The agreement is what the crewing guard still requires.
+  -- v[8] is vetted too, so the removed-volunteer checks below are about removal.
+  if to_regclass('public.volunteer_tasks') is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      select vid, 'agreement', greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver')), adm from unnest(v) vid
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by;
+  end if;
   insert into sections (class_id, label, age_min, age_max, capacity, week, session_id, room, lead_id)
     values (cls, '[TEST] Red', 5, 17, 30, 1, w1, '[TEST] Nebula 101', v[1]) returning id into red_sec;
   insert into sections (class_id, label, age_min, age_max, capacity, week, session_id, lead_id)
@@ -111,8 +121,8 @@ begin
   exception when unique_violation then res := res || E'\none role per volunteer/week: ok'; end;
 
   -- Guard is shared by sections, supports and week roles; invalid states cannot be assigned.
-  -- Spec 35's crewing guard covers week roles as it covers sections: a removed volunteer can't
-  -- take one. (Its follow-up adds "accepted this season, agreement verified" for both at once.)
+  -- These eight are accepted this season with a verified agreement, so a refusal here is the
+  -- removal. The other gaps are crewing-guard-tests.sql.
   execute 'reset role';
   update volunteers set removed_at = now() where id = v[8];
   execute 'set local role authenticated';

@@ -55,6 +55,7 @@ The order comes from the `Order:` / `Apply after` notes in each file's header. E
 
 | 43 | `migration_staffing_board.sql` | Staffing targets, course minimums, week roles (admins only; released when a volunteer is demoted) and their service hours, spec 35's crewing guard on week roles, room clashes and `admin_staffing()` (spec 39). Deploy `send-notifications` for `week_role_changed` |
 | 44 | `migration_retention.sql` | Legal hold, a dry-run nightly anonymize job, its report, and season totals stored before a camper is anonymized (spec L4). On the demo, re-apply `migration_demo_environment.sql` so `private.reset_demo()` keeps `app_settings.retention_live` at `'false'` |
+| 45 | `migration_crewing_guard.sql` | One crewing guard: a section lead, a support or a week role only when the volunteer is not removed, their latest application is accepted this season, and an admin has verified the Signed volunteer agreement this season (spec 35, #220). `admin_crew_blocks()` returns those reasons to admins. A signed-in non-admin is refused before any of it is read. After step 37; after step 43 when `week_roles` exists |
 
 Skip `migration_section_supports.sql`: it is superseded by step 13.
 

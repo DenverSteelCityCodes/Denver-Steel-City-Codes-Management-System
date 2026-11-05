@@ -124,9 +124,9 @@ CREATE TRIGGER profiles_release_week_roles AFTER UPDATE OF role ON profiles
     FOR EACH ROW EXECUTE FUNCTION private.profiles_release_week_roles();
 
 -- Spec 35 owns the one crewing guard; a week role calls it like a section lead or support does.
--- Today it refuses removed volunteers. Its follow-up (accepted this season, agreement verified,
--- spec 35 "Follow-ups") tightens it for sections and week roles at once, in its own PR.
--- The existing crewing guard. It reads volunteer_id on every table that isn't sections.
+-- migration_crewing_guard.sql (after this file) is that function's full rule: not removed,
+-- accepted this season, agreement verified. This trigger stays pointed at it.
+-- It reads volunteer_id on every table that isn't sections.
 DROP TRIGGER IF EXISTS guard_removed_crew ON week_roles;
 CREATE TRIGGER guard_removed_crew BEFORE INSERT OR UPDATE OF volunteer_id, session_id ON week_roles
     FOR EACH ROW EXECUTE FUNCTION private.guard_removed_crew();

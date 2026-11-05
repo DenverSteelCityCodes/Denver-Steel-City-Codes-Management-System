@@ -64,6 +64,28 @@ begin
   -- Replacing the lead emails each family in the section once; a first assignment doesn't.
   select v.id into spare from volunteers v
    where v.id <> lead_v and not exists (select 1 from sections s where s.lead_id = v.id) limit 1;
+  execute 'reset role';
+  if to_regclass('public.volunteer_tasks') is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    update volunteers set accepted_at = greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver'))
+      where id in (spare, lead_v)
+        and (accepted_at is null or accepted_at < (private.season_start()::timestamp at time zone 'America/Denver'));
+    update volunteer_applications a set status = 'accepted'
+      where a.user_id in (spare, lead_v)
+        and a.id = (select a2.id from volunteer_applications a2 where a2.user_id = a.user_id order by a2.created_at desc, a2.id desc limit 1)
+        and a.status is distinct from 'accepted';
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      select x, 'agreement', greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver')), admin_id from unnest(array[spare, lead_v]) x
+      where x is not null
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by
+        where volunteer_tasks.verified_by is null
+           or volunteer_tasks.done_at is null
+           or volunteer_tasks.done_at < (private.season_start()::timestamp at time zone 'America/Denver');
+  end if;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated', 'aal', 'aal2')::text, true);
   update sections set lead_id = spare where id = sec.id;
   select count(distinct st2.parent_id) into parents from registrations r join students st2 on st2.id = r.student_id
    where r.section_id = sec.id and r.status in ('confirmed', 'pending', 'offered');
