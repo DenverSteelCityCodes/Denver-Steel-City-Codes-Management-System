@@ -20,14 +20,35 @@ begin
   select id into p1 from profiles where role = 'parent' order by id limit 1;
   select id into p2 from profiles where role = 'parent' and id <> p1 order by id limit 1;
   select id into adm from profiles where role = 'admin' order by id limit 1;
-  select v.id into vol from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' order by v.id limit 1;
-  select v.id into vol2 from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' and v.id <> vol order by v.id limit 1;
-  select v.id into vol3 from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' and v.id not in (vol, vol2) order by v.id limit 1;
+  -- Volunteers with an application, so the fixture can re-vet them for the moved season (#220).
+  select v.id into vol from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' and exists (select 1 from volunteer_applications a where a.user_id = v.id) order by v.id limit 1;
+  select v.id into vol2 from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' and v.id <> vol and exists (select 1 from volunteer_applications a where a.user_id = v.id) order by v.id limit 1;
+  select v.id into vol3 from volunteers v join profiles p on p.id = v.id where p.role = 'volunteer' and v.id not in (vol, vol2) and exists (select 1 from volunteer_applications a where a.user_id = v.id) order by v.id limit 1;
 
   insert into sessions (name, year, start_date, end_date, is_active) values ('Pickup Test W', yr, today - 2, today + 2, true) returning id into ww;
   insert into sessions (name, year, start_date, end_date, is_active) values ('Pickup Test F', yr, today + 30, today + 34, false) returning id into wf;
   insert into sessions (name, year, start_date, end_date, is_active) values ('Pickup Test P', yr, today - 14, today - 10, false) returning id into wp;
   insert into classes (name) values ('[TEST] Pickup Class') returning id into cls;
+  -- Week W is active in 2099, so the season moves. These three still have to be vetted for it.
+  if to_regclass('public.volunteer_tasks') is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    update volunteers set accepted_at = greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver'))
+      where id in (vol, vol2, vol3)
+        and (accepted_at is null or accepted_at < (private.season_start()::timestamp at time zone 'America/Denver'));
+    update volunteer_applications a set status = 'accepted'
+      where a.user_id in (vol, vol2, vol3)
+        and a.id = (select a2.id from volunteer_applications a2 where a2.user_id = a.user_id order by a2.created_at desc, a2.id desc limit 1)
+        and a.status is distinct from 'accepted';
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      select x, 'agreement', greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver')), adm from unnest(array[vol, vol2, vol3]) x
+      where x is not null
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by
+        where volunteer_tasks.verified_by is null
+           or volunteer_tasks.done_at is null
+           or volunteer_tasks.done_at < (private.season_start()::timestamp at time zone 'America/Denver');
+  end if;
   insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id)
     values (cls, 'PA', 1, ww, 5, 17, 10, vol) returning id into sa;
   insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id)

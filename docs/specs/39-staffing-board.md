@@ -1,7 +1,7 @@
 # 39: Staffing board (ratios, teachers per course, week roles)
 
 **Status:** ✅ merged ([PR #219](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/219)) · **Issue:** [#218](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/218) · **Priority:** P1 · **Effort:** M · **Phase:** B
-Dated cover and floater-first cover suggestions wait on spec 33; cover suggestions remain as spec 25 has them today. Week roles call spec 35's crewing guard as it is today (removed volunteers refused); its follow-up (accepted this season, agreement verified) tightens sections and week roles together in its own PR.
+Dated cover and floater-first cover suggestions wait on spec 33; cover suggestions remain as spec 25 has them today. Week roles call spec 35's one crewing guard. The follow-up ([#220](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/220), accepted this season and the agreement verified) is built in `migration_crewing_guard.sql` and is not merged yet.
 
 **Depends on:** 13 ✅ (season settings), 14 ✅ (attention items), 25 ✅ (availability, absences, cover suggestions), 35 🟨 (the crewing guard), 33 ⬜ (dated cover, for floaters covering a section) · **Unblocks:** B2 (week-role hours), the spec 14 minimum-crew follow-up
 **Plan reference:** [Discord findings](../research/discord-findings.md) M09, M53; decision Q-D3 (open)

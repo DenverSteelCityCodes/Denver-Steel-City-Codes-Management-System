@@ -1,6 +1,6 @@
 # 35: Volunteer interviews and onboarding: private links, emails, checklist, profile
 
-**Status:** ✅ merged ([PR #198](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/198)) · follow-up: one crewing guard, [#220](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/220), in progress · **Issue:** #155 · **Priority:** P1 · **Effort:** M · **Phase:** C (interview emails can ship earlier, in B)
+**Status:** ✅ merged ([PR #198](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/pull/198)) · crewing-guard follow-up [#220](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/220) built (one guard and the Signed volunteer agreement task); not merged yet · **Issue:** #155 · **Priority:** P1 · **Effort:** M · **Phase:** C (interview emails can ship earlier, in B)
 **Depends on:** 09 · **Unblocks:** B2 (hours certificate uses the legal name)
 **Plan reference:** [inbox findings](../research/inbox-findings.md) §3
 
@@ -65,6 +65,7 @@ What exists:
 - Choices the spec left open: "times posted" goes at most once a Denver day per applicant, to pending applicants from the last 180 days; a nudge at most once a day; an item is due its hours after acceptance or after the item was added, whichever is later; volunteers accepted before this have no due times; a finished item stays done if the volunteer is accepted again; a removed volunteer loses volunteer access and can't be put on a crew until an application of theirs is accepted again; the removal email carries the admin's reason; the decline email doesn't (the reject note stays admin-only).
 - Review fixes: removal also ends crew access to past seasons' sections; both-weeks sections show in every week; overdue counts only this season's acceptances; queued interview emails are withdrawn when a booking moves or goes or the application is decided, and a reminder past its interview is never sent; removed volunteers are off the volunteer email audiences (including spec 34's).
 - Not done here: photos a demo visitor uploads stay in storage after the nightly reset (the reset clears the profile's pointer to them).
+- Crewing guard ([#220](https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System/issues/220)): `migration_crewing_guard.sql` redefines `private.guard_removed_crew()` in place. The check is `private.crew_block_reason()`; `admin_crew_blocks()` returns it for every volunteer and is admin-only. A lead, support or week role is refused, each gap in its own sentence, unless the volunteer is not removed, their latest application is accepted, `accepted_at` is on or after `private.season_start()` at Denver midnight, and the `agreement` task is admin-verified with `done_at` this season. A signed-in non-admin gets "Admins only" before any of that is read, unless the update leaves the lead (or the support) unchanged. Clearing a lead and deleting a support stay allowed. The demo leaves Bella Nguyen accepted, unverified and uncrewed.
 
 ## From the Discord findings (2026-11-01)
 
@@ -74,8 +75,8 @@ From [the Discord findings](../research/discord-findings.md). Each item was chec
 - [ ] Apply form: date of birth and school status (grade 9–12, graduated, college, adult). Age and College are already asked (`src/lib/applyForm.ts:6`). Derive the adult flag used by photo consent and L7. State the age rule up front, with a minimum volunteer grade setting above the top camper grade and an admin override with a reason. (Discord M04)
 - [ ] Application review shows every earlier application by the same person: decision, admin-only reason, removal reason, incidents and prior-season record (weeks crewed, absences, duty shortfall). (Discord M04, M11, M32)
 - [ ] Ask about affiliation with other youth programs. (Discord M04, M43)
-- [ ] A "Signed volunteer agreement" task an admin verifies. The application waiver stays.
-- [ ] One crewing guard, owned here: extend the existing guard (`migration_volunteer_onboarding.sql:703`, which refuses only removed volunteers) to refuse a section lead or support, or a spec 39 week role, unless the volunteer has an accepted, non-removed application for that season and a verified agreement. Leads and organizers included. Spec 39 calls this guard and defines no other. (Discord M04, M09; Q-D12)
+- [x] A "Signed volunteer agreement" task an admin verifies. The application waiver stays.
+- [x] One crewing guard, owned here: extend the existing guard (`migration_volunteer_onboarding.sql:703`, which refuses only removed volunteers) to refuse a section lead or support, or a spec 39 week role, unless the volunteer has an accepted, non-removed application for that season and a verified agreement. Leads and organizers included. Spec 39 calls this guard and defines no other. (Discord M04, M09; Q-D12)
 - [ ] Adults on crew per camp day on the admin dashboard. (Discord M04)
 - [ ] A "Do not re-accept" flag that blocks acceptance without an admin override reason, and an end-of-camp evaluation (reliability, duties, invite back?) on the volunteer's admin record. (Discord M32)
 - [ ] The removal screen reminds admins to also remove chat and shared-folder access. (Discord M32)

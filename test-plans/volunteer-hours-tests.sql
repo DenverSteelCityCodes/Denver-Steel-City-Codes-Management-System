@@ -22,6 +22,24 @@ begin
   select v.id into duty_vol from volunteers v join profiles p on p.id = v.id where v.removed_at is null and v.id not in (select volunteer_id from week_roles) order by p.display_name offset 2 limit 1;
   select v.id into gone from volunteers v join profiles p on p.id = v.id where v.removed_at is null and v.id not in (select volunteer_id from week_roles) order by p.display_name offset 3 limit 1;
 
+  -- Crewing guard: fill a missing this-season acceptance or verified agreement. An acceptance
+  -- or agreement that already counts is left as it is.
+  if to_regclass('public.volunteer_tasks') is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    update volunteers set accepted_at = greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver'))
+      where id in (vol, untimed_vol, duty_vol, gone)
+        and (accepted_at is null or accepted_at < (private.season_start()::timestamp at time zone 'America/Denver'));
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      select x, 'agreement', greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver')), admin_id from unnest(array[vol, untimed_vol, duty_vol, gone]) x
+      where x is not null
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by
+        where volunteer_tasks.verified_by is null
+           or volunteer_tasks.done_at is null
+           or volunteer_tasks.done_at < (private.season_start()::timestamp at time zone 'America/Denver');
+  end if;
+
   insert into sessions (name, year, start_date, end_date, is_active) values ('[TEST] W1', yr, '2000-06-05', '2000-06-11', false) returning id into w1;
   insert into sessions (name, year, start_date, end_date, is_active) values ('[TEST] W2', yr, '2000-06-12', '2000-06-16', false) returning id into w2;
   insert into sessions (name, year, start_date, end_date, is_active) values ('[TEST] future', yr, today + 1, today + 5, false) returning id into fut;
@@ -91,6 +109,7 @@ begin
 
   -- Admins see everyone in the week except removed volunteers.
   execute 'reset role';
+  perform set_config('request.jwt.claims', '', true);   -- the owner, not the volunteer above
   insert into section_supports (section_id, volunteer_id) values (a, gone);
   update volunteers set removed_at = now() where id = gone;
   execute 'set local role authenticated';

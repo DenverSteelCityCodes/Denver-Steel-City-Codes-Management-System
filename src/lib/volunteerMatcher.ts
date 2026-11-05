@@ -23,6 +23,8 @@ export interface AssignmentPair {
  * - Unmatched sections get null for missing roles.
  * - Sections that already have a lead skip lead matching; sections that already
  *   have one or more supports skip support matching.
+ * - A volunteer the database would refuse (crew_block), or whose eligibility is unknown
+ *   (crew_known false), is left out. The database still refuses them if a save assigns them anyway.
  */
 export function matchVolunteers(
   volunteers: VolunteerWithProfile[],
@@ -56,14 +58,15 @@ export function matchVolunteers(
     const needsLead = !sec.lead_id
     const needsSupport = sec.supports.length === 0
 
+    const canCrew = (v: VolunteerWithProfile) => v.crew_known && !v.crew_block
     const lead = needsLead
-      ? volunteers.find(v => v.experience_level === 'senior' && freeFor(v, sec.week)) ?? null
+      ? volunteers.find(v => canCrew(v) && v.experience_level === 'senior' && freeFor(v, sec.week)) ?? null
       : null
 
     if (lead) take(lead.id, sec.week)
 
     const support = needsSupport
-      ? volunteers.find(v => v.experience_level === 'junior' && freeFor(v, sec.week)) ?? null
+      ? volunteers.find(v => canCrew(v) && v.experience_level === 'junior' && freeFor(v, sec.week)) ?? null
       : null
 
     if (support) take(support.id, sec.week)

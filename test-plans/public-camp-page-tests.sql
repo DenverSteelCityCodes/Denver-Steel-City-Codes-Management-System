@@ -7,7 +7,8 @@
 do $$
 declare
   admin_id  uuid := (select id from profiles where role = 'admin' order by created_at limit 1);
-  vol_id    uuid := (select v.id from volunteers v where not exists (select 1 from sections s where s.lead_id = v.id) limit 1);
+  vol_id    uuid := (select v.id from volunteers v where not exists (select 1 from sections s where s.lead_id = v.id)
+                      and exists (select 1 from volunteer_applications a where a.user_id = v.id) order by v.id limit 1);   -- has an application, so it can be re-vetted (#220)
   kid       record;
   kid2      record;
   wk uuid; cls uuid; sec_a uuid; sec_b uuid; sec_x uuid;
@@ -20,6 +21,25 @@ begin
     values ('[TEST] Week A', 2099, '2099-06-08', '2099-06-12', true, '[TEST] Lab Building, 1 Test Way')
     returning id into wk;
   insert into classes (name, description) values ('[TEST] Robots', 'Build a robot.') returning id into cls;
+  -- The active 2099 week moves the season. This lead still has to be accepted in it, agreement verified.
+  if to_regclass('public.volunteer_tasks') is not null and vol_id is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    update volunteers set accepted_at = greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver'))
+      where id = vol_id
+        and (accepted_at is null or accepted_at < (private.season_start()::timestamp at time zone 'America/Denver'));
+    update volunteer_applications a set status = 'accepted'
+      where a.user_id = vol_id
+        and a.id = (select a2.id from volunteer_applications a2 where a2.user_id = vol_id order by a2.created_at desc, a2.id desc limit 1)
+        and a.status is distinct from 'accepted';
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      values (vol_id, 'agreement', greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver')), admin_id)
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by
+        where volunteer_tasks.verified_by is null
+           or volunteer_tasks.done_at is null
+           or volunteer_tasks.done_at < (private.season_start()::timestamp at time zone 'America/Denver');
+  end if;
   insert into sections (class_id, label, week, age_min, age_max, capacity, session_id, days, start_time, end_time, room, lead_id)
     values (cls, 'RB-A', 1, 10, 12, 1, wk, 'Mon–Fri', '09:00', '15:00', 'Room 9', vol_id) returning id into sec_a;
   insert into sections (class_id, label, week, age_min, age_max, capacity, session_id, days, start_time, end_time, room)

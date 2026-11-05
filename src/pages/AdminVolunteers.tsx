@@ -227,7 +227,7 @@ function ApplicationReview({
 }
 
 export default function AdminVolunteers() {
-  const { volunteers, loading: vLoading, error: vError, refetch: refetchVolunteers } = useVolunteers()
+  const { volunteers, loading: vLoading, error: vError, crewError, refetch: refetchVolunteers } = useVolunteers()
   const { classes, updateSection, refetch: refetchClasses } = useAdminClasses()
   const { settings, loading: settingsLoading, error: settingsReadError, updateSetting } = useAppSettings()
   const { applications, loading: appsLoading, acceptApplication, rejectApplication } = useVolunteerApplications()
@@ -245,6 +245,8 @@ export default function AdminVolunteers() {
   const [applied, setApplied] = useState(false)
   const [appFilter, setAppFilter] = useState<AppFilter>('pending')
   const [assignError, setAssignError] = useState<string | null>(null)
+  const assignAlert = useRef<HTMLParagraphElement>(null)
+  const crewAlert = useRef<HTMLParagraphElement>(null)
   const [settingError, setSettingError] = useState<string | null>(null)
   const [closingApps, setClosingApps] = useState(false)
   const [settingBusy, setSettingBusy] = useState(false)
@@ -253,6 +255,23 @@ export default function AdminVolunteers() {
   // When the confirm closes (cancel, Escape or done), focus goes back to the Close/Open button.
   const appsButton = useRef<HTMLButtonElement>(null)
   const refocusApps = useRef(false)
+  useEffect(() => { if (assignError) assignAlert.current?.focus() }, [assignError])
+  useEffect(() => { if (crewError && tab === 'crew') crewAlert.current?.focus() }, [crewError, tab])
+  // Opening Crew (including from the URL) drops a preview made against the previous eligibility.
+  const [trackedTab, setTrackedTab] = useState(tab)
+  if (trackedTab !== tab) {
+    setTrackedTab(tab)
+    if (tab === 'crew') {
+      setPreview(null)
+      setApplied(false)
+    }
+  }
+  const refetchCrew = useRef(refetchVolunteers)
+  useEffect(() => { refetchCrew.current = refetchVolunteers }, [refetchVolunteers])
+  useEffect(() => {
+    if (tab !== 'crew') return
+    void refetchCrew.current()
+  }, [tab])
   useEffect(() => {
     if (refocusApps.current && !closingApps && !settingBusy) {
       refocusApps.current = false
@@ -323,7 +342,7 @@ export default function AdminVolunteers() {
       setApplied(true)
       setPreview(null)
     } catch (e) {
-      setAssignError(`Some assignments couldn't be saved: ${e instanceof Error ? e.message : 'unknown error'}. Refresh to see what was applied.`)
+      setAssignError(e instanceof Error ? e.message : 'unknown error')
     } finally {
       setApplying(false)
     }
@@ -401,7 +420,7 @@ export default function AdminVolunteers() {
       {/* ── Onboarding (spec 35): overdue checklist items, every volunteer's checklist, removal ── */}
       {tab === 'onboarding' && (
         <div role="tabpanel" id="vol-panel-onboarding" aria-labelledby="vol-tab-onboarding">
-          <AdminOnboarding />
+          <AdminOnboarding onChanged={() => { setPreview(null); void refetchVolunteers() }} />
         </div>
       )}
 
@@ -519,10 +538,15 @@ export default function AdminVolunteers() {
                           weekLabels={weekLabels}
                           onAccept={async (app, level) => {
                             await acceptApplication(app, level)
+                            setPreview(null)
                             // The new volunteer row should show on the Crew tab and in auto-assign now.
                             await refetchVolunteers()
                           }}
-                          onReject={rejectApplication}
+                          onReject={async (appId, notes) => {
+                            await rejectApplication(appId, notes)
+                            setPreview(null)
+                            await refetchVolunteers()
+                          }}
                         />
                       </div>
                     )}
@@ -544,7 +568,7 @@ export default function AdminVolunteers() {
           >
             <div className="flex-[1_1_18rem] min-w-0">
               <h2 id="fill-heading" className="text-lg font-bold leading-[1.3]">Fill open spots</h2>
-              <p className="text-sm text-ink-muted text-pretty">Pairs a free senior lead and a free junior support for each open spot. Existing assignments are kept.</p>
+              <p className="text-sm text-ink-muted text-pretty">Pairs a free senior lead and a free junior support for each open spot. Existing assignments are kept. Someone who isn't accepted this season, or whose agreement isn't verified, is left out.</p>
             </div>
             <div>
               <label htmlFor="fill-week" className="block font-bold mb-1.5">Week</label>
@@ -559,7 +583,19 @@ export default function AdminVolunteers() {
             <Button type="submit">Preview matches</Button>
           </form>
 
-          {assignError && <p role="alert" className="mb-4 text-sm font-bold text-danger text-pretty">{assignError}</p>}
+          {crewError && (
+            <p ref={crewAlert} tabIndex={-1} role="alert" className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-bold text-danger text-pretty focus:outline-none">
+              <span className="flex-1 min-w-[16rem]" title={crewError}>Couldn't check who can join a crew, so nobody is offered as free.</span>
+              <Button onClick={() => { void refetchVolunteers() }}>Retry</Button>
+            </p>
+          )}
+          {assignError && (
+            <p ref={assignAlert} tabIndex={-1} role="alert" className="mb-4 text-sm font-bold text-danger text-pretty focus:outline-none">
+              {assignError.includes("can't join a crew")
+                ? assignError
+                : `Some assignments couldn't be saved: ${assignError}. Refresh to see what was applied.`}
+            </p>
+          )}
           {applied && (
             <p role="status" className="mb-4 inline-flex items-center gap-1.5 font-bold text-success">
               <Check size={18} strokeWidth={2.5} aria-hidden="true" /> Assignments applied.
@@ -652,6 +688,7 @@ export default function AdminVolunteers() {
                                 <ChevronDown size={18} aria-hidden="true" className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
                               </button>
                             ) : <b className="font-bold">{v.profiles.display_name}</b>}
+                            {v.crew_block && <span className="block text-sm font-bold text-danger text-pretty">{v.crew_block}</span>}
                           </td>
                           <td className={`${td} max-md:self-center max-md:text-right`}><span className="sr-only md:hidden">Level </span>{cap(v.experience_level)}</td>
                           <td className={td}><span className={`${mobileLabel} block`}>Week 1</span>{weekCell(v, 1)}</td>

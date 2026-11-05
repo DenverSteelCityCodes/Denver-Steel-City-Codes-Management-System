@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { supportCrewDiff } from '../lib/supportCrewDiff'
 import { supabase } from '../lib/supabase'
 import type { Class, Section } from '../types/database'
 import { fetchSectionFill } from '../lib/sectionFill'
@@ -190,27 +191,25 @@ export function useAdminClasses() {
     }
 
     if (supportIds !== undefined) {
-      // Supports are replaced wholesale; keep the old set so a failed insert can put it back.
+      // Add the new supports first, then drop the ones that left. An unchanged support is never
+      // deleted or inserted again, so the crewing guard does not re-check them, and a refusal
+      // leaves the previous crew in place (the insert is one transaction; nothing was removed yet).
       const { data: prev, error: prevErr } = await supabase
         .from('section_supports').select('volunteer_id').eq('section_id', id)
       if (prevErr) throw new Error(prevErr.message)
-      const { error: delErr } = await supabase.from('section_supports').delete().eq('section_id', id)
-      if (delErr) throw new Error(delErr.message)
-      if (supportIds.length > 0) {
+      const { add, remove } = supportCrewDiff((prev ?? []).map(p => p.volunteer_id), supportIds)
+      if (add.length > 0) {
         const { error: ssErr } = await supabase.from('section_supports').insert(
-          supportIds.map(vid => ({ section_id: id, volunteer_id: vid }))
+          add.map(vid => ({ section_id: id, volunteer_id: vid }))
         )
         if (ssErr) {
-          const { error: restoreErr } = (prev ?? []).length > 0
-            ? await supabase.from('section_supports').insert(
-                (prev ?? []).map(p => ({ section_id: id, volunteer_id: p.volunteer_id }))
-              )
-            : { error: null }
           await fetchClasses()
-          throw new Error(restoreErr
-            ? `Couldn't save the supports (${ssErr.message}), and the previous supports couldn't be restored (${restoreErr.message}). Re-add them before leaving.`
-            : `Couldn't save the supports (${ssErr.message}); the previous supports were kept.`)
+          throw new Error(ssErr.message)
         }
+      }
+      if (remove.length > 0) {
+        const { error: delErr } = await supabase.from('section_supports').delete().eq('section_id', id).in('volunteer_id', remove)
+        if (delErr) throw new Error(delErr.message)
       }
     }
 

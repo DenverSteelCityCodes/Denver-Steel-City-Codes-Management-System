@@ -36,6 +36,23 @@ begin
   select s.id into sup_sec from sections s where s.session_id = w2 and s.cancelled_at is null
      and s.lead_id is distinct from v order by s.label limit 1;
   delete from section_supports where volunteer_id = v and section_id in (select id from sections where session_id = w2);
+  -- V already leads a section. Fill only a missing this-season agreement so the support insert
+  -- still runs if the demo seed predates the crewing guard. user_a is not touched here: the
+  -- checklist tests below need every item open.
+  if to_regclass('public.volunteer_tasks') is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    update volunteers set accepted_at = greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver'))
+      where id = v
+        and (accepted_at is null or accepted_at < (private.season_start()::timestamp at time zone 'America/Denver'));
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      values (v, 'agreement', now(), adm)
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by
+        where volunteer_tasks.verified_by is null
+           or volunteer_tasks.done_at is null
+           or volunteer_tasks.done_at < (private.season_start()::timestamp at time zone 'America/Denver');
+  end if;
   insert into section_supports (section_id, volunteer_id) values (sup_sec, v);
   insert into duty_slots (duty_type_id, session_id, slot_date, capacity)
   select id, w2, (now() at time zone 'America/Denver')::date + 9, 2 from duty_types limit 1 returning id into duty;
@@ -297,6 +314,15 @@ begin
   -- ── 6b. Sections that run both weeks, and last season (review fixes) ──
   execute 'reset role';
   perform set_config('request.jwt.claims', '', true);
+  -- The last-season checklist checks above are done. A both-weeks lead has to be accepted
+  -- this season, with a verified agreement. That does not reopen those checks.
+  update volunteers set accepted_at = now(), removed_at = null where id = user_a;
+  insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+    values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+  insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+    values (user_a, 'agreement', now(), adm)
+    on conflict (volunteer_id, task_key) do update
+      set done_at = excluded.done_at, verified_by = excluded.verified_by;
   select id into cls from classes where grades_allowed is null and requires_class_id is null order by name limit 1;
   insert into sessions (name, year, start_date, end_date, is_active)
   values ('[TEST] last summer', yr - 1, make_date(yr - 1, 7, 6), make_date(yr - 1, 7, 10), false) returning id into past;
@@ -309,6 +335,16 @@ begin
   values (user_b, 'senior', true, true, user_b::text || '/past.jpg', now(), now())
   on conflict (id) do update set photo_path = excluded.photo_path, photo_consent_at = now(), photo_guardian_consent_at = now(), removed_at = null;
   update volunteer_applications set age = 19 where user_id = user_b;
+  -- B's latest application was declined above. Accept it (the volunteers row exists now, so
+  -- accepted_at is set) and verify the agreement before B leads last summer's section.
+  update volunteer_applications a set status = 'accepted'
+   where a.user_id = user_b
+     and a.id = (select a2.id from volunteer_applications a2 where a2.user_id = user_b order by a2.created_at desc, a2.id desc limit 1)
+     and a.status is distinct from 'accepted';
+  insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+    values (user_b, 'agreement', now(), adm)
+    on conflict (volunteer_id, task_key) do update
+      set done_at = excluded.done_at, verified_by = excluded.verified_by;
   insert into sections (class_id, label, week, session_id, age_min, age_max, capacity, lead_id) values (cls, 'T-PAST2', 1, past, 5, 17, 10, user_b) returning id into past_sec2;
   insert into students (parent_id, full_name, first_name, age, grade) values (p1, 'Past Camper', 'Past', 10, '5th') returning id into kid;
   insert into registrations (student_id, section_id, status) values (kid, past_sec, 'confirmed');

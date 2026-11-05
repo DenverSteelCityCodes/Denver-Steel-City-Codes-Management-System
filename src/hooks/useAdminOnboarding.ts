@@ -30,7 +30,7 @@ async function fetchOnboarding() {
 
 // Admin: the onboarding checklist (spec 35). The items, every current volunteer's ticks, the overdue
 // list (admin_onboarding_overdue(), the database's rule) and the removed-this-season list.
-export function useAdminOnboarding() {
+export function useAdminOnboarding(onChanged?: () => void) {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<OnboardingTask[]>([])
   const [volunteers, setVolunteers] = useState<OnboardingVolunteer[]>([])
@@ -69,6 +69,7 @@ export function useAdminOnboarding() {
     const { error } = await p
     if (error) throw new Error(error.message)
     await load()
+    onChanged?.()
   }
 
   return {
@@ -88,6 +89,7 @@ export function useAdminOnboarding() {
       const { data, error } = await supabase.rpc('remove_from_season', { p_volunteer_id: volunteerId, p_reason: reason })
       if (error) throw new Error(error.message)
       await load()
+      onChanged?.()
       return (data as number | null) ?? 0
     },
   }

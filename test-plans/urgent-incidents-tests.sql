@@ -108,6 +108,24 @@ begin
   -- crew is not "Crew in Week 2" until a camper holds a seat in it this year.
   execute 'reset role';
   select class_id into cls from sections where id = sec_a;
+  if to_regclass('public.volunteer_tasks') is not null and w1_vol is not null then
+    insert into onboarding_tasks (key, label, due_hours_after_accept, sort_order)
+      values ('agreement', 'Signed volunteer agreement', 24, 5) on conflict (key) do nothing;
+    update volunteers set accepted_at = greatest(now(), (private.season_start()::timestamp at time zone 'America/Denver'))
+      where id = w1_vol
+        and (accepted_at is null or accepted_at < (private.season_start()::timestamp at time zone 'America/Denver'));
+    update volunteer_applications a set status = 'accepted'
+      where a.user_id = w1_vol
+        and a.id = (select a2.id from volunteer_applications a2 where a2.user_id = w1_vol order by a2.created_at desc, a2.id desc limit 1)
+        and a.status is distinct from 'accepted';
+    insert into volunteer_tasks (volunteer_id, task_key, done_at, verified_by)
+      values (w1_vol, 'agreement', now(), admin_id)
+      on conflict (volunteer_id, task_key) do update
+        set done_at = excluded.done_at, verified_by = excluded.verified_by
+        where volunteer_tasks.verified_by is null
+           or volunteer_tasks.done_at is null
+           or volunteer_tasks.done_at < (private.season_start()::timestamp at time zone 'America/Denver');
+  end if;
   insert into sections (class_id, label, age_min, age_max, capacity, week, lead_id)
   values (cls, '[TEST] BOTH', 8, 14, 10, null, w1_vol) returning id into sec_both;
   insert into registrations (student_id, section_id, status) values (camper_b, sec_both, 'confirmed');

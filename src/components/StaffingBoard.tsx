@@ -5,6 +5,7 @@ import { Input, Select } from './Field'
 import Segmented from './Segmented'
 import InlineConfirm from './InlineConfirm'
 import { campSessions, useSessions } from '../hooks/useSessions'
+import { useVolunteers } from '../hooks/useVolunteers'
 import { useAdminOutlet } from '../hooks/useAdminOutlet'
 import { guardedUpdate } from '../lib/editConflict'
 import { staffingStatus } from '../lib/staffing'
@@ -18,6 +19,10 @@ const roleName = { admin_room: 'Admin room', floater: 'Floater' }
 export default function StaffingBoard() {
   const outlet = useAdminOutlet()
   const { sessions, loading: sessionsLoading, error: sessionError, refetch: refetchSessions } = useSessions()
+  const { volunteers, crewError, refetch: refetchVolunteers } = useVolunteers()
+  const crewAlert = useRef<HTMLParagraphElement>(null)
+  const crewOf = new Map(volunteers.map(v => [v.id, v]))
+  useEffect(() => { if (crewError) crewAlert.current?.focus() }, [crewError])
   const weeks = campSessions(sessions)
   const [params, setParams] = useSearchParams()
   const session = weeks.find(s => s.id === params.get('session')) ?? weeks[0]
@@ -61,7 +66,8 @@ export default function StaffingBoard() {
     {weeks.length > 0 && <Segmented className="mt-5" label="Staffing week" value={sessionId ?? ''}
       options={weeks.map((s, i) => ({ value: s.id, label: `Week ${i + 1}` }))} disabled={busy}
       onChange={id => { setError(null); setParams({ tab: 'staffing', session: id }) }} />}
-    {(error || sessionError) && <p ref={alert} tabIndex={-1} role="alert" className="text-danger font-bold mt-4">{error || sessionError} <Button onClick={() => { setError(null); refresh(); void refetchSessions() }}>Retry</Button></p>}
+    {(error || sessionError) && <p ref={alert} tabIndex={-1} role="alert" className="text-danger font-bold mt-4 text-pretty focus:outline-none">{error || sessionError} <Button onClick={() => { setError(null); refresh(); void refetchSessions() }}>Retry</Button></p>}
+    {crewError && <p ref={crewAlert} tabIndex={-1} role="alert" className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-bold text-danger text-pretty focus:outline-none"><span className="flex-1 min-w-[16rem]" title={crewError}>Couldn't check who can take a week role.</span><Button onClick={() => { void refetchVolunteers() }}>Retry</Button></p>}
     {!sessionsLoading && !session && <p className="mt-5">Create a camp week in Setup to plan staffing.</p>}
     {session && !current && !error && <p role="status" className="mt-5">Loading staffing…</p>}
     {current && session && <>
@@ -118,12 +124,17 @@ export default function StaffingBoard() {
           onRemove={() => mutate(() => supabase.from('week_roles').delete().eq('id', r.id))} />
       </li>)}</ul>
       <details className="border-y-2 border-ink py-4 mt-3"><summary className="min-h-11 cursor-pointer font-bold">Add a week role</summary>
-        <RoleForm key={sessionId} id="new" busy={busy} people={[...current.unassigned, ...current.duty_holders.filter(p => !current.week_roles.some(r => r.volunteer_id === p.volunteer_id))]}
+        <RoleForm key={sessionId} id="new" busy={busy} people={[...current.unassigned, ...current.duty_holders.filter(p => !current.week_roles.some(r => r.volunteer_id === p.volunteer_id))].map(p => {
+          const row = crewOf.get(p.volunteer_id)
+          return { ...p, block: row?.crew_known ? row.crew_block : null, unknown: row ? !row.crew_known : false }
+        })}
           onSave={(role, note, volunteer_id) => mutate(() => supabase.from('week_roles').insert({ session_id: session.id, volunteer_id, role, note: note || null }))} />
       </details>
       <h2 className={heading} id="unassigned">Accepted, available this week, no section, week role or duty slot · {current.unassigned.length}</h2>
       <ul className="border-y-2 border-ink">{current.unassigned.map(p => <li key={p.volunteer_id} className="py-3 border-t border-border first:border-0">
         <b>{p.name}</b> · {p.level} · <Link to="/admin/classes" className={link}>Open crew editor</Link>
+        {crewOf.get(p.volunteer_id)?.crew_block && <span className="block text-sm font-bold text-danger text-pretty">{crewOf.get(p.volunteer_id)?.crew_block}</span>}
+        {crewOf.get(p.volunteer_id)?.crew_known === false && <span className="block text-sm font-bold text-danger text-pretty">Couldn't check yet.</span>}
       </li>)}</ul>
       {current.unassigned.length === 0 && <p className="mt-3">Everyone available has an assignment.</p>}
       <h2 className={heading}>Duty-slot holders without a section</h2>
@@ -135,7 +146,7 @@ export default function StaffingBoard() {
 }
 
 function RoleForm({ id, initial, people, busy, onSave, onRemove }: {
-  id: string; initial?: { role: WeekRoleKind; note: string | null }; people?: StaffingPerson[]; busy: boolean
+  id: string; initial?: { role: WeekRoleKind; note: string | null }; people?: (StaffingPerson & { block?: string | null; unknown?: boolean })[]; busy: boolean
   onSave: (role: WeekRoleKind, note: string, volunteer?: string) => Promise<void>; onRemove?: () => Promise<void>
 }) {
   const [confirm, setConfirm] = useState(false)
@@ -146,7 +157,7 @@ function RoleForm({ id, initial, people, busy, onSave, onRemove }: {
       void onSave(f.get('role') as WeekRoleKind, String(f.get('note') ?? '').trim(), String(f.get('volunteer') ?? ''))
     }}>
       {people && <div className="flex-[1_1_200px]"><label className="block font-bold" htmlFor={`${id}-person`}>Volunteer</label>
-        <Select id={`${id}-person`} name="volunteer" required><option value="">Choose a volunteer</option>{people.map(p => <option key={p.volunteer_id} value={p.volunteer_id}>{p.name}</option>)}</Select></div>}
+        <Select id={`${id}-person`} name="volunteer" required><option value="">Choose a volunteer</option>{people.map(p => <option key={p.volunteer_id} value={p.volunteer_id}>{p.unknown ? `${p.name} · Couldn't check yet` : p.block ? `${p.name} · ${p.block}` : p.name}</option>)}</Select></div>}
       <div className="flex-[1_1_150px]"><label className="block font-bold" htmlFor={`${id}-role`}>Role</label>
         <Select id={`${id}-role`} name="role" defaultValue={initial?.role ?? 'admin_room'}>{Object.entries(roleName).map(([value, name]) => <option key={value} value={value}>{name}</option>)}</Select></div>
       <div className="flex-[2_1_220px]"><label className="block font-bold" htmlFor={`${id}-note`}>Note (optional)</label>

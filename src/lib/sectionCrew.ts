@@ -10,6 +10,10 @@ export interface CrewPerson {
   level: ExperienceLevel
   week1: boolean   // said they can do Week 1
   week2: boolean
+  // Set when the crewing guard would refuse them. They stay pickable; the sentence is the reason.
+  blockReason?: string | null
+  // admin_crew_blocks() could not be read. Not the same as a known refusal.
+  unknown?: boolean
 }
 
 export interface CrewSection {
@@ -50,6 +54,8 @@ export function crewGroups(
   const free: (CrewOption & { p: CrewPerson })[] = []
   const busy: typeof free = []
   const away: typeof free = []
+  const blocked: typeof free = []
+  const unknown: typeof free = []
 
   for (const p of people) {
     if (exclude.has(p.id)) continue
@@ -59,8 +65,10 @@ export function crewGroups(
     const clash = jobs.some(j => weeksOf(j.s.week).some(w => weeks.includes(w)))
     const canDo = weeks.every(w => (w === 1 ? p.week1 : p.week2))
     const says = jobs.map(j => `${j.as} ${j.s.label} ${weekName(j.s.week)}`)
-    const text = (status: string | null) => [p.name, p.level, status, ...says].filter(Boolean).join(' · ')
-    if (!canDo) away.push({ id: p.id, p, text: text(availability(p)) })
+    const text = (status: string | null) => [p.name, p.level, status, ...says, p.blockReason].filter(Boolean).join(' · ')
+    if (p.unknown) unknown.push({ id: p.id, p, text: [p.name, p.level, "Couldn't check yet"].join(' · ') })
+    else if (p.blockReason) blocked.push({ id: p.id, p, text: text(null) })
+    else if (!canDo) away.push({ id: p.id, p, text: text(availability(p)) })
     else if (clash) busy.push({ id: p.id, p, text: text(null) })
     else free.push({ id: p.id, p, text: text(`free ${when}`) })
   }
@@ -75,6 +83,8 @@ export function crewGroups(
     { label: `Free in ${when}`, options: strip(free) },
     { label: `Already crewing in ${when}`, options: strip(busy) },
     { label: `Not available in ${when}`, options: strip(away) },
+    { label: `Can't join a crew yet`, options: strip(blocked) },
+    { label: `Couldn't check`, options: strip(unknown) },
   ].filter(g => g.options.length > 0)
 
   return {
