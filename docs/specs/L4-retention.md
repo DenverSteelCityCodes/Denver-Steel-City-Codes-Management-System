@@ -17,7 +17,7 @@ Nothing is ever deleted. 🔎 Colorado requires a written disposal policy for pe
 - `pg_cron` nightly, but ship in **dry-run** mode first: it writes a report table (counts per rule) for an admin to review, and is switched to live by a setting.
 
 ## Out of scope
-- Backups: rows deleted here survive in backups until those expire (7 days on Pro, longer with PITR). Say so in the privacy notice.
+- Backups: rows deleted here survive in backups until those expire (4 weeks with the free-tier weekly backup, [runbook](../runbooks/free-tier-operations.md); 7 days on Pro, longer with PITR). Say so in the privacy notice.
 
 ## Done when
 - [ ] Policy document approved and linked from the privacy notice.
