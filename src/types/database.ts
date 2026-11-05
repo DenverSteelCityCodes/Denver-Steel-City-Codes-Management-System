@@ -12,7 +12,8 @@ export interface Profile {
 
 export interface Student {
   id: string
-  parent_id: string
+  // Null after retention removes the parent profile (migration_retention.sql). The camper row stays.
+  parent_id: string | null
   full_name: string
   age: number
   medical_info: string | null
@@ -464,4 +465,48 @@ export interface SeasonSettings {
   target_campers_per_crew?: number
   min_crew_per_section?: number
   updated_at?: string
+}
+
+// Nightly retention report (migration_retention.sql, spec L4). Admins read it; the job writes it.
+export interface RetentionRun {
+  id: string
+  started_at: string
+  finished_at: string | null
+  dry_run: boolean
+  live_setting: boolean
+}
+
+export interface RetentionRunItem {
+  id: number
+  run_id: string
+  rule: string
+  subject_count: number
+  detail: string | null
+  subject_ids: string[]
+}
+
+// Aggregates stored before a camper is anonymized. No names.
+export interface SeasonTotal {
+  year: number
+  metric: string
+  bucket: string
+  n: number
+  captured_at: string
+}
+
+// Admin-owned legal hold (migration_retention.sql). A row means the nightly job skips that family.
+export interface RetentionHold {
+  parent_id: string
+  set_by: string | null
+  set_at: string
+  reason: string | null
+}
+
+// public.admin_search_families(): a parent account and whether retention will skip them.
+export interface FamilyHold {
+  parent_id: string
+  display_name: string
+  email: string | null
+  on_hold: boolean
+  campers: number
 }

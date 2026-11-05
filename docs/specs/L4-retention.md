@@ -1,6 +1,6 @@
 # L4: Retention policy and nightly anonymize job
 
-**Status:** ⬜ not started · **Issue:** #92 · **Priority:** P0 (policy) / P1 (job) · **Effort:** S · **Phase:** Legal
+**Status:** 🟨 drafted (dry-run job; SCC sign-off and a staging run still open) · **Issue:** #92 · **Priority:** P0 (policy) / P1 (job) · **Effort:** S · **Phase:** Legal
 **Depends on:** 05, SCC's retention policy (or its sign-off on plan §4.3) · **Unblocks:** 28
 **Plan reference:** Plan §4.3 retention schedule; §4.1 disposal row
 
@@ -12,8 +12,8 @@ Nothing is ever deleted. 🔎 Colorado requires a written disposal policy for pe
 
 ## Scope: what to build
 - `docs/legal/retention-policy.md`: how the site applies SCC's retention policy, the schedule, who runs it, and how holds work (an admin can put a family on legal hold, which pauses deletion).
-- `students.legal_hold boolean`, `parent_profiles.legal_hold boolean` (admin-only writes).
-- `private.apply_retention(p_dry_run boolean)`: per the schedule, clear medical text 90 days after the last session; anonymize camper profiles 2 years after the last session (keep year, grade and class for reporting); delete parent accounts 2 years after their last camper's session; delete volunteer applications per schedule; keep waivers/consents, roll calls and camper audit rows until the camper's 21st birthday (computed from grade-derived age; 🔎 SCC to confirm). Skips holds. Logs reason `retention`.
+- `retention_holds` (admin-owned; a row pauses retention for that parent and their campers). Parents cannot write it.
+- `private.apply_retention(p_dry_run boolean)`: per the schedule, clear medical text 90 days after the last session; anonymize camper profiles 2 years after the last session (keep year, grade and class for reporting); delete parent accounts 2 years after their last camper's session; delete volunteer applications per schedule; keep waivers/consents, roll calls and camper audit rows until the camper's 21st birthday (held through the estimated 21st year using age 9 at first registration; 🔎 SCC to confirm). Skips holds. Logs reason `retention`.
 - `pg_cron` nightly, but ship in **dry-run** mode first: it writes a report table (counts per rule) for an admin to review, and is switched to live by a setting.
 
 ## Out of scope
@@ -38,6 +38,6 @@ Nothing is ever deleted. 🔎 Colorado requires a written disposal policy for pe
 
 From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
 
-- [ ] Record how long earlier volunteer applications, decline reasons, removal reasons and conduct incidents are kept, since reapplication review reads them. Rejected applications default to 1 year; incident retention is still Q-F4. (Discord M11, M32)
-- [ ] Season totals (B17) are computed and kept before records are anonymized. (Discord M56)
-- [ ] Returning-family lookups need the prior year's camper name and grade: say for how long. (Discord M12)
+- [x] Record how long earlier volunteer applications, decline reasons, removal reasons and conduct incidents are kept, since reapplication review reads them. Rejected applications default to 1 year; incident retention is still Q-F4. (Discord M11, M32)
+- [x] Season totals (B17) are computed and kept before records are anonymized. (Discord M56)
+- [x] Returning-family lookups need the prior year's camper name and grade: say for how long. (Discord M12)

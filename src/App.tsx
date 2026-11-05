@@ -12,6 +12,7 @@ import AdminClasses from './pages/AdminClasses'
 import AdminVolunteers from './pages/AdminVolunteers'
 import AdminStudents from './pages/AdminStudents'
 import AdminUsers from './pages/AdminUsers'
+import AdminRetention from './pages/AdminRetention'
 import AdminSessions from './pages/AdminSessions'
 import AdminDuties from './pages/AdminDuties'
 import AdminInterviews from './pages/AdminInterviews'
@@ -92,6 +93,7 @@ function App() {
               <Route path="/admin/volunteers" element={<AdminVolunteers />} />
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/retention" element={<AdminRetention />} />
               <Route path="/admin/sessions" element={<AdminSessions />} />
               <Route path="/admin/duties" element={<AdminDuties />} />
               <Route path="/admin/interviews" element={<AdminInterviews />} />
