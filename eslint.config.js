@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'supabase/functions']),  // Edge Functions are Deno code, linted separately
+  globalIgnores(['dist', 'supabase/functions', '.claude']),  // Edge Functions are Deno; .claude worktrees are local-only
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

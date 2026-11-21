@@ -1,0 +1,49 @@
+# Spec 01 (#69): push schema to production on every merge to main, before (or alongside)
+# the Vercel SPA deploy. A failed push fails this workflow; configure the Vercel Production
+# project to require this check, or use scripts/prod-migrate-and-build.sh as the build command
+# so a bad migration also blocks the frontend ship.
+name: Deploy migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/deploy-migrations.yml'
+
+concurrency:
+  group: deploy-migrations-main
+  cancel-in-progress: false
+
+jobs:
+  push:
+    name: supabase db push (prod)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.106.0
+      - name: Guard against pushing to the demo project
+        env:
+          REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+        run: |
+          if [[ -z "$REF" ]]; then
+            echo "::error::Set repository secret SUPABASE_PROD_PROJECT_REF (not the demo ref)."
+            exit 1
+          fi
+          if [[ "$REF" == "rdckxazvoeixgwtjhrlf" ]]; then
+            echo "::error::Refusing to push migrations to the public demo project."
+            exit 1
+          fi
+      - name: Push migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PROD_DB_PASSWORD }}
+          REF: ${{ secrets.SUPABASE_PROD_PROJECT_REF }}
+        run: |
+          supabase link --project-ref "$REF" --password "$SUPABASE_DB_PASSWORD" --yes
+          supabase db push --yes

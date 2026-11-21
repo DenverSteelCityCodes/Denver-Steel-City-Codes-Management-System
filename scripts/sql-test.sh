@@ -4,9 +4,9 @@
 #
 #   scripts/sql-test.sh                                   every test-plans/*-tests.sql
 #   scripts/sql-test.sh test-plans/x-tests.sql …          just these
-#   scripts/sql-test.sh --with migration_x.sql [--with …] test-plans/x-tests.sql
+#   scripts/sql-test.sh --with supabase/migrations/<ts>_x.sql [--with …] test-plans/x-tests.sql
 #       sends the migration(s) and the suite as ONE query, so an unapplied migration is tried
-#       and rolled back with the suite (a dry run against the demo).
+#       and rolled back with the suite (a dry run against the demo or local stack).
 #
 # Connection, first match wins:
 #   DATABASE_URL                        psql (a local stack, or the demo's direct connection)

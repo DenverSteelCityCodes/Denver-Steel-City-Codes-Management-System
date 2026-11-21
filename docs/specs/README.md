@@ -20,7 +20,7 @@ A Claude session can be started on any spec with: *"Build `docs/specs/<file>` fo
 - **Every state change a family or volunteer cares about** sends a notification through the outbox (after PR 9). Reply-to is `denver@steelcitycodes.org` (per region after PR 20).
 - **Design:** the Terminal Yellow system in [`DESIGN.md`](../../DESIGN.md) (decided 2026-10-17; it replaces the v1.0 cream/Josefin guide in `design_system.md`): semantic tokens and the shared `ui-input` / `ui-btn` primitives, never raw hex; Atkinson Hyperlegible Next for UI, Josefin Sans for page titles only; gold only for the sign band, active tab and one primary action; red only for safety, destruction and blocking errors; **no modals**: inline editing and `InlineConfirm`. Check at 375 px and in dark mode. Every input has a linked label; errors use `role="alert"` and get focus. The redesign of every screen is in `design/impeccable-audit/mockup/`.
 - **Done means:** `npm run build` + `npm run lint` pass. CI is green (after PR 8). RLS/SQL tests are added for any new rule. Verified in the browser for each affected role, with a screenshot in the PR. Applied to the demo DB **and**, after PR 1, to prod via migrations. Demo seed (`private.reset_demo()`) updated if the change affects seeded data.
-- **Migrations:** until PR 1 lands, add a flat `migration_<name>.sql` at the repo root (re-runnable, applied via the SQL editor or MCP, ordering noted in its header). After PR 1, use `supabase/migrations/`.
+- **Migrations:** add `supabase/migrations/<timestamp>_<name>.sql` via `supabase migration new <name>` (re-runnable). Demo-only seed/reset stays in `supabase/demo/`. List new files in `docs/database.md`. Prod applies them with `supabase db push` on merge to `main` (see `docs/ops/production-cutover.md`).
 
 ## Tracker
 
@@ -28,7 +28,7 @@ Legend: ⬜ not started · 🟨 in progress · ✅ merged · ⛔ blocked (reason
 
 | ✓ | Spec | Issue | Concern | P | Effort | Deps | Phase |
 |---|---|---|---|---|---|---|---|
-| ⬜ | [01](01-production-project.md) | #69 | Production Supabase project, CLI migrations, Git deploys, README v1 | P0 | M | — | A |
+| 🟨 | [01](01-production-project.md) | #69 | Production Supabase project, CLI migrations, Git deploys, README v1 | P0 | M | — | A |
 | ⬜ | [02](02-custom-smtp.md) | #70 | Custom SMTP, branded auth emails, rate limits, leaked-password protection | P0 | S | 01 | A |
 | ✅ | [03](03-password-reset.md) | #71 | Forgot password, reset page, resend confirmation | P0 | S | 02 | A |
 | ✅ | [04](04-volunteer-pii-lockdown.md) | #72 | Tighten volunteer access to camper data | P0 | S | — | A |

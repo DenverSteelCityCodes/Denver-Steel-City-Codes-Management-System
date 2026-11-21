@@ -26,8 +26,9 @@ if [[ "${AUTHOR:-}" != "dependabot[bot]" ]] &&
 fi
 
 # 2. Migrations come with their apply order and their tests.
-new_migrations=$(grep -xE 'migration_[a-z0-9_]+\.sql' <<<"$added" || true)
-any_migrations=$(grep -xE 'migration_[a-z0-9_]+\.sql' <<<"$changed" || true)
+# Spec 01: schema changes live in supabase/migrations/<timestamp>_<name>.sql (not root migration_*.sql).
+new_migrations=$(grep -xE 'supabase/migrations/[0-9]+_[a-z0-9_]+\.sql' <<<"$added" || true)
+any_migrations=$(grep -xE 'supabase/migrations/[0-9]+_[a-z0-9_]+\.sql' <<<"$changed" || true)
 if [[ -n "$new_migrations" ]] && ! has 'docs/database\.md'; then
   fail "New migration(s) not listed in docs/database.md: $(tr '\n' ' ' <<<"$new_migrations")"
 fi

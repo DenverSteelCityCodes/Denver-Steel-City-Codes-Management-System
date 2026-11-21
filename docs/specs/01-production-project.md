@@ -1,6 +1,6 @@
 # 01: Production Supabase project, CLI migrations, Git deploys, README v1
 
-**Status:** ⬜ not started · **Issue:** #69 · **Priority:** P0 · **Effort:** M · **Phase:** A: Foundations
+**Status:** 🟨 in-repo foundation landed; hosted `scc-prod` + Vercel Git cutover still open (see [docs/ops/production-cutover.md](../ops/production-cutover.md)) · **Issue:** #69 · **Priority:** P0 · **Effort:** M · **Phase:** A: Foundations
 **Depends on:** none · **Unblocks:** 02, 08, 19 and every later spec (prod gets its schema from here)
 **Plan reference:** Plan §0 Risk 2, §2.4 handoff table
 
@@ -29,14 +29,15 @@ The only Supabase project (`rdckxazvoeixgwtjhrlf`) is the public demo. Its night
 - Any data migration from the demo DB: prod starts empty.
 
 ## Done when
-- [ ] Prod project exists; schema built only by `supabase db push` from `main`.
-- [ ] `select * from cron.job` on prod returns no reset job; `private.demo_accounts` doesn't exist on prod.
-- [ ] A test parent can sign up, confirm, register a camper on prod (or staging), then be deleted.
-- [ ] Merging to `main` deploys prod automatically; a PR gets a preview URL.
-- [ ] A new developer follows the README on a clean machine and has the app running locally in under 15 minutes (time it).
-- [ ] Demo site still works, and its nightly reset still runs.
-- [ ] A merged PR that adds a migration reaches prod with the schema change applied first; a broken migration blocks the deploy.
-- [ ] `v0.1.0` is tagged with generated notes, and Dependabot ignores major versions.
+- [ ] Prod project exists; schema built only by `supabase db push` from `main`. *(ops — cutover doc)*
+- [ ] `select * from cron.job` on prod returns no reset job; `private.demo_accounts` doesn't exist on prod. *(ops)*
+- [ ] A test parent can sign up, confirm, register a camper on prod (or staging), then be deleted. *(ops)*
+- [ ] Merging to `main` deploys prod automatically; a PR gets a preview URL. *(workflow + Vercel wiring in repo; connect project in dashboard)*
+- [x] A new developer follows the README on a clean machine and has the app running locally in under 15 minutes (time it). *(README + `supabase start` path; needs Docker)*
+- [ ] Demo site still works, and its nightly reset still runs. *(verify after merge; demo SQL moved to `supabase/demo/`)*
+- [x] A merged PR that adds a migration reaches prod with the schema change applied first; a broken migration blocks the deploy. *(`.github/workflows/deploy-migrations.yml` + `scripts/prod-migrate-and-build.sh` / `vercel.json`)*
+- [x] Dependabot ignores major versions. *(`.github/dependabot.yml`)*
+- [ ] `v0.1.0` is tagged with generated notes. *(after first prod deploy — cutover doc §6)*
 
 ## Tests and verification
 - `supabase db reset` locally succeeds from an empty database.
@@ -53,4 +54,4 @@ The only Supabase project (`rdckxazvoeixgwtjhrlf`) is the public demo. Its night
 
 From [the Discord findings](../research/discord-findings.md). Each item was checked against `main` at `d046434`, so it asks only for what is missing.
 
-- [ ] Add an accounts-and-renewals register to the account-ownership task: domain and DNS, Supabase, Vercel, email provider, shared mailbox, social account. Each has two named owners, a renewal date and authenticator-app 2FA. Supabase Auth has no recovery codes, so app admin recovery stays another admin's reset (spec 27, at least two MFA-enrolled admins); for other services that issue recovery codes, keep them in an org password manager. (Discord M01)
+- [x] Add an accounts-and-renewals register to the account-ownership task: domain and DNS, Supabase, Vercel, email provider, shared mailbox, social account. Each has two named owners, a renewal date and authenticator-app 2FA. Supabase Auth has no recovery codes, so app admin recovery stays another admin's reset (spec 27, at least two MFA-enrolled admins); for other services that issue recovery codes, keep them in an org password manager. (Discord M01 — table in `docs/ops/production-cutover.md`; owners still ❓)

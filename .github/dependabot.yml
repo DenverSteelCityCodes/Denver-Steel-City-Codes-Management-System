@@ -1,15 +1,22 @@
-# Monthly dependency updates, grouped so they arrive as one PR per ecosystem.
+# Spec 01 (#69): group minor/patch; ignore majors until after the summer season, then take them
+# in one planned PR.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
     groups:
       npm:
         patterns: ["*"]
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

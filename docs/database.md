@@ -1,92 +1,121 @@
 # Database setup
 
-The backend is a hosted [Supabase](https://supabase.com) project: Postgres, Auth, Row Level Security (RLS), one Edge Function and `pg_cron`. Every rule that matters (capacity, age range, one class per camper per week, roles, waitlist offers, change deadlines) is enforced in the database, so a hand-crafted API call can't skip it.
+The backend is a hosted [Supabase](https://supabase.com) project: Postgres, Auth, Row Level Security (RLS), Edge Functions and `pg_cron`. Every rule that matters (capacity, age range, one class per camper per week, roles, waitlist offers, change deadlines) is enforced in the database, so a hand-crafted API call can't skip it.
 
-> **Status.** Schema changes are flat SQL files in the repo root, applied by hand in the Supabase SQL editor. Converting them into timestamped `supabase/migrations/` files that `supabase db reset` can replay is planned in [spec 01](specs/01-production-project.md). Until then, use the order below.
+> **Status (spec 01).** Schema changes live in timestamped files under [`supabase/migrations/`](../supabase/migrations/). Local and hosted projects apply them with the Supabase CLI (`supabase db reset` / `supabase db push`). The public demo project (`rdckxazvoeixgwtjhrlf`) stays separate from production (`scc-prod`); demo-only seed/reset SQL is in [`supabase/demo/`](../supabase/demo/) and must never run on prod. Cutover checklist: [ops/production-cutover.md](ops/production-cutover.md).
+
+## Local development
+
+You need [Docker](https://docs.docker.com/get-docker/) (or OrbStack/Colima) and the [Supabase CLI](https://supabase.com/docs/guides/cli).
+
+```bash
+npm install
+supabase start          # local API http://127.0.0.1:54321 — prints URL + anon key
+cp .env.example .env.local
+# paste the local API URL and anon key into .env.local
+npm run dev             # http://localhost:5173
+```
+
+`supabase start` runs every file in `supabase/migrations/` against an empty database. After you add a migration:
+
+```bash
+supabase migration new <short_name>   # creates supabase/migrations/<timestamp>_<short_name>.sql
+# edit the file, then:
+supabase db reset                     # replay from scratch (wipes local data)
+# or, against a linked remote:
+supabase db push
+```
+
+Promote your first admin after signing up through the app:
+
+```sql
+update profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
+```
 
 ## Fresh install order
 
-The order comes from the `Order:` / `Apply after` notes in each file's header. Every file from October 2026 on is safe to re-run. **This sequence hasn't been replayed end to end on an empty project yet** (spec 01 does that). If a step fails, the failing file's header names what it depends on.
+Filenames are the order. The table maps each migration to what it adds (historical root names in parentheses).
 
 | # | File | Adds |
 |---|---|---|
-| 1 | `schema.sql` | Base tables, enums, `profiles` |
-| 2 | `migration_auth_roles.sql` | Profile created server-side from sign-up |
-| 3 | `migration_sections.sql` | Classes become courses; sections hold age range, capacity, week, crew |
-| 4 | `migration_sections_policy_fix.sql` | Breaks an RLS recursion between students and registrations |
-| 5 | `migration_sessions.sql` | Camp sessions (weeks) |
-| 6 | `migration_student_registration.sql` | Full registration form fields |
-| 7 | `migration_student_name_program.sql` | First/last name, program fields |
-| 8 | `migration_duties.sql` | Volunteer daily duties |
-| 9 | `migration_form_configs.sql` | Admin form editor |
-| 10 | `migration_interviews.sql` | Volunteer interview slots |
-| 11 | `migration_parent_profiles.sql` | Parent contact details that carry across years |
-| 12 | `migration_parent_email.sql` | Parent/guardian email |
-| 13 | `migration_security_hardening.sql` | Locks roles and statuses; moves RLS helpers to `private`; finishes `section_supports` |
-| 14 | `migration_one_class_per_week.sql` | Seat, age and one-class-per-week checks on every registration |
-| 15 | `migration_camp_week_ops.sql` | Section schedules, daily schedule, roll calls, updates |
-| 16 | `migration_interview_self_booking.sql` | Applicants book their own interview |
-| 17 | `migration_volunteer_roster_access.sql` | Crew read campers only through `section_roster()` |
-| 18 | `migration_review_hardening.sql` | Application throttling, admin-only notes |
-| 19 | `migration_audit_log.sql` | `audit.log`: who changed what, when |
-| 20 | `migration_edit_conflicts.sql` | `updated_at` checks, so saves can't silently overwrite |
-| 21 | `migration_season_settings.sql` | Opening time, change deadline, offer windows |
-| 22 | `migration_soft_cancel.sql` | Cancel without deleting history |
-| 23 | `migration_auto_confirm.sql` | Held seats are confirmed at once |
-| 24 | `migration_history_revert.sql` | Admin history and one-click revert |
-| 25 | `migration_notifications.sql` | Email outbox and its `pg_cron` job |
-| 26 | `migration_parent_changes.sql` | Parent self-cancel before the deadline; change requests |
-| 27 | `migration_waitlist_offers_enum.sql` | The `offered` status (must run on its own) |
-| 28 | `migration_waitlist_offers.sql` | Freed seats offered to the waitlist with a claim window |
-| 29 | `migration_parent_swap.sql` | Parents switch class within a week |
-| 30 | `migration_volunteer_self_service.sql` | Volunteer preferences, switch requests, absences |
-| 31 | `migration_admin_mfa.sql` | Admins must pass a TOTP step |
-| 32 | `migration_audit_log.sql` **again** | Attaches the audit trigger to tables created after step 19 |
-| 33 | `migration_public_camp_page.sql` | Each week's place (`sessions.location`), the public camp page's data, the "notify me" list and its every-minute job (spec 30). Deploy `send-notifications` first |
-| 34 | `migration_course_rules.sql` | Course rules on classes (grades this fall, a class to take first, a note, the next course), "place with" on registrations, exception requests and the "prerequisite at risk" list (spec 31). Steps 14, 29 and 33 call its helpers once it exists |
-| 35 | `migration_laptop_loans.sql` | Loaner laptops per camper-week: a cap per week, a first-come queue, emails, and a laptop column on the crew's roster (spec 29). Deploy `send-notifications` first |
-| 36 | `migration_urgent_and_incidents.sql` | Urgent notices (emailed to a whole audience at once, first in the outbox, through the batch sender) and the week audiences on updates, the incident log with its parent notice, and roll-call notes (spec 34). Deploy `send-notifications` first |
-| 37 | `migration_volunteer_onboarding.sql` | Volunteer interviews and onboarding: private meeting links, interview and decision emails with a reminder job, the volunteer profile and photo bucket, the onboarding checklist, remove from the season, and Meet the teachers (spec 35). Deploy `send-notifications` first |
-| 38 | `migration_authorized_pickups.sql` | Adults who may collect each camper and the dated walk-home consent; who collected each camper at dismissal; the admin dismissal board; a `pickup_changed` email to the lead (spec 36). Redefines `section_roster()` after step 35 (laptop loans); uses step 37's crew helpers. Deploy `send-notifications` first |
-| 39 | `migration_duty_locks.sql` | Duty rules per year (`duty_settings`), an admin lock on a duty slot, and the volunteer rules: no drops within 3 days of the duty (the default), no changes to past or locked slots, claim or drop only (spec 37) |
-| 40 | `migration_duty_minimums.sql` | Duty lengths (`duty_types.minutes`), a weekly duty minimum and sign-up deadline per year, no drop below the minimum after the deadline, the volunteer's week totals and the admin's "short" list, and two emails: `duty_assigned` and a daily `duty_minimum_reminder` job (spec 38). Deploy `send-notifications` first |
-| 41 | `migration_volunteer_hours.sql` | Service hours per volunteer per week (crewed weekdays so far × section times, minus days off, plus duties), read by the volunteer's Profile and the admin's Volunteers › Hours, and the letter signer settings (spec B2) |
-| 42 | `migration_admin_register.sql` | Admins register a family on its behalf (late, walk-in, phone, lost form) through `admin_register()`, which runs the parents' rules and records each one skipped, with a reason, in History; the family lookup by email, the tolerant duplicate-camper match and the rule preview the Campers panel uses (spec 32). **Then re-apply `migration_audit_log.sql`**: its trigger now flags a registration an admin inserted without a reason. Deploy `admin-invite-parent` too (below) |
+| 1 | `20260604000000_initial_schema.sql` | Base tables, enums, `profiles` (was `schema.sql`) |
+| 2 | `20260604000001_auth_roles.sql` | Profile created server-side from sign-up |
+| 3 | `20260610000000_sections.sql` | Classes → courses; sections hold age range, capacity, week, crew |
+| 4 | `20260610000001_sections_policy_fix.sql` | Breaks RLS recursion between students and registrations |
+| 5 | `20260611000001_sessions.sql` | Camp sessions (weeks) |
+| 6 | `20260611000002_student_registration.sql` | Full registration form fields |
+| 7 | `20260611000003_student_name_program.sql` | First/last name, program fields |
+| 8 | `20260611000004_duties.sql` | Volunteer daily duties |
+| 9 | `20260611000005_form_configs.sql` | Admin form editor |
+| 10 | `20260611000006_interviews.sql` | Volunteer interview slots |
+| 11 | `20260612000001_parent_profiles.sql` | Parent contact details across years |
+| 12 | `20260612000002_parent_email.sql` | Parent/guardian email |
+| 13 | `20260930000001_security_hardening.sql` | Locks roles/statuses; `private` helpers; finishes `section_supports` |
+| 14 | `20260930000002_one_class_per_week.sql` | Seat, age, one-class-per-week checks |
+| 15 | `20260930000003_camp_week_ops.sql` | Schedules, roll calls, updates |
+| 16 | `20260930000004_interview_self_booking.sql` | Applicants book their own interview |
+| 17 | `20260930000005_interview_slots_private.sql` | Interview slots admin-only to read |
+| 18 | `20260930000006_volunteer_roster_access.sql` | Crew read campers only through `section_roster()` |
+| 19 | `20261014000001_review_hardening.sql` | Application throttling, admin-only notes |
+| 20 | `20261017000001_audit_log.sql` | `audit.log` |
+| 21 | `20261017000002_edit_conflicts.sql` | `updated_at` conflict checks |
+| 22 | `20261017000003_season_settings.sql` | Opening time, deadlines, offer windows |
+| 23 | `20261017000004_soft_cancel.sql` | Cancel without deleting history |
+| 24 | `20261017000005_auto_confirm.sql` | Held seats confirmed at once |
+| 25 | `20261017000006_history_revert.sql` | Admin history + one-click revert |
+| 26 | `20261017000007_notifications.sql` | Email outbox + `pg_cron` drain |
+| 27 | `20261017000008_parent_changes.sql` | Parent self-cancel; change requests |
+| 28 | `20261017000009_change_request_email_kind.sql` | Change-request emails know who asked |
+| 29 | `20261017000010_waitlist_offers_enum.sql` | `offered` status (own transaction) |
+| 30 | `20261017000011_waitlist_offers.sql` | Waitlist offer windows |
+| 31 | `20261017000012_parent_swap.sql` | Parents switch class within a week |
+| 32 | `20261017000013_volunteer_self_service.sql` | Prefs, switch requests, absences |
+| 33 | `20261017000014_volunteer_role_gate.sql` | Volunteer access follows current role |
+| 34 | `20261017000015_current_season_audiences.sql` | "Parents"/"everyone" = this season |
+| 35 | `20261017000016_admin_mfa.sql` | Admins must pass TOTP |
+| 36 | `20261018000001_public_camp_page.sql` | Public camp page + notify-me list |
+| 37 | `20261018000002_course_rules.sql` | Grades, prerequisites, place-with |
+| 38 | `20261018000003_laptop_loans.sql` | Loaner laptops per camper-week |
+| 39 | `20261018000004_urgent_and_incidents.sql` | Urgent notices, incidents, roll-call notes |
+| 40 | `20261018000005_volunteer_onboarding.sql` | Interviews, checklist, Meet the teachers |
+| 41 | `20261018000006_authorized_pickups.sql` | Authorized pickups + walk-home consent |
+| 42 | `20261101000001_duty_locks.sql` | Duty drop locks |
+| 43 | `20261101000002_duty_minimums.sql` | Weekly duty minimum |
+| 44 | `20261101000003_volunteer_hours.sql` | Service hours + letters |
+| 45 | `20261101000004_admin_register.sql` | Admin register-on-behalf |
+| 46 | `20261101000005_staffing_board.sql` | Staffing board + week roles |
+| 47 | `20261101000006_retention.sql` | Retention dry-run job |
+| 48 | `20261101000007_crewing_guard.sql` | One crewing guard (accepted + agreement) |
 
-| 43 | `migration_staffing_board.sql` | Staffing targets, course minimums, week roles (admins only; released when a volunteer is demoted) and their service hours, spec 35's crewing guard on week roles, room clashes and `admin_staffing()` (spec 39). Deploy `send-notifications` for `week_role_changed` |
-| 44 | `migration_retention.sql` | Legal hold, a dry-run nightly anonymize job, its report, and season totals stored before a camper is anonymized (spec L4). On the demo, re-apply `migration_demo_environment.sql` so `private.reset_demo()` keeps `app_settings.retention_live` at `'false'` |
-| 45 | `migration_crewing_guard.sql` | One crewing guard: a section lead, a support or a week role only when the volunteer is not removed, their latest application is accepted this season, and an admin has verified the Signed volunteer agreement this season (spec 35, #220). `admin_crew_blocks()` returns those reasons to admins. A signed-in non-admin is refused before any of it is read. After step 37; after step 43 when `week_roles` exists |
+Superseded history only: `supabase/archive/section_supports_superseded.sql` (never apply).
 
-Skip `migration_section_supports.sql`: it is superseded by step 13.
+### Demo-only
 
-Some headers say "then RE-APPLY X". That is for upgrading a database that already ran an older copy of X. On a fresh install the repo copy is already current.
+| File | |
+|---|---|
+| `supabase/demo/demo_environment.sql` | `private.reset_demo()`, demo accounts tables, nightly cron. **Demo project only.** |
 
-### After the SQL
+After applying retention (or any change that reshapes seed data) on the demo, re-apply this file so `private.reset_demo()` stays correct and `app_settings.retention_live` stays `'false'`.
 
-1. **Auth:** turn on email confirmation and set the site URL and redirect URLs to where the app is served (`/reset` must be allowed for password reset). Set up custom SMTP ([spec 02](specs/02-custom-smtp.md)), because Supabase's built-in sender is capped at a few emails an hour.
-2. **First admin:** sign up through the app, then promote that account in the SQL editor:
-   ```sql
-   update profiles set role = 'admin' where id = (select id from auth.users where email = 'you@example.com');
-   ```
-   Roles can't be changed from the client, by design.
-3. **Admin MFA:** `app_settings.admin_mfa_required` decides whether admins need an authenticator code. Keep it `'true'` anywhere real data lives.
-4. **Email (optional):** deploy the outbox sender and set its secrets:
-   ```bash
-   supabase functions deploy send-notifications
-   supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="Your Chapter <no-reply@your-domain>" APP_URL=https://your-site
-   ```
-   `NOTIFY_REPLY_TO` is optional. Without `RESEND_API_KEY` nothing is sent and emails wait in `notifications`. See the header of `supabase/functions/send-notifications/index.ts`. Redeploy the function whenever `templates.ts` gains a template (spec 30 added three, spec 29 four, spec 36 one, spec 38 two).
-5. **Admin invites:** `supabase functions deploy admin-invite-parent` (verify_jwt on). Campers › Add registration calls it for a family with no account (spec 32). It invites through Supabase Auth, so it needs custom SMTP (spec 02) to reach real families; until then it creates the account without the email and tells the admin to have the family use "Forgot password".
-6. **Notify-me links:** `migration_public_camp_page.sql` creates the Vault secret `interest_link_key` that signs confirm and unsubscribe links. Never copy it between projects; a new key only breaks links already sent.
+### After the SQL (hosted projects)
 
-## Demo environment
+1. **Auth:** email confirmation on; Site URL + redirect URLs include `/reset`. Custom SMTP is [spec 02](specs/02-custom-smtp.md).
+2. **First admin:** sign up, then `update profiles set role = 'admin' …` as above. Roles can't change from the client.
+3. **Admin MFA:** keep `app_settings.admin_mfa_required = 'true'` anywhere real data lives.
+4. **Email (optional until spec 02):**  
+   `supabase functions deploy send-notifications`  
+   `supabase secrets set RESEND_API_KEY=… NOTIFY_FROM="…" APP_URL=https://…`
+5. **Admin invites:** `supabase functions deploy admin-invite-parent` (verify_jwt on).
+6. **Notify-me links:** `public_camp_page` creates Vault secret `interest_link_key` — never copy between projects.
 
-`migration_demo_environment.sql` is **only for a throwaway demo project**. `private.reset_demo()` deletes all camp data and every account not listed in `private.demo_keep_users`, reseeds a fictional camp, and runs nightly through `pg_cron`. Never apply it to a project with real families.
+## Production vs demo
 
-To use it, apply it after everything above, fill `private.demo_accounts` and `private.demo_keep_users` (see the file's header), then put the same demo logins in `.env.demo.local` and run `npm run dev -- --mode demo`. All seeded people are fictional: emails use `example.com` and phone numbers use the 555-01xx range.
+| | Demo | Production |
+|---|---|---|
+| Project | `rdckxazvoeixgwtjhrlf` | `scc-prod` (create once; see cutover doc) |
+| Site | `scc.haanie.com` | ❓ `register.steelcitycodes.org` (Q-H5) |
+| `VITE_DEMO_MODE` | `true` | unset / false |
+| Demo SQL / nightly reset | yes | **never** |
+| Schema updates | `supabase db push` (or SQL editor during transition) | `supabase db push` on merge to `main` (GitHub Action + optional Vercel build step) |
 
-## Where the schema is described
-
-- `src/types/database.ts`: the TypeScript types the app queries against.
-- Each migration's header comment explains what it changes and why, often with the spec or issue it came from.
-- `test-plans/*-tests.sql`: RLS and rule tests (see [testing.md](testing.md)).
+Never point a prod build at the demo project or vice versa. Only the anon key belongs in `VITE_*` env vars.

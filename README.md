@@ -60,44 +60,49 @@ Families register campers for week-long classes, volunteers apply and get crewed
 | Backend | Supabase: Postgres, Auth, Row Level Security, `pg_cron`, one Edge Function |
 | Email | A database outbox drained every minute by `supabase/functions/send-notifications` (Resend) |
 | Tests and CI | Vitest unit tests, SQL/RLS suites, a concurrency test; GitHub Actions on every PR |
-| Hosting | Vercel (static SPA) |
+| Hosting | Vercel (static SPA); prod build runs `supabase db push` then Vite |
+| Region | Demo and planned prod: US (record the concrete prod region in the privacy notice when `scc-prod` is created) |
 
 There is no app server. The browser talks to Supabase directly, so **the database is the security boundary**: RLS policies, triggers and `SECURITY DEFINER` functions enforce roles, capacity, age ranges, one class per camper per week, waitlist order and change deadlines. Volunteers read camper data only through `section_roster()`, which returns just their own section's roster fields. Each migration's header explains the rule it adds.
 
 ```
 src/
-  pages/        one component per route (Admin*, Parent*, Volunteer*, auth pages)
-  components/   shared UI (layouts, roll call, updates feed, inline confirm, ...)
-  hooks/        data access: one hook per table or view, all through supabase-js
-  lib/          pure helpers (Denver time, CSV export, matcher, drafts), unit tested
-  types/        database.ts, the typed schema the app queries against
-migration_*.sql database changes, applied in the order in docs/database.md
-supabase/       Edge Function for outgoing email
-test-plans/     SQL/RLS test suites and the seat-race script
-docs/           improvement plan, per-feature specs, runbooks, testing guide
-design/         design handoffs; tokens are in design_system.md
+  pages/                 one component per route (Admin*, Parent*, Volunteer*, auth pages)
+  components/            shared UI (layouts, roll call, updates feed, inline confirm, ...)
+  hooks/                 data access: one hook per table or view, all through supabase-js
+  lib/                   pure helpers (Denver time, CSV export, matcher, drafts), unit tested
+  types/                 database.ts, the typed schema the app queries against
+supabase/migrations/     schema source of truth (timestamped; `supabase db reset` / `db push`)
+supabase/demo/           demo-only reset/seed — never apply on prod
+supabase/functions/      Edge Functions (send-notifications, admin-invite-parent)
+test-plans/              SQL/RLS test suites and the seat-race script
+docs/                    improvement plan, per-feature specs, runbooks, testing guide
+docs/ops/                production cutover and account register
+design/                  design handoffs; tokens are in design_system.md
 ```
 
 ## Run it locally
 
-You need Node 22+ and a Supabase project of your own.
+You need **Node 22+**, the [Supabase CLI](https://supabase.com/docs/guides/cli), and **Docker** (or OrbStack/Colima) for the local stack. Timed under 15 minutes on a clean machine when Docker is already installed.
 
 ```bash
 git clone https://github.com/DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System.git
 cd Denver-Steel-City-Codes-Management-System
 npm install
-cp .env.example .env.local   # then fill in your project's URL and anon key
+supabase start               # applies supabase/migrations/; prints local URL + anon key
+cp .env.example .env.local   # paste the local URL and anon key
 npm run dev                  # http://localhost:5173
 ```
 
-Then set up the database by following **[docs/database.md](docs/database.md)**: apply the SQL files in order and promote your first admin.
+Promote your first user to admin (SQL editor or `psql` against the local DB) — see **[docs/database.md](docs/database.md)**. To use a hosted project instead of local, skip `supabase start` and put that project's URL and anon key in `.env.local`, then `supabase link` + `supabase db push`.
 
 | Variable | Where | |
 |---|---|---|
-| `VITE_SUPABASE_URL` | `.env.local` | Your project URL |
+| `VITE_SUPABASE_URL` | `.env.local` | Local (`http://127.0.0.1:54321`) or hosted project URL |
 | `VITE_SUPABASE_ANON_KEY` | `.env.local` | The public anon (publishable) key. Never put a service-role key here: everything prefixed `VITE_` ships to the browser |
-| `VITE_DEMO_*` | `.env.demo.local` | Optional demo logins, only with `--mode demo` on a demo database |
+| `VITE_DEMO_*` | `.env.demo.local` | Optional demo logins, only with `--mode demo` on a database that has `supabase/demo/demo_environment.sql` |
 | `RESEND_API_KEY`, `NOTIFY_FROM`, `NOTIFY_REPLY_TO`, `APP_URL` | Supabase Edge Function secrets | Outgoing email (optional) |
+| `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF` | Vercel Production only | Used by `scripts/prod-migrate-and-build.sh` to `db push` before the SPA build — never on the demo project |
 
 ### Scripts
 
@@ -113,11 +118,13 @@ Then set up the database by following **[docs/database.md](docs/database.md)**: 
 
 | | |
 |---|---|
-| [docs/database.md](docs/database.md) | Setting up a Supabase project from scratch, the demo environment |
+| [docs/database.md](docs/database.md) | Local `supabase start`, migrations, demo vs prod |
+| [docs/ops/production-cutover.md](docs/ops/production-cutover.md) | Creating `scc-prod`, Vercel Git deploys, secrets, `v0.1.0` |
 | [docs/testing.md](docs/testing.md) | Unit, SQL/RLS and concurrency tests |
 | [docs/scc-improvement-plan.md](docs/scc-improvement-plan.md) | The plan to February 2027: risks, legal items, build order, decisions |
 | [docs/specs/](docs/specs/README.md) | One spec per feature or PR, with status and issue links |
 | [docs/runbooks/security-incident.md](docs/runbooks/security-incident.md) | What to do if data may have been exposed |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes; tags are rollback points |
 | [design_system.md](design_system.md), [design/](design/README.md) | Brand tokens and design handoffs |
 | [CLAUDE.md](CLAUDE.md) | House workflow (also read by Claude Code, which helped build this) |
 | [PLAN.md](PLAN.md) | The original June 2026 plan, kept for history |
