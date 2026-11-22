@@ -40,8 +40,8 @@ The only Supabase project (`rdckxazvoeixgwtjhrlf`) is the public demo. Its night
 - [ ] `v0.1.0` is tagged with generated notes. *(after first prod deploy — cutover doc §6)*
 
 ## Tests and verification
-- `supabase db reset` locally succeeds from an empty database.
-- Run `test-plans/camp-week-rls-tests.sql` against the local DB: all pass.
+- [x] `supabase db reset` / `supabase start` locally succeeds from an empty database. *(verified 2026-11-21 America/Denver: 48 migrations; no `private.demo_*`; cron has app jobs only, no `reset_demo`)*
+- [ ] Run `test-plans/camp-week-rls-tests.sql` against a DB with the demo seed (`private.reset_demo()`). Needs demo people (Taylor Brooks, …); empty local is not enough.
 
 ## Open questions
 - Q-H1 who owns the accounts, Q-H3 billing for the extra project, Q-H5 DNS/prod domain. Default if undecided: create it in the account that already has Pro, and transfer ownership to national later (Supabase supports transferring a project between organizations).

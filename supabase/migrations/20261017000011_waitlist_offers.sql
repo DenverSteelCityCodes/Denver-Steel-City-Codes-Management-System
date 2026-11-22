@@ -3,7 +3,7 @@
 -- Do not edit the root copy; it is removed after conversion.
 
 -- Migration (part 2 of 2): waitlist offers with a claim window (spec 10, #79)
--- Apply AFTER migration_waitlist_offers_enum.sql (adds the 'offered' status), and after
+-- Apply AFTER 20260930000000_waitlist_offers_enum.sql (adds the 'offered' status; early so fresh installs can reference it), and after
 -- migration_season_settings.sql, migration_soft_cancel.sql, migration_audit_log.sql and
 -- migration_notifications.sql. Safe to re-run.
 --

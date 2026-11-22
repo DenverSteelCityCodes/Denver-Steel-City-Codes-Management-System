@@ -16,7 +16,7 @@ cp .env.example .env.local
 npm run dev             # http://localhost:5173
 ```
 
-`supabase start` runs every file in `supabase/migrations/` against an empty database. After you add a migration:
+`supabase start` runs every file in `supabase/migrations/` against an empty database. Local analytics (Logflare/vector) is off in `supabase/config.toml` because it breaks under Colima’s Docker socket mount; turn it back on if you use Docker Desktop. After you add a migration:
 
 ```bash
 supabase migration new <short_name>   # creates supabase/migrations/<timestamp>_<short_name>.sql
@@ -50,23 +50,23 @@ Filenames are the order. The table maps each migration to what it adds (historic
 | 10 | `20260611000006_interviews.sql` | Volunteer interview slots |
 | 11 | `20260612000001_parent_profiles.sql` | Parent contact details across years |
 | 12 | `20260612000002_parent_email.sql` | Parent/guardian email |
-| 13 | `20260930000001_security_hardening.sql` | Locks roles/statuses; `private` helpers; finishes `section_supports` |
-| 14 | `20260930000002_one_class_per_week.sql` | Seat, age, one-class-per-week checks |
-| 15 | `20260930000003_camp_week_ops.sql` | Schedules, roll calls, updates |
-| 16 | `20260930000004_interview_self_booking.sql` | Applicants book their own interview |
-| 17 | `20260930000005_interview_slots_private.sql` | Interview slots admin-only to read |
-| 18 | `20260930000006_volunteer_roster_access.sql` | Crew read campers only through `section_roster()` |
-| 19 | `20261014000001_review_hardening.sql` | Application throttling, admin-only notes |
-| 20 | `20261017000001_audit_log.sql` | `audit.log` |
-| 21 | `20261017000002_edit_conflicts.sql` | `updated_at` conflict checks |
-| 22 | `20261017000003_season_settings.sql` | Opening time, deadlines, offer windows |
-| 23 | `20261017000004_soft_cancel.sql` | Cancel without deleting history |
-| 24 | `20261017000005_auto_confirm.sql` | Held seats confirmed at once |
-| 25 | `20261017000006_history_revert.sql` | Admin history + one-click revert |
-| 26 | `20261017000007_notifications.sql` | Email outbox + `pg_cron` drain |
-| 27 | `20261017000008_parent_changes.sql` | Parent self-cancel; change requests |
-| 28 | `20261017000009_change_request_email_kind.sql` | Change-request emails know who asked |
-| 29 | `20261017000010_waitlist_offers_enum.sql` | `offered` status (own transaction) |
+| 13 | `20260930000000_waitlist_offers_enum.sql` | `offered` status (own transaction; early so later migrations can reference it) |
+| 14 | `20260930000001_security_hardening.sql` | Locks roles/statuses; `private` helpers; finishes `section_supports` |
+| 15 | `20260930000002_one_class_per_week.sql` | Seat, age, one-class-per-week checks |
+| 16 | `20260930000003_camp_week_ops.sql` | Schedules, roll calls, updates |
+| 17 | `20260930000004_interview_self_booking.sql` | Applicants book their own interview |
+| 18 | `20260930000005_interview_slots_private.sql` | Interview slots admin-only to read |
+| 19 | `20260930000006_volunteer_roster_access.sql` | Crew read campers only through `section_roster()` |
+| 20 | `20261014000001_review_hardening.sql` | Application throttling, admin-only notes |
+| 21 | `20261017000001_audit_log.sql` | `audit.log` |
+| 22 | `20261017000002_edit_conflicts.sql` | `updated_at` conflict checks |
+| 23 | `20261017000003_season_settings.sql` | Opening time, deadlines, offer windows |
+| 24 | `20261017000004_soft_cancel.sql` | Cancel without deleting history |
+| 25 | `20261017000005_auto_confirm.sql` | Held seats confirmed at once |
+| 26 | `20261017000006_history_revert.sql` | Admin history + one-click revert |
+| 27 | `20261017000007_notifications.sql` | Email outbox + `pg_cron` drain |
+| 28 | `20261017000008_parent_changes.sql` | Parent self-cancel; change requests |
+| 29 | `20261017000009_change_request_email_kind.sql` | Change-request emails know who asked |
 | 30 | `20261017000011_waitlist_offers.sql` | Waitlist offer windows |
 | 31 | `20261017000012_parent_swap.sql` | Parents switch class within a week |
 | 32 | `20261017000013_volunteer_self_service.sql` | Prefs, switch requests, absences |

@@ -7,6 +7,7 @@ Release tags (`vX.Y.Z`) are rollback points: redeploy that commit in Vercel, the
 
 ### Added
 - Spec 01 foundation: timestamped `supabase/migrations/`, CLI-friendly local setup, production cutover runbook, migration deploy workflow, Dependabot major-version ignore, and this changelog.
+- Fresh-install fixes: move `offered` enum before migrations that reference it; create `pg_cron` in the notifications migration for local stacks; disable local analytics under Colima.
 
 ## [0.1.0] — pending tag after first prod deploy
 

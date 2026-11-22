@@ -20,6 +20,8 @@
 -- example.com domain the demo seed uses): those rows are recorded as 'cancelled'.
 
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+-- Hosted Supabase has pg_cron already; local `supabase start` does not until we create it.
+CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- ── 1. The outbox ─────────────────────────────────────────────
 
