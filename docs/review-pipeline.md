@@ -20,7 +20,7 @@ npm run lint && npm test && npm run build
 
 - **Database changes:** every new rule has a suite in `test-plans/<name>-tests.sql`. Run it, plus the suites for any function or trigger you changed, with [`scripts/sql-test.sh`](../scripts/sql-test.sh). Before the migration is applied, prepend it with `--with`, so the whole run rolls back:
   ```bash
-  scripts/sql-test.sh --with migration_x.sql test-plans/x-tests.sql test-plans/course-rules-tests.sql
+  scripts/sql-test.sh --with supabase/migrations/<timestamp>_x.sql test-plans/x-tests.sql test-plans/course-rules-tests.sql
   ```
   A suite that already fails on `main` is noted in the PR, not hidden.
 - **UI changes:** checked in the browser for each affected role, at 375 px and in dark mode, with a screenshot in the PR ([DESIGN.md](../DESIGN.md)).
@@ -33,10 +33,10 @@ Two required checks:
 - **Lint, test, build** ([`ci.yml`](../.github/workflows/ci.yml), every PR and every push to `main`): eslint, Vitest (with `TZ=Asia/Tokyo`) and the production build.
 - **PR checks** ([`pr-checks.yml`](../.github/workflows/pr-checks.yml) running [`scripts/pr-checks.sh`](../scripts/pr-checks.sh), PRs only, re-run when the description is edited): the house rules a script can see. Run it locally first with `BODY="$(cat body.md)" scripts/pr-checks.sh`.
   - The body closes an issue (`Closes #123`), unless the PR is from Dependabot.
-  - A new root `migration_*.sql` is listed in `docs/database.md`, and any new or changed one comes with a change to a `test-plans/*-tests.sql` (or a `No SQL test: <reason>` line in the description, for a comment or header fix).
+  - A new `supabase/migrations/<timestamp>_*.sql` is listed in `docs/database.md`, and any new or changed one comes with a change to a `test-plans/*-tests.sql` (or a `No SQL test: <reason>` line in the description, for a comment or header fix).
   - A new Edge Function in `supabase/functions/` is named in `docs/database.md`.
 
-The SQL suites join CI when spec 01 moves migrations into `supabase/migrations/` and CI can start a local stack ([testing.md](testing.md)).
+The SQL suites join CI when spec 08 wires `supabase start` + `db reset` into this workflow ([testing.md](testing.md)). Migrations already live in `supabase/migrations/` (spec 01).
 
 ## 3. Code review
 

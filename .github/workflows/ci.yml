@@ -1,7 +1,7 @@
 # CI (spec 08, #76): lint, unit tests and a production build on every pull request and every
-# push to main. The SQL/RLS suites in test-plans/ still run against the demo database by hand;
-# they move here (Supabase local stack + migrations) once spec 01 puts migrations in
-# supabase/migrations.
+# push to main. The SQL/RLS suites in test-plans/ still run against the demo (or local) database
+# by hand; spec 08's remaining work is to run them here on `supabase start` + `db reset`
+# (migrations already live in supabase/migrations/ after spec 01).
 name: CI
 
 on:

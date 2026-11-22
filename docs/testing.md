@@ -22,15 +22,15 @@ npm run build
 ```bash
 scripts/sql-test.sh                                    # every suite
 scripts/sql-test.sh test-plans/x-tests.sql             # one
-scripts/sql-test.sh --with migration_x.sql test-plans/x-tests.sql   # an unapplied migration, rolled back with the suite
+scripts/sql-test.sh --with supabase/migrations/<timestamp>_x.sql test-plans/x-tests.sql
 ```
 
-It connects with `DATABASE_URL` (psql) or `SUPABASE_PROJECT_REF` + `SUPABASE_ACCESS_TOKEN` (the Management API). The SQL editor works too: every line should say `ok`; any `BAD` is a failure. [The review pipeline](review-pipeline.md) says when to run which.
+It connects with `DATABASE_URL` (psql) or `SUPABASE_PROJECT_REF` + `SUPABASE_ACCESS_TOKEN` (the Management API). The SQL editor works too: every line should say `ok`; any `BAD` is a failure. [The review pipeline](review-pipeline.md) says when to run which. Against local: `supabase start`, then `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres scripts/sql-test.sh`.
 
 - Where admin MFA is required (spec 27), an admin's claims need `'aal': 'aal2'`.
 - A suite that signs campers up makes its own class with no course rules (spec 31), like `course-rules-tests.sql`, rather than picking a seeded section by name.
 
-**Next (spec 08 after spec 01):** once migrations live in `supabase/migrations/`, CI starts the Supabase local stack (`supabase start`, `supabase db reset`) and runs these files with `psql`, failing on any `BAD`.
+**Next (spec 08):** CI starts the Supabase local stack (`supabase start`, `supabase db reset`) and runs these files with `psql`, failing on any `BAD`. Migrations already live in `supabase/migrations/` (spec 01).
 
 ## 3. Concurrency
 

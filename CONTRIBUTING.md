@@ -4,7 +4,7 @@ Thanks for helping. This app holds children's medical notes and family contact d
 
 ## Set up
 
-Follow [Run it locally](README.md#run-it-locally) and [docs/database.md](docs/database.md). Use your own Supabase project. A demo project seeded with `migration_demo_environment.sql` is the easiest way to get realistic, fictional data.
+Follow [Run it locally](README.md#run-it-locally) and [docs/database.md](docs/database.md). Prefer `supabase start` for a local empty database. A hosted demo project seeded with `supabase/demo/demo_environment.sql` is the easiest way to get realistic, fictional data.
 
 ## Workflow: one issue → one branch → one PR
 
@@ -24,7 +24,7 @@ Follow [Run it locally](README.md#run-it-locally) and [docs/database.md](docs/da
 
 ## Conventions
 
-- **Database changes** go in a new `migration_<name>.sql` at the repo root, with a header that says what it changes, why, and which files it must run after (`Order: after …`). Make it safe to re-run (`IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP … IF EXISTS`). Add it to the order table in [docs/database.md](docs/database.md).
+- **Database changes** go in a new file from `supabase migration new <short_name>` → `supabase/migrations/<timestamp>_<short_name>.sql`, with a header that says what it changes and why. Make it safe to re-run (`IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP … IF EXISTS`). Add it to the order table in [docs/database.md](docs/database.md). Never put demo-only reset/seed SQL in `migrations/` — use `supabase/demo/`.
 - **Enforce rules in the database**, not only in the UI: RLS policies, triggers or `SECURITY DEFINER` functions with `SET search_path`. The browser calls Supabase directly, so a check that only lives in React can be skipped.
 - **Add a test.** New helpers in `src/lib/` get a Vitest test in `src/lib/__tests__/`. New RLS rules or RPCs get a suite in `test-plans/` that impersonates each role and rolls back (see [docs/testing.md](docs/testing.md)).
 - **Keep `src/types/database.ts` in sync** with the schema.

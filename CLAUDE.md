@@ -10,9 +10,11 @@ before starting any non-trivial change — it is the house rule, not a suggestio
 - **Repo:** `DenverSteelCityCodes/Denver-Steel-City-Codes-Management-System`, default branch `main`.
 - **Commands:** `npm run dev` (Vite, port 5173) · `npm run build` (`tsc -b && vite build`) ·
   `npm run lint` (eslint). Run the dev server with `preview_start {name: "dev"}`, never Bash.
-- **Schema source of truth:** `src/types/database.ts`, kept in sync with the root
-  `migration_*.sql` files (apply order: `docs/database.md`). Read it before writing any query.
-  It can lag behind the SQL, so trust the migrations for column existence.
+- **Schema source of truth:** `supabase/migrations/` (timestamped SQL; apply order is the
+  filename). `src/types/database.ts` mirrors that schema for the app — read it before writing
+  any query. Types can lag behind the SQL, so trust the migrations for column existence.
+  Demo-only seed/reset lives in `supabase/demo/` and must never run on prod. Cutover steps:
+  `docs/ops/production-cutover.md`.
 
 ## Workflow — one atomic issue → one atomic PR → one worktree per session
 
